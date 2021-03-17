@@ -2,23 +2,19 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import numpy as np
-import healpy as hp
 import datetime
 import os
 import sys
 import glob
-import json
 import re
 import warnings
 import copy
 import configparser
 from collections import OrderedDict
-from scipy import integrate, stats
-import pickle
-from xfaster import xfaster_tools as xft
-from xfaster import parse_tools as pt
-from xfaster import base as base
-from xfaster import batch_tools as bt
+from . import xfaster_tools as xft
+from . import parse_tools as pt
+from . import base as base
+from . import batch_tools as bt
 
 __all__ = ["XFaster"]
 
@@ -124,9 +120,8 @@ class XFaster(object):
         self.delta_beta_fix = 1.0e-8
 
         cfg = configparser.ConfigParser()
-        if not os.path.exists(config):
-            config = os.path.join(os.getenv("XFASTER_PATH"), "config", config)
         assert os.path.exists(config)
+        self.config_root = os.path.dirname(os.path.abspath(config))
 
         cfg.read(config)
         self.dict_freqs = cfg["freqs"]
@@ -135,7 +130,7 @@ class XFaster(object):
         if self.beam_product is not None:
             if not os.path.exists(self.beam_product):
                 self.beam_product = os.path.join(
-                    os.getenv("XFASTER_PATH"), "config", self.beam_product
+                    self.config_root, self.beam_product
                 )
             assert os.path.exists(self.beam_product)
 
@@ -276,17 +271,6 @@ class XFaster(object):
             signal_transfer_type = signal_type
 
         # regularize data root
-        if not os.path.exists(data_root) and not os.path.isabs(data_root):
-            xfaster_root = os.getenv("XFASTER_DATA_ROOT")
-            if xfaster_root is None:
-                raise OSError(
-                    "Missing XFaster data root name.  Please supply the "
-                    "data_root keyword argument as an absolute path or define "
-                    "the XFASTER_DATA_ROOT environment variable."
-                )
-            data_root = os.path.join(xfaster_root, data_root)
-            self.log("Loading XFaster input data from {}".format(data_root), "info")
-
         data_root = os.path.abspath(data_root)
         if not os.path.exists(data_root):
             raise OSError("Missing data root {}".format(data_root))
@@ -1236,6 +1220,7 @@ class XFaster(object):
             returns a 2D array of T/Q/U maps from the file. Otherwise a
             (1, npix) array is returned containing only the T map.
         """
+        import healpy as hp
 
         # initialize map cache
         if not hasattr(self, "_map_cache"):
@@ -1718,6 +1703,8 @@ class XFaster(object):
             Alms for the input map, computed using the equivalent of
             `healpy.map2alm(m, lmax, pol=self.pol, use_weights=True)`.
         """
+        import healpy as hp
+
         if pol is None:
             pol = self.pol
         return np.asarray(hp.map2alm(m, self.lmax, pol=pol, use_weights=True))
@@ -1747,6 +1734,8 @@ class XFaster(object):
         cls : array_like
             Cross-spectrum of m1-x-m2.
         """
+        import healpy as hp
+
         if lmax is None:
             lmax = self.lmax
         cls = np.asarray(hp.alm2cl(m1, alms2=m2, lmax=lmax))
@@ -2408,6 +2397,8 @@ class XFaster(object):
                 Average null spectra (sum and difference if computing
                 a null test).
         """
+        import healpy as hp
+
         mask_files = self.mask_files
         map_tags = self.map_tags
         map_pairs = pt.tag_pairs(map_tags, index=True)
@@ -3420,6 +3411,8 @@ class XFaster(object):
             Multiplicative factor to use for marginalization. This value
             multiplies each of the spectra that are included in the table.
         """
+        import json
+
         self.marg_table = None
         marg_table = OrderedDict()
 
@@ -3448,7 +3441,7 @@ class XFaster(object):
             self.log("Marginalizing over all but first TT auto.", "detail")
         elif auto_marg_table is not None:
             if not os.path.exists(auto_marg_table):
-                rp = os.path.join(os.getenv("XFASTER_PATH", "config"), auto_marg_table)
+                rp = os.path.join(self.config_root, auto_marg_table)
                 if os.path.exists(rp):
                     auto_marg_table = rp
                 else:
@@ -3473,7 +3466,7 @@ class XFaster(object):
 
         if cross_marg_table is not None:
             if not os.path.exists(cross_marg_table):
-                rp = os.path.join(os.getenv("XFASTER_PATH"), "config", cross_marg_table)
+                rp = os.path.join(self.config_root, cross_marg_table)
                 if os.path.exists(rp):
                     cross_marg_table = rp
                 else:
@@ -3653,7 +3646,7 @@ class XFaster(object):
             `flat` is False, this will search for a spectrum stored in
             `signal_<signal_type>/spec_signal_<signal_type>.dat`.
             Otherwise, if the filename is a relative path and not found,
-            the $XFASTER_PATH/data directory is searched.
+            the config directory is searched.
         r : float
             If supplied and `flat` is False, a spectrum is computed using
             CAMB for the given `r` value.  Overrides `filename`.
@@ -3759,9 +3752,7 @@ class XFaster(object):
                 filename = "spec_{}.dat".format(os.path.basename(signal_root))
                 filename = os.path.join(signal_root, filename)
             if not os.path.exists(filename) and not os.path.isabs(filename):
-                filename = os.path.abspath(
-                    os.path.join(os.path.dirname(__file__), "../data", filename)
-                )
+                filename = os.path.abspath(self.config_root, filename)
             if not os.path.exists(filename):
                 raise OSError("Missing model file {}".format(filename))
 
@@ -3860,6 +3851,7 @@ class XFaster(object):
         This method is called at the 'beams' checkpoint and loads or saves
         a dictionary containing just the `beam_windows` key to disk.
         """
+        import healpy as hp
 
         lsize = 2 * self.lmax + 1
         nspec = 6 if self.pol else 1
@@ -3930,25 +3922,8 @@ class XFaster(object):
         # get original tag if it's not a single frequency or fpu
         mind = self.map_tags == tag
         tag = np.atleast_1d(self.map_tags_orig[mind])[0]
-        try:
-            err_envelope = pickle.load(
-                open(
-                    os.path.join(
-                        os.getenv("XFASTER_PATH"), "data", "beam_error_model.pkl"
-                    ),
-                    "rb",
-                ),
-                encoding="latin1",
-            )
-        except TypeError:
-            err_envelope = pickle.load(
-                open(
-                    os.path.join(
-                        os.getenv("XFASTER_PATH"), "data", "beam_error_model.pkl"
-                    ),
-                    "rb",
-                )
-            )
+        fname = os.path.join(self.config_root, "beam_error_model.pkl")
+        err_envelope = pt.load_pickle_compat(fname)
 
         # add envelope to beam for marginalizing over error
         etag = "{}_dbl_data".format(tag)

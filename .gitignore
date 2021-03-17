@@ -3,3 +3,7 @@
 *.pyc
 local/
 .DS_Store
+build/
+dist/
+*.egg
+*.egg-info

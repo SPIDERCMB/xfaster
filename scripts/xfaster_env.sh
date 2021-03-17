@@ -1,4 +1,0 @@
-#!/bin/bash
-
-export PATH=$XFASTER_PATH/scripts:$PATH
-export PYTHONPATH=$XFASTER_PATH:$PYTHONPATH

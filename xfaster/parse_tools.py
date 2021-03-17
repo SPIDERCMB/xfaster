@@ -13,6 +13,8 @@ __all__ = [
     "dict_to_index",
     "dict_to_dmat",
     "dict_to_dsdqb_mat",
+    "load_compat",
+    "load_pickle_compat",
     "load_and_parse",
     "corr_index",
     "num_maps",
@@ -134,6 +136,31 @@ def load_compat(*args, **kwargs):
         out[k] = v
 
     return out
+
+
+def load_pickle_compat(filename):
+    """
+    Load a pickle file from the given filename.
+    Ensure that the file is open in mode 'rb' (required for python3), and
+    that the encoding is set to 'latin1' in python3.
+    """
+    import pickle
+    if hasattr(filename, 'read'):
+        if filename.mode == 'rb':
+            try:
+                return pickle.load(f, encoding='latin1')
+            except TypeError:
+                return pickle.load(f)
+        warn(
+            "Reopening file {} in mode 'rb' for unpickling".format(filename.name)
+        )
+        filename.close()
+        filename = filename.name
+    with open(filename, 'rb') as f:
+        try:
+            return pickle.load(f, encoding='latin1')
+        except TypeError:
+            return pickle.load(f)
 
 
 def parse_data(data, field, indices=None):

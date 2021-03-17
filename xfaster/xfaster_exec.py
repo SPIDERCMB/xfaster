@@ -8,23 +8,12 @@ import subprocess as sp
 import numpy as np
 import time
 import warnings
-from xfaster import xfaster_class as xfc
-from xfaster import base
-from xfaster import batch_tools as bt
+from . import xfaster_class as xfc
+from . import base
+from . import batch_tools as bt
+
 
 __all__ = ["xfaster_run", "xfaster_parse", "xfaster_submit", "XFasterJobGroup"]
-
-
-def githash():
-    """
-    Returns the git hash of xfaster
-    """
-    path = os.path.dirname(__file__)
-    cwd = os.getcwd()
-    os.chdir(path)
-    ghash = sp.check_output(["git", "rev-parse", "HEAD"]).decode()
-    os.chdir(cwd)
-    return ghash.strip("\n")
 
 
 def xfaster_run(
@@ -353,6 +342,7 @@ def xfaster_run(
         If True, maps at Planck frequencies have been reobserved using 150a
         beam/filter.
     """
+    from . import __version__ as xf_version
 
     cpu_start = time.clock()
     time_start = time.time()
@@ -369,7 +359,7 @@ def xfaster_run(
 
     # initialize config file
     config_vars = base.XFasterConfig(locals(), "XFaster General")
-    config_vars.update(dict(git_hash=githash(), config=config))
+    config_vars.update(dict(version=xf_version, config=config))
 
     common_opts = dict(
         lmax=lmax,
@@ -1402,10 +1392,7 @@ class XFasterJobGroup(object):
             job_prefix = "xfaster"
 
         # different default script path
-        if script_path is None and self.script_path is None:
-            script_path = os.path.abspath(
-                os.path.join(os.path.dirname(__file__), "..", "scripts", "xfaster")
-            )
+        if script_path is not None:
             self.script_path = script_path
 
         # create output directories
@@ -1468,9 +1455,11 @@ class XFasterJobGroup(object):
         if not self.job_list:
             raise RuntimeError("No unimap jobs have been added.")
         if self.script_path is None:
-            self.script_path = os.path.abspath(
-                os.path.join(os.path.dirname(__file__), "..", "scripts", "xfaster")
-            )
+            try:
+                self.script_path = sp.check_output(['which', 'xfaster']).decode()
+                assert os.path.exists(self.script_path)
+            except:
+                raise OSError('XFaster run script not found')
         for idx in range(len(self.job_list)):
             self.job_list[idx] = self.job_list[idx].format(script=self.script_path)
         if group_by is None:
