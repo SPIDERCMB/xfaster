@@ -14,10 +14,8 @@
 #
 import os
 import sys
-
-sys.path.insert(0, os.path.abspath("../xfaster"))
-
 import xfaster
+
 # -- Project information -----------------------------------------------------
 
 project = 'xfaster'
@@ -25,9 +23,9 @@ copyright = '2021, A. Gambrel, A. Rahlin, C. Contaldi'
 author = 'A. Gambrel, A. Rahlin, C. Contaldi'
 
 # The short X.Y version
-version = ''
+version = xfaster.__version__
 # The full version, including alpha/beta/rc tags
-release = '0.1.0'
+release = xfaster.__version__
 
 
 # -- General configuration ---------------------------------------------------
