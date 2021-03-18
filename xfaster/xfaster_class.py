@@ -124,32 +124,18 @@ class XFaster(object):
         self.config_root = os.path.dirname(os.path.abspath(config))
 
         cfg.read(config)
+        # XXX do some checks for sensible inputs here
+        # XXX check handling of nom_freqs throughout
         self.dict_freqs = cfg["freqs"]
+        self.dict_freqs_nom = cfg["nom_freqs"]
         self.fwhm = cfg["fwhm"]
-        self.beam_product = cfg["beam"]["beam_product"]
+        self.beam_product = cfg["beam"].get("beam_product", None)
         if self.beam_product is not None:
             if not os.path.exists(self.beam_product):
                 self.beam_product = os.path.join(
                     self.config_root, self.beam_product
                 )
             assert os.path.exists(self.beam_product)
-
-        # TO DO: shouldn't need this list, just use original tags
-        self.dict_freqs_nom = {
-            "x1": "150",
-            "x2": "90",
-            "x3": "150",
-            "x4": "90",
-            "x5": "150",
-            "x6": "90",
-            "90": "90",
-            "100": "100",
-            "143": "143",
-            "150": "150",
-            "150a": "150",
-            "217": "217",
-            "353": "353",
-        }
 
         # checkpointing
         if checkpoint is not None:
@@ -290,17 +276,12 @@ class XFaster(object):
         map_tags = [
             os.path.splitext(os.path.basename(f))[0].split("_", 1)[1] for f in map_files
         ]
+        map_freqs = []
         nom_freqs = []
         for t in map_tags:
             # if map tag is not a plain frequency, extract plain frequency
-            if int(sys.version[0]) < 3:
-                nfreq = filter(lambda x: re.search(x, t), list(self.dict_freqs))[0]
-            else:
-                nfreq = next(filter(lambda x: re.search(x, t), list(self.dict_freqs)))
-            nom_freqs.append(self.dict_freqs_nom[str(nfreq)])
-        map_freqs = []
-        for t in nom_freqs:
             map_freqs.append(self.dict_freqs[t])
+            nom_freqs.append(self.dict_freqs_nom[t])
         self.log("Found {} map files in {}".format(len(map_files), map_root), "task")
         self.log("Map files: {}".format(map_files), "detail")
         self.log("Map freqs: {}".format(map_freqs), "detail")
@@ -2022,6 +2003,8 @@ class XFaster(object):
         data_shape = self.data_shape
         null_run = self.null_run
         map_files2 = self.map_files2 if null_run else None
+
+        # XXX generalize template alpha to not be specific to spider frequencies here
 
         # ignore unused template coefficients
         if not any([int(x) == 90 for x in self.nom_freqs.values()]):
@@ -5953,6 +5936,7 @@ class XFaster(object):
         msg = ""
 
         for im0, m0 in enumerate(self.map_tags):
+            # XXX should we remove special handling for planck frequencies?
             if self.map_reobs_freqs[m0] in self.planck_freqs:
                 # DEBUG: Should we let this float since we think transfer
                 # function computation is correcting for non-ideal computation
@@ -6479,7 +6463,7 @@ class XFaster(object):
             cbl = copy.deepcopy(cbl_scalar)
             cls_model = copy.deepcopy(cls_model_scalar)
 
-        # TODO
+        # XXX TODO
         # include priors on noise residuals from inv_fish
         # include beam uncertainties
         # how to marginalize over the garbage bin?
