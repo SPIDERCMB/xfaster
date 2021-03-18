@@ -11,13 +11,10 @@ An accompanying paper describing the algorithm is expected in March 2021.
 
 Documentation (improvements in progress) can be found here: https://annegambrel.github.io/xfaster/
 
-scripts:
-    scripts for testing and running the code
-
 xfaster:
     python package
 
-documentation:
+docs:
     documentation on usage, file structure, etc.
 
 example:
