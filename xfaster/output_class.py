@@ -1,8 +1,7 @@
 from __future__ import absolute_import
 import numpy as np
-import glob
 import copy
-import os as os
+import os
 from .base import XFasterConfig
 from . import parse_tools as pt
 

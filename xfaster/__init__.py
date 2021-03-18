@@ -4,6 +4,7 @@ from __future__ import division as _division
 
 from .xfaster_exec import *
 from .xfaster_class import *
+from .output_class import *
 
 from .parse_tools import load_and_parse
 

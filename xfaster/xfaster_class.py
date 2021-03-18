@@ -4,12 +4,9 @@ from __future__ import print_function
 import numpy as np
 import datetime
 import os
-import sys
 import glob
-import re
 import warnings
 import copy
-import configparser
 from collections import OrderedDict
 from . import xfaster_tools as xft
 from . import parse_tools as pt
@@ -100,6 +97,8 @@ class XFaster(object):
             If True, write log output to a file instead of to STDOUT.
             The log will be in `<output_root>/run_<output_tag>.log`.
         """
+        from configparser import ConfigParser
+
         # verbosity
         self.log = self.init_log(**kwargs)
         if verbose is not None:
@@ -119,10 +118,10 @@ class XFaster(object):
         # Priors on frequency spectral index
         self.delta_beta_fix = 1.0e-8
 
-        cfg = configparser.ConfigParser()
+        # Load band configuration file
+        cfg = ConfigParser()
         assert os.path.exists(config)
         self.config_root = os.path.dirname(os.path.abspath(config))
-
         cfg.read(config)
         # XXX do some checks for sensible inputs here
         # XXX check handling of nom_freqs throughout
@@ -3395,6 +3394,7 @@ class XFaster(object):
             multiplies each of the spectra that are included in the table.
         """
         import json
+        import re
 
         self.marg_table = None
         marg_table = OrderedDict()
@@ -3897,6 +3897,8 @@ class XFaster(object):
         Get error envelope to multiply beam by (so, to get beam + 2 sigma error,
         do beam * (1+2*get_beam_err(tag)))
         """
+        # XXX generalize beam error file to use map tag keys like the others
+
         if getattr(self, "beam_err", None) is not None:
             if tag in self.beam_err:
                 return self.beam_err[tag]
