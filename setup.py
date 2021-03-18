@@ -33,4 +33,5 @@ setup(
     package_dir={"xfaster": "xfaster"},
     scripts=["bin/xfaster"],
     install_requires=["numpy", "healpy"],
+    python_requires='>=2.7',
 )
