@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
 import os
-import glob
 import sys
 import subprocess as sp
 import numpy as np
@@ -685,7 +684,6 @@ def xfaster_parse(args=None, test=False):
     """
 
     import argparse as ap
-    import sys
 
     parser_opts = dict(
         description="Run the XFaster algorithm",

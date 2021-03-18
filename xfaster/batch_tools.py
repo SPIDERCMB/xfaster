@@ -311,10 +311,7 @@ def batch_sub(
     job_script = "\n".join(job_script)
 
     # create and navigate to workdir
-    if int(sys.version[0]) < 3:
-        cwd = os.getcwdu()
-    else:
-        cwd = os.getcwdb()
+    cwd = os.getcwd()
     if workdir is None:
         workdir = cwd
         pwd = workdir
