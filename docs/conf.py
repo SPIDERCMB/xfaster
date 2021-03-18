@@ -16,6 +16,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.abspath("../xfaster"))
+sys.path.insert(0, "/usr/local/lib/python3.8/dist-packages")
 
 import xfaster
 # -- Project information -----------------------------------------------------
