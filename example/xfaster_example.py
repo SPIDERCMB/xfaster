@@ -25,7 +25,7 @@ xfaster_opts = {
     "config": "config_example.ini",
     "data_root": "/data/agambrel/XF_NonNull_Sept18",
     "data_subset": "full/*90,full/*150a",
-    "clean_type": "raw",
+    "data_type": "raw",
     "noise_type": "stationary",
     "mask_type": "pointsource_latlon",
     "signal_type": "r0",

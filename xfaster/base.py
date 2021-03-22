@@ -206,7 +206,8 @@ def extract_func_kwargs(func, kwargs, pop=False, others_ok=True, warn=False):
 
     Returns
     -------
-    Dict of items from kwargs for which func has matching keyword arguments
+    kwargs : dict
+        Dict of items from kwargs for which func has matching keyword arguments
     """
     spec = inspect.getargspec(func)
     func_args = set(spec.args[-len(spec.defaults) :])

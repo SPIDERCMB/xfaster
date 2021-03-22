@@ -234,7 +234,7 @@ class XFaster(object):
         data_subset="full/*0",
         signal_subset="*",
         noise_subset="*",
-        clean_type="raw",
+        data_type="raw",
         noise_type="stationary",
         noise_type_sim=None,
         mask_type="hitsmask_tailored",
@@ -261,7 +261,7 @@ class XFaster(object):
             raise OSError("Missing data root {}".format(data_root))
 
         # find all map files
-        map_root = os.path.join(data_root, "data_{}".format(clean_type))
+        map_root = os.path.join(data_root, "data_{}".format(data_type))
         map_files = []
         data_subset = data_subset.split(",")
         for f in np.atleast_1d(data_subset):
@@ -629,7 +629,7 @@ class XFaster(object):
         data_subset="full/*0",
         signal_subset="*",
         noise_subset="*",
-        clean_type="raw",
+        data_type="raw",
         noise_type="stationary",
         noise_type_sim=None,
         mask_type="hitsmask_tailored",
@@ -647,7 +647,7 @@ class XFaster(object):
         Find all files for the given data root.  The data structure is:
 
             <data_root>
-                -> data_<clean_type>
+                -> data_<data_type>
                     -> full
                         -> map_x1.fits
                         ...
@@ -676,15 +676,15 @@ class XFaster(object):
                 -> foreground_<foreground_type>
                     (same filenames as signal_<signal_type>)
                 -> templates_<template_type>
-                   -> halflmission-1
-                      (same filenames as data_<clean_type>)
-                   -> halflmission-2
-                      (same filenames as data_<clean_type>)
+                   -> halfmission-1
+                      (same filenames as data_<data_type>)
+                   -> halfmission-2
+                      (same filenames as data_<data_type>)
                 -> reobs_planck (if sub_planck=True)
                    -> halfmission-1
-                      (same filenames as data_<clean_type>)
+                      (same filenames as data_<data_type>)
                    -> halfmission-2
-                      (same filenames as data_<clean_type>)
+                      (same filenames as data_<data_type>)
 
             <data_root2>
                 ...
@@ -713,11 +713,8 @@ class XFaster(object):
             that is added onto the data_subset path to indicate which sims
             to use. For example, for all, use '*'. For the first 300 sims,
             use '0[0-2]*'.
-        clean_type : string
-            The type of data to use.  If this is 'raw' (default), then
-            the directory contains raw output maps from a `unimap` run.
-            Other tags indicate the type of foreground cleaning
-            performed on the data.
+        data_type : string
+            The type of data to use. 
         noise_type: string
             The variant of noise simulation to use, e.g. 'stationary',
             'variable', etc.  The directory should contain the same number
@@ -796,7 +793,7 @@ class XFaster(object):
             null_run = True
 
         opts = dict(
-            clean_type=clean_type,
+            data_type=data_type,
             noise_type=noise_type,
             noise_type_sim=noise_type_sim,
             mask_type=mask_type,
@@ -1007,9 +1004,9 @@ class XFaster(object):
 
         save_name = "files"
         alt_name = None
-        if clean_type != "raw":
+        if data_type != "raw":
             alt_name = save_name
-            save_name = "{}_{}".format(save_name, clean_type)
+            save_name = "{}_{}".format(save_name, data_type)
         if template_type is not None:
             alt_name = save_name
             save_name = "{}_clean_{}".format(save_name, template_type)
@@ -1354,8 +1351,8 @@ class XFaster(object):
                 if self.noise_type_sim:
                     name = "{}_{}".format(name, self.noise_type_sim)
             else:
-                if self.clean_type != "raw":
-                    name = "{}_{}".format(name, self.clean_type)
+                if self.data_type != "raw":
+                    name = "{}_{}".format(name, self.data_type)
                 if getattr(self, "template_cleaned", False):
                     name = "{}_clean_{}".format(name, self.template_type)
                 if getattr(self, "planck_sub", False):
@@ -2017,10 +2014,10 @@ class XFaster(object):
         # Check for output data on disk
         save_attrs = ["cls_data", "nside"]
 
-        if self.clean_type == "raw":
+        if self.data_type == "raw":
             data_name = "data"
         else:
-            data_name = "data_{}".format(self.clean_type)
+            data_name = "data_{}".format(self.data_type)
         save_name = "{}_xcorr".format(data_name)
         template_fit = False
 

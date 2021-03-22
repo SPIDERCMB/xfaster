@@ -32,7 +32,7 @@ def xfaster_run(
     signal_subset="*",
     noise_subset="*",
     mask_type="hitsmask_tailored",
-    clean_type="raw",
+    data_type="raw",
     noise_type="stationary",
     signal_type="r0p03",
     signal_transfer_type=None,
@@ -152,10 +152,8 @@ def xfaster_run(
     noise_subset : string
         The subset of the noise sims to include
         Must be a glob-parseable string
-    clean_type : string
-        If None, un-cleaned data are used.
-        If set, the foreground residuals are estimated and fit by
-        differencing with the un-cleaned data.
+    data_type : string
+        The data type to use
     noise_type : string
         The variant of noise sims to use
     noise_type_sim : string
@@ -384,7 +382,7 @@ def xfaster_run(
         data_subset=data_subset,
         signal_subset=signal_subset,
         noise_subset=noise_subset,
-        clean_type=clean_type,
+        data_type=data_type,
         noise_type=noise_type,
         noise_type_sim=noise_type_sim,
         mask_type=mask_type,
@@ -853,7 +851,7 @@ def xfaster_parse(args=None, test=False):
             "noise_subset",
             help="Glob_parseable map tag to include " "for noise sims",
         )
-        add_arg(G, "clean_type", help="Variant of foreground-cleaned data maps to use")
+        add_arg(G, "data_type", help="Variant of data maps to use")
         add_arg(G, "noise_type", help="Noise sim variant")
         add_arg(G, "noise_type_sim", help="Noise sim variant to use for sim_index")
         add_arg(G, "mask_type", help="Mask variant")
