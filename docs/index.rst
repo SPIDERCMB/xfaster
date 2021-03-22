@@ -6,16 +6,19 @@
 XFaster Documentation
 =====================
 XFaster is a power spectrum and parameter likelihood estimator for cosmic microwave background (CMB) data sets.
-It's a hybrid of two types of estimators: pseudo-Cl Monte Carlo estimators, like MASTER/PolSpice, and iterative quadratic estimators.
+It's a hybrid of two types of estimators: pseudo-:math:`C_\ell` Monte Carlo estimators, like MASTER/PolSpice, and iterative quadratic estimators.
 The full description of the pipeline, including the math and assumptions used, is in a soon-to-be-released paper.
-These docs focus on using the code.
+These docs focus on the code implementation.
+
+The basics of running the code are given in Quick Start.
+A more in-depth exploration of the code, step by step through the algorithm, is given in the Algorithm link.
 
 .. toctree::
   :maxdepth: 2
   :caption: Contents:
 
-  intro
-  codeuse
+  quickstart
+  algorithm
   api
 
 Indices and tables
