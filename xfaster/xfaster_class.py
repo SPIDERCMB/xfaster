@@ -159,10 +159,10 @@ class XFaster(object):
         from configparser import ConfigParser
 
         # Load map configuration file
-        assert os.path.exists(config)
-        self.config_root = os.path.dirname(os.path.abspath(config))
+        assert os.path.exists(filename)
+        self.config_root = os.path.dirname(os.path.abspath(filename))
         cfg = ConfigParser()
-        cfg.read(config)
+        cfg.read(filename)
 
         # dictionary of map frequencies keyed by map tag
         self.dict_freqs = cfg["freqs"]
