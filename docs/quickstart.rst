@@ -92,5 +92,15 @@ The ``.npz file`` should contain a dictionary with a key for each map tag.
 The beams can be an :math:`\ell` -length vector, or a 3 :math:`\times \ell` - shape array if different beams are desired for Stokes I/Q/U.
 
 Running the code
-================
+----------------
+An example of a script to run XFaster can be found in `xfaster_example.py <https://github.com/annegambrel/xfaster/blob/main/example/xfaster_example.py>`_.
+This script points to where the data lives, the tags used to fill in options in your file structure tree, what config file to use, and lots of other options you can give to the code.
+These aren't all the options-- the API reference for :py:func:`xfaster.xfaster_exec.xfaster_run` contains descriptions of all the arguments you might wish to use.
+
+After setting up your config file and setting the options in your submit script, you then need to decide if you're submitting this to a cluster (``xfaster_submit``) or running it in your current environment (``xfaster_run``).
+The example script has both options available.
+If submitting to a grid, additional submit options are required, and these are included in the arguments passed to ``xfaster_submit``.
+
+Reading the outputs
+-------------------
 
