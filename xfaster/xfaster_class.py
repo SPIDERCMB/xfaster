@@ -31,6 +31,7 @@ class XFaster(object):
         "template_noise",
         "shape",
         "bandpowers",
+        "beam_errors",
         "likelihood",
     ]
 
@@ -48,6 +49,7 @@ class XFaster(object):
         "template_noise": ["bandpowers"],
         "shape": ["bandpowers"],
         "bandpowers": ["likelihood"],
+        "beam_errors": ["likelihood"],
     }
 
     def __init__(
@@ -97,8 +99,6 @@ class XFaster(object):
             If True, write log output to a file instead of to STDOUT.
             The log will be in `<output_root>/run_<output_tag>.log`.
         """
-        from configparser import ConfigParser
-
         # verbosity
         self.log = self.init_log(**kwargs)
         if verbose is not None:
@@ -114,27 +114,12 @@ class XFaster(object):
         self.ref_freq = ref_freq
         self.beta_ref = beta_ref
 
-        # Fix this
+        # XXX Fix this
         # Priors on frequency spectral index
         self.delta_beta_fix = 1.0e-8
 
-        # Load band configuration file
-        cfg = ConfigParser()
-        assert os.path.exists(config)
-        self.config_root = os.path.dirname(os.path.abspath(config))
-        cfg.read(config)
-        # XXX do some checks for sensible inputs here
-        # XXX check handling of nom_freqs throughout
-        self.dict_freqs = cfg["freqs"]
-        self.dict_freqs_nom = cfg["nom_freqs"]
-        self.fwhm = cfg["fwhm"]
-        self.beam_product = cfg["beam"].get("beam_product", None)
-        if self.beam_product is not None:
-            if not os.path.exists(self.beam_product):
-                self.beam_product = os.path.join(
-                    self.config_root, self.beam_product
-                )
-            assert os.path.exists(self.beam_product)
+        # map tag configuration
+        self.load_map_config(config)
 
         # checkpointing
         if checkpoint is not None:
@@ -162,6 +147,58 @@ class XFaster(object):
             self.set_logfile(self.get_filename("run", ext=".log"))
 
     __init__.__doc__ = __init__.__doc__.format(checkpoints=checkpoints)
+
+    def load_map_config(self, filename):
+        """
+        Load the input map configuration file.
+
+        XXX more detail here.
+        """
+        from configparser import ConfigParser
+
+        # Load map configuration file
+        assert os.path.exists(config)
+        self.config_root = os.path.dirname(os.path.abspath(config))
+        cfg = ConfigParser()
+        cfg.read(config)
+
+        # dictionary of map frequencies keyed by map tag
+        self.dict_freqs = cfg["freqs"]
+
+        # nominal frequencies for each map tag
+        # XXX check handling of nom_freqs throughout
+        # XXX do we need these?
+        self.dict_freqs_nom = cfg["nom_freqs"]
+        assert set(self.dict_freqs_nom) == set(self.dict_freqs)
+
+        # beam fwhm for each tag, if not supplied in beam_product
+        self.fwhm = cfg["fwhm"]
+        assert set(self.dict_freqs) >= set(self.fwhm)
+
+        # beam fwhm error for each tag, if not supplied in beam_error_product
+        self.fwhm_err = cfg["fwhm_err"]
+        assert set(self.dict_freqs) >= set(self.fwhm_err)
+
+        # fit for the transfer function for each tag?
+        self.fit_transfer = cfg["transfer"]
+        assert set(self.dict_freqs) == set(self.fit_transfer)
+
+        # make sure beam product files exist
+        self.beam_product = cfg["beam"].get("beam_product", None)
+        if self.beam_product is not None:
+            if not os.path.exists(self.beam_product):
+                self.beam_product = os.path.join(
+                    self.config_root, self.beam_product
+                )
+            assert os.path.exists(self.beam_product)
+
+        self.beam_error_product = cfg["beam"].get("beam_error_product", None)
+        if self.beam_error_product is not None:
+            if not os.path.exists(self.beam_error_product):
+                self.beam_error_product = os.path.join(
+                    self.config_root, self.beam_error_product
+                )
+            assert os.path.exists(self.beam_error_product)
 
     def init_log(
         self,
@@ -245,7 +282,6 @@ class XFaster(object):
         foreground_type=None,
         template_type=None,
         sub_planck=False,
-        planck_reobs=True,
     ):
         """
         Find all files for the given data root.  Internal function, see
@@ -581,14 +617,6 @@ class XFaster(object):
             nom_freqs_dict[m0] = nom_freqs[im0]
         nom_freqs = nom_freqs_dict
 
-        # dict of reobs frequencies, for if planck is reobs
-        map_reobs_freqs = {}
-        for im0, m0 in enumerate(map_tags):
-            if planck_reobs and nom_freqs[m0] in self.planck_freqs:
-                map_reobs_freqs[m0] = "150a"
-            else:
-                map_reobs_freqs[m0] = map_tags_orig[im0]
-
         fields = [
             "data_root",
             "data_subset",
@@ -599,7 +627,6 @@ class XFaster(object):
             "map_tags_orig",
             "map_freqs",
             "nom_freqs",
-            "map_reobs_freqs",
             "raw_root",
             "raw_files",
             "signal_root",
@@ -641,7 +668,6 @@ class XFaster(object):
         foreground_type=None,
         template_type=None,
         sub_planck=False,
-        planck_reobs=True,
     ):
         """
         Find all files for the given data root.  The data structure is:
@@ -762,10 +788,6 @@ class XFaster(object):
             missions so no Planck autos are used. Useful for removing expected
             signal residuals from null tests. Maps are expected to be in
             reobs_planck directory
-        planck_reobs : bool
-            If True, input Planck maps have been reobserved with 150a Bl/Fl.
-            Else, input Planck maps have only been smoothed to common 15'
-            beam
 
         Returns
         -------
@@ -803,7 +825,6 @@ class XFaster(object):
             signal_subset=signal_subset,
             noise_subset=noise_subset,
             foreground_type=foreground_type,
-            planck_reobs=planck_reobs,
         )
         ref_opts = dict(data_subset=data_subset, **opts)
         if null_run:
@@ -3862,15 +3883,15 @@ class XFaster(object):
             pwl[2, :end] = np.sqrt(pixT[:end] * pixP[:end])
 
         if self.beam_product not in ["None", None]:
-            beam_prod = np.load(self.beam_product)
+            beam_prod = pt.load_compat(self.beam_product)
         else:
             beam_prod = {}
 
-        for tag, otag in self.map_reobs_freqs.items():
+        for tag in self.map_tags:
             if tag in beam_prod:
-                bl = np.atleast_2d(beam_prod[otag])[:, :lsize]
-            elif self.fwhm[otag] not in ["None", None]:
-                bl = hp.gauss_beam(float(self.fwhm[otag]), lsize - 1, self.pol)
+                bl = np.atleast_2d(beam_prod[tag])[:, :lsize]
+            elif self.fwhm[tag] not in ["None", None]:
+                bl = hp.gauss_beam(float(self.fwhm[tag]), lsize - 1, self.pol)
                 if self.pol:
                     bl = bl.T[[0, 1, 3]]
             else:
@@ -3889,55 +3910,59 @@ class XFaster(object):
         self.save_data(save_name, from_attrs=["beam_windows"])
         return self.beam_windows
 
-    def get_beam_err(self, tag, lsize):
+    def get_beam_errors(self):
         """
         Get error envelope to multiply beam by (so, to get beam + 2 sigma error,
-        do beam * (1+2*get_beam_err(tag)))
+        do beam * (1 + 2 * beam_error))
         """
-        # XXX generalize beam error file to use map tag keys like the others
 
-        if getattr(self, "beam_err", None) is not None:
-            if tag in self.beam_err:
-                return self.beam_err[tag]
-        else:
-            self.beam_err = {}
-        # get original tag if it's not a single frequency or fpu
-        mind = self.map_tags == tag
-        tag = np.atleast_1d(self.map_tags_orig[mind])[0]
-        fname = os.path.join(self.config_root, "beam_error_model.pkl")
-        err_envelope = pt.load_pickle_compat(fname)
+        lsize = 2 * self.lmax + 1
+        nspec = 6 if pol else 1
+        beam_shape = (self.num_maps * nspec, lsize)
 
-        # add envelope to beam for marginalizing over error
-        etag = "{}_dbl_data".format(tag)
-        if etag in err_envelope:
-            self.beam_err[tag] = err_envelope[etag][:lsize]
-            return self.beam_err[tag]
-        elif tag == "90":
-            tot_off = np.zeros(lsize)
-            for fpu in [2, 4, 6]:
-                etag = "X{}_dbl_data".format(fpu)
-                tot_off += err_envelope[etag][:lsize]
-            self.beam_err[tag] = tot_off / 3.0
-            return self.beam_err[tag]
-        elif tag == "150":
-            tot_off = np.zeros(lsize)
-            for fpu in [1, 3, 5]:
-                etag = "X{}_dbl_data".format(fpu)
-                tot_off += err_envelope[etag][:lsize]
-            self.beam_err[tag] = tot_off / 3.0
-            return self.beam_err[tag]
-        elif tag == "150a":
-            tot_off = np.zeros(lsize)
-            for fpu in [1, 5]:
-                etag = "X{}_dbl_data".format(fpu)
-                tot_off += err_envelope[etag][:lsize]
-            self.beam_err[tag] = tot_off / 2.0
-            return self.beam_err[tag]
+        save_name = "beam_errors"
+        cp = "beam_errors"
+
+        if hasattr(self, "beam_errors") and not self.force_rerun[cp]:
+            return self.beam_errors
+
+        ret = self.load_data(
+            save_name, cp, fields=["beam_errors"], to_attrs=True, shape=beam_shape
+        )
+        if ret is not None:
+            return ret["beam_errors"]
+
+        beam_errors = OrderedDict()
+        beam_errors["tt"] = OrderedDict()
+        if self.pol:
+            for s in ["ee", "bb", "te", "eb", "tb"]:
+                beam_errors[s] = OrderedDict()
+
+        if self.beam_error_product not in ["None", None]:
+            beam_err_prod = pt.load_compat(self.beam_error_product)
         else:
-            warnings.warn(
-                "No beam error field found for {}.".format(tag)
-                + " Ignoring and moving on."
-            )
+            beam_err_prod = {}
+
+        for tag in self.map_tags:
+            if tag in beam_err_prod:
+                be = beam_err_prod[tag])
+            elif self.fwhm_err[tag] not in ["None", None]:
+                be = self.fwhm_err[tag] * np.ones(3 if self.pol else 1, lsize)
+            else:
+                raise ValueError("No beam in config for {}".format(tag))
+            be = np.atleast_2d(be)[:, :lsize]
+
+            beam_errors["tt"][tag] = np.copy(be[0])
+            if self.pol:
+                for s in ["ee", "bb", "eb"]:
+                    beam_errors[s][tag] = np.copy(be[1])
+                for s in ["te", "tb"]:
+                    beam_errors[s][tag] = np.copy(be[2])
+
+        # save and return
+        self.beam_errors = beam_errors
+        self.save_data(save_name, from_attrs=["beam_errors"])
+        return self.beam_errors
 
     def get_bin_def(
         self,
@@ -4383,17 +4408,18 @@ class XFaster(object):
                         )[: lmax_kern + 1]
 
                         if beam_error:
+                            beam_err = self.get_beam_errors()
                             # beam term with error needs to include cross terms
                             # since it's squared, so bsig1, bsig2 sigma added is
                             # c_model = mean_model +
                             #     (bsig1 * berr1 * bl_2 + bsig2 * berr2 * bl_1 +
                             #      bsig1 * bisg2 * berr1 * berr2) * Kll'*Fl*Cl_sky
                             b1_err = (
-                                self.get_beam_err(tag1, len(b_arr[si, xi]))
+                                beam_err[spec][tag1][: lmax_kern + 1]
                                 * self.beam_windows[spec][tag1][: lmax_kern + 1]
                             )
                             b2_err = (
-                                self.get_beam_err(tag2, len(b_arr[si, xi]))
+                                beam_err[spec][tag2][: lmax_kern + 1]
                                 * self.beam_windows[spec][tag2][: lmax_kern + 1]
                             )
                             b1_arr[si, xi] = (
@@ -5935,16 +5961,12 @@ class XFaster(object):
         msg = ""
 
         for im0, m0 in enumerate(self.map_tags):
-            # XXX should we remove special handling for planck frequencies?
-            if self.map_reobs_freqs[m0] in self.planck_freqs:
-                # DEBUG: Should we let this float since we think transfer
-                # function computation is correcting for non-ideal computation
-                # of mask kernel for non-axial-symmetric mask?
+            if not self.fit_transfer[m0]:
                 for spec in self.specs:
                     self.qb_transfer["cmb_{}".format(spec)][m0] = np.ones(
                         self.nbins_cmb // len(self.specs)
                     )
-                self.log("Setting Planck {} map transfer to unity".format(m0))
+                self.log("Setting map {} transfer to unity".format(m0))
                 success = True
                 continue
 
