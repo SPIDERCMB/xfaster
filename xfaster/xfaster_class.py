@@ -52,6 +52,8 @@ class XFaster(object):
         "beam_errors": ["likelihood"],
     }
 
+    data_version = 1
+
     def __init__(
         self,
         config,
@@ -1613,7 +1615,7 @@ class XFaster(object):
             The output dictionary has the additional key 'output_file' which
             is set to the path to the data file on disk.
         """
-        data["data_version"] = 1
+        data["data_version"] = self.data_version
 
         file_opts = {}
         for opt in ["map_tag", "iter_index", "bp_opts", "extra_tag"]:
