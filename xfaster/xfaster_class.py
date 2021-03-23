@@ -3383,120 +3383,6 @@ class XFaster(object):
 
         return self.save_data(save_name, from_attrs=save_attrs)
 
-    def get_marg_table(
-        self,
-        tt_marg=False,
-        auto_marg_table=None,
-        cross_marg_table=None,
-        marg_value=1e10,
-    ):
-        """
-        Construct a table of coefficients for marginalizing over particular spectra.
-
-        Arguments
-        ---------
-        tt_marg : bool
-            If True, marginalize over all but one map's TT spectrum, by
-            artificially inflating the appropriate TT noise terms.
-            This avoids singular matrices in the case where all input maps
-            have high SNR in T.
-        auto_marg_table : string
-            A filename for JSON file specifying autos to marginalise over. This
-            overrides tt_marg. Set this to avoid degeneracy in high SNR
-            identitcal maps (ie. TT in Spider) and also to marginalize over
-            auto biases. Generalisation of tt_marg
-        cross_marg_table : string
-            A filename for JSON file specifying cross spectra to marginalise
-            over. Allows for, eg, ignoring cross spectra with the same
-            Planck half missions used.
-        marg_value : float
-            Multiplicative factor to use for marginalization. This value
-            multiplies each of the spectra that are included in the table.
-        """
-        import json
-        import re
-
-        self.marg_table = None
-        marg_table = OrderedDict()
-
-        def update_marg_table(spec, xname):
-            if xname not in self.map_pairs:
-                return
-            self.log("Marginalizing {}".format(xname), "detail")
-            stable = marg_table.setdefault(spec, OrderedDict())
-            stable.setdefault(xname, marg_value)
-            # remove residual bins for marginalized autospectra
-            m0, m1 = self.map_pairs[xname]
-            if m0 == m1:
-                res_tag = "res_{}_{}".format(spec, m0)
-                if res_tag not in self.bin_def and spec in ["ee", "bb"]:
-                    res_tag = "res_eebb_{}".format(m0)
-                if res_tag in self.bin_def:
-                    self.nbins_res -= len(self.bin_def[res_tag])
-                    del self.bin_def[res_tag]
-
-        # These two methods are obsolete now
-        if tt_marg and auto_marg_table is None:
-            # Marginalize over all but one of the TT for same mask
-            # this is because TT is very high S/N
-            for xname in list(self.map_pairs)[1:]:
-                update_marg_table("tt", xname)
-            self.log("Marginalizing over all but first TT auto.", "detail")
-        elif auto_marg_table is not None:
-            if not os.path.exists(auto_marg_table):
-                rp = os.path.join(self.config_root, auto_marg_table)
-                if os.path.exists(rp):
-                    auto_marg_table = rp
-                else:
-                    raise OSError(
-                        "Missing auto marginalization JSON file {}".format(
-                            auto_marg_table
-                        )
-                    )
-            with open(auto_marg_table, "r") as marg_file:
-                marg = marg_file.read()
-            # Remove comments
-            marg_cleaned = re.sub(r"#.*\n", "", marg)
-            marg_opts = json.loads(marg_cleaned)
-
-            for tag in self.map_tags:
-                for spec in ["tt", "ee", "bb"]:
-                    if marg_opts.get(tag, {}).get(spec.upper(), None):
-                        self.log(
-                            "Marginalizing auto {} of {}.".format(spec, tag), "detail"
-                        )
-                        update_marg_table(spec, "{0}:{0}".format(tag))
-
-        if cross_marg_table is not None:
-            if not os.path.exists(cross_marg_table):
-                rp = os.path.join(self.config_root, cross_marg_table)
-                if os.path.exists(rp):
-                    cross_marg_table = rp
-                else:
-                    raise OSError(
-                        "Missing cross marginalization JSON file {}".format(
-                            cross_marg_table
-                        )
-                    )
-            with open(cross_marg_table, "r") as marg_file:
-                marg = marg_file.read()
-            # Remove comments
-            marg_cleaned = re.sub(r"#.*\n", "", marg)
-            marg_opts = json.loads(marg_cleaned)
-            for m0, m1s in marg_opts.items():
-                for m1 in m1s:
-                    xname = "{}:{}".format(m0, m1)
-                    if xname not in self.map_pairs:
-                        # name is the reverse
-                        xname = "{}:{}".format(m1, m0)
-                    if xname not in self.map_pairs:
-                        warnings.warn("No such pair with maps {}:{}".format(m0, m1))
-                    for spec in self.specs:
-                        update_marg_table(spec, xname)
-
-        self.marg_table = marg_table
-        return marg_table
-
     def get_kernels(self, window_lmax=None):
         """
         Compute kernels using the mask cross-spectra.  This follows
@@ -5308,22 +5194,6 @@ class XFaster(object):
             mat2 = np.einsum("klm...,ln...->knm...", dSdqb_mat1_freq, Dinv)
             mat = np.einsum("ik...,knm...->inm...", mat1, mat2)
 
-        if getattr(self, "marg_table", None) is not None:
-            marg_table = OrderedDict()
-            for xname, (m0, m1) in self.map_pairs.items():
-                if xname not in cls_model[mkeys[0]]:
-                    continue
-                marg_table.setdefault(xname, OrderedDict())
-                for spec in self.specs:
-                    marg_fac = self.marg_table.get(spec, {}).get(xname, 0)
-                    marg_table[xname][spec] = marg_fac
-
-            marg_mask = np.logical_not(pt.dict_to_dmat(marg_table).astype(bool))
-            if not likelihood:
-                Dmat_obs *= marg_mask[..., None]
-                dSdqb_mat1_freq *= marg_mask[..., None, None]
-            gmat *= marg_mask[..., None]
-
         if likelihood:
             # compute log likelihood as tr(g * (D^-1 * Dobs + log(D)))
             arg = np.einsum("ij...,jk...->ik...", Dinv, Dmat_obs_b) + Dlog
@@ -5612,7 +5482,6 @@ class XFaster(object):
                     cls_noise=self.cls_noise,
                     Dmat_obs=self.Dmat_obs,
                     gmat_ell=self.gmat_ell,
-                    marg_table=getattr(self, "marg_table", None),
                     extra_tag=file_tag,
                 )
 
@@ -5723,7 +5592,6 @@ class XFaster(object):
             ref_freq=self.ref_freq,
             beta_ref=self.beta_ref,
             map_freqs=self.map_freqs,
-            marg_table=getattr(self, "marg_table", None),
             converge_criteria=converge_criteria,
             delta_beta_prior=delta_beta_prior,
             cond_noise=cond_noise,
