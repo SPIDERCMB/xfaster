@@ -3947,7 +3947,7 @@ class XFaster(object):
 
         for tag in self.map_tags:
             if tag in beam_err_prod:
-                be = beam_err_prod[tag])
+                be = beam_err_prod[tag]
             elif self.fwhm_err[tag] not in ["None", None]:
                 be = self.fwhm_err[tag] * np.ones(3 if self.pol else 1, lsize)
             else:
