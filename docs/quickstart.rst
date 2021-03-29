@@ -103,4 +103,68 @@ If submitting to a grid, additional submit options are required, and these are i
 
 Reading the outputs
 -------------------
+As steps of the algorithm are completed, intermediate outputs are written to disk in the form of ``.npz`` numpy dictionary files.
+If a run is interrupted for any reason, it can be restarted from the previously completed checkpoint.
+The files written to disk are:
 
+* ``files.npz``
+
+  * All specifiers to indicate which maps files are used
+
+* ``masks.npz``
+
+  * The cross-spectra of the masks
+
+* ``kernels.npz``
+
+  * The :math:`K_{\ell\ell'}` mode-coupling kernels
+
+* ``sims_xcorr.npz``
+
+  * The cross-spectra of signal and noise simulation
+
+* ``beam.npz``
+
+  * The beam window functions, per map
+
+* ``transfer.npz``
+
+  * The filter transfer functions, computed per map
+
+* ``data_xcorr.npz``
+
+  * The cross-spectra of all the data maps
+
+* ``bandpowers.npz``
+
+  * The computed bandpowers
+
+* ``likelihoods.npz``
+
+  * The likelihoods for parameters
+
+For a detailed overview of the various fields contained in each dictionary, see :ref:`Algorithm<Algorithm: Step by Step>`.
+
+Whenever you want to read in some data the XFaster code wrote, you'll want to use the function ``load_and_parse``.
+This includes all the files detailed in the list above.
+You can then look through keys, where the dictionaries are all structured as ``main field name`` -> ``spectrum type`` -> ``map/cross spectrum``.
+
+In the last category, cross spectra are indicated with a colon, so if I had two maps tagged as ``90`` and ``150`` that I'm inputting the algorithm, the spectrum fields I should find are ``90:90``, ``150:150``, and ``150:90`` (crosses are in alphabetical error, as they are read as strings).
+Here, we have the two map auto-spectra first, and then the cross between them.
+If there are multiple maps with the same tag but that use different <<data_subsets>> as described in :ref:`Maps<Maps>` above, these will be assigned an additional numerical tag, so you might have something like ``90_0:90_1`` for the cross between map 90 in data_subset1 and data_subset2.
+
+Below, we show how to load up some bandpowers, error bars, and a transfer function.
+
+.. code-block:: python
+
+    import xfaster as xf
+    
+    bp = xf.load_and_parse("bandpowers_test.npz") # where the majority of useful stuff is
+    ee_bin_centers = bp["ellb"]["cmb_ee"] # weighted bin centers
+    ee_specs = bp["cb"]["cmb_ee"] # estimated CMB spectra
+    ee_errs = bp["dcb"]["cmb_ee"] # estimated CMB error bars
+    spec_cov = bp["cov"] # Nspec * Nbin square covariance matrix
+    ee_transfer_90_1 = bp["qb_transfer"]["cmb_ee"]["90_1"] # transfer function using the same bins
+
+
+And that covers the basics!

@@ -11,7 +11,7 @@ The full description of the pipeline, including the math and assumptions used, i
 These docs focus on the code implementation.
 
 The basics of running the code are given in :ref:`Quick Start<Quick Start>`.
-A more in-depth exploration of the code, step by step through the algorithm, is given in the :ref:`Algorithm<Algorithm: Step by Step>`.
+A more in-depth exploration of the code, step by step through the algorithm, is given in the :ref:`Algorithm<Algorithm: Step by Step>` section.
 
 .. toctree::
   :maxdepth: 2
