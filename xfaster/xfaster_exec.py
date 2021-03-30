@@ -107,7 +107,6 @@ def xfaster_run(
     do_fake_signal=True,
     do_fake_noise=True,
     save_fake_data=False,
-    planck_reobs=True,
 ):
     """
     Main function for running the XFaster algorithm.
@@ -339,9 +338,6 @@ def xfaster_run(
         If true, use sim_index to set noise seed. If false, always use seed 0.
     save_fake_data : bool
         If true, save data_xcorr file to disk for fake data.
-    planck_reobs : bool
-        If True, maps at Planck frequencies have been reobserved using 150a
-        beam/filter.
     """
     from . import __version__ as xf_version
 
@@ -405,7 +401,6 @@ def xfaster_run(
         foreground_type=foreground_type,
         template_type=template_type,
         sub_planck=sub_planck,
-        planck_reobs=planck_reobs,
     )
     config_vars.update(file_opts, "File Options")
 
@@ -1120,9 +1115,6 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "do_fake_noise", argtype=bool, help="Vary sim index for fake noise")
         add_arg(
             G, "save_fake_data", argtype=bool, help="Save fake data data_xcorr file"
-        )
-        add_arg(
-            G, "planck_reobs", argtype=bool, help="Input Planck maps are 150a reobs?"
         )
 
         # submit args
