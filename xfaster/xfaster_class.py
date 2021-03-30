@@ -5931,7 +5931,6 @@ class XFaster(object):
         like_profile_sigma=3.0,
         like_profile_points=100,
         file_tag=None,
-        force_recompute=True,
     ):
         """
         Compute the maximum likelihood bandpowers of the data, assuming
@@ -5980,9 +5979,6 @@ class XFaster(object):
             Number of points to sample along the likelihood profile
         file_tag : string
             If supplied, appended to the bandpowers filename.
-        force_recompute : bool
-            If True, recompute bandpowers even if already on disk. Necessary
-            if building fake data_xcorr in memory with input r.
 
         Returns
         -------
@@ -6032,8 +6028,6 @@ class XFaster(object):
             value_ref=opts,
             extra_tag=file_tag,
         )
-        if force_recompute:
-            ret = None
         if ret is not None:
             if return_qb:
                 return ret["qb"], ret["inv_fish"]

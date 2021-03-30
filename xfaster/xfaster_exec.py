@@ -596,6 +596,7 @@ def xfaster_run(
     )
     if fake_data_r is not None:
         X.log("Replacing data with fake data...", "task")
+        X.force_rerun['bandpowers'] = True
         X.get_masked_fake_data(
             fake_data_r=fake_data_r,
             fake_data_template=fake_data_template,
@@ -620,17 +621,9 @@ def xfaster_run(
             filename=signal_spec, r=model_r, foreground_fit=foreground_fit, tbeb=tbeb
         )
 
-    X.log("Constructing marginalization table...", "task")
-    X.get_marg_table(**marg_opts)
-
     if multi_map:
         X.log("Computing multi-map bandpowers...", "task")
-        qb, inv_fish = X.get_bandpowers(
-            cls_shape,
-            return_qb=True,
-            force_recompute=fake_data_r is not None,
-            **bandpwr_opts
-        )
+        qb, inv_fish = X.get_bandpowers(cls_shape, return_qb=True, **bandpwr_opts)
 
         if likelihood:
             X.log("Computing multi-map likelihood...", "task")
@@ -642,11 +635,7 @@ def xfaster_run(
 
             X.log("Computing bandpowers for map {}".format(map_tag), "part")
             qb, inv_fish = X.get_bandpowers(
-                cls_shape,
-                map_tag=map_tag,
-                return_qb=True,
-                force_recompute=fake_data_r is not None,
-                **bandpwr_opts
+                cls_shape, map_tag=map_tag, return_qb=True, **bandpwr_opts
             )
 
             if likelihood:
