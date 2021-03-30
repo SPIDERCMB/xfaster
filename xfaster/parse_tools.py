@@ -112,6 +112,10 @@ def tag_pairs(tags, index=False):
 
 
 def dict_decode(d):
+    """
+    Recursively decode key or value bytestrings in a dictionary.
+    Useful when loading a bytes-encoded numpy archive file from disk.
+    """
     if not isinstance(d, dict):
         if isinstance(d, bytes):
             return d.decode()
@@ -127,6 +131,11 @@ def dict_decode(d):
 
 
 def load_compat(*args, **kwargs):
+    """
+    Load and decode a numpy archive file from disk.
+
+    Backward compatible with python2 data files.
+    """
     if sys.version_info.major > 2:
         kwargs.setdefault("encoding", "latin1")
     if np.__version__ >= "1.16.0":
@@ -136,7 +145,7 @@ def load_compat(*args, **kwargs):
 
     for k, v in out.items():
         # convert singletons to scalars
-        if not v.shape:
+        if hasattr(v, 'item') and not v.shape:
             v = v.item()
 
         # handle unicode data
@@ -173,7 +182,7 @@ def load_pickle_compat(filename):
             return pickle.load(f)
 
 
-def parse_data(data, field, indices=None):
+def parse_data(data, field):
     """
     Look for a field in some data, return as a dictionary with
     descriptive keys.
@@ -190,10 +199,6 @@ def parse_data(data, field, indices=None):
                  cls_shape, wls, w1, w2, w4, fsky, kern, pkern,
                  mkern, xkern, beam_windows, Dmat_obs, Dmat1,
                  dSdqb_mat1
-    indices : str
-        If given, get the coordinates of this subfield in the original
-        bin_def matrix and return a boolean mask where that subfield
-        is indexed. Used internally
     """
     if isinstance(data, str):
         data = load_compat(data)

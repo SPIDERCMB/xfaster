@@ -1552,7 +1552,7 @@ class XFaster(object):
                             )
                         )
                         return force_rerun_children()
-            ret[field] = pt.parse_data(data, field)
+            ret[field] = data[field]
             if attr:
                 key = field if attr is True else attr
                 setattr(self, key, ret[field])
