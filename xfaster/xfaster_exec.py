@@ -80,18 +80,19 @@ def xfaster_run(
     signal_type_sim=None,
     foreground_type=None,
     template_type=None,
-    template_alpha90=0.015,
-    template_alpha150=0.043,
+    template_alpha_tags=["95", "150"],
+    template_alpha=[0.015, 0.043],
     sub_hm_noise=True,
     tophat_bins=False,
     return_cls=False,
     apply_gcorr=False,
     reload_gcorr=False,
     qb_file=None,
-    alpha90_prior=[-np.inf, np.inf],
-    alpha150_prior=[-np.inf, np.inf],
+    like_alpha_tags=["95", "150"],
+    alpha_prior=[-np.inf, np.inf],
     r_prior=[-np.inf, np.inf],
     res_prior=None,
+    like_beam_tags=["95", "150"],
     beam_prior=[0, 1],
     betad_prior=None,
     dust_amp_prior=None,
@@ -294,10 +295,13 @@ def xfaster_run(
         map tag and subtracted from the data. The directory is assumed
         to contain halfmission-1 and halfmission-2 subdirectories, each
         containing one template per map tag.
-    template_alpha90 : float
-        Scalar to be applied to template map for subtraction from 90 GHz data.
-    template_alpha150 : float
-        Scalar to be applied to template map for subtraction from 150 GHz data.
+    template_alpha_tags : list of strings
+        List of map tags from which foreground template maps should be
+        subtracted.  These should be the original map tags, not
+        those generated for chunk sets.
+    template_alpha : list of floats
+        Scalar to be applied to template map for subtraction from each of the
+        data with tags in the list `template_alpha_tags`.
     sub_hm_noise : bool
         If True, subtract average of Planck ffp10 noise crosses to debias
         template-cleaned spectra
@@ -355,6 +359,11 @@ def xfaster_run(
                 foreground_type
             )
         )
+
+    if len(template_alpha_tags) != len(template_alpha):
+        raise ValueError("template_alpha_tags and template_alpha must be the same length")
+    template_alpha = dict(zip(template_alpha_tags, template_alpha))
+    del template_alpha_tags
 
     # initialize config file
     config_vars = base.XFasterConfig(locals(), "XFaster General")
@@ -440,8 +449,7 @@ def xfaster_run(
         like_profile_sigma=like_profile_sigma,
         like_profile_points=like_profile_points,
         qb_file=qb_file,
-        template_alpha90=template_alpha90,
-        template_alpha150=template_alpha150,
+        template_alpha=template_alpha,
         sub_hm_noise=sub_hm_noise,
         file_tag=bp_tag,
     )
@@ -468,8 +476,7 @@ def xfaster_run(
     spec_opts.pop("signal_transfer_spec")
     spec_opts.pop("model_r")
     spec_opts.pop("qb_file")
-    spec_opts.pop("template_alpha90")
-    spec_opts.pop("template_alpha150")
+    spec_opts.pop("template_alpha")
     spec_opts.pop("sub_hm_noise")
     spec_opts.pop("apply_gcorr")
     spec_opts.pop("reload_gcorr")
@@ -501,10 +508,11 @@ def xfaster_run(
         lmin=like_lmin,
         lmax=like_lmax,
         null_first_cmb=null_first_cmb,
-        alpha90_prior=alpha90_prior,
-        alpha150_prior=alpha150_prior,
+        alpha_tags=like_alpha_tags,
+        alpha_prior=alpha_prior,
         r_prior=r_prior,
         res_prior=res_prior,
+        beam_tags=like_beam_tags,
         beam_prior=beam_prior,
         betad_prior=betad_prior,
         dust_amp_prior=dust_amp_prior,
@@ -519,6 +527,8 @@ def xfaster_run(
     config_vars.remove_option("XFaster General", "mcmc_walkers")
     config_vars.remove_option("XFaster General", "like_converge_criteria")
     config_vars.remove_option("XFaster General", "like_tag")
+    config_vars.remove_option("XFaster General", "like_alpha_tags")
+    config_vars.remove_option("XFaster General", "like_beam_tags")
 
     # store config
     X.save_config(config_vars)
@@ -577,9 +587,8 @@ def xfaster_run(
         X.get_masked_template_noise(template_type)
 
     X.log("Computing masked data cross-spectra...", "task")
-    X.get_masked_xcorr(
-        template_alpha90=template_alpha90,
-        template_alpha150=template_alpha150,
+    X.get_masked_data(
+        template_alpha=template_alpha,
         sub_planck=sub_planck,
         sub_hm_noise=sub_hm_noise,
     )
@@ -603,8 +612,7 @@ def xfaster_run(
             fake_data_r=fake_data_r,
             fake_data_template=fake_data_template,
             sim_index=sim_index,
-            template_alpha90=template_alpha90,
-            template_alpha150=template_alpha150,
+            template_alpha=template_alpha,
             noise_type=noise_type,
             do_signal=do_fake_signal,
             do_noise=do_fake_noise,
@@ -773,16 +781,22 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "like_profiles", help="Compute bandpower profile likelihoods")
         add_arg(G, "r_prior", nargs="+", help="Prior on r [lower, upper] limits")
         add_arg(
-            G, "alpha90_prior", nargs="+", help="Prior on alpha90 [lower, upper] limits"
+            G,
+            "like_alpha_tags",
+            nargs="+",
+            help="Map tags for which to include alpha parameters in the likelihood",
         )
         add_arg(
-            G,
-            "alpha150_prior",
-            nargs="+",
-            help="Prior on alpha150 [lower, upper] limits",
+            G, "alpha_prior", nargs="+", help="Prior on alpha [lower, upper] limits"
         )
         add_arg(
             G, "res_prior", nargs="+", help="Prior on res qbs [lower, upper] limits"
+        )
+        add_arg(
+            G,
+            "like_beam_tags",
+            nargs="+",
+            help="Map tags for which to include beam parameters in the likelihood",
         )
         add_arg(
             G,
@@ -1048,15 +1062,16 @@ def xfaster_parse(args=None, test=False):
         )
         add_arg(
             G,
-            "template_alpha90",
+            "template_alpha",
+            nargs="+",
             argtype=float,
-            help="Scaling to use for 90 GHz template subtraction",
+            help="Scaling values to use for foreground template subtraction",
         )
         add_arg(
             G,
-            "template_alpha150",
-            argtype=float,
-            help="Scaling to use for 150 GHz template subtraction",
+            "template_alpha_tags",
+            nargs="+",
+            help="Map tags for which to apply foreground template subtraction",
         )
         add_arg(
             G,
@@ -1299,12 +1314,16 @@ class XFasterJobGroup(object):
             elif da is False and v is True:
                 cmd += ["--{}".format(s)]
             elif v != da:
+                cmd += ["--{}".format(s)]
                 if a in [
+                    "template_alpha_tags",
+                    "template_alpha",
                     "res_specs",
                     "like_mask",
                     "r_prior",
-                    "alpha90_prior",
-                    "alpha150_prior",
+                    "like_alpha_tags",
+                    "alpha_prior",
+                    "like_beam_tags",
                     "beam_prior",
                     "res_prior",
                     "betad_prior",
@@ -1315,15 +1334,13 @@ class XFasterJobGroup(object):
                         v = [v]
                     if "prior" in a:
                         # special case to allow -inf to work
-                        cmd += ["--{}".format(a.replace("_", "-"))]
                         if v is None:
                             cmd += ["None"]
                         else:
-                            cmd += ["' {}'".format(s) for s in v]
+                            cmd += ["' {}'".format(vv) for vv in v]
 
                     else:
-                        cmd += ["--{}".format(a.replace("_", "-"))]
-                        cmd += [str(s) for s in v]
+                        cmd += [str(vv) for vv in v]
 
                 elif a in [
                     "noise_subset",
@@ -1333,10 +1350,10 @@ class XFasterJobGroup(object):
                 ]:
                     # add quotes around glob parseable args to avoid weird
                     # behavior
-                    cmd += ["--{}".format(s)]
                     cmd += ["'{}'".format(v)]
+
                 else:
-                    cmd += "--{} {}".format(s, v).split()
+                    cmd += [str(v)]
 
         if len(kwargs):
             # Args that are not being parsed-- raise an error

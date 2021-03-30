@@ -81,9 +81,11 @@ def unique_tags(tags):
 def tag_pairs(tags, index=False):
     """
     Return an OrderedDict whose keys are pairs of tags in the format "tag1:tag2"
-    and whose values are a tuple of the two tags used to construct each key,
-    or a tuple of the indices of the two tags in the original tag list, if
-    `index` is True.
+    and whose values are a tuple of the two tags used to construct each key, or
+    a tuple of the indices of the two tags in the original tag list, if `index`
+    is True.  If `index` is a list, then it should be a list the same length as
+    `tags`, and the tuple is populated by indexing into `index` using the two
+    indices of the tags in the original tag list.
 
     Example
     -------
@@ -92,11 +94,20 @@ def tag_pairs(tags, index=False):
         OrderedDict([('a:a', ('a', 'a')), ('a:b', ('a', 'b')), ('b:b', ('b', 'b'))])
         >>> tag_pairs(tags, index=True)
         OrderedDict([('a:a', (0, 0)), ('a:b', (0, 1)), ('b:b', (1, 1))])
+        >>> tag_pairs(tags, index=['c', 'd'])
+        OrderedDict([('a:a', ('c', 'c')), ('a:b', ('c', 'd')), ('b:b', ('d', 'd'))])
     """
     pairs = OrderedDict()
     for it0, t0 in enumerate(tags):
         for it1, t1 in zip(range(it0, len(tags)), tags[it0:]):
-            pairs["{}:{}".format(t0, t1)] = (it0, it1) if index else (t0, t1)
+            xname = "{}:{}".format(t0, t1)
+            if isinstance(index, list):
+                pair = (index[it0], index[it1])
+            elif index is True:
+                pair = (it0, it1)
+            else:
+                pair = (t0, t1)
+            pairs[xname] = pair
     return pairs
 
 

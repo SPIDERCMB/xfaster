@@ -167,12 +167,6 @@ class XFaster(object):
         # dictionary of map frequencies keyed by map tag
         self.dict_freqs = cfg["freqs"]
 
-        # nominal frequencies for each map tag
-        # XXX check handling of nom_freqs throughout
-        # XXX do we need these?
-        self.dict_freqs_nom = cfg["nom_freqs"]
-        assert set(self.dict_freqs_nom) == set(self.dict_freqs)
-
         # beam fwhm for each tag, if not supplied in beam_product
         self.fwhm = cfg["fwhm"]
         assert set(self.dict_freqs) >= set(self.fwhm)
@@ -314,11 +308,9 @@ class XFaster(object):
             os.path.splitext(os.path.basename(f))[0].split("_", 1)[1] for f in map_files
         ]
         map_freqs = []
-        nom_freqs = []
         for t in map_tags:
             # if map tag is not a plain frequency, extract plain frequency
             map_freqs.append(self.dict_freqs[t])
-            nom_freqs.append(self.dict_freqs_nom[t])
         self.log("Found {} map files in {}".format(len(map_files), map_root), "task")
         self.log("Map files: {}".format(map_files), "detail")
         self.log("Map freqs: {}".format(map_freqs), "detail")
@@ -607,17 +599,13 @@ class XFaster(object):
 
         # make a list of names corresponding to the order of the cross spectra
         map_pairs = pt.tag_pairs(map_tags)
+        map_pairs_orig = pt.tag_pairs(map_tags, index=map_tags_orig)
 
         # make a dictionary of map freqs for each unique map tag
         map_freqs_dict = {}
         for im0, m0 in enumerate(map_tags):
             map_freqs_dict[m0] = map_freqs[im0]
         map_freqs = map_freqs_dict
-
-        nom_freqs_dict = {}
-        for im0, m0 in enumerate(map_tags):
-            nom_freqs_dict[m0] = nom_freqs[im0]
-        nom_freqs = nom_freqs_dict
 
         fields = [
             "data_root",
@@ -627,8 +615,8 @@ class XFaster(object):
             "map_tags",
             "map_pairs",
             "map_tags_orig",
+            "map_pairs_orig",
             "map_freqs",
-            "nom_freqs",
             "raw_root",
             "raw_files",
             "signal_root",
@@ -1970,10 +1958,9 @@ class XFaster(object):
 
         return self.save_data(save_name, from_attrs=save_attrs)
 
-    def get_masked_xcorr(
+    def get_masked_data(
         self,
-        template_alpha90=None,
-        template_alpha150=None,
+        template_alpha=None,
         sub_planck=False,
         sub_hm_noise=True,
     ):
@@ -1993,11 +1980,24 @@ class XFaster(object):
         the corresponding map in the second dataset, so that both halves are
         masked identically.
 
-        If `template_alpha90` or `template_alpha150` is supplied, it is applied
-        to an appropriate template, and the result is subtracted from the data
-        alms with nominal frequencies 90 or 150 GHz.  Map alms are cached to
-        speed up processing, if this method is called repeatedly with different
-        values.
+        If `template_alpha` is supplied, the values given are applied to an
+        appropriate template, and the result is subtracted from the data alms
+        with map tags in the dictionary.  Map alms are cached to speed up
+        processing, if this method is called repeatedly with different values.
+
+        Arguments
+        ---------
+        template_alpha : dict
+            Dictionary of template scaling factors to apply to foreground
+            templates to be subtracted from the data.  Keys should match
+            original map tags in the data set.
+        sub_planck : bool
+            If True, subtract reobserved Planck from maps. Properly uses half
+            missions so no Planck autos are used. Useful for removing expected
+            signal residuals from null tests.
+        sub_hm_noise : bool
+            If True, subtract average of Planck ffp10 noise crosses to debias
+            template-cleaned spectra.
 
         Data Handling
         -------------
@@ -2007,8 +2007,8 @@ class XFaster(object):
            cls_data : OrderedDict
                map1-x-map2 cross spectra for every map pair. This contains the
                sum cross spectra if constructing a null test, or the
-               template-subtracted cross spectra if `template_alpha90` or
-               `template_alpha150` is supplied.
+               template-subtracted cross spectra if `template_alpha` is
+               supplied.
            cls_data_null : OrderedDict
                (map1a-map1b)-x-(map2a-map2b) difference cross spectra
                for every map pair, if computing a null test
@@ -2023,16 +2023,17 @@ class XFaster(object):
         null_run = self.null_run
         map_files2 = self.map_files2 if null_run else None
 
-        # XXX generalize template alpha to not be specific to spider frequencies here
-
-        # ignore unused template coefficients
-        if not any([int(x) == 90 for x in self.nom_freqs.values()]):
-            template_alpha90 = None
-        if not any([int(x) == 150 for x in self.nom_freqs.values()]):
-            template_alpha150 = None
+        # ensure dictionary
+        if template_alpha is None:
+            template_alpha = OrderedDict()
         if null_run or self.template_type is None:
-            template_alpha90 = None
-            template_alpha150 = None
+            template_alpha = OrderedDict()
+
+        # ensure tagged by original tags
+        template_alpha = OrderedDict([
+            (k, v) for k, v in template_alpha.items()
+            if k in self.map_tags_orig
+        ])
 
         # Check for output data on disk
         save_attrs = ["cls_data", "nside"]
@@ -2050,14 +2051,13 @@ class XFaster(object):
                 save_attrs += ["cls_data_sub_null"]
                 save_attrs += ["cls_planck_null"]
 
-        elif template_alpha90 is not None or template_alpha150 is not None:
+        elif any([x is not None for x in template_alpha.values()]):
             template_fit = True
             save_name = "{}_clean_{}_xcorr".format(data_name, self.template_type)
             save_attrs += [
                 "cls_data_clean",
                 "cls_template",
-                "template_alpha90",
-                "template_alpha150",
+                "template_alpha",
             ]
 
         if sub_planck:
@@ -2066,7 +2066,6 @@ class XFaster(object):
 
         def apply_template():
             cls_clean = getattr(self, "cls_data_clean", OrderedDict())
-            adict = {"90": template_alpha90, "150": template_alpha150}
 
             for spec in self.specs:
                 cls_clean[spec] = copy.deepcopy(self.cls_data[spec])
@@ -2075,8 +2074,8 @@ class XFaster(object):
                 for xname, d in cls_clean[spec].items():
                     if xname not in self.cls_template[spec]:
                         continue
-                    m0, m1 = self.map_pairs[xname]
-                    alphas = [adict.get(self.nom_freqs[m], None) for m in (m0, m1)]
+                    m0, m1 = self.map_pairs_orig[xname]
+                    alphas = [template_alpha.get(m, None) for m in (m0, m1)]
 
                     t1, t2, t3 = self.cls_template[spec][xname]
 
@@ -2088,20 +2087,17 @@ class XFaster(object):
                             d += alphas[0] * alphas[1] * t3
                             # subtract average template noise spectrum to debias
                             if sub_hm_noise:
-                                d -= (
-                                    alphas[0]
-                                    * alphas[1]
-                                    * self.cls_tnoise_hm1xhm2[spec][xname]
-                                )
+                                n = self.cls_tnoise_hm1xhm2[spec][xname]
+                                d -= alphas[0] * alphas[1] * n
 
             self.cls_data_clean = cls_clean
-            self.template_alpha90 = template_alpha90
-            self.template_alpha150 = template_alpha150
+            self.template_alpha = template_alpha
             self.template_cleaned = True
 
         def subtract_planck_maps():
             cls_data_sub = getattr(self, "cls_data_sub", OrderedDict())
-            cls_data_sub_null = getattr(self, "cls_data_sub_null", OrderedDict())
+            if null_run:
+                cls_data_sub_null = getattr(self, "cls_data_sub_null", OrderedDict())
 
             for spec in self.specs:
                 cls_data_sub[spec] = copy.deepcopy(self.cls_data[spec])
@@ -2110,13 +2106,15 @@ class XFaster(object):
                     d += -t1 - t2 + t3
 
                 # do null specs
-                cls_data_sub_null[spec] = copy.deepcopy(self.cls_data_null[spec])
-                for xname, d in cls_data_sub_null[spec].items():
-                    t1, t2, t3 = self.cls_planck_null[spec][xname]
-                    d += -t1 - t2 + t3
+                if null_run:
+                    cls_data_sub_null[spec] = copy.deepcopy(self.cls_data_null[spec])
+                    for xname, d in cls_data_sub_null[spec].items():
+                        t1, t2, t3 = self.cls_planck_null[spec][xname]
+                        d += -t1 - t2 + t3
 
             self.cls_data_sub = cls_data_sub
-            self.cls_data_sub_null = cls_data_sub_null
+            if null_run:
+                self.cls_data_sub_null = cls_data_sub_null
             self.planck_sub = True
 
         # change template subtraction coefficients for pre-loaded data
@@ -2125,10 +2123,7 @@ class XFaster(object):
                 return {k: getattr(self, k) for k in save_attrs}
 
             if template_fit and getattr(self, "template_cleaned", False):
-                if (
-                    template_alpha90 == self.template_alpha90
-                    and template_alpha150 == self.template_alpha150
-                ):
+                if template_alpha == self.template_alpha:
                     return {k: getattr(self, k) for k in save_attrs}
 
                 apply_template()
@@ -2149,13 +2144,10 @@ class XFaster(object):
                 if sub_planck and not self.planck_sub:
                     subtract_planck_maps()
                 return ret
-            if template_alpha90 is None and template_alpha150 is None:
+            if all([x is None for x in template_alpha.values()]):
                 self.template_cleaned = False
                 return ret
-            if (
-                template_alpha90 == self.template_alpha90
-                and template_alpha150 == self.template_alpha150
-            ):
+            if template_alpha == self.template_alpha:
                 self.template_cleaned = True
                 return ret
             apply_template()
@@ -2211,15 +2203,9 @@ class XFaster(object):
                 mn_alms = self.map2alm((m - m2) / 2.0, self.pol)
                 if sub_planck:
                     # cache raw data alms and planck alms together
-                    (p1hm1, p1hm2, p2hm1, p2hm2) = planck_files_split[idx]
-                    mp1hm1 = self.get_map(p1hm1)
-                    mp1hm2 = self.get_map(p1hm2)
-                    mp2hm1 = self.get_map(p2hm1)
-                    mp2hm2 = self.get_map(p2hm2)
-                    self.apply_mask(mp1hm1, mask)
-                    self.apply_mask(mp1hm2, mask)
-                    self.apply_mask(mp2hm1, mask)
-                    self.apply_mask(mp2hm2, mask)
+                    mp1hm1, mp1hm2, mp2hm1, mp2hm2 = (
+                        self.apply_mask(self.get_map(f), mask) for f in plank_files_split[idx]
+                    )
                     m_alms_hm1 = self.map2alm((mp1hm1 + mp2hm1) / 2.0, self.pol)
                     m_alms_hm2 = self.map2alm((mp1hm2 + mp2hm2) / 2.0, self.pol)
                     mn_alms_hm1 = self.map2alm((mp1hm1 - mp2hm1) / 2.0, self.pol)
@@ -2259,9 +2245,7 @@ class XFaster(object):
 
             # store cross spectra
             if isinstance(imap_alms, tuple) and len(imap_alms) == 3:
-                if sub_planck:
-                    sub_planck = True
-                else:
+                if not sub_planck:
                     template_cleaned = True
                 # raw map spectrum component
                 cls1 = self.alm2cl(imap_alms[0], jmap_alms[0])
@@ -2279,21 +2263,13 @@ class XFaster(object):
                 ) / 2.0  # multiplies alpha_i * alpha_j
 
                 for s, spec in enumerate(self.specs):
-                    if sub_planck:
-                        cls_planck.setdefault(spec, OrderedDict())[xname] = (
-                            t1[s],
-                            t2[s],
-                            t3[s],
-                        )
-                    else:
-                        # apply template to TE/TB but not TT
-                        if spec == "tt":
-                            continue
-                        cls_tmp.setdefault(spec, OrderedDict())[xname] = (
-                            t1[s],
-                            t2[s],
-                            t3[s],
-                        )
+                    # apply template to TE/TB but not TT
+                    if not sub_planck and spec == "tt":
+                        continue
+                    cls_dict = cls_planck if sub_planck else cls_tmp
+                    cls_dict = cls_dict.setdefault(spec, OrderedDict())
+                    cls_dict[xname] = (t1[s], t2[s], t3[s])
+
                 if null_run:
                     # do this again for the null maps
                     cls_null1 = self.alm2cl(inull_alms[0], jnull_alms[0])
@@ -2311,15 +2287,14 @@ class XFaster(object):
                     ) / 2.0
 
                     for s, spec in enumerate(self.specs):
-                        cls_planck_null.setdefault(spec, OrderedDict())[xname] = (
-                            t1[s],
-                            t2[s],
-                            t3[s],
-                        )
+                        cls_dict = cls_planck_null.setdefault(spec, OrderedDict())
+                        cls_dict[xname] = (t1[s], t2[s], t3[s])
+
             else:
                 cls1 = self.alm2cl(imap_alms, jmap_alms)
                 if null_run:
                     cls_null1 = self.alm2cl(inull_alms, jnull_alms)
+
             for s, spec in enumerate(self.specs):
                 cls.setdefault(spec, OrderedDict())[xname] = cls1[s]
                 if null_run:
@@ -2362,7 +2337,7 @@ class XFaster(object):
         ensemble, and only the average spectra for all realizations
         are stored.
 
-        See `get_masked_xcorr` for more details on how cross spectra
+        See `get_masked_data` for more details on how cross spectra
         are computed.
 
         Arguments
@@ -2982,8 +2957,7 @@ class XFaster(object):
         fake_data_r=None,
         fake_data_template=None,
         sim_index=None,
-        template_alpha90=None,
-        template_alpha150=None,
+        template_alpha=None,
         noise_type=None,
         do_noise=True,
         do_signal=True,
@@ -3015,11 +2989,16 @@ class XFaster(object):
         scalar_root = os.path.join(data_root, "signal_r0")
         tensor_root = os.path.join(data_root, "signal_r1tens")
         noise_root = os.path.join(data_root, "noise_{}".format(noise_type))
-        # ignore unused template coefficients
-        if not any([int(x) == 90 for x in self.nom_freqs.values()]):
-            template_alpha90 = None
-        if not any([int(x) == 150 for x in self.nom_freqs.values()]):
-            template_alpha150 = None
+
+        # ensure dictionary
+        if template_alpha is None:
+            template_alpha = OrderedDict()
+
+        # ensure tagged by original tags
+        template_alpha = OrderedDict([
+            (k, v) for k, v in template_alpha.items()
+            if k in self.map_tags_orig
+        ])
 
         template_fit = fake_data_template is not None
         if template_fit:
@@ -3027,9 +3006,10 @@ class XFaster(object):
             template_root = os.path.join(
                 data_root, "templates_{}/halfmission-1".format(fake_data_template)
             )
+        else:
+            template_alpha = OrderedDict([(k, None) for k in template_alpha])
 
         cache = dict()
-        adict = {"90": template_alpha90, "150": template_alpha150}
         self.log("fake data r: {}".format(fake_data_r))
 
         def process_index(idx):
@@ -3039,7 +3019,7 @@ class XFaster(object):
                 return cache[idx]
             self.log("Computing Alms for fake data map {}/{}".format(idx, num_maps))
             mfile = map_files[idx]
-            freq = self.nom_freqs[map_tags[idx]]
+
             if do_signal:
                 scalar = self.get_map(
                     mfile.replace(map_root, scalar_root).replace(
@@ -3059,6 +3039,7 @@ class XFaster(object):
                 tensor = self.get_map(
                     mfile.replace(map_root, tensor_root).replace(".fits", "_0000.fits")
                 )
+
             if do_noise:
                 noise = self.get_map(
                     mfile.replace(map_root, noise_root).replace(
@@ -3071,28 +3052,23 @@ class XFaster(object):
                     mfile.replace(map_root, noise_root).replace(".fits", "_0000.fits")
                 )
 
+            template = None
             if template_fit:
                 template = self.get_map(mfile.replace(map_root, template_root))
-            else:
-                template = 0
 
-            m_tot = (
-                scalar
-                + np.sqrt(np.abs(fake_data_r)) * tensor
-                + noise
-                + adict[freq] * template
-            )
+            m_tot = scalar + np.sqrt(np.abs(fake_data_r)) * tensor + noise
+            if template_fit:
+                m_tot += template_alpha[self.map_tags_orig[idx]] * template
+
             mask = self.get_mask(mask_files[idx])
             self.apply_mask(m_tot, mask)
             m_alms = self.map2alm(m_tot, self.pol)
 
             if fake_data_r < 0:
-                m_totn = (
-                    scalar
-                    - np.sqrt(np.abs(fake_data_r)) * tensor
-                    + noise
-                    + adict[freq] * template
-                )
+                m_totn = scalar - np.sqrt(np.abs(fake_data_r)) * tensor + noise
+                if template_fit:
+                    m_totn += template_alpha[self.map_tags_orig[idx]] * template
+
                 self.apply_mask(m_totn, mask)
                 mn_alms = self.map2alm(m_totn, self.pol)
 
@@ -3108,10 +3084,12 @@ class XFaster(object):
                         mt_alms[0] *= 0
                     m_alms.append(mt_alms)
                 m_alms = tuple(m_alms)
+
             if fake_data_r < 0:
                 cache[idx] = tuple([m_alms, mn_alms])
             else:
                 cache[idx] = m_alms
+
             return cache[idx]
 
         map_pairs = pt.tag_pairs(map_tags, index=True)
@@ -3178,12 +3156,12 @@ class XFaster(object):
                         self.cls_template[spec][xname] = (t1[s], t2[s], t3[s])
             else:
                 cls1 = self.alm2cl(imap_alms, jmap_alms)
+
             for s, spec in enumerate(self.specs):
                 self.cls_data[spec][xname] = cls1[s]
 
         def apply_template():
             cls_clean = getattr(self, "cls_data_clean", OrderedDict())
-            adict = {"90": template_alpha90, "150": template_alpha150}
 
             for spec in self.specs:
                 cls_clean[spec] = copy.deepcopy(self.cls_data[spec])
@@ -3192,8 +3170,8 @@ class XFaster(object):
                 for xname, d in cls_clean[spec].items():
                     if xname not in self.cls_template[spec]:
                         continue
-                    m0, m1 = self.map_pairs[xname]
-                    alphas = [adict.get(self.nom_freqs[m], None) for m in (m0, m1)]
+                    m0, m1 = self.map_pairs_orig[xname]
+                    alphas = [template_alpha.get(m, None) for m in (m0, m1)]
 
                     t1, t2, t3 = self.cls_template[spec][xname]
 
@@ -3205,26 +3183,22 @@ class XFaster(object):
                             d += alphas[0] * alphas[1] * t3
                             # subtract average template noise spectrum to debias
                             if sub_hm_noise:
-                                d -= (
-                                    alphas[0]
-                                    * alphas[1]
-                                    * self.cls_tnoise_hm1xhm2[spec][xname]
-                                )
+                                n = self.cls_tnoise_hm1xhm2[spec][xname]
+                                d -= alphas[0] * alphas[1] * n
 
             self.cls_data_clean = cls_clean
-            self.template_alpha90 = template_alpha90
-            self.template_alpha150 = template_alpha150
+            self.template_alpha = template_alpha
             self.template_cleaned = True
 
         if template_fit:
             apply_template()
+
         if save_data:
             save_attrs = [
                 "cls_data",
                 "cls_data_clean",
                 "cls_template",
-                "template_alpha90",
-                "template_alpha150",
+                "template_alpha",
                 "nside",
             ]
             if fake_data_r < 0:
@@ -4647,7 +4621,7 @@ class XFaster(object):
             If True, the data cls are the average of the signal simulations, and
             noise cls are ignored.  If False, the data cls are either
             `cls_data_null` (for null tests) or `cls_data`.  See
-            `get_masked_xcorr` for how these are computed.  The input noise is
+            `get_masked_data` for how these are computed.  The input noise is
             similarly either `cls_noise_null` or `cls_noise`.
         do_noise : bool
             If True, return noise spectra along with data.
@@ -5296,7 +5270,7 @@ class XFaster(object):
             If True, the input Cls passed to `fisher_calc` are the average
             of the signal simulations, and noise cls are ignored.
             If False, the input Cls are either `cls_data_null`
-            (for null tests) or `cls_data`.  See `get_masked_xcorr` for
+            (for null tests) or `cls_data`.  See `get_masked_data` for
             how these are computed.  The input noise is similarly either
             `cls_noise_null` or `cls_noise`.
         save_iters : bool
@@ -5616,10 +5590,7 @@ class XFaster(object):
         if not transfer_run:
             out.update(qb_transfer=self.qb_transfer)
             if self.template_cleaned:
-                out.update(
-                    template_alpha90=self.template_alpha90,
-                    template_alpha150=self.template_alpha150,
-                )
+                out.update(template_alpha=self.template_alpha)
 
         if success and not transfer_run:
             # do one more fisher calc that doesn't include sample variance
@@ -6011,10 +5982,7 @@ class XFaster(object):
         )
 
         if self.template_cleaned:
-            opts.update(
-                template_alpha90=self.template_alpha90,
-                template_alpha150=self.template_alpha150,
-            )
+            opts.update(template_alpha=self.template_alpha)
         self.return_cls = return_cls
 
         ret = self.load_data(
@@ -6073,9 +6041,10 @@ class XFaster(object):
         lmin=33,
         lmax=250,
         mcmc=True,
+        alpha_tags=['95', '150'],
+        beam_tags=['95', '150'],
         r_prior=[0, np.inf],
-        alpha90_prior=[0, np.inf],
-        alpha150_prior=[0, np.inf],
+        alpha_prior=[0, np.inf],
         res_prior=None,
         beam_prior=[0, 1],
         betad_prior=[0, 1],
@@ -6111,7 +6080,7 @@ class XFaster(object):
             Prior upper and lower bound on tensor to scalar ratio.  If None, the
             fiducial shape spectrum is assumed, and the r parameter space is not
             varied.
-        alpha90_prior, alpha150_prior : 2-list or None
+        alpha_prior : 2-list or None
             Prior upper and lower bound on template coefficients.  If None, the
             alpha parameter space is not varied.
         res_prior : 2-list or none
@@ -6145,8 +6114,7 @@ class XFaster(object):
 
         for x in [
             r_prior,
-            alpha90_prior,
-            alpha150_prior,
+            alpha_prior,
             res_prior,
             beam_prior,
             betad_prior,
@@ -6158,8 +6126,7 @@ class XFaster(object):
 
         save_name = "like_mcmc"
         if not mcmc:
-            alpha90_prior = None
-            alpha150_prior = None
+            alpha_prior = None
             res_prior = None
             beam_prior = None
             betad_prior = None
@@ -6168,14 +6135,30 @@ class XFaster(object):
 
         # no template cleaning if there aren't any templates specified
         if not getattr(self, "template_cleaned", False):
-            alpha90_prior = None
-            alpha150_prior = None
-        else:
-            # null out unused priors
-            if self.template_alpha90 is None:
-                alpha90_prior = None
-            if self.template_alpha150 is None:
-                alpha150_prior = None
+            alpha_prior = None
+
+        # null out unused priors
+        if self.template_alpha is None or \
+           all([x is None for x in self.template_alpha.values()]):
+            alpha_prior = None
+
+        # count alpha parameters to fit
+        alpha_tags = [x for x in alpha_tags if x in self.map_tags_orig]
+        if not len(alpha_tags):
+            alpha_prior = None
+
+        num_alpha = 0
+        if alpha_prior is not None:
+            num_alpha = len(alpha_tags)
+
+        # count beam parameters to fit
+        beam_tags = [x for x in beam_tags if x in self.map_tags_orig]
+        if not len(beam_tags):
+            beam_prior = None
+
+        num_beam = 0
+        if beam_prior is not None:
+            num_beam = len(beam_tags)
 
         if not any([k.startswith("res_") for k in qb]):
             res_prior = None
@@ -6194,8 +6177,7 @@ class XFaster(object):
         # bookkeeping: ordered priors
         priors = {
             "r_prior": r_prior,
-            "alpha90_prior": alpha90_prior,
-            "alpha150_prior": alpha150_prior,
+            "alpha_prior": alpha_prior,
             "res_prior": res_prior,
             "beam_prior": beam_prior,
             "betad_prior": betad_prior,
@@ -6203,7 +6185,7 @@ class XFaster(object):
             "dust_ellind_prior": dust_ellind_prior,
         }
         # priors on quantities that affect Dmat_obs or gmat (precalculated)
-        obs_priors = [alpha90_prior, alpha150_prior]
+        obs_priors = [alpha_prior]
 
         # check parameter space
         if all([x is None for x in priors.values()]):
@@ -6211,13 +6193,13 @@ class XFaster(object):
 
         out = dict(
             r_prior=r_prior,
-            alpha90_prior=alpha90_prior,
-            alpha150_prior=alpha150_prior,
+            alpha_prior=alpha_prior,
             res_prior=res_prior,
             beam_prior=beam_prior,
             betad_prior=betad_prior,
             dust_amp_prior=dust_amp_prior,
             dust_ellind_prior=dust_ellind_prior,
+            alpha_tags=alpha_tags,
             num_walkers=num_walkers,
             null_first_cmb=null_first_cmb,
             apply_gcorr=self.apply_gcorr,
@@ -6361,23 +6343,15 @@ class XFaster(object):
             if r_prior is not None:
                 params["r"] = theta[0]
                 theta = theta[1:]
-            if alpha90_prior is not None:
-                params["alpha90"] = theta[0]
-                theta = theta[1:]
-            if alpha150_prior is not None:
-                params["alpha150"] = theta[0]
-                theta = theta[1:]
+            if alpha_prior is not None:
+                params["alpha"] = theta[:num_alpha]
+                theta = theta[num_alpha:]
             if res_prior is not None:
                 params["res"] = theta[:num_res]
                 theta = theta[num_res:]
             if beam_prior is not None:
-                if len(theta) == 1:
-                    params["beam"] = theta[0]
-                    theta = theta[1:]
-                else:
-                    # param for 90 and 150
-                    params["beam"] = theta[:2]
-                    theta = theta[2:]
+                params["beam"] = theta[:num_beam]
+                theta = theta[num_beam:]
             if betad_prior is not None:
                 params["betad"] = theta[0]
                 theta = theta[1:]
@@ -6394,8 +6368,7 @@ class XFaster(object):
 
         def log_prior(
             r=None,
-            alpha90=None,
-            alpha150=None,
+            alpha=None,
             res=None,
             beam=None,
             betad=None,
@@ -6407,8 +6380,7 @@ class XFaster(object):
             """
             values = {
                 "r_prior": r,
-                "alpha90_prior": alpha90,
-                "alpha150_prior": alpha150,
+                "alpha_prior": alpha,
                 "res_prior": res,
                 "dust_amp_prior": dust_amp,
             }
@@ -6424,25 +6396,20 @@ class XFaster(object):
                 "dust_ellind_prior": dust_ellind,
             }
             # for beam and betad, use gaussian prior
-            log_prob_tot = 0.0
+            log_prob = 0.0
             for v, pval in values_gauss.items():
                 prior = priors[v]
                 if pval is not None and prior is not None:
                     pval = np.atleast_1d(pval)
                     norm = np.log(1.0 / (prior[1] * np.sqrt(2 * np.pi)))
-                    chi = (pval[0] - prior[0]) / prior[1]
-                    log_prob = norm - chi ** 2 / 2.0
-                    if len(pval) > 1:  # 90 and 150
-                        chi2 = (pval[1] - prior[0]) / prior[1]
-                        log_prob += norm - chi2 ** 2 / 2.0
-                    log_prob_tot += log_prob
+                    chi = (pval - prior[0]) / prior[1]
+                    log_prob += np.sum(norm - chi ** 2 / 2.0)
 
-            return log_prob_tot
+            return log_prob
 
         def log_like(
             r=None,
-            alpha90=None,
-            alpha150=None,
+            alpha=None,
             res=None,
             beam=None,
             betad=None,
@@ -6453,20 +6420,27 @@ class XFaster(object):
             Log likelihood function constructed from input options
             """
             cls_model0 = copy.deepcopy(cls_model)
+
             # compute new template subtracted data spectra
-            if alpha90 is None and alpha150 is None:
+            if alpha is None:
                 clsi = cls_input
             else:
-                self.get_masked_xcorr(
-                    template_alpha90=alpha90, template_alpha150=alpha150
-                )
+                self.get_masked_data(template_alpha=OrderedDict(zip(alpha_tags, alpha)))
                 clsi = self.get_data_spectra(do_noise=False)
+
             if beam is not None:
-                beam = np.atleast_1d(beam)
-                if len(beam) > 1:
-                    beam = {"90": beam[0], "150": beam[1]}
-                else:
-                    beam = {"90": beam[0], "150": beam[0]}
+                beam = dict(zip(beam_tags, beam))
+                beam_coeffs = dict()
+                for xname, (m0, m1) in self.map_pairs_orig.items():
+                    d = {}
+                    b0, b1 = [beam.get(m, None) for m in (m0, m1)]
+                    if b0 is not None:
+                        d['b1'] = b0
+                    if b1 is not None:
+                        d['b2'] = b1
+                        if b0 is not None:
+                            d['b3'] = b0 * b1
+                    beam_coeffs[xname] = d
 
             # compute new signal shape by scaling tensor component by r
             if r is not None:
@@ -6476,29 +6450,21 @@ class XFaster(object):
                         continue
                     ctag = "cmb_{}".format(spec)
                     for xname, dd in d.items():
-                        if beam is not None:
-                            m0, m1 = self.map_pairs[xname]
-                            beam_coeffs = {
-                                "b1": beam[self.nom_freqs[m0]],
-                                "b2": beam[self.nom_freqs[m1]],
-                                "b3": (
-                                    beam[self.nom_freqs[m0]] * beam[self.nom_freqs[m1]]
-                                ),
-                            }
-                            beam_term = 0
-                            for bn, bc in beam_coeffs.items():
-                                beam_term += bc * (
-                                    cls_mod_scal_beam[ctag][xname][bn]
-                                    + r * cls_mod_tens_beam[ctag][xname][bn]
-                                )
-                        else:
-                            beam_term = 0
-
                         dd[:] = (
                             cls_model_scalar[stag][xname]
                             + r * cls_model_tensor[ctag][xname]
-                            + beam_term
                         )
+
+                        if beam is None:
+                            continue
+                        beam_term = 0
+                        for bn, bc in beam_coeffs[xname].items():
+                            beam_term += bc * (
+                                cls_mod_scal_beam[ctag][xname][bn]
+                                + r * cls_mod_tens_beam[ctag][xname][bn]
+                            )
+                        dd[:] += beam_term
+
             elif beam is not None:
                 for stag, d in cls_model0.items():
                     comp, spec = stag.split("_", 1)
@@ -6506,14 +6472,8 @@ class XFaster(object):
                         continue
                     ctag = "cmb_{}".format(spec)
                     for xname, dd in d.items():
-                        m0, m1 = self.map_pairs[xname]
-                        beam_coeffs = {
-                            "b1": beam[self.nom_freqs[m0]],
-                            "b2": beam[self.nom_freqs[m1]],
-                            "b3": (beam[self.nom_freqs[m0]] * beam[self.nom_freqs[m1]]),
-                        }
                         beam_term = 0
-                        for bn, bc in beam_coeffs.items():
+                        for bn, bc in beam_coeffs[xname].items():
                             beam_term += bc * cls_mod_scal_beam[ctag][xname][bn]
                         dd[:] = cls_model_scalar[stag][xname] + beam_term
 
@@ -6569,16 +6529,8 @@ class XFaster(object):
 
                         # add beam terms to fg and total fields
                         if beam is not None:
-                            m0, m1 = self.map_pairs[xname]
-                            beam_coeffs = {
-                                "b1": beam[self.nom_freqs[m0]],
-                                "b2": beam[self.nom_freqs[m1]],
-                                "b3": (
-                                    beam[self.nom_freqs[m0]] * beam[self.nom_freqs[m1]]
-                                ),
-                            }
                             beam_term = 0
-                            for bn, bc in beam_coeffs.items():
+                            for bn, bc in beam_coeffs[xname].items():
                                 beam_term += bc * cls_mod_fg_beam[ftag][xname][bn]
                             cls_model0[stag][xname] += beam_term
 
@@ -6597,6 +6549,7 @@ class XFaster(object):
                             clsm[stag][xname] = dd
                         else:
                             clsm[stag][xname] += dd
+
             # compute likelihood
             like = self.fisher_calc(
                 qb,
@@ -6633,31 +6586,26 @@ class XFaster(object):
         brute_force = True if not mcmc else False  # only vary r
         if r_prior is not None:
             x0 += [0.01]
-        if alpha90_prior is not None:
-            if self.template_alpha90 == 0:
-                x0 += [0.01]
-            else:
-                x0 += [self.template_alpha90]
-            brute_force = False
-        if alpha150_prior is not None:
-            if self.template_alpha150 == 0:
-                x0 += [0.01]
-            else:
-                x0 += [self.template_alpha150]
+        if alpha_prior is not None:
+            alphas = [self.template_alpha[tag] for tag in alpha_tags]
+            x0 += [0.01 if a == 0 else a for a in alphas]
             brute_force = False
         if res_prior is not None:
             x0 += list(pt.dict_to_arr(qb_res, flatten=True))
             brute_force = False
         if beam_prior is not None:
             # add a beam term for each frequency
-            x0 += [0.01] * len(np.unique(list(self.nom_freqs.values())))
+            x0 += [0.01] * len(beam_tags)
             brute_force = False
         if betad_prior is not None:
             x0 += [0.01]
+            brute_force = False
         if dust_amp_prior is not None:
             x0 += [1, 1]
+            brute_force = False
         if dust_ellind_prior is not None:
             x0 += [0.01]
+            brute_force = False
 
         ndim = len(x0)
         if ndim * 2 > num_walkers:
@@ -6678,11 +6626,8 @@ class XFaster(object):
             )
             rs = np.linspace(0, 1, 200)
             likes = np.zeros_like(rs)
-            res = None
-            if res_prior is not None:
-                res = pt.dict_to_arr(qb_res, flatten=True)
             for idx, r in enumerate(rs):
-                like = log_like(r=r, res=res)
+                like = log_like(r=r)
                 if idx % 20 == 0:
                     self.log("r = {:.3f}, loglike = {:.2f}".format(r, like), "detail")
                 likes[idx] = like
