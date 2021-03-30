@@ -341,7 +341,9 @@ def xfaster_run(
     """
     from . import __version__ as xf_version
 
-    cpu_start = time.clock()
+    # py3-compatible CPU timer
+    cpu_time = getattr(time, 'process_time', getattr(time, 'clock', time.time))
+    cpu_start = cpu_time()
     time_start = time.time()
 
     if noise_type == "None":
@@ -644,7 +646,7 @@ def xfaster_run(
                     qb, inv_fish, map_tag=map_tag, cls_shape=cls_shape, **like_opts
                 )
 
-    cpu_elapsed = time.clock() - cpu_start
+    cpu_elapsed = cpu_time() - cpu_start
     time_elapsed = time.time() - time_start
     X.log("Wall time: {:.2f} s, CPU time: {:.2f} s".format(time_elapsed, cpu_elapsed))
 
