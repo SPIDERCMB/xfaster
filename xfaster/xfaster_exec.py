@@ -1452,7 +1452,8 @@ class XFasterJobGroup(object):
             raise RuntimeError("No unimap jobs have been added.")
         if self.script_path is None:
             try:
-                self.script_path = sp.check_output(['which', 'xfaster']).decode()
+                self.script_path = sp.check_output(['which', 'xfaster'])
+                self.script_path = self.script_path.decode().strip()
                 assert os.path.exists(self.script_path)
             except:
                 raise OSError('XFaster run script not found')

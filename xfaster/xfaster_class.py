@@ -181,7 +181,7 @@ class XFaster(object):
 
         # make sure beam product files exist
         self.beam_product = cfg["beam"].get("beam_product", None)
-        if self.beam_product is not None:
+        if self.beam_product not in [None, "None"]:
             if not os.path.exists(self.beam_product):
                 self.beam_product = os.path.join(
                     self.config_root, self.beam_product
@@ -189,7 +189,7 @@ class XFaster(object):
             assert os.path.exists(self.beam_product)
 
         self.beam_error_product = cfg["beam"].get("beam_error_product", None)
-        if self.beam_error_product is not None:
+        if self.beam_error_product is [None, "None"]:
             if not os.path.exists(self.beam_error_product):
                 self.beam_error_product = os.path.join(
                     self.config_root, self.beam_error_product
@@ -730,7 +730,7 @@ class XFaster(object):
             to use. For example, for all, use '*'. For the first 300 sims,
             use '0[0-2]*'.
         data_type : string
-            The type of data to use. 
+            The type of data to use.
         noise_type: string
             The variant of noise simulation to use, e.g. 'stationary',
             'variable', etc.  The directory should contain the same number

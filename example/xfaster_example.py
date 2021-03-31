@@ -3,7 +3,7 @@ import xfaster as xf
 # use this script to run the xfaster algorithm with your own options
 # like the example below
 
-submit = True  # submit to queue
+submit = False  # submit to queue
 submit_opts = {
     "wallt": 5,
     "mem": 3,
@@ -24,7 +24,7 @@ xfaster_opts = {
     # input files
     "config": "config_example.ini",
     "data_root": "/data/agambrel/XF_NonNull_Sept18",
-    "data_subset": "full/*90,full/*150a",
+    "data_subset": "full/*95,full/*150",
     "data_type": "raw",
     "noise_type": "stationary",
     "mask_type": "pointsource_latlon",
