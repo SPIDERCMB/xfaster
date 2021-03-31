@@ -6138,6 +6138,7 @@ class XFaster(object):
             alpha_prior = None
 
         # null out unused priors
+        self.template_alpha = getattr(self, "template_alpha", None)
         if self.template_alpha is None or \
            all([x is None for x in self.template_alpha.values()]):
             alpha_prior = None
