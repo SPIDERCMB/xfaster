@@ -90,7 +90,7 @@ def ThreeJC_2(l2i, m2i, l3i, m3i):
     return fj, lmin, lmax
 
 
-def get_camb_cl(r, lmax, nt=None, spec="total"):
+def get_camb_cl(r, lmax, nt=None, spec="total", lfac=True):
     """
     Compute camb spectrum with tensors and lensing.
 
@@ -108,12 +108,14 @@ def get_camb_cl(r, lmax, nt=None, spec="total"):
     spec : string, optional
         Spectrum component to return.  Can be 'total', 'unlensed_total',
         'unlensed_scalar', 'lensed_scalar', 'tensor', 'lens_potential'.
+    lfac: bool, optional
+        If True, multiply Cls by ell*(ell+1)/2/pi
 
     Returns
     -------
     cls : array_like
-        Array of spectra of shape (lmax + 1, nspec), including the
-        ell*(ell+1)/2/pi scaling. Diagonal ordering (TT, EE, BB, TE).
+        Array of spectra of shape (lmax + 1, nspec).
+        Diagonal ordering (TT, EE, BB, TE).
     """
     # Set up a new set of parameters for CAMB
     import camb
@@ -144,9 +146,11 @@ def get_camb_cl(r, lmax, nt=None, spec="total"):
 
     # calculate results for these parameters
     results = camb.get_results(pars)
-    powers = results.get_cmb_power_spectra(pars, CMB_unit="muK")
+    powers = results.get_cmb_power_spectra(pars, CMB_unit="muK",
+                                           raw_cl=not lfac)
 
     totCL = powers[spec][: lmax + 1, :4].T
+
     return totCL
 
 

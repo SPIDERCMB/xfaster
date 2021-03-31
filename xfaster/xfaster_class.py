@@ -1060,7 +1060,7 @@ class XFaster(object):
                     return v.replace(ret_data_root, data_root)
                 return v
 
-            for k, v in ret.items():
+            for k, v in list(ret.items()):
                 if isinstance(v, str):
                     ret[k] = replace_root(k, v)
                     setattr(self, k, ret[k])
@@ -1223,7 +1223,7 @@ class XFaster(object):
         kwargs.setdefault("field", [0, 1, 2] if self.pol else [0])
 
         self.log("Reading map from {}".format(filename), "all")
-        m = np.atleast_2d(hp.read_map(filename, **kwargs))
+        m = np.atleast_2d(hp.read_map(filename, verbose=False, **kwargs))
         m[hp.mask_bad(m)] = 0
 
         if check_nside:
