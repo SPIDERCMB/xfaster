@@ -90,22 +90,11 @@ def ThreeJC_2(l2i, m2i, l3i, m3i):
     return fj, lmin, lmax
 
 
-# base_r_plikHM_TT_lowTEB_lensing.minimum
-#    1  0.2226767E-01   omegabh2              \Omega_b h^2
-#    2  0.1184800E+00   omegach2              \Omega_c h^2
-#    3  0.1041032E+01   theta                 100\theta_{MC}
-#    4  0.6715808E-01   tau                   \tau
-#   17  0.3064628E+01   logA                  {\rm{ln}}(10^{10} A_s)
-#   18  0.9686477E+00   ns                    n_s
-#   21  0.3067417E-01   r                     r
-#    5  0.0000000E+00   omegak                \Omega_K
-#    6  0.6000000E-01   mnu                   \Sigma m_\nu
-#   51  0.6784119E+02   H0                    H_0
-
-
 def get_camb_cl(r, lmax, nt=None, spec="total"):
     """
     Compute camb spectrum with tensors and lensing.
+
+    Parameter values are from arXiv:1807.06209 Table 1 Plik best fit
 
     Arguments
     ---------
@@ -133,9 +122,17 @@ def get_camb_cl(r, lmax, nt=None, spec="total"):
     # This function sets up CosmoMC-like settings, with one massive neutrino and
     # helium set using BBN consistency
     pars.set_cosmology(
-        H0=67.84119, ombh2=0.02226767, omch2=0.1184800, mnu=0.06, omk=0, tau=0.06715808
+        H0=67.32,
+        ombh2=0.022383,
+        omch2=0.12011,
+        mnu=0.06,
+        omk=0,
+        tau=0.0543,
     )
-    pars.InitPower.set_params(As=2.142649e-9, ns=0.9686477, r=r, nt=nt)
+
+    ln1010As = 3.0448
+
+    pars.InitPower.set_params(As=np.exp(ln1010As)/1.e10, ns=0.96605, r=r, nt=nt)
     if lmax < 2500:
         # This results in unacceptable bias. Use higher lmax, then cut it down
         lmax0 = 2500
