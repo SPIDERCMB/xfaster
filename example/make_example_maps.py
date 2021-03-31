@@ -43,6 +43,9 @@ dls = np.vstack([ell[2:], (lfac * cls)[:, 2:]])
 np.savetxt(os.path.join(*sig_path.split("/")[:-1], "spec_signal_synfast.dat"),
            dls.T)
 
+# load a filter transfer function to smooth by
+fl = np.loadtxt("maps_example/transfer_example.txt")
+
 # make celestial rectangular coordinate mask
 latrange = [-55, -15]
 lonrange = [18, 80]
@@ -55,9 +58,9 @@ mask = np.logical_and(
     np.logical_and(lat > latrange[0], lat < latrange[1]))
 mask_write = mask.copy().astype(float)
 mask_write[~mask] = hp.UNSEEN # to reduce size of file on disk
+# Because using polarization, need I/Q/U mask
+mask_write = np.tile(mask_write, [3,1])
 for tag in tags:
-    # Because using polarization, need I/Q/U mask
-    mask_write = np.tile(mask_write, [3,1])
     hp.write_map(os.path.join(mask_path, "mask_map_{}.fits".format(tag)),
                  mask_write, partial=True, overwrite=True)
     print("Wrote mask map {}".format(tag))
@@ -66,6 +69,10 @@ for tag in tags:
 for i in range(nsim + 1):
     sig = hp.synfast(cls, nside=nside)
     noise = np.zeros_like(sig)
+
+    # smooth both by filter transfer function
+    sig = hp.smoothing(sig, beam_window=np.sqrt(fl))
+    noise = hp.smoothing(noise, beam_window=np.sqrt(fl))
     for ti, tag in enumerate(tags):
         sig_smooth = hp.smoothing(sig, np.deg2rad(fwhms[ti]/60.), verbose=False)
         noise[0][mask] = np.random.normal(scale=gnoise[ti], size=np.sum(mask))
