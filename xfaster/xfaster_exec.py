@@ -752,6 +752,7 @@ def xfaster_parse(args=None, test=False):
         dest="mode",
         metavar="MODE",
         title="subcommands",
+        required=True,
         help="Function to perform. For more help, call: " "%(prog)s %(metavar)s -h",
     )
     parser_opts.pop("description")
