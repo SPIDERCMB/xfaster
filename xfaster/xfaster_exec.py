@@ -1240,7 +1240,6 @@ class XFasterJobGroup(object):
         """
         Initialize to a reset state.
         """
-        self.script_path = None
         self.output = None
         self.job_list = []
         self.qsub_args = {}
@@ -1278,7 +1277,7 @@ class XFasterJobGroup(object):
             self.set_job_options(**job_opts)
 
         # construct command
-        cmd = "python {script} run".split()
+        cmd = "xfaster run".split()
 
         # handle deprecated arguments
         if "noise_dl" in kwargs:
@@ -1368,7 +1367,6 @@ class XFasterJobGroup(object):
         queue=None,
         job_prefix=None,
         test=False,
-        script_path=None,
         pbs=False,
         workdir=None,
         dep_afterok=None,
@@ -1387,10 +1385,6 @@ class XFasterJobGroup(object):
         # default job prefix
         if job_prefix is None:
             job_prefix = "xfaster"
-
-        # different default script path
-        if script_path is not None:
-            self.script_path = script_path
 
         # create output directories
         if output is None:
@@ -1451,15 +1445,6 @@ class XFasterJobGroup(object):
         """
         if not self.job_list:
             raise RuntimeError("No unimap jobs have been added.")
-        if self.script_path is None:
-            try:
-                self.script_path = sp.check_output(['which', 'xfaster'])
-                self.script_path = self.script_path.decode().strip()
-                assert os.path.exists(self.script_path)
-            except:
-                raise OSError('XFaster run script not found')
-        for idx in range(len(self.job_list)):
-            self.job_list[idx] = self.job_list[idx].format(script=self.script_path)
         if group_by is None:
             group_by = len(self.job_list)
         if kwargs:
@@ -1477,12 +1462,12 @@ class XFasterJobGroup(object):
         return job_ids
 
 
-def xfaster_submit(script_path=None, **kwargs):
+def xfaster_submit(**kwargs):
     """
     Submit a single xfaster job. The arguments here should agree exactly
     with the command line flags for submit mode, with kwargs passed to
     `xfaster_run`. Run `xfaster --help` for help.
     """
     xg = XFasterJobGroup()
-    xg.add_job(script_path=script_path, **kwargs)
+    xg.add_job(**kwargs)
     return xg.submit(group_by=1, verbose=True)
