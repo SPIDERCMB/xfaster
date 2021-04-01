@@ -752,7 +752,6 @@ def xfaster_parse(args=None, test=False):
         dest="mode",
         metavar="MODE",
         title="subcommands",
-        required=True,
         help="Function to perform. For more help, call: " "%(prog)s %(metavar)s -h",
     )
     parser_opts.pop("description")
@@ -1210,6 +1209,11 @@ def xfaster_parse(args=None, test=False):
         warnings.warn("Arguments {} is not handled by the parser".format(rem_args))
     # parse arguments
     args = P.parse_args(args=args)
+
+    # default mode, required for python 3.7 or newer
+    if args.mode is None:
+        P.error("the following arguments are required: MODE")
+
     # fix arguments meant to be empty
     for k, v in vars(args).items():
         if v is not None and str(v).lower() in ["none", "['none']"]:
