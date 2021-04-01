@@ -127,7 +127,7 @@ class XFasterConfig(rcp):
         """
         if section is None:
             section = self.default_section
-        if not self.has_section(section):
+        if section != self.default_section and not self.has_section(section):
             self.add_section(section)
         # change kwargs to be like any other options
         kw = options.pop("kwargs", None)
