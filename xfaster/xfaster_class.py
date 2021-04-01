@@ -287,6 +287,13 @@ class XFaster(object):
         if signal_transfer_type is None:
             signal_transfer_type = signal_type
 
+        # make sure sims get rerun correctly
+        if signal_transfer_type == signal_type:
+            # if signal types match, then sims are run before computing the
+            # transfer function, so need to set the correct checkpoint to rerun
+            if self.checkpoint == "sims":
+                self.checkpoint = "sims_transfer"
+
         # regularize data root
         data_root = os.path.abspath(data_root)
         if not os.path.exists(data_root):
@@ -2911,8 +2918,6 @@ class XFaster(object):
         if transfer:
             save_name = "sims_xcorr_{}".format(self.signal_transfer_type)
             cp = "sims_transfer"
-            if self.signal_transfer_type == self.signal_type:
-                self.force_rerun["sims"] = False
         else:
             save_name = "sims_xcorr_{}".format(self.signal_type)
             cp = "sims"
@@ -2940,6 +2945,11 @@ class XFaster(object):
             else:
                 check_options()
                 return ret
+        else:
+            # don't rerun sims a second time if they've already been run once
+            # with the same signal type
+            if transfer and self.signal_transfer_type == self.signal_type:
+                self.force_rerun["sims"] = False
 
         # process signal, noise, and S+N
         process_files()
