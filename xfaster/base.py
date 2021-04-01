@@ -170,7 +170,8 @@ class XFasterConfig(rcp):
 
             fp = sys.stdout
 
-        self.sort()
+        if sort:
+            self.sort()
         super(XFasterConfig, self).write(fp)
 
 
