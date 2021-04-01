@@ -156,40 +156,44 @@ class XFaster(object):
 
         XXX more detail here.
         """
-        from configparser import ConfigParser
-
         # Load map configuration file
         assert os.path.exists(filename)
         self.config_root = os.path.dirname(os.path.abspath(filename))
-        cfg = ConfigParser()
+        cfg = base.XFasterConfig()
         cfg.read(filename)
 
         # dictionary of map frequencies keyed by map tag
-        self.dict_freqs = cfg["freqs"]
+        self.dict_freqs = {k: cfg.getfloat("freqs", k) for k in cfg["freqs"]}
 
         # beam fwhm for each tag, if not supplied in beam_product
-        self.fwhm = cfg["fwhm"]
+        self.fwhm = {k: cfg.getfloat("fwhm", k) for k in cfg["fwhm"]}
         assert set(self.dict_freqs) >= set(self.fwhm)
 
         # beam fwhm error for each tag, if not supplied in beam_error_product
-        self.fwhm_err = cfg["fwhm_err"]
+        self.fwhm_err = {k: cfg.getfloat("fwhm_err", k) for k in cfg["fwhm_err"]}
         assert set(self.dict_freqs) >= set(self.fwhm_err)
 
         # fit for the transfer function for each tag?
-        self.fit_transfer = cfg["transfer"]
+        self.fit_transfer = {k: cfg.getboolean("transfer", k) for k in cfg["transfer"]}
         assert set(self.dict_freqs) == set(self.fit_transfer)
 
         # make sure beam product files exist
-        self.beam_product = cfg["beam"].get("beam_product", None)
-        if self.beam_product not in [None, "None"]:
+        v = cfg["beam"].get("beam_product", None)
+        if str(v).lower() == "none":
+            v = None
+        self.beam_product = v
+        if self.beam_product is not None:
             if not os.path.exists(self.beam_product):
                 self.beam_product = os.path.join(
                     self.config_root, self.beam_product
                 )
             assert os.path.exists(self.beam_product)
 
-        self.beam_error_product = cfg["beam"].get("beam_error_product", None)
-        if self.beam_error_product is [None, "None"]:
+        v = cfg["beam"].get("beam_error_product", None)
+        if str(v).lower() == "none":
+            v = None
+        self.beam_error_product = v
+        if self.beam_error_product is not None:
             if not os.path.exists(self.beam_error_product):
                 self.beam_error_product = os.path.join(
                     self.config_root, self.beam_error_product
@@ -286,6 +290,13 @@ class XFaster(object):
 
         if signal_transfer_type is None:
             signal_transfer_type = signal_type
+
+        # make sure sims get rerun correctly
+        if signal_transfer_type == signal_type:
+            # if signal types match, then sims are run before computing the
+            # transfer function, so need to set the correct checkpoint to rerun
+            if self.checkpoint == "sims":
+                self.checkpoint = "sims_transfer"
 
         # regularize data root
         data_root = os.path.abspath(data_root)
@@ -2911,8 +2922,6 @@ class XFaster(object):
         if transfer:
             save_name = "sims_xcorr_{}".format(self.signal_transfer_type)
             cp = "sims_transfer"
-            if self.signal_transfer_type == self.signal_type:
-                self.force_rerun["sims"] = False
         else:
             save_name = "sims_xcorr_{}".format(self.signal_type)
             cp = "sims"
@@ -2940,6 +2949,11 @@ class XFaster(object):
             else:
                 check_options()
                 return ret
+        else:
+            # don't rerun sims a second time if they've already been run once
+            # with the same signal type
+            if transfer and self.signal_transfer_type == self.signal_type:
+                self.force_rerun["sims"] = False
 
         # process signal, noise, and S+N
         process_files()
@@ -3749,11 +3763,11 @@ class XFaster(object):
         else:
             beam_prod = {}
 
-        for tag in self.map_tags:
-            if tag in beam_prod:
-                bl = np.atleast_2d(beam_prod[tag])[:, :lsize]
-            elif self.fwhm[tag] not in ["None", None]:
-                bl = hp.gauss_beam(float(self.fwhm[tag]), lsize - 1, self.pol)
+        for tag, otag in zip(self.map_tags, self.map_tags_orig):
+            if otag in beam_prod:
+                bl = np.atleast_2d(beam_prod[otag])[:, :lsize]
+            elif self.fwhm[otag] not in ["None", None]:
+                bl = hp.gauss_beam(float(self.fwhm[otag]), lsize - 1, self.pol)
                 if self.pol:
                     bl = bl.T[[0, 1, 3]]
             else:
@@ -3805,13 +3819,13 @@ class XFaster(object):
         else:
             beam_err_prod = {}
 
-        for tag in self.map_tags:
-            if tag in beam_err_prod:
-                be = beam_err_prod[tag]
-            elif self.fwhm_err[tag] not in ["None", None]:
-                be = self.fwhm_err[tag] * np.ones(3 if self.pol else 1, lsize)
+        for tag, otag in zip(self.map_tags, self.map_tags_orig):
+            if otag in beam_err_prod:
+                be = beam_err_prod[otag]
+            elif self.fwhm_err[otag] not in ["None", None]:
+                be = self.fwhm_err[otag] * np.ones(3 if self.pol else 1, lsize)
             else:
-                raise ValueError("No beam in config for {}".format(tag))
+                raise ValueError("No beam in config for {}".format(otag))
             be = np.atleast_2d(be)[:, :lsize]
 
             beam_errors["tt"][tag] = np.copy(be[0])
@@ -5802,7 +5816,7 @@ class XFaster(object):
         msg = ""
 
         for im0, m0 in enumerate(self.map_tags):
-            if not self.fit_transfer[m0]:
+            if not self.fit_transfer[self.map_tags_orig[im0]]:
                 for spec in self.specs:
                     self.qb_transfer["cmb_{}".format(spec)][m0] = np.ones(
                         self.nbins_cmb // len(self.specs)
@@ -6138,6 +6152,7 @@ class XFaster(object):
             alpha_prior = None
 
         # null out unused priors
+        self.template_alpha = getattr(self, "template_alpha", None)
         if self.template_alpha is None or \
            all([x is None for x in self.template_alpha.values()]):
             alpha_prior = None
