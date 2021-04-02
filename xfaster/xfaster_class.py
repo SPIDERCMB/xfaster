@@ -1236,6 +1236,7 @@ class XFaster(object):
             return np.copy(self._map_cache[filename])
 
         kwargs.setdefault("field", [0, 1, 2] if self.pol else [0])
+        kwargs.setdefault("dtype", None)
 
         self.log("Reading map from {}".format(filename), "all")
         m = np.atleast_2d(hp.read_map(filename, **kwargs))
