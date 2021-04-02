@@ -43,7 +43,7 @@ class XFaster(object):
         "sims_transfer": ["transfer"],
         "shape_transfer": ["transfer"],
         "transfer": ["bandpowers"],
-        "sims": ["bandpowers"],
+        "sims": ["transfer", "bandpowers"],
         "beams": ["transfer"],
         "data": ["bandpowers"],
         "template_noise": ["bandpowers"],
@@ -3634,7 +3634,8 @@ class XFaster(object):
                 filename = "spec_{}.dat".format(os.path.basename(signal_root))
                 filename = os.path.join(signal_root, filename)
             if not os.path.exists(filename) and not os.path.isabs(filename):
-                filename = os.path.abspath(self.config_root, filename)
+                filename = os.path.abspath(os.path.join(self.config_root,
+                                                        filename))
             if not os.path.exists(filename):
                 raise OSError("Missing model file {}".format(filename))
 
