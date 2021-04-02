@@ -3767,7 +3767,7 @@ class XFaster(object):
             if otag in beam_prod:
                 bl = np.atleast_2d(beam_prod[otag])[:, :lsize]
             elif self.fwhm[otag] not in ["None", None]:
-                bl = hp.gauss_beam(float(self.fwhm[otag]), lsize - 1, self.pol)
+                bl = hp.gauss_beam(np.deg2rad(float(self.fwhm[otag])/60.), lsize - 1, self.pol)
                 if self.pol:
                     bl = bl.T[[0, 1, 3]]
             else:
@@ -3793,7 +3793,7 @@ class XFaster(object):
         """
 
         lsize = 2 * self.lmax + 1
-        nspec = 6 if pol else 1
+        nspec = 6 if self.pol else 1
         beam_shape = (self.num_maps * nspec, lsize)
 
         save_name = "beam_errors"
