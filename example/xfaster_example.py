@@ -1,3 +1,4 @@
+import os
 import xfaster as xf
 
 # use this script to run the xfaster algorithm with your own options
@@ -22,7 +23,7 @@ xfaster_opts = {
     "output_root": "outputs_example",
     "output_tag": "95x150",
     # input files
-    "config": "config_example.ini",
+    "config": os.path.abspath("config_example.ini"), # must be abspath to submit
     "data_root": "maps_example",
     "data_subset": "full/*95,full/*150",
     "data_type": "raw",
