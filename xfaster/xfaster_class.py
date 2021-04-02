@@ -43,7 +43,7 @@ class XFaster(object):
         "sims_transfer": ["transfer"],
         "shape_transfer": ["transfer"],
         "transfer": ["bandpowers"],
-        "sims": ["transfer", "bandpowers"],
+        "sims": ["bandpowers"],
         "beams": ["transfer"],
         "data": ["bandpowers"],
         "template_noise": ["bandpowers"],
