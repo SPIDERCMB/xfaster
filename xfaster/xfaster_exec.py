@@ -93,7 +93,7 @@ def xfaster_run(
     r_prior=[-np.inf, np.inf],
     res_prior=None,
     like_beam_tags=["95", "150"],
-    beam_prior=[0, 1],
+    beam_prior=None,
     betad_prior=None,
     dust_amp_prior=None,
     dust_ellind_prior=None,
