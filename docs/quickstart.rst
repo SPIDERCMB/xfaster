@@ -21,9 +21,9 @@ After cloning the repo (`<https://github.com/annegambrel/xfaster>`_), install xf
 Example Script
 --------------
 To get started with the code before running it on your data, you can run through the example, described in more detail in the :ref:`Algorithm<Algorithm: Step by Step>` link.
-First, generate the small ensemble of maps by running ``make_example_maps.py`` in the ``examples`` directory.
-Then, run ``xfaster_example.py``.
-This runs XFaster on the example maps, so you can see the step-by-step process and look at the outputs.
+First, generate the small ensemble of maps by running `make_example_maps.py <https://github.com/annegambrel/xfaster/blob/main/example/make_example_maps.py>`_ in the ``examples`` directory.
+Then, run `xfaster_example.py <https://github.com/annegambrel/xfaster/blob/main/example/xfaster_example.py>`_.
+This runs XFaster on the example maps, so you can see the step-by-step process and look at the outputs, as demonstrated :ref:`below<Reading the outputs>`.
 
 Setting up your data
 --------------------
@@ -102,11 +102,11 @@ Running the code
 ----------------
 An example of a script to run XFaster can be found in `xfaster_example.py <https://github.com/annegambrel/xfaster/blob/main/example/xfaster_example.py>`_.
 This script points to where the data lives, the tags used to fill in options in your file structure tree, what config file to use, and lots of other options you can give to the code.
-These aren't all the options-- the API reference for :py:func:`xfaster.xfaster_exec.xfaster_run` contains descriptions of all the arguments you might wish to use.
+These aren't all the options-- the API reference for :py:func:`~xfaster.xfaster_exec.xfaster_run` contains descriptions of all the arguments you might wish to use.
 
-After setting up your config file and setting the options in your submit script, you then need to decide if you're submitting this to a cluster (``xfaster_submit``) or running it in your current environment (``xfaster_run``).
+After setting up your config file and setting the options in your submit script, you then need to decide if you're submitting this to a cluster (:py:func:`~xfaster.xfaster_exec.xfaster_submit`) or running it in your current environment (:py:func:`~xfaster.xfaster_exec.xfaster_run`).
 The example script has both options available.
-If submitting to a grid, additional submit options are required, and these are included in the arguments passed to ``xfaster_submit``.
+If submitting to a grid, additional submit options are required, and these are included in the arguments passed to :py:func:`~xfaster.xfaster_exec.xfaster_submit`.
 
 Reading the outputs
 -------------------
@@ -156,22 +156,39 @@ Whenever you want to read in some data the XFaster code wrote, you'll want to us
 This includes all the files detailed in the list above.
 You can then look through keys, where the dictionaries are all structured as ``main field name`` -> ``spectrum type`` -> ``map/cross spectrum``.
 
-In the last category, cross spectra are indicated with a colon, so if I had two maps tagged as ``90`` and ``150`` that I'm inputting the algorithm, the spectrum fields I should find are ``90:90``, ``150:150``, and ``150:90`` (crosses are in alphabetical error, as they are read as strings).
+In the last category, cross spectra are indicated with a colon, so if I had two maps tagged as ``95`` and ``150`` that I'm inputting the algorithm, the spectrum fields I should find are ``95:95``, ``150:150``, and ``150:95`` (crosses are in alphabetical error, as they are read as strings).
 Here, we have the two map auto-spectra first, and then the cross between them.
-If there are multiple maps with the same tag but that use different <<data_subsets>> as described in :ref:`Maps<Maps>` above, these will be assigned an additional numerical tag, so you might have something like ``90_0:90_1`` for the cross between map 90 in data_subset1 and data_subset2.
+If there are multiple maps with the same tag but that use different <<data_subsets>> as described in :ref:`Maps<Maps>` above, these will be assigned an additional numerical tag, so you might have something like ``95_0:95_1`` for the cross between map 95 in data_subset1 and data_subset2.
 
-Below, we show how to load up some bandpowers, error bars, and a transfer function.
+Below, we show how to load up some bandpowers, error bars, transfer function, and r-likelihood from the example script outputs.
 
 .. code-block:: python
 
     import xfaster as xf
+    import matplotlib.pyplot as plt
 
-    bp = xf.load_and_parse("bandpowers_test.npz") # where the majority of useful stuff is
+    # load up bandpowers file, where most of the useful stuff is stored
+    bp = xf.load_and_parse("outputs_example/95x150/bandpowers_95x150.npz")
     ee_bin_centers = bp["ellb"]["cmb_ee"] # weighted bin centers
-    ee_specs = bp["cb"]["cmb_ee"] # estimated CMB spectra
+    ee_specs = bp["cb"]["cmb_ee"] # estimated CMB spectra with ell*(ell+1)/(2pi) factors
     ee_errs = bp["dcb"]["cmb_ee"] # estimated CMB error bars
     spec_cov = bp["cov"] # Nspec * Nbin square covariance matrix
-    ee_transfer_90_1 = bp["qb_transfer"]["cmb_ee"]["90_1"] # transfer function using the same bins
+    ee_transfer_95 = bp["qb_transfer"]["cmb_ee"]["95"] # transfer function using the same bins
 
+    fig, axs = plt.subplots(2, 1)
+    axs[0].plot(ee_bin_centers, ee_transfer_95)
+    axs[0].set_ylabel(r"$F_\ell$")
+    axs[1].errorbar(ee_bin_centers, ee_specs, ee_errs)
+    axs[1].set_ylabel(r"$\ell(\ell+1)C_\ell/2\pi [\mu K_{CMB}]$")
+    axs[1].set_xlabel(r"$\ell$")
+
+    # Now get r-likelihood-- should be near the input r=1, but with scatter since it's
+    # just one sim realization
+    lk = xf.load_and_parse("outputs_example/95x150/like_mcmc_95x150.npz")
+    fig = plt.figure()
+    plt.hist(lk["samples"])
+    plt.xlabel(r"$r$")
+
+    plt.show()
 
 And that covers the basics!
