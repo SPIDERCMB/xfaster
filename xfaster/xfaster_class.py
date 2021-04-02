@@ -1575,7 +1575,7 @@ class XFaster(object):
 
         if value_ref:
             self.log(
-                "{}: Missing reference fields {}".format(errmsg, list(value_ref.keys()))
+                "{}: Missing reference fields {}".format(errmsg, list(value_ref))
             )
             return force_rerun_children()
 
@@ -2723,13 +2723,13 @@ class XFaster(object):
             cls_med_arr = np.median(cls_all, axis=0)
             for s, spec in enumerate(self.specs):
                 cls_med[spec] = OrderedDict()
-                for xind, xname in enumerate(map_pairs.keys()):
+                for xind, xname in enumerate(map_pairs):
                     cls_med[spec][xname] = cls_med_arr[xind][s]
             if null_run:
                 cls_null_med_arr = np.median(cls_all_null, axis=0)
                 for s, spec in enumerate(self.specs):
                     cls_null_med[spec] = OrderedDict()
-                    for xind, xname in enumerate(map_pairs.keys()):
+                    for xind, xname in enumerate(map_pairs):
                         cls_null_med[spec][xname] = cls_null_med_arr[xind][s]
 
             setattr(self, sig_field, cls_sig)
@@ -4477,7 +4477,7 @@ class XFaster(object):
                         continue
                     if "res" not in comp and stag not in cbl:
                         continue
-                    pairs = self.map_pairs.keys()  # list(cbl[stag])
+                    pairs = list(self.map_pairs)  # list(cbl[stag])
 
                 for xname in pairs:
                     tag1, tag2 = self.map_pairs[xname]
@@ -4504,7 +4504,6 @@ class XFaster(object):
                             qbm = freq_scale * qb[mstag]
 
                     elif comp == "res":
-                        # if 'res_{}_{}'.format(spec,
                         # modify model by previously fit res, including
                         # off diagonals and SXN/NXS for nulls
                         s0, s1 = spec  # separate qbs for, eg, TE resTT and resEE
