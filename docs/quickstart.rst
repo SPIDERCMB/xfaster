@@ -18,6 +18,13 @@ After cloning the repo, install xfaster::
 
     $ python setup.py install
 
+Example Script
+--------------
+To get started with the code before running it on your data, you can run through the example, described in more detail in the :ref:`Algorithm<Algorithm: Step by Step>` link.
+First, generate the small ensemble of maps by running ``make_example_maps.py`` in the ``examples`` directory.
+Then, run ``xfaster_example.py``.
+This runs XFaster on the example maps, so you can see the step-by-step process and look at the outputs.
+
 Setting up your data
 --------------------
 
@@ -30,7 +37,7 @@ The code requires a certain directory structure for your input maps:
 
     <data_root>/
     ├── data_<data_type>
-    │   ├── <data_subset1>    
+    │   ├── <data_subset1>
     │   │   ├── map_<tag1>.fits
     │   │   ├── ...
     │   │   ├── map_<tagN>.fits
@@ -39,21 +46,21 @@ The code requires a certain directory structure for your input maps:
     │   ├── <data_subsetM>
     ├── signal_<signal_type>
     │   ├── spec_signal_<signal_type>.dat
-    │   ├── <data_subset1>    
+    │   ├── <data_subset1>
     │   │   ├── map_<tag1>_0000.fits
     │   │   ├── ...
     │   │   ├── map_<tag1>_####.fits
-    │   │   ├── ...    
+    │   │   ├── ...
     │   │   ├── map_<tagN>_0000.fits
     │   │   ├── ...
-    │   │   ├── map_<tagN>_####.fits    
+    │   │   ├── map_<tagN>_####.fits
     │   ├── ....
     │   ├── <data_subsetM> (same filenames as <data_subset1>)
     ├── noise_<noise_type> (same filenames as signal_<signal_type>)
     ├── masks_<mask_type>
     │   ├── mask_map_<tag1>.fits
     │   ├── ...
-    │   ├── mask_map_<tagN>.fits		
+    │   ├── mask_map_<tagN>.fits
     [[optional:]]
     ├── foreground_<foreground_type> (same filenames as signal_<signal_type>
     ├── templates_<template_type>
@@ -158,7 +165,7 @@ Below, we show how to load up some bandpowers, error bars, and a transfer functi
 .. code-block:: python
 
     import xfaster as xf
-    
+
     bp = xf.load_and_parse("bandpowers_test.npz") # where the majority of useful stuff is
     ee_bin_centers = bp["ellb"]["cmb_ee"] # weighted bin centers
     ee_specs = bp["cb"]["cmb_ee"] # estimated CMB spectra
