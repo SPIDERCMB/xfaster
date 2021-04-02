@@ -32,6 +32,6 @@ setup(
     packages=["xfaster"],
     package_dir={"xfaster": "xfaster"},
     scripts=["bin/xfaster"],
-    install_requires=["numpy", "healpy"],
-    python_requires='>=2.7',
+    install_requires=["numpy", "healpy", "camb", "emcee"],
+    python_requires='>=3.0',
 )
