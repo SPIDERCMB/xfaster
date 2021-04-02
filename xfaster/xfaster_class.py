@@ -166,7 +166,8 @@ class XFaster(object):
         self.dict_freqs = {k: cfg.getfloat("freqs", k) for k in cfg["freqs"]}
 
         # beam fwhm for each tag, if not supplied in beam_product
-        self.fwhm = {k: cfg.getfloat("fwhm", k) for k in cfg["fwhm"]}
+        # converted from arcmin to radians
+        self.fwhm = {k: np.radians(cfg.getfloat("fwhm", k) / 60.) for k in cfg["fwhm"]}
         assert set(self.dict_freqs) >= set(self.fwhm), "Unknown tags in [fwhm]"
 
         # beam fwhm error for each tag, if not supplied in beam_error_product
@@ -3760,7 +3761,7 @@ class XFaster(object):
             pwl[1, :end] = pixP[:end]
             pwl[2, :end] = np.sqrt(pixT[:end] * pixP[:end])
 
-        if self.beam_product not in ["None", None]:
+        if self.beam_product is not None:
             beam_prod = pt.load_compat(self.beam_product)
         else:
             beam_prod = {}
@@ -3768,8 +3769,8 @@ class XFaster(object):
         for tag, otag in zip(self.map_tags, self.map_tags_orig):
             if otag in beam_prod:
                 bl = np.atleast_2d(beam_prod[otag])[:, :lsize]
-            elif self.fwhm[otag] not in ["None", None]:
-                bl = hp.gauss_beam(float(self.fwhm[otag]), lsize - 1, self.pol)
+            elif otag in self.fwhm:
+                bl = hp.gauss_beam(self.fwhm[otag], lsize - 1, self.pol)
                 if self.pol:
                     bl = bl.T[[0, 1, 3]]
             else:
@@ -3816,7 +3817,7 @@ class XFaster(object):
             for s in ["ee", "bb", "te", "eb", "tb"]:
                 beam_errors[s] = OrderedDict()
 
-        if self.beam_error_product not in ["None", None]:
+        if self.beam_error_product is not None:
             beam_err_prod = pt.load_compat(self.beam_error_product)
         else:
             beam_err_prod = {}
@@ -3824,12 +3825,21 @@ class XFaster(object):
         for tag, otag in zip(self.map_tags, self.map_tags_orig):
             if otag in beam_err_prod:
                 be = beam_err_prod[otag]
-            elif self.fwhm_err[otag] not in ["None", None]:
-                be = self.fwhm_err[otag] * np.ones(3 if self.pol else 1, lsize)
+            elif otag in self.fwhm_err:
+                # convert error on the FWHM to an envelope error on the beam window
+                fwhm = self.fwhm[otag]
+                bl = self.beam_windows["tt"][tag]
+                blp = hp.gauss_beam(fwhm * (1 - self.fwhm_err[otag]), lsize - 1, self.pol)
+                blm = hp.gauss_beam(fwhm * (1 + self.fwhm_err[otag]), lsize - 1, self.pol)
+                if self.pol:
+                    bl = np.asarray([bl, self.beam_windows["ee"][tag], self.beam_windows["te"][tag]])
+                    blp = blp.T[[0, 1, 3]]
+                    blm = blm.T[[0, 1, 3]]
+                be = (blp - blm) / 2. / bl
             else:
                 raise ValueError("No beam in config for {}".format(otag))
-            be = np.atleast_2d(be)[:, :lsize]
 
+            be = np.atleast_2d(be)[:, :lsize]
             beam_errors["tt"][tag] = np.copy(be[0])
             if self.pol:
                 for s in ["ee", "bb", "eb"]:
