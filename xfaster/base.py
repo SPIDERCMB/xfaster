@@ -147,7 +147,7 @@ class XFasterConfig(rcp):
 
             section_dict = {k: v for k, v in section_items.items()}
 
-            for k in section_items:
+            for k in list(section_items):
                 self.remove_option(section, k)
 
             for k, v in sorted(section_dict.items()):
