@@ -4,7 +4,7 @@ import healpy as hp
 from xfaster import xfaster_tools as xft
 
 """
-This scipt will generate the ensemble of maps needed to run the 
+This scipt will generate the ensemble of maps needed to run the
 xfaster_example.py script, including fake data maps, signal sims,
 noise sims, and masks.
 
@@ -97,6 +97,4 @@ for i in range(nsim + 1):
             hp.write_map(os.path.join(noise_path,
                                       "map_{}_{:04}.fits".format(tag, i-1)),
                          noise_smooth, partial=True, overwrite=True)
-            print("Wrote signal and noise map {} {}".format(tag, i-1))
-            
-            
+            print("Wrote signal and noise map {} {} / {}".format(tag, i-1, nsim))

@@ -9,6 +9,7 @@ Dependencies
 * ``numpy``
 * ``healpy``
 * ``camb``
+* ``emcee`` (only for likelihoods)
 
 XFaster is compatible with Python versions 3.0 and higher.
 
@@ -22,7 +23,9 @@ Example Script
 --------------
 To get started with the code before running it on your data, you can run through the example, described in more detail in the :ref:`Algorithm<Algorithm: Step by Step>` link.
 First, generate the small ensemble of maps by running `make_example_maps.py <https://github.com/annegambrel/xfaster/blob/main/example/make_example_maps.py>`_ in the ``examples`` directory.
+This should take about 15 minutes on an 8-core laptop.
 Then, run `xfaster_example.py <https://github.com/annegambrel/xfaster/blob/main/example/xfaster_example.py>`_.
+This should take about 20 minutes with 8 cores.
 This runs XFaster on the example maps, so you can see the step-by-step process and look at the outputs, as demonstrated :ref:`below<Reading the outputs>`.
 
 Setting up your data
@@ -179,7 +182,7 @@ Below, we show how to load up some bandpowers, error bars, transfer function, an
     axs[0].plot(ee_bin_centers, ee_transfer_95)
     axs[0].set_ylabel(r"$F_\ell$")
     axs[1].errorbar(ee_bin_centers, ee_specs, ee_errs)
-    axs[1].set_ylabel(r"$\ell(\ell+1)C_\ell/2\pi [\mu K_{CMB}]$")
+    axs[1].set_ylabel(r"$\ell(\ell+1)C_\ell/2\pi\, [\mu K_{CMB}]$")
     axs[1].set_xlabel(r"$\ell$")
 
     # Now get r-likelihood-- should be near the input r=1, but with scatter since it's
