@@ -92,7 +92,7 @@ class XFasterConfig(rcp):
     ConfigParser subclass for storing command line options and config.
     """
 
-    def __init__(self, defaults=None, default_section="Uncategorized"):
+    def __init__(self, defaults=None, default_sec="Uncategorized"):
         """
         Class that tracks command-line options for storage to disk.
 
@@ -106,9 +106,9 @@ class XFasterConfig(rcp):
         """
         from collections import OrderedDict
 
-        super(XFasterConfig, self).__init__(
-            default_section=default_section, dict_type=OrderedDict,
-        )
+        super(XFasterConfig, self).__init__(dict_type=OrderedDict)
+        self.default_sec = default_sec
+        self.add_section(default_sec)
         if defaults is not None:
             self.update(defaults)
 
@@ -126,15 +126,15 @@ class XFasterConfig(rcp):
             Name of section to update. Default: self.default_sec
         """
         if section is None:
-            section = self.default_section
-        if section != self.default_section and not self.has_section(section):
+            section = self.default_sec
+        if not self.has_section(section):
             self.add_section(section)
         # change kwargs to be like any other options
         kw = options.pop("kwargs", None)
         if isinstance(kw, dict):
             options.update(kw)
         for k, v in sorted(options.items()):
-            self.remove_option(self.default_section, k)
+            self.remove_option(self.default_sec, k)
             self.set(section, k, str(v))
 
     def sort(self):
