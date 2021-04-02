@@ -67,12 +67,11 @@ for tag in tags:
 
 # make data, signal, noise sims
 for i in range(nsim + 1):
-    sig = hp.synfast(cls, nside=nside)
+    sig = hp.synfast(cls, nside=nside, new=True)
     noise = np.zeros_like(sig)
 
     # smooth both by filter transfer function
     sig = hp.smoothing(sig, beam_window=np.sqrt(fl))
-    noise = hp.smoothing(noise, beam_window=np.sqrt(fl))
     for ti, tag in enumerate(tags):
         sig_smooth = hp.smoothing(sig, np.deg2rad(fwhms[ti]/60.), verbose=False)
         noise[0][mask] = np.random.normal(scale=gnoise[ti], size=np.sum(mask))
@@ -80,24 +79,24 @@ for i in range(nsim + 1):
                                           size=np.sum(mask))
         noise[2][mask] = np.random.normal(scale=gnoise[ti]*np.sqrt(2), #pol
                                           size=np.sum(mask))
+        noise_smooth = hp.smoothing(noise, beam_window=np.sqrt(fl))
         if i == 0:
             # call this data
-            dat = sig_smooth + data_noise_scale * noise
+            dat = sig_smooth + data_noise_scale * noise_smooth
             dat[:, ~mask] = hp.UNSEEN
             hp.write_map(os.path.join(data_path, "map_{}.fits".format(tag)),
                          dat, partial=True, overwrite=True)
             print("Wrote data map {}".format(tag))
         else:
             # signal and noise
-            dat = sig_smooth + data_noise_scale * noise
             sig_smooth[:, ~mask] = hp.UNSEEN
-            noise[:, ~mask] = hp.UNSEEN
+            noise_smooth[:, ~mask] = hp.UNSEEN
             hp.write_map(os.path.join(sig_path,
                                       "map_{}_{:04}.fits".format(tag, i-1)),
                          sig_smooth, partial=True, overwrite=True)
             hp.write_map(os.path.join(noise_path,
                                       "map_{}_{:04}.fits".format(tag, i-1)),
-                         noise, partial=True, overwrite=True)
+                         noise_smooth, partial=True, overwrite=True)
             print("Wrote signal and noise map {} {}".format(tag, i-1))
             
             
