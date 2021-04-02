@@ -294,13 +294,6 @@ class XFaster(object):
         if signal_transfer_type is None:
             signal_transfer_type = signal_type
 
-        # make sure sims get rerun correctly
-        if signal_transfer_type == signal_type:
-            # if signal types match, then sims are run before computing the
-            # transfer function, so need to set the correct checkpoint to rerun
-            if self.checkpoint == "sims":
-                self.checkpoint = "sims_transfer"
-
         # regularize data root
         data_root = os.path.abspath(data_root)
         if not os.path.exists(data_root):
@@ -804,6 +797,14 @@ class XFaster(object):
 
         if signal_transfer_type is None:
             signal_transfer_type = signal_type
+
+        # make sure sims get rerun correctly
+        if signal_transfer_type == signal_type:
+            # if signal types match, then sims are run before computing the
+            # transfer function, so need to set the correct checkpoint to rerun
+            if self.checkpoint == "sims":
+                self.checkpoint = "sims_transfer"
+
         # one of these must be set to do a null test
         null_run = False
         if data_root2 is not None or data_subset2 is not None:
