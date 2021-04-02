@@ -47,9 +47,6 @@ def xfaster_run(
     res_specs=None,
     bin_width_res=25,
     weighted_bins=False,
-    tt_marg=False,
-    auto_marg_table=None,
-    cross_marg_table=None,
     ensemble_mean=False,
     ensemble_median=False,
     sim_index=None,
@@ -197,16 +194,6 @@ def xfaster_run(
         polarized maps, or TT for unpolarized maps.
     bin_width_res : int
         Width of each bin to use for residual noise fitting
-    tt_marg : bool
-        Marginalize over all but one map's TT spectrum. Required for convergence
-        if the masks are very similar between maps (?) -- This is obsolete,
-        use auto_marg_table
-    auto_marg_table : string
-        JSON file specifying which auto spectra to marginalise for each map.
-        If not None will override tt_marg
-    cross_marg_table : string
-        JSON file specifying which cross spectra to marginalise for each
-        map tag.
     ensemble_mean : bool
         If True, substitute S+N ensemble means for Cls to test biasing
     ensemble_median : bool
@@ -339,7 +326,7 @@ def xfaster_run(
     save_fake_data : bool
         If true, save data_xcorr file to disk for fake data.
     """
-    from . import __version__ as xf_version
+    from . import __version__ as version
 
     # py3-compatible CPU timer
     cpu_time = getattr(time, 'process_time', getattr(time, 'clock', time.time))
@@ -363,7 +350,7 @@ def xfaster_run(
 
     # initialize config file
     config_vars = base.XFasterConfig(locals(), "XFaster General")
-    config_vars.update(dict(version=xf_version, config=config))
+    config_vars.remove_option("XFaster General", "cpu_time")
 
     common_opts = dict(
         lmax=lmax,
@@ -490,13 +477,6 @@ def xfaster_run(
     # disable residual fitting in single map mode
     if X.num_maps == 1 or not multi_map:
         residual_fit = False
-
-    marg_opts = dict(
-        tt_marg=tt_marg,
-        auto_marg_table=auto_marg_table,
-        cross_marg_table=cross_marg_table,
-    )
-    config_vars.update(marg_opts, "Marginalization Options")
 
     like_opts = dict(
         mcmc=mcmc,
@@ -752,7 +732,7 @@ def xfaster_parse(args=None, test=False):
         dest="mode",
         metavar="MODE",
         title="subcommands",
-        help="Function to perform. For more help, call: " "%(prog)s %(metavar)s -h",
+        help="Function to perform. For more help, call: %(prog)s %(metavar)s -h",
     )
     parser_opts.pop("description")
 
@@ -844,12 +824,12 @@ def xfaster_parse(args=None, test=False):
         add_arg(
             G,
             "signal_subset",
-            help="Glob_parseable map tag to include " "for signal sims",
+            help="Glob_parseable map tag to include for signal sims",
         )
         add_arg(
             G,
             "noise_subset",
-            help="Glob_parseable map tag to include " "for noise sims",
+            help="Glob_parseable map tag to include for noise sims",
         )
         add_arg(G, "data_type", help="Variant of data maps to use")
         add_arg(G, "noise_type", help="Noise sim variant")
@@ -884,7 +864,7 @@ def xfaster_parse(args=None, test=False):
         add_arg(
             G,
             "data_root2",
-            help="Root directory containing the input data structure " "for null tests",
+            help="Root directory containing the input data structure for null tests",
         )
         add_arg(
             G,
@@ -895,13 +875,12 @@ def xfaster_parse(args=None, test=False):
             G,
             "residual_fit",
             help="Fit residual shapes to observed power."
-            " Residual shape can be split into a number of bins"
-            "Use --residual-marg to marginalize over residual bins.",
+            " Residual shape can be split into a number of bins",
         )
         add_arg(
             G,
             "foreground_fit",
-            help="Include foreground residuals in the residual bins to be " "fit",
+            help="Include foreground residuals in the residual bins to be fit",
         )
         add_arg(
             G,
@@ -921,11 +900,6 @@ def xfaster_parse(args=None, test=False):
             G,
             "weighted_bins",
             help="Use lfac-weighted binning operator to construct Cbls",
-        )
-        add_arg(G, "tt_marg", help="Marginalize over TT spectra for any input maps")
-        add_arg(G, "auto_marg_table", help="Table specifying what autos to marginalise")
-        add_arg(
-            G, "cross_marg_table", help="Table specifying what crosses to marginalise"
         )
         E = G.add_mutually_exclusive_group()
         add_arg(
@@ -965,7 +939,7 @@ def xfaster_parse(args=None, test=False):
         add_arg(
             G,
             "iter_max",
-            help="Maximum number of iterations to compute the Fisher " "matrix",
+            help="Maximum number of iterations to compute the Fisher matrix",
         )
         add_arg(G, "tbeb", help="Include TB/EB spectra in the estimator")
         add_arg(G, "fix_bb_xfer", help="Fix BB xfer to equal EE xfer")
@@ -998,7 +972,7 @@ def xfaster_parse(args=None, test=False):
         add_arg(
             G,
             "save_iters",
-            help="Save data for each fisher iteration.  " "Useful for debugging",
+            help="Save data for each fisher iteration.  Useful for debugging",
         )
         add_arg(
             G,
@@ -1047,7 +1021,7 @@ def xfaster_parse(args=None, test=False):
             G,
             "delta_beta_prior",
             argtype=float,
-            help="The width of the prior on the additive deviation from " "beta_ref",
+            help="The width of the prior on the additive deviation from beta_ref",
         )
         add_arg(
             G, "foreground_type", help="Foreground sim variant to use for sim_index"
@@ -1185,7 +1159,7 @@ def xfaster_parse(args=None, test=False):
                 help="Submit a slurm script rather than PBS",
             )
             G.add_argument(
-                "--env-script", help="Script to source in jobs to set up " "environment"
+                "--env-script", help="Script to source in jobs to set up environment"
             )
             G.add_argument("--exclude", help="Nodes to exclude")
             G.add_argument(
@@ -1193,7 +1167,7 @@ def xfaster_parse(args=None, test=False):
                 action="store",
                 nargs="+",
                 default=None,
-                help="List of job IDs to wait on completion of " "before running job",
+                help="List of job IDs to wait on completion of before running job",
             )
 
         # other arguments
@@ -1291,9 +1265,6 @@ class XFasterJobGroup(object):
             warnings.warn("Argument model_spec is deprecated, use signal_spec instead")
             kwargs["signal_transfer_spec"] = kwargs.pop("signal_spec")
             kwargs["signal_spec"] = kwargs.pop("model_spec")
-        if "residual_marg" in kwargs:
-            warnings.warn("Argument residual_marg is deprecated")
-            kwargs.pop("residual_marg")
 
         # figure out variable types from default values
         defaults = base.get_func_defaults(xfaster_run)
