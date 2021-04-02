@@ -157,7 +157,7 @@ class XFaster(object):
         XXX more detail here.
         """
         # Load map configuration file
-        assert os.path.exists(filename)
+        assert os.path.exists(filename), "Missing config file {}".format(filename)
         self.config_root = os.path.dirname(os.path.abspath(filename))
         cfg = base.XFasterConfig()
         cfg.read(filename)
@@ -167,15 +167,15 @@ class XFaster(object):
 
         # beam fwhm for each tag, if not supplied in beam_product
         self.fwhm = {k: cfg.getfloat("fwhm", k) for k in cfg["fwhm"]}
-        assert set(self.dict_freqs) >= set(self.fwhm)
+        assert set(self.dict_freqs) >= set(self.fwhm), "Unknown tags in [fwhm]"
 
         # beam fwhm error for each tag, if not supplied in beam_error_product
         self.fwhm_err = {k: cfg.getfloat("fwhm_err", k) for k in cfg["fwhm_err"]}
-        assert set(self.dict_freqs) >= set(self.fwhm_err)
+        assert set(self.dict_freqs) >= set(self.fwhm_err), "Unknown tags in [fwhm_err]"
 
         # fit for the transfer function for each tag?
         self.fit_transfer = {k: cfg.getboolean("transfer", k) for k in cfg["transfer"]}
-        assert set(self.dict_freqs) == set(self.fit_transfer)
+        assert set(self.dict_freqs) == set(self.fit_transfer), "Missing tags in [fit_transfer]"
 
         # make sure beam product files exist
         v = cfg["beam"].get("beam_product", None)
@@ -187,7 +187,8 @@ class XFaster(object):
                 self.beam_product = os.path.join(
                     self.config_root, self.beam_product
                 )
-            assert os.path.exists(self.beam_product)
+            assert os.path.exists(self.beam_product), \
+                "Missing beam product file {}".format(self.beam_product)
 
         v = cfg["beam"].get("beam_error_product", None)
         if str(v).lower() == "none":
@@ -198,7 +199,8 @@ class XFaster(object):
                 self.beam_error_product = os.path.join(
                     self.config_root, self.beam_error_product
                 )
-            assert os.path.exists(self.beam_error_product)
+            assert os.path.exists(self.beam_error_product), \
+                "Missing beam error product file {}".format(self.beam_error_product)
 
     def init_log(
         self,
