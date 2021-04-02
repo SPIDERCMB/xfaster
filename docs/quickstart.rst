@@ -14,7 +14,7 @@ XFaster is compatible with Python versions 3.0 and higher.
 
 Installation
 ------------
-After cloning the repo, install xfaster::
+After cloning the repo (`<https://github.com/annegambrel/xfaster>`_), install xfaster::
 
     $ python setup.py install
 
