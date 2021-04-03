@@ -16,8 +16,8 @@ jobs:
         pip install -e .
     # Standard drop-in approach that should work for most people.
     - uses: ammaraskar/sphinx-action@master
-      pre-build-command: "apt-get install -y gfortran"
       with:
+        pre-build-command: "apt-get install -y gfortran"
         docs-folder: "docs/"
     # Create an artifact of the html output.
     - uses: actions/upload-artifact@v2
