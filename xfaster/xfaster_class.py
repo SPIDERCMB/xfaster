@@ -6743,16 +6743,14 @@ class XFaster(object):
                     ndim, num_walkers
                 )
             )
-        x0 = np.array(x0)
-        ndim = x0.size
         x0 = np.array(x0)[None, :] * (1 + 1e-4 * np.random.randn(num_walkers, len(x0)))
 
-        if brute_force:
+        if brute_force or (r_prior is not None and ndim == 1):
             self.log("Computing brute-force r profile likelihood", "info")
             likefile = self.get_filename(
                 save_name, ext=".txt", map_tag=map_tag, extra_tag=file_tag, bp_opts=True
             )
-            rs = np.linspace(0, 1, 200)
+            rs = np.linspace(0, 2, 500)
             likes = np.zeros_like(rs)
             for idx, r in enumerate(rs):
                 like = log_like(r=r)
