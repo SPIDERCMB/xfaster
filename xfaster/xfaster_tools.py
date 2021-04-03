@@ -77,6 +77,7 @@ def ThreeJC_2(l2i, m2i, l3i, m3i):
     Wigner 3j symbols
     """
     import camb
+
     try:
         from camb.mathutils import threej
     except ImportError:
@@ -119,6 +120,7 @@ def get_camb_cl(r, lmax, nt=None, spec="total", lfac=True):
     """
     # Set up a new set of parameters for CAMB
     import camb
+
     pars = camb.CAMBparams()
 
     # This function sets up CosmoMC-like settings, with one massive neutrino and
@@ -134,7 +136,7 @@ def get_camb_cl(r, lmax, nt=None, spec="total", lfac=True):
 
     ln1010As = 3.0448
 
-    pars.InitPower.set_params(As=np.exp(ln1010As)/1.e10, ns=0.96605, r=r, nt=nt)
+    pars.InitPower.set_params(As=np.exp(ln1010As) / 1.0e10, ns=0.96605, r=r, nt=nt)
     if lmax < 2500:
         # This results in unacceptable bias. Use higher lmax, then cut it down
         lmax0 = 2500
@@ -146,8 +148,7 @@ def get_camb_cl(r, lmax, nt=None, spec="total", lfac=True):
 
     # calculate results for these parameters
     results = camb.get_results(pars)
-    powers = results.get_cmb_power_spectra(pars, CMB_unit="muK",
-                                           raw_cl=not lfac)
+    powers = results.get_cmb_power_spectra(pars, CMB_unit="muK", raw_cl=not lfac)
 
     totCL = powers[spec][: lmax + 1, :4].T
 

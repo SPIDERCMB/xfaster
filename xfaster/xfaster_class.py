@@ -2138,10 +2138,9 @@ class XFaster(object):
             template_alpha = OrderedDict()
 
         # ensure tagged by original tags
-        template_alpha = OrderedDict([
-            (k, v) for k, v in template_alpha.items()
-            if k in self.map_tags_orig
-        ])
+        template_alpha = OrderedDict(
+            [(k, v) for k, v in template_alpha.items() if k in self.map_tags_orig]
+        )
 
         # Check for output data on disk
         save_attrs = ["cls_data", "nside"]
@@ -2312,7 +2311,8 @@ class XFaster(object):
                 if sub_planck:
                     # cache raw data alms and planck alms together
                     mp1hm1, mp1hm2, mp2hm1, mp2hm2 = (
-                        self.apply_mask(self.get_map(f), mask) for f in plank_files_split[idx]
+                        self.apply_mask(self.get_map(f), mask)
+                        for f in plank_files_split[idx]
                     )
                     m_alms_hm1 = self.map2alm((mp1hm1 + mp2hm1) / 2.0, self.pol)
                     m_alms_hm2 = self.map2alm((mp1hm2 + mp2hm2) / 2.0, self.pol)
@@ -3106,10 +3106,9 @@ class XFaster(object):
             template_alpha = OrderedDict()
 
         # ensure tagged by original tags
-        template_alpha = OrderedDict([
-            (k, v) for k, v in template_alpha.items()
-            if k in self.map_tags_orig
-        ])
+        template_alpha = OrderedDict(
+            [(k, v) for k, v in template_alpha.items() if k in self.map_tags_orig]
+        )
 
         template_fit = fake_data_template is not None
         if template_fit:
@@ -3128,7 +3127,9 @@ class XFaster(object):
             # compute alms for that and templates
             if idx in cache:
                 return cache[idx]
-            self.log("Computing Alms for fake data map {}/{}".format(idx, num_maps), "all")
+            self.log(
+                "Computing Alms for fake data map {}/{}".format(idx, num_maps), "all"
+            )
             mfile = map_files[idx]
 
             if do_signal:
@@ -3912,13 +3913,19 @@ class XFaster(object):
                 # convert error on the FWHM to an envelope error on the beam window
                 fwhm = self.fwhm[otag]
                 bl = self.beam_windows["tt"][tag]
-                blp = hp.gauss_beam(fwhm * (1 - self.fwhm_err[otag]), lsize - 1, self.pol)
-                blm = hp.gauss_beam(fwhm * (1 + self.fwhm_err[otag]), lsize - 1, self.pol)
+                blp = hp.gauss_beam(
+                    fwhm * (1 - self.fwhm_err[otag]), lsize - 1, self.pol
+                )
+                blm = hp.gauss_beam(
+                    fwhm * (1 + self.fwhm_err[otag]), lsize - 1, self.pol
+                )
                 if self.pol:
-                    bl = np.asarray([bl, self.beam_windows["ee"][tag], self.beam_windows["te"][tag]])
+                    bl = np.asarray(
+                        [bl, self.beam_windows["ee"][tag], self.beam_windows["te"][tag]]
+                    )
                     blp = blp.T[[0, 1, 3]]
                     blm = blm.T[[0, 1, 3]]
-                be = (blp - blm) / 2. / bl
+                be = (blp - blm) / 2.0 / bl
             else:
                 raise ValueError("No beam in config for {}".format(otag))
 
@@ -4462,7 +4469,6 @@ class XFaster(object):
                         self.md_fg_b3 = md_b3
                 bin_things(comp, d, md, d_b1, d_b2, d_b3, md_b1, md_b2, md_b3)
         return cbl
-
 
     def get_model_spectra(
         self, qb, cbl, delta=True, res=True, cls_noise=None, cond_noise=None
@@ -5252,7 +5258,9 @@ class XFaster(object):
             # this should happen only far from max like
             bad_idx = np.unique(np.where(bad)[0])
             bad_ells = np.arange(ell.start, ell.stop)[bad_idx]
-            self.log("Found negative eigenvalues at ells {}".format(bad_ells), "warning")
+            self.log(
+                "Found negative eigenvalues at ells {}".format(bad_ells), "warning"
+            )
             gmat[..., bad_idx] = 0
         inv_lam = 1.0 / lam
         Dinv = np.einsum("...ij,...j,...kj->...ik", R, inv_lam, R).swapaxes(0, -1)
@@ -6260,8 +6268,9 @@ class XFaster(object):
 
         # null out unused priors
         self.template_alpha = getattr(self, "template_alpha", None)
-        if self.template_alpha is None or \
-           all([x is None for x in self.template_alpha.values()]):
+        if self.template_alpha is None or all(
+            [x is None for x in self.template_alpha.values()]
+        ):
             alpha_prior = None
 
         # count alpha parameters to fit
@@ -6329,7 +6338,6 @@ class XFaster(object):
             lmin=lmin,
             lmax=lmax,
         )
-
 
         if mcmc and reset_backend is None:
             ret = self.load_data(

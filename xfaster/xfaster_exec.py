@@ -329,7 +329,7 @@ def xfaster_run(
     from . import __version__ as version
 
     # py3-compatible CPU timer
-    cpu_time = getattr(time, 'process_time', getattr(time, 'clock', time.time))
+    cpu_time = getattr(time, "process_time", getattr(time, "clock", time.time))
     cpu_start = cpu_time()
     time_start = time.time()
 
@@ -344,7 +344,9 @@ def xfaster_run(
         )
 
     if len(template_alpha_tags) != len(template_alpha):
-        raise ValueError("template_alpha_tags and template_alpha must be the same length")
+        raise ValueError(
+            "template_alpha_tags and template_alpha must be the same length"
+        )
     template_alpha = dict(zip(template_alpha_tags, template_alpha))
     del template_alpha_tags
 
@@ -583,7 +585,7 @@ def xfaster_run(
     )
     if fake_data_r is not None:
         X.log("Replacing data with fake data...", "notice")
-        X.force_rerun['bandpowers'] = True
+        X.force_rerun["bandpowers"] = True
         X.get_masked_fake_data(
             fake_data_r=fake_data_r,
             fake_data_template=fake_data_template,
@@ -632,7 +634,10 @@ def xfaster_run(
 
     cpu_elapsed = cpu_time() - cpu_start
     time_elapsed = time.time() - time_start
-    X.log("Wall time: {:.2f} s, CPU time: {:.2f} s".format(time_elapsed, cpu_elapsed), "notice")
+    X.log(
+        "Wall time: {:.2f} s, CPU time: {:.2f} s".format(time_elapsed, cpu_elapsed),
+        "notice",
+    )
 
 
 xfaster_run.__doc__ = xfaster_run.__doc__.format(checkpoints=xfc.XFaster.checkpoints)

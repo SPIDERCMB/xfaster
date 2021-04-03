@@ -30,7 +30,7 @@ def corr_index(idx, n):
     ---------
     idx : int
         The index of the map in the list of maps being looped through.
-    n : int 
+    n : int
         The number of maps being looped through.
 
     Returns
@@ -145,7 +145,7 @@ def load_compat(*args, **kwargs):
 
     for k, v in out.items():
         # convert singletons to scalars
-        if hasattr(v, 'item') and not v.shape:
+        if hasattr(v, "item") and not v.shape:
             v = v.item()
 
         # handle unicode data
@@ -164,20 +164,19 @@ def load_pickle_compat(filename):
     that the encoding is set to 'latin1' in python3.
     """
     import pickle
-    if hasattr(filename, 'read'):
-        if filename.mode == 'rb':
+
+    if hasattr(filename, "read"):
+        if filename.mode == "rb":
             try:
-                return pickle.load(f, encoding='latin1')
+                return pickle.load(f, encoding="latin1")
             except TypeError:
                 return pickle.load(f)
-        warn(
-            "Reopening file {} in mode 'rb' for unpickling".format(filename.name)
-        )
+        warn("Reopening file {} in mode 'rb' for unpickling".format(filename.name))
         filename.close()
         filename = filename.name
-    with open(filename, 'rb') as f:
+    with open(filename, "rb") as f:
         try:
-            return pickle.load(f, encoding='latin1')
+            return pickle.load(f, encoding="latin1")
         except TypeError:
             return pickle.load(f)
 
@@ -205,6 +204,7 @@ def parse_data(data, field):
 
     version = data.get("data_version", -1)
     from .xfaster_class import XFaster
+
     dv = XFaster.data_version
 
     # add backward-compatibile parsing here if necessary
