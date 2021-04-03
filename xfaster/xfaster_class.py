@@ -112,7 +112,6 @@ class XFaster(object):
         self.pol = pol
         self.pol_dim = 3 if self.pol else 1
         self.pol_mask = pol_mask if self.pol else False
-        self.planck_freqs = ["100", "143", "217", "353"]
 
         self.ref_freq = ref_freq
         self.beta_ref = beta_ref
@@ -152,7 +151,47 @@ class XFaster(object):
         """
         Load the input map configuration file.
 
-        XXX more detail here.
+        The configuration file should be a file that is readable using
+        ``ConfigParser``.  It must contain at least a single section called
+        "frequencies", with keys for each map tag that may be used by the
+        algorithm.  If using the harmonic-domain foreground fitting portions of
+        the algorith, the value of each key should be the observing frequency in
+        GHz that is appropriate for each tag.  Otherwise, these frequencies can
+        be any floating point value.
+
+        Other optional sections include:
+
+        beam
+        ----
+        Beam window specifications for each of the tags in "frequencies".  The
+        "beam_product" key should be a path to a .npz file containing a
+        dictionary of beam windows keyed by tag.  The "beam_product_error" key
+        should be a path to a similar dictionary containing fraction beam error
+        envelopes, also keyed by tag.  See ``get_beams`` or ``get_beam_errors``
+        for more details.
+
+        fwhm
+        ----
+        If using a Gaussian beam model, this section should contain a list of
+        FWHM in arcmin for each such tag in "frequencies".  Keys missing here
+        should be present in the beam product file.
+
+        fwhm_err
+        --------
+        If using a Gaussian beam model, this section should contain a list of
+        fractional errors on the FWHM for each such tag in "frequencies".  Keys
+        missing here should be present in the beam error product file.
+
+        transfer
+        --------
+        If present, this section should contain each of the keys in
+        "frequencies", with the value set to "true" if a transfer function
+        should be computed for the tag, and "false" otherwise (in which case the
+        transfer function will be set to unity for all bins).  This option is
+        useful for including, e.g. optimally weighted Planck maps with no
+        transfer function in a joint analysis.  If not supplied, it is assumed
+        that a transfer function should be computed for every tag in
+        "frequencies".
         """
         # Load map configuration file
         assert os.path.exists(filename), "Missing config file {}".format(filename)
@@ -161,45 +200,76 @@ class XFaster(object):
         cfg.read(filename)
 
         # dictionary of map frequencies keyed by map tag
-        self.dict_freqs = {k: cfg.getfloat("freqs", k) for k in cfg["freqs"]}
+        assert "frequencies" in cfg, "Missing [frequencies] section"
+        self.dict_freqs = {
+            k: cfg.getfloat("frequencies", k) for k in cfg["frequencies"]
+        }
+        tagset = set(self.dict_freqs)
+        assert len(self.dict_freqs) > 0, "At least one map tag is required"
 
         # beam fwhm for each tag, if not supplied in beam_product
         # converted from arcmin to radians
-        self.fwhm = {k: np.radians(cfg.getfloat("fwhm", k) / 60.) for k in cfg["fwhm"]}
-        assert set(self.dict_freqs) >= set(self.fwhm), "Unknown tags in [fwhm]"
+        if "fwhm" in cfg:
+            self.fwhm = {
+                k: np.radians(cfg.getfloat("fwhm", k) / 60.0) for k in cfg["fwhm"]
+            }
+            assert tagset >= set(self.fwhm), "Unknown tags in [fwhm]"
+        else:
+            self.fwhm = {}
 
         # beam fwhm error for each tag, if not supplied in beam_error_product
-        self.fwhm_err = {k: cfg.getfloat("fwhm_err", k) for k in cfg["fwhm_err"]}
-        assert set(self.dict_freqs) >= set(self.fwhm_err), "Unknown tags in [fwhm_err]"
-
-        # fit for the transfer function for each tag?
-        self.fit_transfer = {k: cfg.getboolean("transfer", k) for k in cfg["transfer"]}
-        assert set(self.dict_freqs) == set(self.fit_transfer), "Missing tags in [fit_transfer]"
+        if "fwhm_err" in cfg:
+            self.fwhm_err = {k: cfg.getfloat("fwhm_err", k) for k in cfg["fwhm_err"]}
+            assert tagset >= set(self.fwhm_err), "Unknown tags in [fwhm_err]"
+        else:
+            self.fwhm_err = {}
 
         # make sure beam product files exist
-        v = cfg["beam"].get("beam_product", None)
-        if str(v).lower() == "none":
-            v = None
-        self.beam_product = v
-        if self.beam_product is not None:
-            if not os.path.exists(self.beam_product):
-                self.beam_product = os.path.join(
-                    self.config_root, self.beam_product
-                )
-            assert os.path.exists(self.beam_product), \
-                "Missing beam product file {}".format(self.beam_product)
+        if "beam" in cfg:
+            v = cfg["beam"].get("beam_product", None)
+            if str(v).lower() != "none":
+                if not os.path.exists(v):
+                    v = os.path.join(self.config_root, v)
+                assert os.path.exists(v), "Missing beam product file {}".format(v)
+                self.beam_product = pt.load_compat(v)
+                beam_set = set(self.beam_product)
+                assert tagset >= beam_set, "Unknown tags in beam product"
+            else:
+                self.beam_product = {}
 
-        v = cfg["beam"].get("beam_error_product", None)
-        if str(v).lower() == "none":
-            v = None
-        self.beam_error_product = v
-        if self.beam_error_product is not None:
-            if not os.path.exists(self.beam_error_product):
-                self.beam_error_product = os.path.join(
-                    self.config_root, self.beam_error_product
-                )
-            assert os.path.exists(self.beam_error_product), \
-                "Missing beam error product file {}".format(self.beam_error_product)
+            v = cfg["beam"].get("beam_error_product", None)
+            if str(v).lower() != "none":
+                if not os.path.exists(v):
+                    v = os.path.join(self.config_root, v)
+                assert os.path.exists(v), "Missing beam error product file {}".format(v)
+                self.beam_error_product = pt.load_compat(v)
+                beam_set = set(self.beam_error_product)
+                assert tagset >= beam_set, "Unknown tags in beam error product"
+            else:
+                self.beam_error_product = {}
+        else:
+            self.beam_product = {}
+            self.beam_error_product = {}
+
+        # make sure all tags are present in either beam products or fwhm tables
+        fwhm_set = set(self.fwhm) | set(self.beam_product)
+        assert fwhm_set == tagset, "Missing tags in [fwhm] or beam product"
+
+        if len(self.fwhm_err) or len(self.beam_error_product):
+            fwhm_set = set(self.fwhm_err) | set(self.beam_error_product)
+            assert (
+                fwhm_set == tagset
+            ), "Missing tags in [fwhm_err] or beam error product"
+
+        # fit for the transfer function for each tag?
+        if "transfer" in cfg:
+            self.fit_transfer = {
+                k: cfg.getboolean("transfer", k) for k in cfg["transfer"]
+            }
+            assert tagset == set(self.fit_transfer), "Missing tags in [transfer]"
+        else:
+            # assume true for all tags otherwise
+            self.fit_transfer = {k: True for k in self.dict_freqs}
 
     def init_log(self, level="notice", filename=None):
         """
@@ -326,7 +396,6 @@ class XFaster(object):
             signal_transfer_type = signal_type
 
         # regularize data root
-        data_root = os.path.abspath(data_root)
         if not os.path.exists(data_root):
             raise OSError("Missing data root {}".format(data_root))
 
@@ -3656,9 +3725,8 @@ class XFaster(object):
                 )
                 filename = "spec_{}.dat".format(os.path.basename(signal_root))
                 filename = os.path.join(signal_root, filename)
-            if not os.path.exists(filename) and not os.path.isabs(filename):
-                filename = os.path.abspath(os.path.join(self.config_root,
-                                                        filename))
+            elif not os.path.exists(filename):
+                filename = os.path.join(self.config_root, filename)
             if not os.path.exists(filename):
                 raise OSError("Missing model file {}".format(filename))
 
@@ -3786,14 +3854,9 @@ class XFaster(object):
             pwl[1, :end] = pixP[:end]
             pwl[2, :end] = np.sqrt(pixT[:end] * pixP[:end])
 
-        if self.beam_product is not None:
-            beam_prod = pt.load_compat(self.beam_product)
-        else:
-            beam_prod = {}
-
         for tag, otag in zip(self.map_tags, self.map_tags_orig):
-            if otag in beam_prod:
-                bl = np.atleast_2d(beam_prod[otag])[:, :lsize]
+            if otag in self.beam_product:
+                bl = np.atleast_2d(self.beam_product[otag])[:, :lsize]
             elif otag in self.fwhm:
                 bl = hp.gauss_beam(self.fwhm[otag], lsize - 1, self.pol)
                 if self.pol:
@@ -3842,14 +3905,9 @@ class XFaster(object):
             for s in ["ee", "bb", "te", "eb", "tb"]:
                 beam_errors[s] = OrderedDict()
 
-        if self.beam_error_product is not None:
-            beam_err_prod = pt.load_compat(self.beam_error_product)
-        else:
-            beam_err_prod = {}
-
         for tag, otag in zip(self.map_tags, self.map_tags_orig):
-            if otag in beam_err_prod:
-                be = beam_err_prod[otag]
+            if otag in self.beam_error_product:
+                be = self.beam_error_product[otag]
             elif otag in self.fwhm_err:
                 # convert error on the FWHM to an envelope error on the beam window
                 fwhm = self.fwhm[otag]
@@ -6395,8 +6453,6 @@ class XFaster(object):
             cls_model = copy.deepcopy(cls_model_scalar)
 
         # XXX TODO
-        # include priors on noise residuals from inv_fish
-        # include beam uncertainties
         # how to marginalize over the garbage bin?
 
         def parse_params(theta):

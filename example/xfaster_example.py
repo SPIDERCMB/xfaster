@@ -1,4 +1,3 @@
-import os
 import xfaster as xf
 
 # use this script to run the xfaster algorithm with your own options
@@ -12,6 +11,11 @@ submit_opts = {
     "omp_threads": 1,
 }
 
+# Paths for the following keys are relative to where this script is run:
+#     config, data_root, data_root2, output_root
+# If running this script from a different directory, make sure these
+# keys point to the correct locations.
+
 xfaster_opts = {
     # run options
     "pol": True,
@@ -23,7 +27,7 @@ xfaster_opts = {
     "output_root": "outputs_example",
     "output_tag": "95x150",
     # input files
-    "config": os.path.abspath("config_example.ini"), # must be abspath to submit
+    "config": "config_example.ini",
     "data_root": "maps_example",
     "data_subset": "full/*95,full/*150",
     "data_type": "raw",

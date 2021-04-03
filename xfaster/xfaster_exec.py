@@ -391,6 +391,7 @@ def xfaster_run(
     )
     config_vars.update(file_opts, "File Options")
 
+    X.log("Configuring file structure...", "notice")
     file_vars = X.get_files(**file_opts)
     config_vars.update(file_vars, "File Settings")
 
@@ -1237,6 +1238,13 @@ class XFasterJobGroup(object):
         job_opts = base.extract_func_kwargs(
             self.set_job_options, kwargs, pop=True, others_ok=True
         )
+
+        # ensure absolute paths for submit
+        for key in ["config", "data_root", "data_root2", "output_root"]:
+            value = kwargs.get(key, None)
+            if value is not None:
+                value = os.path.abspath(value)
+                kwargs[key] = value
 
         output_root = kwargs.get("output_root")
         output_tag = kwargs.get("output_tag")
