@@ -7,7 +7,7 @@ base
   :members:
   :undoc-members:
 
-  Logging, config, and generic tools
+  Config and generic tools
 
 batch_tools
 -----------
@@ -15,8 +15,8 @@ batch_tools
   :members:
   :undoc-members:
 
-  Tools for submitting to grid systems: PBS or SLURM
-     
+  Tools for submitting to HPC systems: PBS or SLURM
+
 parse_tools
 -----------
 .. automodule:: xfaster.parse_tools

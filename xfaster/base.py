@@ -124,7 +124,7 @@ def extract_func_kwargs(func, kwargs, pop=False, others_ok=True, warn=False):
         This function's keyword arguments will be extracted.
     kwargs : dict
         Dictionary of keyword arguments from which to extract.
-        NOTE: pass the kwargs dict itself, not **kwargs
+        NOTE: pass the ``kwargs`` dict itself, not ``**kwargs``
     pop : bool, optional
         Whether to pop matching arguments from kwargs.
     others_ok : bool
@@ -132,7 +132,7 @@ def extract_func_kwargs(func, kwargs, pop=False, others_ok=True, warn=False):
         that are not keyword arguments of func.
     warn : bool
         If True, a warning is issued when kwargs contains keys that are not
-        keyword arguments of func.  Use with `others_ok=True`.
+        keyword arguments of func.  Use with ``others_ok=True``.
 
     Returns
     -------

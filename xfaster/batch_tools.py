@@ -143,11 +143,11 @@ def batch_sub(
         Number of OpenMP threads to use per process
     mpi_procs : int
         Number of MPI processes to use.
-        `mpirun` calls will be added to all lines of cmd as needed.
-        If cmd contains `mpirun` or `mpiexec`, this does nothing.
+        ``mpirun`` calls will be added to all lines of cmd as needed.
+        If cmd contains ``mpirun`` or ``mpiexec``, this does nothing.
     mpi_args : string
-        Additional command line arguments for inserted `mpirun` commands.
-        If cmd contains `mpirun` or `mpiexec`, this does nothing.
+        Additional command line arguments for inserted ``mpirun`` commands.
+        If cmd contains ``mpirun`` or ``mpiexec``, this does nothing.
     env_script : string, optional
         Path to script to source during job script preamble
         For loading modules, setting environment variables, etc
@@ -459,9 +459,9 @@ class JobArgumentParser(object):
         -----------------
         Are used to fix values for parameters not needed by a script. The
         corresponding command line arguments will not be added. For example,
-        if not using MPI, pass `mpi_procs=None` and then there will be no
-        `--mpi-procs` argument on the command line.
-        See `_opt_list` for a complete list
+        if not using MPI, pass ``mpi_procs=None`` and then there will be no
+        ``--mpi-procs`` argument on the command line.
+        See ``_opt_list`` for a complete list
 
         Usage Sketch
         ------------

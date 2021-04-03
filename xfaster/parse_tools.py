@@ -82,9 +82,9 @@ def tag_pairs(tags, index=False):
     """
     Return an OrderedDict whose keys are pairs of tags in the format "tag1:tag2"
     and whose values are a tuple of the two tags used to construct each key, or
-    a tuple of the indices of the two tags in the original tag list, if `index`
-    is True.  If `index` is a list, then it should be a list the same length as
-    `tags`, and the tuple is populated by indexing into `index` using the two
+    a tuple of the indices of the two tags in the original tag list, if ``index``
+    is True.  If ``index`` is a list, then it should be a list the same length as
+    ``tags``, and the tuple is populated by indexing into ``index`` using the two
     indices of the tags in the original tag list.
 
     Example
@@ -189,15 +189,9 @@ def parse_data(data, field):
     Arguments
     ---------
     data : str or dict
-        Either the path to an npz file on disk or a loaded npz dict
+        Either the path to an npz file on disk or a loaded npz dict.
     field : str
         Which key in data to return as a dictionary.
-        Options: bin_def, cls_residual, cbl, qb, fqb, qb_transfer,
-                 cb, dcb, dcb_nosampvar, ellb, qb2cb, cls_obs,
-                 cls_fg, cls_signal, cls_model, cls_noise, cls_data,
-                 cls_shape, wls, w1, w2, w4, fsky, kern, pkern,
-                 mkern, xkern, beam_windows, Dmat_obs, Dmat1,
-                 dSdqb_mat1
     """
     if isinstance(data, str):
         data = load_compat(data)
@@ -262,19 +256,31 @@ def dict_to_index(d):
     """
     Construct a dictionary of (start, stop) indices that correspond to the
     location of each sub-array when the dict is converted to a single array
-    using `dict_to_arr`.
+    using ``dict_to_arr``.
 
-    For example, use this function to index into a (nbins, nbins) array:
+    Examples
+    --------
+    To use this function to index into a (nbins, nbins) array, create
+    the index dictionary:
 
-        bin_index = dict_to_index(bin_def)
+    >>> bin_def = OrderedDict((k, np.array([[2, 27], [27, 52]]))
+    ...                       for k in ['cmb_tt', 'cmb_ee', 'cmb_bb'])
+    >>> bin_index = dict_to_index(bin_def)
+    >>> bin_index
+    OrderedDict([('cmb_tt', (0, 2)),
+                 ('cmb_ee', (2, 4)),
+                 ('cmb_bb', (4, 6))])
 
-        # extract TT bins from fisher matrix
-        sl_tt = slice(*bin_index['cmb_tt'])
-        fisher_tt = fisher[sl_tt, sl_tt]
+    To extract the TT bins from the fisher matrix:
 
-        # extract all CMB bins from fisher matrix
-        sl_cmb = slice(bin_index['cmb_tt'][0], bin_index['cmb_tb'][1])
-        fisher_cmb = fisher[sl_cmb, sl_cmb]
+    >>> fisher = np.random.randn(12, 12)
+    >>> sl_tt = slice(*bin_index['cmb_tt'])
+    >>> fisher_tt = fisher[sl_tt, sl_tt]
+
+    To extract all the CMB bins from the fisher matrix:
+
+    >>> sl_cmb = slice(bin_index['cmb_tt'][0], bin_index['cmb_bb'][1])
+    >>> fisher_cmb = fisher[sl_cmb, sl_cmb]
     """
     index = OrderedDict()
     idx = 0

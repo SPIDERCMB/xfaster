@@ -5,7 +5,7 @@ import numpy as np
 from collections import OrderedDict
 
 __all__ = [
-    "ThreeJC_2",
+    "wigner3j",
     "get_camb_cl",
     "expand_qb",
     "bin_spec",
@@ -13,7 +13,7 @@ __all__ = [
 ]
 
 
-def BBody(nu, ref_freq=353.0):
+def blackbody(nu, ref_freq=353.0):
     k = 1.38064852e-23  # Boltzmann constant
     h = 6.626070040e-34  # Planck constant
     T = 19.6
@@ -25,7 +25,7 @@ def BBody(nu, ref_freq=353.0):
     return x ** 3 / x_ref ** 3 * (np.exp(x_ref) - 1) / (np.exp(x) - 1)
 
 
-def RJ2CMB(nu_in, ccorr=True):
+def rj2cmb(nu_in, ccorr=True):
     """
     planck_cc_gnu = {101: 1.30575, 141: 1.6835, 220: 3.2257, 359: 14.1835}
     if ccorr:
@@ -55,11 +55,11 @@ def scale_dust(freq0, freq1, ref_freq, beta, delta_beta=None, deriv=False):
     for a linearized offset delta_beta from the reference beta.
     """
     freq_scale = (
-        RJ2CMB(freq0)
-        * RJ2CMB(freq1)
-        / RJ2CMB(ref_freq) ** 2.0
-        * BBody(freq0, ref_freq=ref_freq)
-        * BBody(freq1, ref_freq=ref_freq)
+        rj2cmb(freq0)
+        * rj2cmb(freq1)
+        / rj2cmb(ref_freq) ** 2.0
+        * blackbody(freq0, ref_freq=ref_freq)
+        * blackbody(freq1, ref_freq=ref_freq)
         * (freq0 * freq1 / ref_freq ** 2) ** (beta - 2.0)
     )
 
@@ -72,9 +72,30 @@ def scale_dust(freq0, freq1, ref_freq, beta, delta_beta=None, deriv=False):
     return freq_scale
 
 
-def ThreeJC_2(l2i, m2i, l3i, m3i):
-    """
-    Wigner 3j symbols
+def wigner3j(l2, m2, l3, m3):
+    r"""
+    Wigner 3j symbols computed for all valid values of ``L``, as in:
+
+    .. math::
+    
+        \begin{pmatrix}
+         \ell_2 & \ell_3 & L \\
+         m_2 & m_3 & 0 \\
+        \end{pmatrix}
+
+    Arguments
+    ---------
+    l2, m2, l3, m3 : int
+        The ell and m values for which to compute the symbols.
+
+    Returns
+    -------
+    fj : array_like
+        Array of size ``l2 + l3 + 2``, indexed by ``L``
+    lmin : int
+        The minimum value of ``L`` for which ``fj`` is non-zero.
+    lmax : int
+        The maximum value of ``L`` for which ``fj`` is non-zero.
     """
     import camb
 
@@ -82,10 +103,10 @@ def ThreeJC_2(l2i, m2i, l3i, m3i):
         from camb.mathutils import threej
     except ImportError:
         from camb.bispectrum import threej
-    arr = threej(l2i, l3i, m2i, m3i)
+    arr = threej(l2, l3, m2, m3)
 
-    lmin = np.max([np.abs(l2i - l3i), np.abs(m2i + m3i)])
-    lmax = l2i + l3i
+    lmin = np.max([np.abs(l2 - l3), np.abs(m2 + m3)])
+    lmax = l2 + l3
     fj = np.zeros(lmax + 2, dtype=arr.dtype)
     fj[lmin : lmax + 1] = arr
     return fj, lmin, lmax
@@ -187,7 +208,7 @@ def expand_qb(qb, bin_def, lmax=None):
 def bin_spec(qb, cls_shape, bin_def, inv_fish=None, tophat=False, lfac=True):
     """
     Compute binned output spectra and covariances by averaging the shape
-    spectrum over each bin, and applying the appropriate `qb` bandpower
+    spectrum over each bin, and applying the appropriate ``qb`` bandpower
     amplitude.
 
     Arguments
@@ -212,13 +233,13 @@ def bin_spec(qb, cls_shape, bin_def, inv_fish=None, tophat=False, lfac=True):
     cb : dict of arrays
         Binned spectrum
     dcb : dict of arrays
-        Binned spectrum error, if `inv_fish` is not None
+        Binned spectrum error, if ``inv_fish`` is not None
     ellb : dict of arrays
         Average bin center
     cov : array_like, (nbins, nbins)
-        Binned spectrum covariance, if `inv_fish` is not None
+        Binned spectrum covariance, if ``inv_fish`` is not None
     qb2cb : dict
-        The conversion factor from `qb` to `cb`, computed by averaging over the
+        The conversion factor from ``qb`` to ``cb``, computed by averaging over the
         input shape spectrum.
     """
 

@@ -169,15 +169,15 @@ def xfaster_run(
         The variant of signal sims to use for transfer function
     signal_spec : string
         The spectrum data file to use for estimating bandpowers.  If not
-        supplied, will search for `spec_signal_<signal_type>.dat` in the signal
+        supplied, will search for ``spec_signal_<signal_type>.dat`` in the signal
         sim directory.
     signal_transfer_spec : string
         The spectrum data file used to generate signal sims.  If not
-        supplied, will search for `spec_signal_<signal_type>.dat` in the
+        supplied, will search for ``spec_signal_<signal_type>.dat`` in the
         transfer signal sim directory. Used for computing transfer functions.
     model_r : float
-        The `r` value to use to compute a spectrum for estimating bandpowers.
-        Overrides `signal_spec`.
+        The ``r`` value to use to compute a spectrum for estimating bandpowers.
+        Overrides ``signal_spec``.
     data_root2, data_subset2 : string
         If either of these is set, XFaster performs a null test between these
         two data halves.
@@ -242,7 +242,7 @@ def xfaster_run(
         forward.  Valid checkpoints are {checkpoints}
     add_log : bool
         If True, write log output to a file instead of to STDOUT.
-        The log will be in `<output_root>/run_<output_tag>.log`.
+        The log will be in ``<output_root>/run_<output_tag>.log``.
         This option is useful for logging to file for jobs that
         are run directly (rather than submitted).
     cond_noise : float
@@ -287,7 +287,7 @@ def xfaster_run(
         those generated for chunk sets.
     template_alpha : list of floats
         Scalar to be applied to template map for subtraction from each of the
-        data with tags in the list `template_alpha_tags`.
+        data with tags in the list ``template_alpha_tags``.
     sub_hm_noise : bool
         If True, subtract average of Planck ffp10 noise crosses to debias
         template-cleaned spectra
@@ -1234,9 +1234,9 @@ class XFasterJobGroup(object):
 
         Keyword arguments
         -----------------
-        Most should correspond to arguments accepted by `xfaster_run`.
+        Most should correspond to arguments accepted by ``xfaster_run``.
         If job-related arguments are present, they will be passed to
-        `set_job_options`.
+        ``set_job_options``.
         """
 
         # set job options
@@ -1454,7 +1454,7 @@ def xfaster_submit(**kwargs):
     """
     Submit a single xfaster job. The arguments here should agree exactly
     with the command line flags for submit mode, with kwargs passed to
-    `xfaster_run`. Run `xfaster --help` for help.
+    ``xfaster_run``. Run ``xfaster --help`` for help.
     """
     xg = XFasterJobGroup()
     xg.add_job(**kwargs)
