@@ -7,6 +7,7 @@ import os
 import glob
 import warnings
 import copy
+import logging
 from collections import OrderedDict
 from . import xfaster_tools as xft
 from . import parse_tools as pt
@@ -62,13 +63,12 @@ class XFaster(object):
         pol_mask=True,
         output_root=None,
         output_tag=None,
-        verbose=True,
+        verbose="notice",
         debug=False,
         checkpoint=None,
         add_log=False,
         ref_freq=353.0,
         beta_ref=1.54,
-        **kwargs
     ):
         """
         Initialize an XFaster instance for computing binned power spectra
@@ -90,7 +90,7 @@ class XFaster(object):
             the form `<output_root>/<output_tag>/<name>_<output_tag>.npz`
         verbose : string
             Verbosity level to use for log messages.  Can be one of
-            ['user', 'info', 'task', 'part', 'detail', 'all'].
+            ["critical", "error", "warning", "notice", "info", "debug", "all"].
         debug : bool
             Store extra data in output files for debugging.
         checkpoint : string
@@ -102,9 +102,10 @@ class XFaster(object):
             The log will be in `<output_root>/run_<output_tag>.log`.
         """
         # verbosity
-        self.log = self.init_log(**kwargs)
-        if verbose is not None:
-            self.set_verbose(verbose)
+        self.init_log(
+            level=verbose,
+            filename=self.get_filename("run", ext=".log") if add_log else None,
+        )
 
         self.debug = debug
         self.lmax = lmax
@@ -144,9 +145,6 @@ class XFaster(object):
             self.output_root = os.path.join(self.output_root, self.output_tag)
         if not os.path.exists(self.output_root):
             os.makedirs(self.output_root)
-
-        if add_log:
-            self.set_logfile(self.get_filename("run", ext=".log"))
 
     __init__.__doc__ = __init__.__doc__.format(checkpoints=checkpoints)
 
@@ -203,70 +201,103 @@ class XFaster(object):
             assert os.path.exists(self.beam_error_product), \
                 "Missing beam error product file {}".format(self.beam_error_product)
 
-    def init_log(
-        self,
-        verbose=0,
-        logger=base.Logger,
-        logfile=None,
-        log_timestamp=True,
-        log_prefix=None,
-        **kwargs
-    ):
+    def init_log(self, level="notice", filename=None):
         """
         Initialize the logger from the input keyword arguments.
 
         Arguments
         ---------
-        logger : logging class, optional
-            Class to initialize
-        verbose : bool, int, or string; optional
-            Verbosity level, non-negative.  Default: 0 (print user-level
-            messages only). String options are 'info', 'time', 'gd', or 'samp'.
-        logfile : string, optional
+        level : string, optional, default: "notice"
+            Verbosity level.
+            Options are "critical", "error", "warning", "notice", "info", "debug", "all".
+        filename : string, optional
             Logging output filename.  Default: None (print to sys.stdout)
-        log_timestamp : bool, optional
-            If True, add timestamps to log entries. Default: True
-        log_prefix : string, optional
-            If supplied, this prefix will be pre-pended to log strings,
-            before the timestamp.
-
-        Returns
-        -------
-        log : log object
-            Initialized logging object
         """
-        if verbose is None:
-            verbose = 0
-        if logfile is None:
-            # try to get logfile suitable for job environment
-            logfile = bt.get_job_logfile()
-        timestamp = log_timestamp
-        prefix = log_prefix
 
-        levels = {"user": 0, "info": 1, "task": 2, "part": 3, "detail": 4, "all": 5}
-        log = logger(
-            verbosity=verbose,
-            logfile=logfile,
-            timestamp=timestamp,
-            prefix=prefix,
-            levels=levels,
-            **kwargs
+        # add NOTICE logging level
+        logging.NOTICE = 25
+        logging.addLevelName(logging.NOTICE, "NOTICE")
+
+        def logger_notice(self, msg, *args, **kwargs):
+            """
+            Log a message with severity "NOTICE".
+            """
+            if self.isEnabledFor(logging.NOTICE):
+                self._log(logging.NOTICE, msg, args, **kwargs)
+
+        logging.Logger.notice = logger_notice
+
+        def root_notice(msg, *args, **kwargs):
+            """
+            Log a message with severity "NOTICE" on the root logger.
+            """
+            if len(logging.root.handlers) == 0:
+                logging.basicConfig()
+            logging.root.notice(msg, *args, **kwargs)
+
+        logging.notice = root_notice
+
+        # create handler
+        if filename is None:
+            filename = bt.get_job_logfile()
+        if filename is None:
+            handler = logging.StreamHandler()
+        else:
+            handler = logging.FileHandler(filename)
+
+        # create formatter
+        fmt = logging.Formatter(
+            fmt="[ %(asctime)s ] %(levelname)s: %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S%Z",
         )
-        return log
+        handler.setFormatter(fmt)
 
-    def set_verbose(self, level):
-        """
-        Change verbosity level.  Can be an integer or a string name.
-        Valid strings are 'info', 'time', 'gd' or 'samp'.
-        """
-        self.log.set_verbosity(level)
+        # configure logger
+        self.logger = logging.getLogger("xfaster")
+        self.logger.addHandler(handler)
 
-    def set_logfile(self, logfile=None):
+        # set logging level
+        if level is None:
+            level = "notice"
+        elif level.lower() == "all":
+            level = "notset"
+        self.logger.setLevel(getattr(logging, level.upper()))
+
+        # log warnings
+        logging.captureWarnings(True)
+
+    def log(self, message, level=None):
         """
-        Change the location where logs are written.  If logfile is None,
-        log to STDOUT.
+        Log a message with the given logging level.
+
+        Arguments
+        ---------
+        level : string, default : None
+            Logging level.  Must be one of "critical", "error", "warning",
+            "notice", "info", "debug", "all".  If not supplied, "all" is assumed.
         """
-        self.log.set_logfile(logfile)
+
+        if level is None or level.lower() == "all":
+            level = "notset"
+        level = getattr(logging, level.upper())
+
+        self.logger.log(level, message)
+
+    def __del__(self):
+        """
+        Make sure logger is shutdown properly when the object is destroyed.
+        """
+
+        # cleanup logging handlers
+        for handler in self.logger.handlers[::-1]:
+            try:
+                handler.acquire()
+                handler.flush()
+                handler.close()
+            except (OSError, ValueError):
+                pass
+            finally:
+                handler.release()
 
     def _get_files(
         self,
@@ -318,9 +349,9 @@ class XFaster(object):
         for t in map_tags:
             # if map tag is not a plain frequency, extract plain frequency
             map_freqs.append(self.dict_freqs[t])
-        self.log("Found {} map files in {}".format(len(map_files), map_root), "task")
-        self.log("Map files: {}".format(map_files), "detail")
-        self.log("Map freqs: {}".format(map_freqs), "detail")
+        self.log("Found {} map files in {}".format(len(map_files), map_root), "info")
+        self.log("Map files: {}".format(map_files), "debug")
+        self.log("Map freqs: {}".format(map_freqs), "debug")
 
         raw_root = None
         raw_files = None
@@ -351,10 +382,9 @@ class XFaster(object):
                     num_signal = min(num_signal, nsims1)
             signal_files.append(sfiles)
         signal_files = np.asarray([x[:num_signal] for x in signal_files])
-        self.log("{} {} {}".format(len(signal_files[0]), num_signal, nsims1))
-        self.log("Found {} signal sims in {}".format(num_signal, signal_root), "task")
+        self.log("Found {} signal sims in {}".format(num_signal, signal_root), "info")
         self.log(
-            "First signal sim files: {}".format(signal_files[:, 0].tolist()), "detail"
+            "First signal sim files: {}".format(signal_files[:, 0].tolist()), "debug"
         )
 
         # find all corresponding signal transfer function sims
@@ -392,13 +422,13 @@ class XFaster(object):
             "Found {} signal transfer sims in {}".format(
                 num_signal_transfer, signal_transfer_root
             ),
-            "task",
+            "info",
         )
         self.log(
             "First signal transfer sim files: {}".format(
                 signal_transfer_files[:, 0].tolist()
             ),
-            "detail",
+            "debug",
         )
 
         # find all corresponding noise sims
@@ -429,10 +459,9 @@ class XFaster(object):
                         num_noise = min(num_noise, nsims1)
                 noise_files.append(nfiles)
             noise_files = np.asarray([x[:num_noise] for x in noise_files])
-            self.log("{} {} {}".format(len(noise_files[0]), num_noise, nsims1))
-            self.log("Found {} noise sims in {}".format(num_noise, noise_root), "task")
+            self.log("Found {} noise sims in {}".format(num_noise, noise_root), "info")
             self.log(
-                "First noise sim files: {}".format(noise_files[:, 0].tolist()), "detail"
+                "First noise sim files: {}".format(noise_files[:, 0].tolist()), "debug"
             )
         else:
             noise_root = None
@@ -466,14 +495,13 @@ class XFaster(object):
                         num_noise_sim = min(num_noise_sim, nsims1)
                 noise_files_sim.append(nfiles)
             noise_files_sim = np.asarray(noise_files_sim)
-            self.log("{} {} {}".format(len(noise_files_sim[0]), num_noise_sim, nsims1))
             self.log(
                 "Found {} noise sims in {}".format(num_noise_sim, noise_root_sim),
-                "task",
+                "info",
             )
             self.log(
                 "First noise sim files: {}".format(noise_files_sim[:, 0].tolist()),
-                "detail",
+                "debug",
             )
         else:
             noise_root_sim = noise_root
@@ -510,15 +538,12 @@ class XFaster(object):
                 signal_files_sim.append(nfiles)
             signal_files_sim = np.asarray(signal_files_sim)
             self.log(
-                "{} {} {}".format(len(signal_files_sim[0]), num_signal_sim, nsims1)
-            )
-            self.log(
                 "Found {} signal sims in {}".format(num_signal_sim, signal_root_sim),
-                "task",
+                "info",
             )
             self.log(
                 "First signal sim files: {}".format(signal_files_sim[:, 0].tolist()),
-                "detail",
+                "debug",
             )
         else:
             signal_root_sim = signal_root
@@ -555,19 +580,16 @@ class XFaster(object):
                 [x[:num_foreground_sim] for x in foreground_files]
             )
             self.log(
-                "{} {} {}".format(len(foreground_files[0]), num_foreground_sim, nsims1)
-            )
-            self.log(
                 "Found {} foreground sims in {}".format(
                     num_foreground_sim, foreground_root
                 ),
-                "task",
+                "info",
             )
             self.log(
                 "First foreground sim files: {}".format(
                     foreground_files[:, 0].tolist()
                 ),
-                "detail",
+                "debug",
             )
         else:
             foreground_root = None
@@ -596,8 +618,8 @@ class XFaster(object):
         for f in mask_files:
             if not os.path.exists(f):
                 raise OSError("Missing mask file {}".format(f))
-        self.log("Found {} masks in {}".format(len(mask_files), mask_root), "task")
-        self.log("Mask files: {}".format(mask_files), "detail")
+        self.log("Found {} masks in {}".format(len(mask_files), mask_root), "info")
+        self.log("Mask files: {}".format(mask_files), "debug")
 
         # Also need a list of unique map tags for populating dictionaries
         # in data structures
@@ -920,11 +942,12 @@ class XFaster(object):
                         tnfiles.append(nfiles)
                         if num_template_noise is not None:
                             if len(nfiles) != num_template_noise:
-                                self.log(
-                                    "num template noise: {}".format(num_template_noise)
+                                raise OSError(
+                                    "Wrong number of template noise sims.  "
+                                    "Found {} files, expected {}.".format(
+                                        len(nfiles), num_template_noise
+                                    )
                                 )
-                                self.log("nfiles: {}".format(len(nfiles)))
-                                raise OSError("Wrong number of template noise sims")
 
                         num_template_noise = len(nfiles)
 
@@ -941,15 +964,15 @@ class XFaster(object):
                     "Found {} templates in {}".format(
                         fs["num_template"], fs["template_root"]
                     ),
-                    "task",
+                    "info",
                 )
                 self.log(
                     "Found {} template noise files in {}".format(
                         fs["num_template_noise"], fs["template_noise_root"]
                     ),
-                    "task",
+                    "info",
                 )
-                self.log("Template files: {}".format(fs["template_files"]), "detail")
+                self.log("Template files: {}".format(fs["template_files"]), "debug")
 
             fields = [
                 "template_type",
@@ -1010,9 +1033,9 @@ class XFaster(object):
                                 fs["num_planck"],
                                 fs["planck_root{}_hm{}".format(null_split, hm)],
                             ),
-                            "task",
+                            "info",
                         )
-                        self.log("Planck files: {}".format(pfiles), "detail")
+                        self.log("Planck files: {}".format(pfiles), "debug")
 
             fields = [
                 "planck_root1_hm1",
@@ -1498,12 +1521,12 @@ class XFaster(object):
             return force_rerun_children()
         errmsg = "Error loading {}".format(output_file)
         if not os.path.exists(output_file):
-            self.log("{}: Output file not found".format(errmsg))
+            warnings.warn("{}: Output file not found".format(errmsg))
             if alt_name is not None:
                 output_file = self.get_filename(alt_name, ext=".npz", **file_opts)
                 errmsg = "Error loading {}".format(output_file)
                 if not os.path.exists(output_file):
-                    self.log("{}: Alternate output file not found".format(errmsg))
+                    warnings.warn("{}: Alternate output file not found".format(errmsg))
                     return force_rerun_children()
                 else:
                     use_alt = True
@@ -1513,7 +1536,7 @@ class XFaster(object):
         try:
             data = pt.load_and_parse(output_file)
         except Exception as e:
-            self.log("{}: {}".format(errmsg, str(e)))
+            warnings.warn("{}: {}".format(errmsg, str(e)))
             return force_rerun_children()
 
         if fields is None:
@@ -1523,7 +1546,7 @@ class XFaster(object):
             fields = [fields]
 
         if shape_ref is not None and shape_ref not in fields:
-            self.log("{}: Field {} not found".format(errmsg, shape_ref))
+            warnings.warn("{}: Field {} not found".format(errmsg, shape_ref))
             return force_rerun_children()
 
         if to_attrs is True or to_attrs is False:
@@ -1541,7 +1564,7 @@ class XFaster(object):
                 if optional is not None and field in optional:
                     data[field] = None
                 else:
-                    self.log("{}: Field {} not found".format(errmsg, field))
+                    warnings.warn("{}: Field {} not found".format(errmsg, field))
                     return force_rerun_children()
             v = pt.dict_to_arr(data[field])
             try:
@@ -1552,7 +1575,7 @@ class XFaster(object):
                 v = v.tolist()
             if shape_ref in [field, attr]:
                 if v.shape != tuple(shape):
-                    self.log(
+                    warnings.warn(
                         "{}: Field {} has shape {}, expected {}".format(
                             errmsg, shape_ref, v.shape, shape
                         )
@@ -1562,7 +1585,7 @@ class XFaster(object):
                 for k in [field, attr]:
                     vref = value_ref.pop(k, "undef")
                     if not vref == "undef" and np.any(v != vref):
-                        self.log(
+                        warnings.warn(
                             "{}: Field {} has value {}, expected {}".format(
                                 errmsg, k, v, vref
                             )
@@ -1574,12 +1597,12 @@ class XFaster(object):
                 setattr(self, key, ret[field])
 
         if value_ref:
-            self.log(
+            warnings.warn(
                 "{}: Missing reference fields {}".format(errmsg, list(value_ref))
             )
             return force_rerun_children()
 
-        self.log("Loaded input data from {}".format(output_file), "detail")
+        self.log("Loaded input data from {}".format(output_file), "debug")
         if use_alt:
             # copy data to original file name
             ret.update(**file_opts)
@@ -1635,7 +1658,7 @@ class XFaster(object):
                 data[attr] = getattr(self, attr)
 
         np.savez_compressed(output_file, **data)
-        self.log("Saved output data to {}".format(output_file), "detail")
+        self.log("Saved output data to {}".format(output_file), "debug")
         data["output_file"] = output_file
         return data
 
@@ -1838,7 +1861,7 @@ class XFaster(object):
                         break
                 else:
                     self.log(
-                        "Found g correction for map {}: {}".format(tag, gcorr), "detail"
+                        "Found g correction for map {}: {}".format(tag, gcorr), "debug"
                     )
                     self.gcorr[tag] = gcorr
 
@@ -1911,7 +1934,7 @@ class XFaster(object):
             imask_alms, imask = process_index(idx)
             jmask_alms, jmask = process_index(jdx)
 
-            self.log("Computing mask spectra {}x{}".format(idx, jdx), "detail")
+            self.log("Computing mask spectra {}x{}".format(idx, jdx), "debug")
             wls[xname] = self.alm2cl(imask_alms, jmask_alms, lmin=0)
 
             if self.pol_mask:
@@ -1952,7 +1975,7 @@ class XFaster(object):
         if np.any(np.asarray([f for f in fsky.values()]) > 0.1):
             warnings.warn(
                 "Some fsky are larger than 10% - second order "
-                "correction may break down here {}".format(fsky)
+                "correction may break down here: {}".format(fsky)
             )
 
         # store and return
@@ -1965,12 +1988,12 @@ class XFaster(object):
 
         process_gcorr()
 
-        self.log("Fsky: {}".format(self.fsky), "detail")
-        self.log("Effective fsky: {}".format(fsky_eff), "detail")
-        self.log("Mask moments 1: {}".format(self.w1), "detail")
-        self.log("Mask moments 2: {}".format(self.w2), "detail")
-        self.log("Mask moments 4: {}".format(self.w4), "detail")
-        self.log("G matrix: {}".format(self.gmat), "detail")
+        self.log("Fsky: {}".format(self.fsky), "debug")
+        self.log("Effective fsky: {}".format(fsky_eff), "debug")
+        self.log("Mask moments 1: {}".format(self.w1), "debug")
+        self.log("Mask moments 2: {}".format(self.w2), "debug")
+        self.log("Mask moments 4: {}".format(self.w4), "debug")
+        self.log("G matrix: {}".format(self.gmat), "debug")
 
         return self.save_data(save_name, from_attrs=save_attrs)
 
@@ -2237,7 +2260,7 @@ class XFaster(object):
                 mn_alms = None
                 m_alms = [self.map2alm(m, self.pol)]
                 for tf in template_files[idx]:
-                    self.log("Loading template from {}".format(tf), "detail")
+                    self.log("Loading template from {}".format(tf), "debug")
                     mt = self.get_map(tf)
                     self.apply_mask(mt, mask)
                     mt_alms = self.map2alm(mt, self.pol)
@@ -2257,7 +2280,7 @@ class XFaster(object):
             imap_alms, inull_alms = process_index(idx)
             jmap_alms, jnull_alms = process_index(jdx)
 
-            self.log("Computing spectra {}x{}".format(idx + 1, jdx + 1), "detail")
+            self.log("Computing spectra {}x{}".format(idx + 1, jdx + 1), "debug")
 
             # store cross spectra
             if isinstance(imap_alms, tuple) and len(imap_alms) == 3:
@@ -2592,7 +2615,7 @@ class XFaster(object):
                         "Computing spectra {} for signal{} sim {}".format(
                             xname, "+noise" if do_noise else "", isim
                         ),
-                        "detail",
+                        "debug",
                     )
                     if isim < nsim_sig:
                         simap_alms, sinull_alms = process_index(
@@ -2756,7 +2779,7 @@ class XFaster(object):
 
         def check_options():
             if ensemble_mean:
-                self.log("Substitute signal + noise for observed spectrum", "info")
+                self.log("Substitute signal + noise for observed spectrum", "notice")
                 for spec in self.specs:
                     for xname in self.cls_data[spec]:
                         if do_noise:
@@ -2774,7 +2797,7 @@ class XFaster(object):
                                 ][xname]
             elif ensemble_median:
                 self.log(
-                    "Substitute signal + noise median for observed spectrum", "info"
+                    "Substitute signal + noise median for observed spectrum", "notice"
                 )
                 for spec in self.specs:
                     for xname in self.cls_data[spec]:
@@ -2786,7 +2809,7 @@ class XFaster(object):
 
             elif sim_index is not None:
                 msg = "Substitute #{} sim signal + noise for observed alms"
-                self.log(msg.format(sim_index), "info")
+                self.log(msg.format(sim_index), "notice")
 
                 # find the sim file that matches the requested sim index
                 # NB: this assumes that the sim files have the form
@@ -3029,14 +3052,14 @@ class XFaster(object):
             template_alpha = OrderedDict([(k, None) for k in template_alpha])
 
         cache = dict()
-        self.log("fake data r: {}".format(fake_data_r))
+        self.log("Fake data r: {}".format(fake_data_r), "notice")
 
         def process_index(idx):
             # create the fake map for each map in map_files,
             # compute alms for that and templates
             if idx in cache:
                 return cache[idx]
-            self.log("Computing Alms for fake data map {}/{}".format(idx, num_maps))
+            self.log("Computing Alms for fake data map {}/{}".format(idx, num_maps), "all")
             mfile = map_files[idx]
 
             if do_signal:
@@ -3051,7 +3074,7 @@ class XFaster(object):
                     )
                 )
             else:
-                self.log("Using signal 0", "detail")
+                self.log("Using signal 0", "debug")
                 scalar = self.get_map(
                     mfile.replace(map_root, scalar_root).replace(".fits", "_0000.fits")
                 )
@@ -3066,7 +3089,7 @@ class XFaster(object):
                     )
                 )
             else:
-                self.log("Using noise 0", "detail")
+                self.log("Using noise 0", "debug")
                 noise = self.get_map(
                     mfile.replace(map_root, noise_root).replace(".fits", "_0000.fits")
                 )
@@ -3094,7 +3117,7 @@ class XFaster(object):
             if template_fit:
                 m_alms = [m_alms]
                 for tf in template_files[idx]:
-                    self.log("Loading template from {}".format(tf), "detail")
+                    self.log("Loading template from {}".format(tf), "debug")
                     mt = self.get_map(tf)
                     self.apply_mask(mt, mask)
                     mt_alms = self.map2alm(mt, self.pol)
@@ -3117,7 +3140,7 @@ class XFaster(object):
             jmap_alms = process_index(jdx)
 
             self.log(
-                "Computing fake data spectra {}x{}".format(idx + 1, jdx + 1), "detail"
+                "Computing fake data spectra {}x{}".format(idx + 1, jdx + 1), "debug"
             )
 
             # store cross spectra
@@ -3317,7 +3340,7 @@ class XFaster(object):
                         "Computing spectra {} for template noise sim {}".format(
                             xname, isim
                         ),
-                        "detail",
+                        "debug",
                     )
                     hm1imap_alms = process_index(hm1_files, idx, isim, hm1_cache)
                     hm1jmap_alms = process_index(hm1_files, jdx, isim, hm1_cache)
@@ -3437,7 +3460,7 @@ class XFaster(object):
 
         for l in all_ells[2 : lmax + 1]:
             if np.mod(l, 50) == 0:
-                self.log("Computing kernels for ell {}/{}".format(l, lmax), "detail")
+                self.log("Computing kernels for ell {}/{}".format(l, lmax), "debug")
             l2 = np.min([2 * lmax + 1, l + lmax + 1])
             # populate upper triangle
             for ll in all_ells[l:l2]:
@@ -3657,11 +3680,10 @@ class XFaster(object):
                 if np.any(tmp[2, : ltmp - 2] < 0):
                     # this is true if TE is the third index instead of EE
                     # (ell is 0th index for CAMB)
-                    self.log(
+                    warnings.warn(
                         "Old CAMB format in model file {}. Re-indexing.".format(
                             filename
-                        ),
-                        "detail",
+                        )
                     )
                     pol_specs = [3, 4, 2]
                 else:
@@ -3686,7 +3708,7 @@ class XFaster(object):
             cls_dust = 34.0 * (ell[2:] / 80.0) ** (-2.28 + 2.0)
             cls_shape["fg"] = np.append([0, 0], cls_dust)
             self.log(
-                "Added foreground to cls shape {}".format(list(cls_shape)), "detail"
+                "Added foreground to cls shape {}".format(list(cls_shape)), "debug"
             )
 
         # divide out l^2/2pi
@@ -3695,7 +3717,7 @@ class XFaster(object):
             cls_shape[spec][:2] = 0.0
 
         if signal_mask is not None:
-            self.log("Masking {} spectra".format(signal_mask), "detail")
+            self.log("Masking {} spectra".format(signal_mask), "debug")
             for csk in cls_shape:
                 masked = False
                 for smk in signal_mask:
@@ -3935,7 +3957,7 @@ class XFaster(object):
             bins = np.append(bins, self.lmax + 1)
             bin_def["cmb_{}".format(spec)] = np.column_stack((bins[:-1], bins[1:]))
             nbins_cmb += len(bins) - 1
-        self.log("Added {} CMB bins to bin_def".format(nbins_cmb), "detail")
+        self.log("Added {} CMB bins to bin_def".format(nbins_cmb), "debug")
 
         # Do the same for foreground bins
         nbins_fg = 0
@@ -3954,7 +3976,7 @@ class XFaster(object):
                 nbins_fg += len(bins) - 1
             bin_def["delta_beta"] = np.array([[0, 0]])
             self.log(
-                "Added {} foreground bins to bin_def".format(nbins_fg + 1), "detail"
+                "Added {} foreground bins to bin_def".format(nbins_fg + 1), "debug"
             )
 
         # Do the same for residual bins
@@ -3983,7 +4005,7 @@ class XFaster(object):
                     bin_def[btag] = np.column_stack((bins[:-1], bins[1:]))
                     nbins_res += len(bins) - 1
 
-            self.log("Added {} residual bins to bin_def".format(nbins_res), "detail")
+            self.log("Added {} residual bins to bin_def".format(nbins_res), "debug")
 
         self.lmin = lmin
         self.nbins_cmb = nbins_cmb
@@ -4538,7 +4560,7 @@ class XFaster(object):
                             if np.any(np.isnan(qb_fac[k])):
                                 warnings.warn(
                                     "Unphysical residuals fit, "
-                                    + "setting to zero {} {}".format(
+                                    "setting to zero {} bins {}".format(
                                         spec, np.where(np.isnan(qb_fac[k]))
                                     )
                                 )
@@ -5125,7 +5147,7 @@ class XFaster(object):
                     self.log(
                         "Condition criteria not met. "
                         "Max Cond={:.0f}, Thresh={:.0f}".format(cond, cond_criteria),
-                        "detail",
+                        "debug",
                     )
             else:
                 well_cond = True
@@ -5134,10 +5156,10 @@ class XFaster(object):
                     "Max Cond={:.0f}, Thresh={:.0f}, Iter={:d}".format(
                         cond, cond_criteria, cond_iter
                     ),
-                    "detail",
+                    "debug",
                 )
                 if cond_noise is not None:
-                    self.log("Cond_noise = {:.3e}".format(cond_noise), "detail")
+                    self.log("Cond_noise = {:.3e}".format(cond_noise), "debug")
 
         # construct arrays from dictionaries
         Dmat1 = Dmat1_mat
@@ -5172,7 +5194,7 @@ class XFaster(object):
             # this should happen only far from max like
             bad_idx = np.unique(np.where(bad)[0])
             bad_ells = np.arange(ell.start, ell.stop)[bad_idx]
-            self.log("Found negative eigenvalues at ells {}".format(bad_ells))
+            self.log("Found negative eigenvalues at ells {}".format(bad_ells), "warning")
             gmat[..., bad_idx] = 0
         inv_lam = 1.0 / lam
         Dinv = np.einsum("...ij,...j,...kj->...ik", R, inv_lam, R).swapaxes(0, -1)
@@ -5400,7 +5422,7 @@ class XFaster(object):
         success = False
         for iter_idx in range(iter_max):
             self.log(
-                "Doing Fisher step {}/{}...".format(iter_idx + 1, iter_max), "part"
+                "Doing Fisher step {}/{}...".format(iter_idx + 1, iter_max), "info"
             )
 
             qb_new, inv_fish = self.fisher_calc(
@@ -5427,13 +5449,18 @@ class XFaster(object):
             if fnan.any():
                 (nanidx,) = np.where(fnan)
                 self.log(
-                    "Ignoring {} bins with fqb=nan: bins={}, qb_new={}, "
+                    "Iter {}: Ignoring {} bins with fqb=nan: bins={}, qb_new={}, "
                     "qb={}".format(
-                        len(nanidx), nanidx, qb_new_arr[nanidx], qb_arr[nanidx]
-                    )
+                        iter_idx,
+                        len(nanidx),
+                        nanidx,
+                        qb_new_arr[nanidx],
+                        qb_arr[nanidx],
+                    ),
+                    "warning",
                 )
 
-            self.log("Max fractional change in qb: {}".format(max_fqb), "part")
+            self.log("Max fractional change in qb: {}".format(max_fqb), "info")
 
             # put qb_new in original dict
             qb = copy.deepcopy(qb_new)
@@ -5493,20 +5520,24 @@ class XFaster(object):
                 break
 
             if fnan.all():
-                msg = "All bins have fqb=NaN, something has gone horribly wrong."
+                msg = (
+                    "All bins have fqb=NaN at iter {}, "
+                    "something has gone horribly wrong.".format(iter_idx)
+                )
                 break
 
             negs = np.where(np.diag(inv_fish) < 0)[0]
             if len(negs):
                 self.log(
-                    "Found negatives in inv_fish diagonal at locations "
-                    "{}".format(negs)
+                    "Iter {}: Found negatives in inv_fish diagonal at locations "
+                    "{}".format(iter_idx, negs),
+                    "warning",
                 )
 
             if np.nanmax(np.abs(fqb)) < converge_criteria:
                 if not transfer_run:
                     # Calculate final fisher matrix without conditioning
-                    self.log("Calculating final Fisher matrix.")
+                    self.log("Calculating final Fisher matrix.", "info")
                     _, inv_fish = self.fisher_calc(
                         qb,
                         cbl,
@@ -5529,12 +5560,11 @@ class XFaster(object):
                 # If any diagonals of inv_fisher are negative, something went wrong
                 negs = np.where(np.diag(inv_fish) < 0)[0]
                 if len(negs):
-                    msg = (
+                    self.log(
                         "Found negatives in inv_fish diagonal at locations "
-                        "{}".format(negs)
+                        "{}".format(negs),
+                        "warning",
                     )
-                    self.log(msg)
-                    # break
 
                 success = True
                 break
@@ -5557,21 +5587,26 @@ class XFaster(object):
                         cond_criteria = 5e3
                         cond_adjusted = True
                         self.log(
-                            "Not converging. Setting cond_criteria={}".format(
-                                cond_criteria
+                            "Iter {}: Not converging. Setting cond_criteria={}".format(
+                                iter_idx, cond_criteria
                             ),
-                            "part",
+                            "warning",
                         )
 
                     elif cond_criteria > 100:
                         cond_criteria /= 2.0
                         self.log(
-                            "Tightening condition criteria to help convergence. "
-                            "cond_criteria={}".format(cond_criteria),
-                            "part",
+                            "Iter {}: Tightening condition criteria to help convergence. "
+                            "cond_criteria={}".format(iter_idx, cond_criteria),
+                            "warning",
                         )
                     else:
-                        self.log("Can't reduce cond_criteria any more.")
+                        self.log(
+                            "Iter {}: Can't reduce cond_criteria any more.".format(
+                                iter_idx
+                            ),
+                            "warning",
+                        )
                     # give it ten tries to start converging
                     prev_fqb = []
 
@@ -5624,7 +5659,7 @@ class XFaster(object):
             # do one more fisher calc that doesn't include sample variance
             # set qb=very close to 0. 0 causes singular matrix problems.
             # don't do this for noise residual bins
-            self.log("Calculating final Fisher matrix without sample variance.")
+            self.log("Calculating final Fisher matrix without sample variance.", "info")
             qb_zeroed = copy.deepcopy(qb)
             qb_new_ns = copy.deepcopy(qb)
             for comp in ["cmb", "fg"]:
@@ -5712,7 +5747,7 @@ class XFaster(object):
                                 "{} bin {} delta qb {} delta like: {}".format(
                                     stag, ibin, q1 - q, like - max_like
                                 ),
-                                "detail",
+                                "debug",
                             )
 
                         qb_like[stag][ibin] = np.vstack([q_arr, like_arr])
@@ -5721,7 +5756,7 @@ class XFaster(object):
 
         if not success:
             save_name = "ERROR_{}".format(save_name)
-            self.log("ERROR: {}".format(msg), "info")
+            self.log(msg, "error")
             warnings.warn(msg)
 
         # cleanup
@@ -5835,7 +5870,7 @@ class XFaster(object):
                     self.qb_transfer["cmb_{}".format(spec)][m0] = np.ones(
                         self.nbins_cmb // len(self.specs)
                     )
-                self.log("Setting map {} transfer to unity".format(m0))
+                self.log("Setting map {} transfer to unity".format(m0), "info")
                 success = True
                 continue
 
@@ -5843,7 +5878,7 @@ class XFaster(object):
                 "Computing transfer function for map {}/{}".format(
                     im0 + 1, self.num_maps
                 ),
-                "part",
+                "info",
             )
             cbl = self.bin_cl_template(cls_shape, m0, transfer_run=True)
             ret = self.fisher_iterate(
@@ -5868,8 +5903,8 @@ class XFaster(object):
                 if np.any(v < 0):
                     (negbin,) = np.where(v < 0)
                     warnings.warn(
-                        "Transfer function amplitude {}".format(v)
-                        + "< 0 for {} bin {} of map {}".format(k, negbin, m0)
+                        "Transfer function amplitude {} < 0"
+                        "for {} bin {} of map {}".format(v, k, negbin, m0)
                     )
                     # XXX cludge
                     # This happens in first bin
@@ -6069,8 +6104,8 @@ class XFaster(object):
         lmin=33,
         lmax=250,
         mcmc=True,
-        alpha_tags=['95', '150'],
-        beam_tags=['95', '150'],
+        alpha_tags=["95", "150"],
+        beam_tags=["95", "150"],
         r_prior=[0, np.inf],
         alpha_prior=[0, np.inf],
         res_prior=None,
@@ -6297,8 +6332,8 @@ class XFaster(object):
         # set CMB model bandpowers to unity, since we are computing
         # the likelihood of this model given the data
         if r_prior is None:
-            self.log("Computing model spectrum", "detail")
-            warnings.warn("Beam variation not implemented for case " "of no r fit")
+            self.log("Computing model spectrum", "debug")
+            warnings.warn("Beam variation not implemented for case of no r fit")
             cbl = self.bin_cl_template(cls_shape, map_tag)
             cls_model = self.get_model_spectra(qb, cbl, delta=True, cls_noise=cls_noise)
         else:
@@ -6310,7 +6345,7 @@ class XFaster(object):
                         continue
                     qb[stag] = np.ones_like(qb[stag])
 
-            self.log("Computing r model spectrum", "detail")
+            self.log("Computing r model spectrum", "debug")
             cls_shape_scalar = self.get_signal_shape(
                 r=1.0, save=False, component="scalar"
             )
@@ -6464,11 +6499,11 @@ class XFaster(object):
                     d = {}
                     b0, b1 = [beam.get(m, None) for m in (m0, m1)]
                     if b0 is not None:
-                        d['b1'] = b0
+                        d["b1"] = b0
                     if b1 is not None:
-                        d['b2'] = b1
+                        d["b2"] = b1
                         if b0 is not None:
-                            d['b3'] = b0 * b1
+                            d["b3"] = b0 * b1
                     beam_coeffs[xname] = d
 
             # compute new signal shape by scaling tensor component by r
@@ -6639,7 +6674,7 @@ class XFaster(object):
         ndim = len(x0)
         if ndim * 2 > num_walkers:
             num_walkers = int(np.round(ndim / float(num_walkers)) * num_walkers * 2)
-            self.log(
+            warnings.warn(
                 "Found {} parameters, increasing number of MCMC walkers to {}".format(
                     ndim, num_walkers
                 )
@@ -6649,7 +6684,7 @@ class XFaster(object):
         x0 = np.array(x0)[None, :] * (1 + 1e-4 * np.random.randn(num_walkers, len(x0)))
 
         if brute_force:
-            self.log("Computing brute-force r profile likelihood", "task")
+            self.log("Computing brute-force r profile likelihood", "info")
             likefile = self.get_filename(
                 save_name, ext=".txt", map_tag=map_tag, extra_tag=file_tag, bp_opts=True
             )
@@ -6658,7 +6693,7 @@ class XFaster(object):
             for idx, r in enumerate(rs):
                 like = log_like(r=r)
                 if idx % 20 == 0:
-                    self.log("r = {:.3f}, loglike = {:.2f}".format(r, like), "detail")
+                    self.log("r = {:.3f}, loglike = {:.2f}".format(r, like), "debug")
                 likes[idx] = like
             header = "{} r likelihood\nColumns: r, loglike".format(
                 "Multi-map" if map_tag is None else "Map {}".format(map_tag)
@@ -6678,7 +6713,7 @@ class XFaster(object):
         backend_exists = os.path.exists(filename)
         backend = emcee.backends.HDFBackend(filename)
         if backend_exists and backend.shape != (num_walkers, ndim):
-            self.log(
+            warnings.warn(
                 "Expected backend of shape ({}, {}), found {}. Resetting".format(
                     num_walkers, ndim, backend.shape
                 )
@@ -6688,7 +6723,7 @@ class XFaster(object):
             backend.reset(num_walkers, ndim)
 
         # initialize sampler
-        self.log("Initializing sampler", "task")
+        self.log("Initializing sampler", "info")
         sampler = emcee.EnsembleSampler(num_walkers, ndim, log_prob, backend=backend)
         if not reset_backend and backend_exists:
             # grab the last sample if appending to an existing run
@@ -6699,11 +6734,11 @@ class XFaster(object):
         converged = False
 
         self.log(
-            "Starting {} iterations with {} parameters".format(num_steps, ndim), "task"
+            "Starting {} iterations with {} parameters".format(num_steps, ndim), "info"
         )
         for sample in sampler.sample(x0, iterations=num_steps):
             if not sampler.iteration % 10:
-                self.log("MCMC iteration {}".format(sampler.iteration), "detail")
+                self.log("MCMC iteration {}".format(sampler.iteration), "debug")
             # check convergence every 100 steps
             if sampler.iteration % 100:
                 continue
@@ -6718,7 +6753,7 @@ class XFaster(object):
                 "MCMC iteration {} autocorr time: mean {:.1f} min {:.1f} max {:.1f}".format(
                     sampler.iteration, np.mean(tau), np.min(tau), np.max(tau)
                 ),
-                "task",
+                "info",
             )
             if converged:
                 break
@@ -6729,7 +6764,7 @@ class XFaster(object):
         # converged posterior distribution
         if converged:
             self.log(
-                "MCMC converged in {} iterations".format(sampler.iteration), "task"
+                "MCMC converged in {} iterations".format(sampler.iteration), "info"
             )
             tau = sampler.get_autocorr_time()
             burnin = int(2 * np.max(tau))
@@ -6737,7 +6772,7 @@ class XFaster(object):
             samples = sampler.get_chain(discard=burnin, thin=thin, flat=True)
             out.update(tau=tau, burnin=burnin, thin=thin, samples=samples)
         else:
-            self.log("MCMC not converged in {} iterations".format(num_steps), "task")
+            warnings.warn("MCMC not converged in {} iterations".format(num_steps))
 
         if res_prior is not None:
             self.bin_def = bin_def_orig

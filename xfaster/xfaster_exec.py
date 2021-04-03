@@ -63,7 +63,7 @@ def xfaster_run(
     like_profile_points=100,
     pixwin=True,
     save_iters=False,
-    verbose="task",
+    verbose="notice",
     debug=False,
     checkpoint=None,
     add_log=False,
@@ -233,8 +233,8 @@ def xfaster_run(
     save_iters : bool
         If True, store the output of each Fisher iteration, in addition to
         the end result.
-    verbose : bool or string
-        Logging verbosity level.  If True, defaults to 'task'.
+    verbose : string
+        Logging verbosity level.  If True, defaults to 'notice'.
     debug : bool
         Store extra data in output files for debugging.
     checkpoint : string
@@ -508,7 +508,7 @@ def xfaster_run(
     # store config
     X.save_config(config_vars)
 
-    X.log("Setting up bin definitions...", "task")
+    X.log("Setting up bin definitions...", "notice")
     X.get_bin_def(
         bin_width=bin_width,
         lmin=lmin,
@@ -517,13 +517,13 @@ def xfaster_run(
         weighted_bins=weighted_bins,
     )
 
-    X.log("Computing mask cross-spectra and weights...", "task")
+    X.log("Computing mask cross-spectra and weights...", "notice")
     X.get_mask_weights(apply_gcorr=apply_gcorr, reload_gcorr=reload_gcorr)
 
-    X.log("Computing kernels...", "task")
+    X.log("Computing kernels...", "notice")
     X.get_kernels(window_lmax=window_lmax)
 
-    X.log("Computing sim ensemble averages for transfer function...", "task")
+    X.log("Computing sim ensemble averages for transfer function...", "notice")
     if signal_transfer_type in [signal_type, None]:
         # Do all the sims at once to also get the S+N sim ensemble average
         do_noise = True
@@ -532,19 +532,19 @@ def xfaster_run(
     # for transfer
     X.get_masked_sims(transfer=True, do_noise=do_noise)
 
-    X.log("Computing beam window functions...", "task")
+    X.log("Computing beam window functions...", "notice")
     X.get_beams(**beam_opts)
 
-    X.log("Loading spectrum shape for transfer function...", "task")
+    X.log("Loading spectrum shape for transfer function...", "notice")
     cls_shape = X.get_signal_shape(
         filename=signal_transfer_spec, tbeb=False, transfer=True
     )
 
-    X.log("Computing transfer functions...", "task")
+    X.log("Computing transfer functions...", "notice")
     X.get_transfer(cls_shape, fix_bb_xfer=fix_bb_xfer, **fisher_opts)
 
     # Rerun to add bins for foreground and residuals, if requested
-    X.log("Setting up bin definitions with foregrounds and residuals...", "task")
+    X.log("Setting up bin definitions with foregrounds and residuals...", "notice")
     X.get_bin_def(
         bin_width=bin_width,
         lmin=lmin,
@@ -558,17 +558,17 @@ def xfaster_run(
     )
 
     if template_type is not None:
-        X.log("Computing template noise ensemble averages...", "task")
+        X.log("Computing template noise ensemble averages...", "notice")
         X.get_masked_template_noise(template_type)
 
-    X.log("Computing masked data cross-spectra...", "task")
+    X.log("Computing masked data cross-spectra...", "notice")
     X.get_masked_data(
         template_alpha=template_alpha,
         sub_planck=sub_planck,
         sub_hm_noise=sub_hm_noise,
     )
 
-    X.log("Computing sim ensemble averages...", "task")
+    X.log("Computing sim ensemble averages...", "notice")
     if fake_data_r is not None:
         sim_index_sim = None
     else:
@@ -581,7 +581,7 @@ def xfaster_run(
         qb_file=qb_file,
     )
     if fake_data_r is not None:
-        X.log("Replacing data with fake data...", "task")
+        X.log("Replacing data with fake data...", "notice")
         X.force_rerun['bandpowers'] = True
         X.get_masked_fake_data(
             fake_data_r=fake_data_r,
@@ -595,43 +595,43 @@ def xfaster_run(
             sub_hm_noise=sub_hm_noise,
         )
 
-    X.log("Computing spectra...", "task")
+    X.log("Computing spectra...", "notice")
 
     if X.null_run:
-        X.log("Loading flat spectrum for null test...", "task")
+        X.log("Loading flat spectrum for null test...", "notice")
         cls_shape = X.get_signal_shape(flat=True, tbeb=tbeb)
     else:
-        X.log("Loading spectrum shape for bandpowers...", "task")
+        X.log("Loading spectrum shape for bandpowers...", "notice")
         cls_shape = X.get_signal_shape(
             filename=signal_spec, r=model_r, foreground_fit=foreground_fit, tbeb=tbeb
         )
 
     if multi_map:
-        X.log("Computing multi-map bandpowers...", "task")
+        X.log("Computing multi-map bandpowers...", "notice")
         qb, inv_fish = X.get_bandpowers(cls_shape, return_qb=True, **bandpwr_opts)
 
         if likelihood:
-            X.log("Computing multi-map likelihood...", "task")
+            X.log("Computing multi-map likelihood...", "notice")
             X.get_likelihood(qb, inv_fish, cls_shape=cls_shape, **like_opts)
 
     else:
         for map_tag, map_file in zip(X.map_tags, X.map_files):
-            X.log("Processing map {}: {}".format(map_tag, map_file), "task")
+            X.log("Processing map {}: {}".format(map_tag, map_file), "notice")
 
-            X.log("Computing bandpowers for map {}".format(map_tag), "part")
+            X.log("Computing bandpowers for map {}".format(map_tag), "info")
             qb, inv_fish = X.get_bandpowers(
                 cls_shape, map_tag=map_tag, return_qb=True, **bandpwr_opts
             )
 
             if likelihood:
-                X.log("Computing likelihoods for map {}".format(map_tag), "part")
+                X.log("Computing likelihoods for map {}".format(map_tag), "info")
                 X.get_likelihood(
                     qb, inv_fish, map_tag=map_tag, cls_shape=cls_shape, **like_opts
                 )
 
     cpu_elapsed = cpu_time() - cpu_start
     time_elapsed = time.time() - time_start
-    X.log("Wall time: {:.2f} s, CPU time: {:.2f} s".format(time_elapsed, cpu_elapsed))
+    X.log("Wall time: {:.2f} s, CPU time: {:.2f} s".format(time_elapsed, cpu_elapsed), "notice")
 
 
 xfaster_run.__doc__ = xfaster_run.__doc__.format(checkpoints=xfc.XFaster.checkpoints)
@@ -978,7 +978,7 @@ def xfaster_parse(args=None, test=False):
             G,
             "verbose",
             short="-v",
-            choices=["user", "info", "task", "part", "detail", "all"],
+            choices=["critical", "error", "warning", "notice", "info", "debug", "all"],
             help="Verbosity level",
         )
         add_arg(G, "debug", help="Store extra data in output files for debugging")
