@@ -12,7 +12,13 @@ from . import base
 from . import batch_tools as bt
 
 
-__all__ = ["xfaster_run", "xfaster_parse", "xfaster_submit", "XFasterJobGroup"]
+__all__ = [
+    "xfaster_run",
+    "xfaster_parse",
+    "xfaster_submit",
+    "xfaster_main",
+    "XFasterJobGroup",
+]
 
 
 def xfaster_run(
@@ -1459,3 +1465,20 @@ def xfaster_submit(**kwargs):
     xg = XFasterJobGroup()
     xg.add_job(**kwargs)
     return xg.submit(group_by=1, verbose=True)
+
+
+def xfaster_main():
+    """
+    Main entry point for command-line interface.
+    """
+    # parse arguments
+    args = xfaster_parse()
+    mode = args.pop("mode")
+
+    if mode == "submit":
+        # submit a job
+        xfaster_submit(**args)
+
+    elif mode == "run":
+        # run the analysis
+        xfaster_run(**args)

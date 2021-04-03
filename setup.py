@@ -31,7 +31,7 @@ setup(
     url="https://github.com/annegambrel/xfaster",
     packages=["xfaster"],
     package_dir={"xfaster": "xfaster"},
-    scripts=["bin/xfaster"],
+    entry_points={"console_scripts": ["xfaster=xfaster:xfaster_main"]},
     install_requires=["numpy", "healpy", "camb", "emcee"],
     python_requires='>=3.0',
 )
