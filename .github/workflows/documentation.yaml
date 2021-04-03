@@ -14,9 +14,9 @@ jobs:
     - uses: actions/checkout@v2
     - run: |
         pip install -e .
-        sudo ln -s /usr/local/bin/gfortran-10 /usr/local/bin/gfortran
     # Standard drop-in approach that should work for most people.
     - uses: ammaraskar/sphinx-action@master
+      pre-build-command: "apt-get install -y gfortran"
       with:
         docs-folder: "docs/"
     # Create an artifact of the html output.
