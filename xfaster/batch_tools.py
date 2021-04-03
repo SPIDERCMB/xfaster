@@ -16,7 +16,7 @@ __all__ = ["get_job_logfile", "batch_sub", "batch_group", "JobArgumentParser"]
 
 def get_job_logfile():
     """
-    Generate a path to use for unifile log, based on job environment
+    Generate a path to use for the output log, based on job environment
     """
     if os.getenv("PBS_O_WORKDIR"):
         if os.getenv("PBS_ENVIRONMENT") != "PBS_INTERACTIVE":
@@ -183,9 +183,9 @@ def batch_sub(
     -------
     >>> jobid = batch_sub("echo Hello", name="testing", nodes="1:ppn=1",
     ... cput='1:00:00', mem='1gb')
-    >>> print jobid
+    >>> print(jobid)
     221114.feynman.princeton.edu
-    >>> print open('testing.o221114','r').read()
+    >>> print(open('testing.o221114','r').read())
     Hello
 
     """
@@ -379,26 +379,24 @@ def batch_group(cmds, group_by=1, serial=False, *args, **kwargs):
     commands can be grouped together into larger single jobs that run them in
     parallel on multiple processors on a node.
 
+    Keyword arguments are passed on to the batch_sub function.
+    These will be applied to EACH job. For example, using ``nodes="1:ppn=8"``
+    with ``group_by=8`` and 16 elements in cmds will result in 2 jobs, each using
+    8 processors on 1 node.
+
     Arguments
     ---------
     cmds : list
         The commands to run.
         The commands themselves should be a string, or a list of tokens, as
-        per the batch_sub function
+        per the ``batch_sub`` function.
     group_by : int, optional
         The number of commands to group together into a single job. Does not
-        balance well when len(cmds)%group_by != 0
-        Eg. on scinet use group_by=8 to efficiently use whole nodes
+        balance well when ``len(cmds)%group_by != 0``
+        Eg. on scinet use ``group_by=8`` to efficiently use whole nodes.
     serial : bool, optional
-        Set to True to run cmds sequentially, rather than starting them all in
-        parallel. This will also work with MPI/OpenMP parallel jobs.
-
-    Keyword arguments
-    -----------------
-    Keyword arguments are passed on to the batch_sub function.
-    These will be applied to EACH job. For example, using nodes="1:ppn=8"
-    with group_by=8 and 16 elements in cmds will result in 2 jobs, each using
-    8 processors on 1 node.
+        Set to ``True`` to run cmds sequentially, rather than starting them all
+        in parallel. This will also work with MPI/OpenMP parallel jobs.
     """
     grouped = []
     jobids = []
@@ -439,6 +437,12 @@ class JobArgumentParser(object):
         """
         Standardized way to add job submission arguments to a script.
 
+        Keyword arguments are used to fix values for parameters not needed by a
+        script. The corresponding command line arguments will not be added. For
+        example, if not using MPI, pass ``mpi_procs=None`` and then there will
+        be no ``--mpi-procs`` argument on the command line.  See the
+        ``.opt_list`` attribute for a complete list.
+
         Arguments
         ---------
         name : string
@@ -451,29 +455,21 @@ class JobArgumentParser(object):
             Fixed location to use as working directory (ie place for job
             scripts and logs).
         outkey : string
-            Alternative to workdir. The key/name of an argument added to
+            Alternative to ``workdir``. The key/name of an argument added to
             normal argparse that indicates output path. A "logs" subfolder
-            of that path will be used as workdir.
+            of that path will be used as ``workdir``.
 
-        Keyword Arguments
-        -----------------
-        Are used to fix values for parameters not needed by a script. The
-        corresponding command line arguments will not be added. For example,
-        if not using MPI, pass ``mpi_procs=None`` and then there will be no
-        ``--mpi-procs`` argument on the command line.
-        See ``_opt_list`` for a complete list
-
-        Usage Sketch
-        ------------
-        jp = sa.batch.JobArgumentParser("some_serial_job", mem=4, time=1.5,
-                mpi_procs=None, omp_threads=1, workdir="/path/to/logs")
-        AP = argparse.ArgumentParser(description="Do some job")
-        AP.add_argument(...)    # other non-job arguments
-        jp.add_arguments(AP)
-        args = AP.parse_args()
-        jp.set_job_opts(args)
-        jobs = [...]   # list of commands to run in jobs
-        jp.submit(jobs)
+        Example
+        -------
+        >>> jp = sa.batch.JobArgumentParser("some_serial_job", mem=4, time=1.5,
+                    mpi_procs=None, omp_threads=1, workdir="/path/to/logs")
+        >>> AP = argparse.ArgumentParser(description="Do some job")
+        >>> AP.add_argument(...)  # other non-job arguments
+        >>> jp.add_arguments(AP)
+        >>> args = AP.parse_args()
+        >>> jp.set_job_opts(args)
+        >>> jobs = [...]  # list of commands to run in jobs
+        >>> jp.submit(jobs)
         """
         self.name = name
         self.mem = float(mem) if mem is not None else None
@@ -622,7 +618,8 @@ class JobArgumentParser(object):
 
         Returns
         -------
-        parser, the argparse.ArgumentParser
+        parser : argparse.ArgumentParser
+            The updated argument parser object.
         """
         if parser is None:
             parser = ap.ArgumentParser()
@@ -643,7 +640,7 @@ class JobArgumentParser(object):
         Pop all of the job-related options from a dictionary of arguments
 
         Arguments
-        =========
+        ---------
         args_dict : dict
             The dictionary to pop from
         pop_submit : bool
@@ -659,6 +656,10 @@ class JobArgumentParser(object):
         """
         Set job submission options based on parsed arguments.
 
+        Keyword arguments will be passed to ``update``.  Can be used to override
+        particular job submission options. Any argument to the ``batch_sub`` or
+        ``batch_group`` functions can be overridden in this way.
+
         Arguments
         ---------
         args : argparse.Namespace or dict
@@ -666,12 +667,6 @@ class JobArgumentParser(object):
             argparse.ArgumentParser.parse_args()).
         load_defaults : bool
             Whether to automatically load the default value for options
-
-        Keyword arguments
-        -----------------
-        Will be passed to update.
-        Can be used to override particular job submission options. Any argument
-        to the batch_sub or batch_group functions can be overridden in this way.
         """
         if isinstance(args, ap.Namespace):
             args = vars(args)
@@ -735,10 +730,9 @@ class JobArgumentParser(object):
         """
         Update particular job submission options.
 
-        Keyword arguments
-        -----------------
-        Can be used to override particular job submission options. Any argument
-        to the batch_sub or batch_group functions can be overridden in this way.
+        Keyword arguments can be used to override particular job submission
+        options. Any argument to the ``batch_sub`` or ``batch_group`` functions
+        can be overridden in this way.
         """
         self.job_opts.update(kwargs)
 
@@ -747,16 +741,14 @@ class JobArgumentParser(object):
         Submit jobs based on the parsed arguments. Must be called after
         set_job_opts.
 
+        Keyword arguments will be passed to ``update``.  Can be used to override
+        particular job submission options. Any argument to the ``batch_sub`` or
+        ``batch_group`` functions can be overridden in this way.
+
         Arguments
         ---------
         jobs : string or list of strings
             The job(s) to submit.
-
-        Keyword arguments
-        -----------------
-        Will be passed to update.
-        Can be used to override particular job submission options. Any argument
-        to the batch or batch_group functions can be overridden in this way.
 
         Returns
         -------
