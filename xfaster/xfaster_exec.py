@@ -3,12 +3,12 @@ from __future__ import print_function
 from __future__ import division
 import os
 import sys
+import inspect
 import subprocess as sp
 import numpy as np
 import time
 import warnings
 from . import xfaster_class as xfc
-from . import base
 from . import batch_tools as bt
 
 
@@ -357,7 +357,7 @@ def xfaster_run(
     del template_alpha_tags
 
     # initialize config file
-    config_vars = base.XFasterConfig(locals(), "XFaster General")
+    config_vars = xfc.XFasterConfig(locals(), "XFaster General")
     config_vars.remove_option("XFaster General", "cpu_time")
 
     common_opts = dict(
@@ -649,6 +649,69 @@ def xfaster_run(
 xfaster_run.__doc__ = xfaster_run.__doc__.format(checkpoints=xfc.XFaster.checkpoints)
 
 
+def get_func_defaults(func):
+    """
+    Return a dictionary containing the default values for each keyword
+    argument of the given function
+
+    Arguments
+    ---------
+    func : function or callable
+        This function's keyword arguments will be extracted.
+
+    Returns
+    -------
+    dict of kwargs and their default values
+    """
+    spec = inspect.getargspec(func)
+    from collections import OrderedDict
+
+    return OrderedDict(zip(spec.args[-len(spec.defaults) :], spec.defaults))
+
+
+def extract_func_kwargs(func, kwargs, pop=False, others_ok=True, warn=False):
+    """
+    Extract arguments for a given function from a kwargs dictionary
+
+    Arguments
+    ---------
+    func : function or callable
+        This function's keyword arguments will be extracted.
+    kwargs : dict
+        Dictionary of keyword arguments from which to extract.
+        NOTE: pass the ``kwargs`` dict itself, not ``**kwargs``
+    pop : bool, optional
+        Whether to pop matching arguments from kwargs.
+    others_ok : bool
+        If False, an exception will be raised when kwargs contains keys
+        that are not keyword arguments of func.
+    warn : bool
+        If True, a warning is issued when kwargs contains keys that are not
+        keyword arguments of func.  Use with ``others_ok=True``.
+
+    Returns
+    -------
+    kwargs : dict
+        Dict of items from kwargs for which func has matching keyword arguments
+    """
+    spec = inspect.getargspec(func)
+    func_args = set(spec.args[-len(spec.defaults) :])
+    ret = {}
+    for k in list(kwargs.keys()):
+        if k in func_args:
+            if pop:
+                ret[k] = kwargs.pop(k)
+            else:
+                ret[k] = kwargs.get(k)
+        elif not others_ok:
+            msg = "Found invalid keyword argument: {}".format(k)
+            raise TypeError(msg)
+    if warn and kwargs:
+        s = ", ".join(kwargs.keys())
+        warn("Ignoring invalid keyword arguments: {}".format(s), Warning)
+    return ret
+
+
 def xfaster_parse(args=None, test=False):
     """
     Return a parsed dictionary of arguments for the xfaster execution script.
@@ -696,7 +759,7 @@ def xfaster_parse(args=None, test=False):
         P = ap.ArgumentParser(**parser_opts)
 
     # get default argument values from xfaster_run
-    defaults = base.get_func_defaults(xfaster_run)
+    defaults = get_func_defaults(xfaster_run)
     defaults.pop("add_log", None)
     rem_args = list(defaults)
 
@@ -1246,7 +1309,7 @@ class XFasterJobGroup(object):
         """
 
         # set job options
-        job_opts = base.extract_func_kwargs(
+        job_opts = extract_func_kwargs(
             self.set_job_options, kwargs, pop=True, others_ok=True
         )
 
@@ -1286,7 +1349,7 @@ class XFasterJobGroup(object):
             kwargs["signal_spec"] = kwargs.pop("model_spec")
 
         # figure out variable types from default values
-        defaults = base.get_func_defaults(xfaster_run)
+        defaults = get_func_defaults(xfaster_run)
         for a in defaults:
             if a not in kwargs:
                 continue

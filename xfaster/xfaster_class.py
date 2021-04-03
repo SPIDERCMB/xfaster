@@ -11,10 +11,97 @@ import logging
 from collections import OrderedDict
 from . import xfaster_tools as xft
 from . import parse_tools as pt
-from . import base as base
-from . import batch_tools as bt
+from configparser import RawConfigParser
 
-__all__ = ["XFaster"]
+__all__ = ["XFasterConfig", "XFaster"]
+
+
+class XFasterConfig(RawConfigParser):
+    """
+    ConfigParser subclass for storing command line options and config.
+    """
+
+    def __init__(self, defaults=None, default_sec="Uncategorized"):
+        """
+        Class that tracks command-line options for storage to disk.
+
+        Arguments
+        ---------
+        defaults : dict
+            Dictionary of overall configuration values.
+            Eg: locals() at beginning of function, or vars(args) from argparse
+        default_sec : string, optional
+            The name of the default section in the configuration file.
+        """
+        from collections import OrderedDict
+
+        super(XFasterConfig, self).__init__(dict_type=OrderedDict)
+        self.default_sec = default_sec
+        self.add_section(default_sec)
+        if defaults is not None:
+            self.update(defaults)
+
+    def update(self, options, section=None):
+        """
+        Update configuration options with a dictionary. Behaves like
+        dict.update() for specified section but also clears options of the same
+        name from the default section.
+
+        Arguments
+        ---------
+        options : dict
+            The options to update
+        section : string, optional
+            Name of section to update. Default: self.default_sec
+        """
+        if section is None:
+            section = self.default_sec
+        if not self.has_section(section):
+            self.add_section(section)
+        # change kwargs to be like any other options
+        kw = options.pop("kwargs", None)
+        if isinstance(kw, dict):
+            options.update(kw)
+        for k, v in sorted(options.items()):
+            self.remove_option(self.default_sec, k)
+            self.set(section, k, str(v))
+
+    def sort(self):
+        """
+        Sort the items in each section of the configuration alphabetically.
+        """
+        for section, section_items in self.items():
+            if sorted(section_items) == list(section_items):
+                continue
+
+            section_dict = {k: v for k, v in section_items.items()}
+
+            for k in list(section_items):
+                self.remove_option(section, k)
+
+            for k, v in sorted(section_dict.items()):
+                self.set(section, k, v)
+
+    def write(self, fp=None, sort=True):
+        """
+        Write an .ini-format representation of the configuration state.
+        Keys are stored alphabetically if `sort` is True.
+
+        Arguments
+        ---------
+        fp : file object
+            If None, write to `sys.stdout`.
+        sort : bool
+            If True, sort items in each section alphabetically.
+        """
+        if fp is None:
+            import sys
+
+            fp = sys.stdout
+
+        if sort:
+            self.sort()
+        super(XFasterConfig, self).write(fp)
 
 
 class XFaster(object):
@@ -192,7 +279,7 @@ class XFaster(object):
         # Load map configuration file
         assert os.path.exists(filename), "Missing config file {}".format(filename)
         self.config_root = os.path.dirname(os.path.abspath(filename))
-        cfg = base.XFasterConfig()
+        cfg = XFasterConfig()
         cfg.read(filename)
 
         # dictionary of map frequencies keyed by map tag
@@ -305,7 +392,9 @@ class XFaster(object):
 
         # create handler
         if filename is None:
-            filename = bt.get_job_logfile()
+            from .batch_tools import get_job_logfile
+
+            filename = get_job_logfile()
         if filename is None:
             handler = logging.StreamHandler()
         else:
@@ -1736,8 +1825,8 @@ class XFaster(object):
         if filename is None:
             return
 
-        if not isinstance(cfg, base.XFasterConfig):
-            cfg = base.XFasterConfig(cfg)
+        if not isinstance(cfg, XFasterConfig):
+            cfg = XFasterConfig(cfg)
 
         try:
             creator = os.getlogin()
