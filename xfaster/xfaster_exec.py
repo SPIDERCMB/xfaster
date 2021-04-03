@@ -969,7 +969,6 @@ def xfaster_parse(args=None, test=False):
             G,
             "bin_width_res",
             help="Width of each bin to use for residual noise fitting",
-            altname="noise_dl",
         )
         add_arg(
             G,
@@ -1338,15 +1337,6 @@ class XFasterJobGroup(object):
 
         # construct command
         cmd = "xfaster run".split()
-
-        # handle deprecated arguments
-        if "noise_dl" in kwargs:
-            warnings.warn("Argument noise_dl is deprecated, use bin_width_res instead")
-            kwargs["bin_width_res"] = kwargs.pop("noise_dl")
-        if "model_spec" in kwargs:
-            warnings.warn("Argument model_spec is deprecated, use signal_spec instead")
-            kwargs["signal_transfer_spec"] = kwargs.pop("signal_spec")
-            kwargs["signal_spec"] = kwargs.pop("model_spec")
 
         # figure out variable types from default values
         defaults = get_func_defaults(xfaster_run)

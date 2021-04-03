@@ -1,14 +1,6 @@
 API Reference
 =============
 
-base
-----
-.. automodule:: xfaster.base
-  :members:
-  :undoc-members:
-
-  Config and generic tools
-
 batch_tools
 -----------
 .. automodule:: xfaster.batch_tools

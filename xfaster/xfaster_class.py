@@ -33,8 +33,6 @@ class XFasterConfig(RawConfigParser):
         default_sec : string, optional
             The name of the default section in the configuration file.
         """
-        from collections import OrderedDict
-
         super(XFasterConfig, self).__init__(dict_type=OrderedDict)
         self.default_sec = default_sec
         self.add_section(default_sec)
