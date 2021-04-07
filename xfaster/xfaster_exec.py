@@ -572,9 +572,7 @@ def xfaster_run(
 
     X.log("Computing masked data cross-spectra...", "notice")
     X.get_masked_data(
-        template_alpha=template_alpha,
-        sub_planck=sub_planck,
-        sub_hm_noise=sub_hm_noise,
+        template_alpha=template_alpha, sub_planck=sub_planck, sub_hm_noise=sub_hm_noise
     )
 
     X.log("Computing sim ensemble averages...", "notice")
@@ -897,14 +895,10 @@ def xfaster_parse(args=None, test=False):
             "double quotes",
         )
         add_arg(
-            G,
-            "signal_subset",
-            help="Glob_parseable map tag to include for signal sims",
+            G, "signal_subset", help="Glob_parseable map tag to include for signal sims"
         )
         add_arg(
-            G,
-            "noise_subset",
-            help="Glob_parseable map tag to include for noise sims",
+            G, "noise_subset", help="Glob_parseable map tag to include for noise sims"
         )
         add_arg(G, "data_type", help="Variant of data maps to use")
         add_arg(G, "noise_type", help="Noise sim variant")

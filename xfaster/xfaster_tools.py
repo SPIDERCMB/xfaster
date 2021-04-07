@@ -4,13 +4,7 @@ from __future__ import division
 import numpy as np
 from collections import OrderedDict
 
-__all__ = [
-    "wigner3j",
-    "get_camb_cl",
-    "expand_qb",
-    "bin_spec",
-    "scale_dust",
-]
+__all__ = ["wigner3j", "get_camb_cl", "expand_qb", "bin_spec", "scale_dust"]
 
 
 def blackbody(nu, ref_freq=353.0):
@@ -147,12 +141,7 @@ def get_camb_cl(r, lmax, nt=None, spec="total", lfac=True):
     # This function sets up CosmoMC-like settings, with one massive neutrino and
     # helium set using BBN consistency
     pars.set_cosmology(
-        H0=67.32,
-        ombh2=0.022383,
-        omch2=0.12011,
-        mnu=0.06,
-        omk=0,
-        tau=0.0543,
+        H0=67.32, ombh2=0.022383, omch2=0.12011, mnu=0.06, omk=0, tau=0.0543
     )
 
     ln1010As = 3.0448

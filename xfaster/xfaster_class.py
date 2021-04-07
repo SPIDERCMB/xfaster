@@ -2148,12 +2148,7 @@ class XFaster(object):
 
         return self.save_data(save_name, from_attrs=save_attrs)
 
-    def get_masked_data(
-        self,
-        template_alpha=None,
-        sub_planck=False,
-        sub_hm_noise=True,
-    ):
+    def get_masked_data(self, template_alpha=None, sub_planck=False, sub_hm_noise=True):
         """
         Compute cross spectra of the data maps.
 
@@ -2243,11 +2238,7 @@ class XFaster(object):
         elif any([x is not None for x in template_alpha.values()]):
             template_fit = True
             save_name = "{}_clean_{}_xcorr".format(data_name, self.template_type)
-            save_attrs += [
-                "cls_data_clean",
-                "cls_template",
-                "template_alpha",
-            ]
+            save_attrs += ["cls_data_clean", "cls_template", "template_alpha"]
 
         if sub_planck:
             save_attrs += ["cls_data_sub"]
@@ -4883,19 +4874,15 @@ class XFaster(object):
                             # If subtracting signal residual in map space,
                             # no sample variance needed in covariance
                             nell[spec][xname] = np.copy(
-                                self.cls_noise_null[spec][xname])
+                                self.cls_noise_null[spec][xname]
+                            )
                         else:
-                            nell[spec][xname] = np.copy(
-                                self.cls_sim_null[spec][xname])
+                            nell[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
 
                     if self.planck_sub:
-                        debias[spec][xname] = np.copy(
-                            self.cls_noise_null[spec][xname]
-                        )
+                        debias[spec][xname] = np.copy(self.cls_noise_null[spec][xname])
                     else:
-                        debias[spec][xname] = np.copy(
-                            self.cls_sim_null[spec][xname]
-                        )
+                        debias[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
 
         # Non-nulls are debiased by average of N sims
         elif not transfer_run and self.cls_noise is not None:
