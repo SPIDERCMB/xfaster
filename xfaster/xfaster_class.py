@@ -3676,8 +3676,6 @@ class XFaster(object):
         r=None,
         component=None,
         flat=None,
-        tbeb=False,
-        foreground_fit=False,
         signal_mask=None,
         transfer=False,
         save=True,
@@ -3714,10 +3712,6 @@ class XFaster(object):
         flat : float
             If given, a spectrum that is flat in ell^2 Cl is returned, with
             amplitude given by the supplied value. Overrides all other options.
-        tbeb : bool
-            Include TB EB shape
-        foreground_fit : bool
-            Include a foreground shape in cls_shape
         signal_mask: str array
             Include only these spectra, others set to zero.
             Options: TT, EE, BB, TE, EB, TB
@@ -3736,17 +3730,22 @@ class XFaster(object):
 
         lmax_kern = 2 * self.lmax
 
-        specs = ["cmb_tt"]
-        nspecs = 1
-        if self.pol:
-            for s in ["ee", "bb", "te"]:
-                specs += ["cmb_{}".format(s)]
-            if tbeb:
-                specs += ["cmb_eb", "cmb_tb"]
-            nspecs += 5
-        if foreground_fit:
-            specs += ["fg"]
-            nspecs += 1
+        specs = list(self.specs)
+        if transfer:
+            if "eb" in specs:
+                specs.remove("eb")
+            if "tb" in specs:
+                specs.remove("tb")
+        tbeb = "eb" in specs and "tb" in specs
+        specs = ["cmb_{}".format(spec) for spec in specs]
+
+        if not self.null_run and "fg_tt" in self.bin_def:
+            specs.append("fg")
+
+        if component == "fg":
+            specs = ["fg"]
+
+        nspecs = len(specs)
 
         if save:
             shape = (nspecs, lmax_kern + 1)
@@ -3756,8 +3755,6 @@ class XFaster(object):
                 filename=filename,
                 r=r,
                 flat=flat,
-                tbeb=tbeb,
-                foreground_fit=foreground_fit,
                 signal_mask=signal_mask,
             )
             ret = self.load_data(
@@ -3800,7 +3797,8 @@ class XFaster(object):
             ns, _ = cls_camb.shape
             for s, spec in enumerate(specs[:ns]):
                 cls_shape[spec] = cls_camb[s]
-        else:
+
+        elif any([x.startswith("cmb") for x in specs]):
             # signal sim model or custom filename
             if filename is None:
                 signal_root = (
@@ -3842,19 +3840,15 @@ class XFaster(object):
                 for spec, d in zip(specs[1:4], tmp[pol_specs]):
                     cls_shape[spec] = np.append([0, 0], d[: ltmp - 2])
 
-        if self.pol:
-            # EB and TB flat l^2 * C_l
-            if tbeb and (flat is None or flat is False):
-                tbeb_flat = np.abs(cls_shape["cmb_bb"][100]) * ellfac[100] * 1e-4
-                tbeb_flat = np.ones_like(cls_shape["cmb_bb"]) * tbeb_flat
-                tbeb_flat[:2] = 0
-                cls_shape["cmb_eb"] = np.copy(tbeb_flat)
-                cls_shape["cmb_tb"] = np.copy(tbeb_flat)
-            elif not tbeb:
-                cls_shape["cmb_eb"] = np.zeros_like(ell, dtype=float)
-                cls_shape["cmb_tb"] = np.zeros_like(ell, dtype=float)
+        # EB and TB flat l^2 * C_l
+        if self.pol and tbeb and (flat is None or flat is False):
+            tbeb_flat = np.abs(cls_shape["cmb_bb"][100]) * ellfac[100] * 1e-4
+            tbeb_flat = np.ones_like(cls_shape["cmb_bb"]) * tbeb_flat
+            tbeb_flat[:2] = 0
+            cls_shape["cmb_eb"] = np.copy(tbeb_flat)
+            cls_shape["cmb_tb"] = np.copy(tbeb_flat)
 
-        if foreground_fit:
+        if "fg" in specs:
             # From Planck LIV EE dust
             cls_dust = 34.0 * (ell[2:] / 80.0) ** (-2.28 + 2.0)
             cls_shape["fg"] = np.append([0, 0], cls_dust)
@@ -3876,9 +3870,6 @@ class XFaster(object):
                         masked = True
                 if not masked:
                     cls_shape[csk] *= 1.0e-12
-
-        if component == "fg":
-            cls_shape = {"fg": cls_shape["fg"]}
 
         if save:
             opts["cls_shape"] = cls_shape
@@ -6518,9 +6509,7 @@ class XFaster(object):
 
             # load foreground shape
             if dust_ell_fit:
-                cls_shape_dust = self.get_signal_shape(
-                    foreground_fit=True, save=False, component="fg"
-                )
+                cls_shape_dust = self.get_signal_shape(save=False, component="fg")
                 # if dust_ellind_prior is None:
                 #    # can preload shape since not varying ell index
                 cbl_fg = self.bin_cl_template(cls_shape_dust, map_tag=map_tag)

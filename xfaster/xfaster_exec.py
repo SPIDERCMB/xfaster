@@ -545,9 +545,7 @@ def xfaster_run(
     X.get_beams(**beam_opts)
 
     X.log("Loading spectrum shape for transfer function...", "notice")
-    cls_shape = X.get_signal_shape(
-        filename=signal_transfer_spec, tbeb=False, transfer=True
-    )
+    cls_shape = X.get_signal_shape(filename=signal_transfer_spec, transfer=True)
 
     X.log("Computing transfer functions...", "notice")
     X.get_transfer(cls_shape, fix_bb_xfer=fix_bb_xfer, **fisher_opts)
@@ -608,12 +606,10 @@ def xfaster_run(
 
     if X.null_run:
         X.log("Loading flat spectrum for null test...", "notice")
-        cls_shape = X.get_signal_shape(flat=True, tbeb=tbeb)
+        cls_shape = X.get_signal_shape(flat=True)
     else:
         X.log("Loading spectrum shape for bandpowers...", "notice")
-        cls_shape = X.get_signal_shape(
-            filename=signal_spec, r=model_r, foreground_fit=foreground_fit, tbeb=tbeb
-        )
+        cls_shape = X.get_signal_shape(filename=signal_spec, r=model_r)
 
     if multi_map:
         X.log("Computing multi-map bandpowers...", "notice")
