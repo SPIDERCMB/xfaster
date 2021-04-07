@@ -5269,22 +5269,10 @@ class XFaster(object):
 
             Dmat1_mat = pt.dict_to_dmat(Dmat1)
 
-            npv = np.__version__.split(".")[:3]
-            npv = [int(x) for x in npv]
-            if npv > [1, 10, 0]:
-                cond = np.abs(
-                    np.linalg.cond(Dmat1_mat[:, :, self.lmin :].swapaxes(0, -1))
-                )
-            else:
-                # old numpy can't do multi-dimensional arrays
-                cond = np.asarray(
-                    [
-                        np.abs(np.linalg.cond(x))
-                        for x in Dmat1_mat[:, :, self.lmin :].swapaxes(0, -1)
-                    ]
-                )
+            cond = np.abs(
+                np.linalg.cond(Dmat1_mat[:, :, self.lmin :].swapaxes(0, -1))
+            ).max()
 
-            cond = np.max(cond)
             if cond > cond_criteria and cond_noise:
                 cond_iter += 1
                 # cond_noise iteration factor found through trial and error
