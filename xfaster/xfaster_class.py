@@ -2661,16 +2661,16 @@ class XFaster(object):
                 rfields = {"tt": [0], "ee": [1], "bb": [2], "eebb": [1, 2]}
                 for rb, rb0 in rbins.items():
                     srb = rb.split("_", 2)
-                    mod = np.zeros(np.max(rb0))
-                    for ib, (left, right) in enumerate(rb0):
-                        il = slice(left, right)
-                        mod[il] = np.sqrt(1 + qbf["qb"][rb][ib])
-                        if np.any(np.isnan(mod[il])):
-                            warnings.warn(
-                                "Unphysical residuals fit, "
-                                + "setting to zero {} bin {}".format(rb, ib)
+                    rqb = np.sqrt(1 + qbf["qb"][rb])
+                    (bad,) = np.where(np.isnan(rqb))
+                    if len(bad):
+                        warnings.warn(
+                            "Unphysical residuals fit, setting to zero {} bins {}".format(
+                                rb, bad
                             )
-                            mod[il][np.isnan(mod[il])] = 1
+                        )
+                        rqb[bad] = 1
+                    mod = xft.expand_qb(qrb, rb0)
 
                     for rf in rfields[srb[1]]:
                         if self.map_tags[idx] == srb[2]:
