@@ -2148,7 +2148,9 @@ class XFaster(object):
 
         return self.save_data(save_name, from_attrs=save_attrs)
 
-    def get_masked_data(self, template_alpha=None, sub_planck=False, sub_hm_noise=True):
+    def get_masked_data(
+        self, template_alpha=None, sub_planck=False, sub_hm_noise=True, temp_specs=None
+    ):
         """
         Compute cross spectra of the data maps.
 
@@ -2169,6 +2171,8 @@ class XFaster(object):
         appropriate template, and the result is subtracted from the data alms
         with map tags in the dictionary.  Map alms are cached to speed up
         processing, if this method is called repeatedly with different values.
+        Only spectra in temp_specs are modified from raw in the clean spectra.
+        If not set, cleans all spectra.
 
         Arguments
         ---------
@@ -2183,6 +2187,9 @@ class XFaster(object):
         sub_hm_noise : bool
             If True, subtract average of Planck ffp10 noise crosses to debias
             template-cleaned spectra.
+        temp_specs : list
+            List of spectra to clean. If None, clean all spectra. Else, only
+            subtract alpha-scaled template terms from specs in temp_specs.
 
         Notes
         -----
@@ -2207,6 +2214,9 @@ class XFaster(object):
         data_shape = self.data_shape
         null_run = self.null_run
         map_files2 = self.map_files2 if null_run else None
+
+        if temp_specs is None:
+            temp_specs = self.specs
 
         # ensure dictionary
         if template_alpha is None:
@@ -2247,7 +2257,7 @@ class XFaster(object):
         def apply_template():
             cls_clean = getattr(self, "cls_data_clean", OrderedDict())
 
-            for spec in self.specs:
+            for spec in set(self.specs) & set(temp_specs):
                 cls_clean[spec] = copy.deepcopy(self.cls_data[spec])
                 if spec not in self.cls_template:
                     continue
@@ -6236,6 +6246,8 @@ class XFaster(object):
         lmin=33,
         lmax=250,
         mcmc=True,
+        r_specs=["ee", "bb"],
+        temp_specs=["ee", "bb", "eb"],
         alpha_tags=["95", "150"],
         beam_tags=["95", "150"],
         r_prior=[0, np.inf],
@@ -6269,8 +6281,12 @@ class XFaster(object):
             Input shape spectrum used to compute the qb's.  Required if r_prior
             is None.
         mcmc : bool
-            If True, sample the likelihood using an MCMC sampler.  Remaining options
-            determine parameter space and sampler configuration.
+            If True, sample the likelihood using an MCMC sampler.  Remaining
+            options determine parameter space and sampler configuration.
+        r_specs : list
+            List of spectra to use in the r-fit
+        temp_specs : list
+            List of spectra to use in the alpha template scaling fits
         r_prior : 2-list or None
             Prior upper and lower bound on tensor to scalar ratio.  If None, the
             fiducial shape spectrum is assumed, and the r parameter space is not
@@ -6318,6 +6334,10 @@ class XFaster(object):
         ]:
             if x is not None:
                 x[:] = [float(x[0]), float(x[1])]
+
+        # standardize spectra names
+        r_specs = [x.lower() for x in r_specs]
+        temp_specs = [x.lower() for x in temp_specs]
 
         save_name = "like_mcmc"
         if not mcmc:
@@ -6619,7 +6639,10 @@ class XFaster(object):
             if alpha is None:
                 clsi = cls_input
             else:
-                self.get_masked_data(template_alpha=OrderedDict(zip(alpha_tags, alpha)))
+                self.get_masked_data(
+                    template_alpha=OrderedDict(zip(alpha_tags, alpha)),
+                    temp_specs=temp_specs,
+                )
                 clsi = self.get_data_spectra(do_noise=False)
 
             if beam is not None:
@@ -6640,7 +6663,7 @@ class XFaster(object):
             if r is not None:
                 for stag, d in cls_model0.items():
                     comp, spec = stag.split("_", 1)
-                    if spec not in ["ee", "bb"] or comp not in ["cmb", "total"]:
+                    if spec not in r_specs or comp not in ["cmb", "total"]:
                         continue
                     ctag = "cmb_{}".format(spec)
                     for xname, dd in d.items():
@@ -6662,7 +6685,7 @@ class XFaster(object):
             elif beam is not None:
                 for stag, d in cls_model0.items():
                     comp, spec = stag.split("_", 1)
-                    if spec not in ["ee", "bb"] or comp not in ["cmb", "total"]:
+                    if spec not in r_specs or comp not in ["cmb", "total"]:
                         continue
                     ctag = "cmb_{}".format(spec)
                     for xname, dd in d.items():

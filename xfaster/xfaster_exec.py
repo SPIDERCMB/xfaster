@@ -64,6 +64,8 @@ def xfaster_run(
     window_lmax=None,
     like_lmin=33,
     like_lmax=250,
+    like_r_specs=["EE", "BB"],
+    like_temp_specs=["EE", "BB", "EB"],
     like_profiles=False,
     like_profile_sigma=3.0,
     like_profile_points=100,
@@ -225,6 +227,10 @@ def xfaster_run(
         The minimum ell value to be included in the likelihood calculation
     like_lmax : int
         The maximum ell value to be included in the likelihood calculation
+    like_r_specs : list
+        Which spectra to use in the r likelihood.
+    like_temp_specs : list
+        Which spectra to use for alpha in the likelihood.
     like_profiles : bool
         If True, compute profile likelihoods for each qb, leaving all
         others fixed at their maximum likelihood values.  Profiles are
@@ -491,6 +497,8 @@ def xfaster_run(
         mcmc=mcmc,
         lmin=like_lmin,
         lmax=like_lmax,
+        r_specs=like_r_specs,
+        temp_specs=like_temp_specs,
         null_first_cmb=null_first_cmb,
         alpha_tags=like_alpha_tags,
         alpha_prior=alpha_prior,
@@ -508,6 +516,8 @@ def xfaster_run(
     config_vars.update(like_opts, "Likelihood Estimation Options")
     config_vars.remove_option("XFaster General", "like_lmin")
     config_vars.remove_option("XFaster General", "like_lmax")
+    config_vars.remove_option("XFaster General", "like_r_specs")
+    config_vars.remove_option("XFaster General", "like_temp_specs")
     config_vars.remove_option("XFaster General", "mcmc_walkers")
     config_vars.remove_option("XFaster General", "like_converge_criteria")
     config_vars.remove_option("XFaster General", "like_tag")
@@ -1026,6 +1036,20 @@ def xfaster_parse(args=None, test=False):
         )
         add_arg(
             G,
+            "like_r_specs",
+            nargs="+",
+            help="Which spectra to use in the r likelihood calculation",
+            choices=["TT", "EE", "BB", "TE", "EB", "TB"],
+        )
+        add_arg(
+            G,
+            "like_temp_specs",
+            nargs="+",
+            help="Which spectra to use in the alpha likelihood calculation",
+            choices=["TT", "EE", "BB", "TE", "EB", "TB"],
+        )
+        add_arg(
+            G,
             "like_profile_sigma",
             argtype=float,
             help="Range in units of 1sigma over which to compute profile likelihoods",
@@ -1362,6 +1386,8 @@ class XFasterJobGroup(object):
                     "betad_prior",
                     "dust_amp_prior",
                     "dust_ellind_prior",
+                    "like_r_specs",
+                    "like_temp_specs",
                 ]:
                     if np.isscalar(v):
                         v = [v]
