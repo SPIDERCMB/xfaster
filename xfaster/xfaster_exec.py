@@ -352,7 +352,8 @@ def xfaster_run(
         warnings.warn(
             "Ignoring argument foreground_type={} for non sim index run".format(
                 foreground_type
-            )
+            ),
+            xfc.XFasterWarning,
         )
 
     if len(template_alpha_tags) != len(template_alpha):
@@ -555,9 +556,7 @@ def xfaster_run(
     X.get_beams(**beam_opts)
 
     X.log("Loading spectrum shape for transfer function...", "notice")
-    cls_shape = X.get_signal_shape(
-        filename=signal_transfer_spec, tbeb=False, transfer=True
-    )
+    cls_shape = X.get_signal_shape(filename=signal_transfer_spec, transfer=True)
 
     X.log("Computing transfer functions...", "notice")
     X.get_transfer(cls_shape, fix_bb_xfer=fix_bb_xfer, **fisher_opts)
@@ -616,12 +615,10 @@ def xfaster_run(
 
     if X.null_run:
         X.log("Loading flat spectrum for null test...", "notice")
-        cls_shape = X.get_signal_shape(flat=True, tbeb=tbeb)
+        cls_shape = X.get_signal_shape(flat=True)
     else:
         X.log("Loading spectrum shape for bandpowers...", "notice")
-        cls_shape = X.get_signal_shape(
-            filename=signal_spec, r=model_r, foreground_fit=foreground_fit, tbeb=tbeb
-        )
+        cls_shape = X.get_signal_shape(filename=signal_spec, r=model_r)
 
     if multi_map:
         X.log("Computing multi-map bandpowers...", "notice")
@@ -1272,7 +1269,10 @@ def xfaster_parse(args=None, test=False):
 
     # check that all xfaster_run arguments have been handled by the parser
     if len(rem_args):
-        warnings.warn("Arguments {} is not handled by the parser".format(rem_args))
+        warnings.warn(
+            "Argument(s) {} not handled by the parser".format(rem_args),
+            xfc.XFasterWarning,
+        )
     # parse arguments
     args = P.parse_args(args=args)
 
