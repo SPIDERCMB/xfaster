@@ -4878,29 +4878,24 @@ class XFaster(object):
                     nell[spec] = OrderedDict()
                 debias[spec] = OrderedDict()
                 for xname, (m0, m1) in map_pairs.items():
-                    if m0 != m1:
-                        if self.cls_noise is not None:
-                            nell[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
+                    if self.cls_noise is not None:
                         if self.planck_sub:
-                            debias[spec][xname] = np.copy(
-                                self.cls_noise_null[spec][xname]
-                            )
+                            # If subtracting signal residual in map space,
+                            # no sample variance needed in covariance
+                            nell[spec][xname] = np.copy(
+                                self.cls_noise_null[spec][xname])
                         else:
-                            debias[spec][xname] = np.copy(
-                                self.cls_sim_null[spec][xname]
-                            )
+                            nell[spec][xname] = np.copy(
+                                self.cls_sim_null[spec][xname])
 
+                    if self.planck_sub:
+                        debias[spec][xname] = np.copy(
+                            self.cls_noise_null[spec][xname]
+                        )
                     else:
-                        if self.cls_noise is not None:
-                            nell[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
-                        if self.planck_sub:
-                            debias[spec][xname] = np.copy(
-                                self.cls_noise_null[spec][xname]
-                            )
-                        else:
-                            debias[spec][xname] = np.copy(
-                                self.cls_sim_null[spec][xname]
-                            )
+                        debias[spec][xname] = np.copy(
+                            self.cls_sim_null[spec][xname]
+                        )
 
         # Non-nulls are debiased by average of N sims
         elif not transfer_run and self.cls_noise is not None:
