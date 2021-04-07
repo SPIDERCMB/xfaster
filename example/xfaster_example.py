@@ -52,7 +52,7 @@ xfaster_opts = {
     "like_lmax": 250,
     # beams
     "pixwin": True,
-    "verbose": "debug",
+    "verbose": "info",
     "checkpoint": None,
 }
 
