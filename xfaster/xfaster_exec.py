@@ -346,7 +346,8 @@ def xfaster_run(
         warnings.warn(
             "Ignoring argument foreground_type={} for non sim index run".format(
                 foreground_type
-            )
+            ),
+            xfc.XFasterWarning,
         )
 
     if len(template_alpha_tags) != len(template_alpha):
@@ -1250,7 +1251,10 @@ def xfaster_parse(args=None, test=False):
 
     # check that all xfaster_run arguments have been handled by the parser
     if len(rem_args):
-        warnings.warn("Arguments {} is not handled by the parser".format(rem_args))
+        warnings.warn(
+            "Argument(s) {} not handled by the parser".format(rem_args),
+            xfc.XFasterWarning,
+        )
     # parse arguments
     args = P.parse_args(args=args)
 
