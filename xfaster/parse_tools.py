@@ -323,7 +323,7 @@ def dict_to_dmat(dmat_dict):
             if Dmat is None:
                 shape = (pol_dim * nmaps, pol_dim * nmaps)
                 if not np.isscalar(val):
-                    shape += (len(val),)
+                    shape += val.shape
                 Dmat = np.zeros(shape)
             sind = inds[spec]
             xind = im0 * pol_dim + sind[0]

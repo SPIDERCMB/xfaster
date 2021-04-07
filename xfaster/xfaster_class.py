@@ -4165,12 +4165,92 @@ class XFaster(object):
 
         return self.bin_def
 
+    def kernel_precalc(self, map_tag=None, transfer_run=False):
+        """
+        Compute the mixing kernels M_ll' = K_ll' * F_l' * B_l'^2.  Called by
+        ``bin_cl_template`` to pre-compute kernel terms.
+
+        Arguments
+        ---------
+        map_tag : str
+            If supplied, the kernels are computed only for the given map tag
+            (or cross if map_tag is map_tag1:map_tag2).
+            Otherwise, it is computed for all maps and crosses.
+
+        Returns
+        -------
+        mll : OrderedDict
+            Dictionary of M_ll' matrices, keyed by spec and xname.
+        """
+
+        map_pairs = None
+        if map_tag is not None:
+            if map_tag in self.map_pairs:
+                map_pairs = {map_tag: self.map_pairs[map_tag]}
+                map_tags = list(set(self.map_pairs[map_tag]))
+            else:
+                map_tags = [map_tag]
+                map_pairs = pt.tag_pairs(map_tags)
+        else:
+            map_tags = self.map_tags
+            map_pairs = self.map_pairs
+
+        specs = list(self.specs)
+        lmax = self.lmax  # 2 * lmax
+
+        if not transfer_run:
+            # expand transfer function terms
+            transfer = OrderedDict()
+            for spec in specs:
+                transfer[spec] = OrderedDict()
+                stag = "cmb_{}".format(spec)
+                for tag in map_tags:
+                    transfer[spec][tag] = xft.expand_qb(
+                        self.qb_transfer[stag][tag], self.bin_def[stag], lmax + 1
+                    )
+
+        lk = slice(0, lmax + 1)
+        mll = OrderedDict()
+
+        for spec in specs:
+            mll[spec] = OrderedDict()
+            if spec in ["ee", "bb"]:
+                mspec = "{}_mix".format(spec)
+                mll[mspec] = OrderedDict()
+
+            for xname, (m0, m1) in map_pairs.items():
+                # beams
+                fb2 = self.beam_windows[spec][m0][lk] * self.beam_windows[spec][m1][lk]
+
+                # transfer function
+                if not transfer_run:
+                    fb2 *= np.sqrt(transfer[spec][m0][lk] * transfer[spec][m1][lk])
+
+                # kernels
+                if spec == "tt":
+                    k = self.kern[xname][:, lk]
+                elif spec in ["ee", "bb"]:
+                    k = self.pkern[xname][:, lk]
+                    mk = self.mkern[xname][:, lk]
+                elif spec in ["te", "tb"]:
+                    k = self.xkern[xname][:, lk]
+                elif spec == "eb":
+                    k = self.pkern[xname][:, lk] - self.mkern[xname][:, lk]
+
+                # store final product
+                mll[spec][xname] = k * fb2
+                if spec in ["ee", "bb"]:
+                    mll[mspec][xname] = mk * fb2
+
+        return mll
+
     def bin_cl_template(
         self,
         cls_shape,
         map_tag=None,
         transfer_run=False,
         beam_error=False,
+        use_precalc=True,
         fg_ell_ind=0,
     ):
         """
@@ -4195,6 +4275,10 @@ class XFaster(object):
         beam_error : bool
             If True, use beam error envelope instead of beam to get cbls that
             are 1 sigma beam error envelope offset of signal terms.
+        use_precalc : bool
+            If True, load pre-calculated terms stored from a previous iteration,
+            and store for a future iteration.  Otherwise, all calculations are
+            repeated.
         fg_ell_ind : float
             If binning foreground shape, offset the ell index from the reference
             by this amount.
@@ -4203,9 +4287,10 @@ class XFaster(object):
         -------
         cbl : dict of arrays (num_bins, 2, lmax + 1)
             The Cbl matrix, indexed by component and spectrum, then by map
-            cross, e.g. ``cbl['cmb_tt']['map1:map2']``
-            E/B mixing terms are stored in elements ``cbl[:, 1, :]``,
-            and unmixed terms are stored in elements ``cbl[:, 0, :]``.
+            cross, e.g. ``cbl['cmb_tt']['map1:map2']``.  E/B mixing terms are
+            stored in elements ``cbl['cmb_ee_mix']`` and ``cbl['cmb_bb_mix']``,
+            and unmixed terms are stored in elements ``cbl['cmb_ee']`` and
+            ``cbl['cmb_bb']``.
         """
         map_pairs = None
         if map_tag is not None:
@@ -4230,21 +4315,19 @@ class XFaster(object):
         lmax = self.lmax
         lmax_kern = lmax  # 2 * self.lmax
 
-        # populate transfer function terms
-        transfer = OrderedDict()
-        for spec in specs:
-            transfer[spec] = OrderedDict()
-            stag = "cmb_{}".format(spec)
-            for tag in map_tags:
-                # if computing transfer function, set transfer to 1 everywhere
-                transfer[spec][tag] = np.full(lmax_kern + 1, float(transfer_run))
-                if not transfer_run:
-                    # set each l equal to the transfer function computed in its bin
-                    for ib, (left, right) in enumerate(self.bin_def[stag]):
-                        il = slice(left, right)
-                        transfer[spec][tag][il] = self.qb_transfer[stag][tag][ib]
+        if getattr(self, "mll", None) is None or not use_precalc:
+            mll = self.kernel_precalc(map_tag=map_tag, transfer_run=transfer_run)
+            if use_precalc:
+                self.mll = mll
+        else:
+            mll = self.mll
+
+        if beam_error:
+            beam_error = self.get_beam_errors()
+            beam_keys = ["b1", "b2", "b3"]
 
         ls = slice(2, lmax + 1)
+        lk = slice(0, lmax_kern + 1)
         cbl = OrderedDict()
 
         comps = []
@@ -4278,7 +4361,7 @@ class XFaster(object):
             def binup(d, left, right):
                 return d[..., left:right].sum(axis=-1)
 
-        def bin_things(comp, d, md, d_b1, d_b2, d_b3, md_b1, md_b2, md_b3):
+        def bin_things(comp, d, md):
             if "res" in comp:
                 return
             for si, spec in enumerate(specs):
@@ -4291,49 +4374,37 @@ class XFaster(object):
                 bd = self.bin_def[stag]
                 for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
                     if beam_error:
-                        cbl[stag].setdefault(xname, OrderedDict())
-                        cbl[stag][xname]["b1"] = np.zeros((len(bd), lmax + 1))
-                        cbl[stag][xname]["b2"] = np.zeros((len(bd), lmax + 1))
-                        cbl[stag][xname]["b3"] = np.zeros((len(bd), lmax + 1))
+                        cbl[stag][xname] = OrderedDict(
+                            [(k, np.zeros((len(bd), lmax + 1))) for k in beam_keys]
+                        )
                     else:
                         cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
                     if spec in ["ee", "bb"]:
                         if beam_error:
-                            cbl[mstag].setdefault(xname, OrderedDict())
-                            cbl[mstag][xname]["b1"] = np.zeros((len(bd), lmax + 1))
-                            cbl[mstag][xname]["b2"] = np.zeros((len(bd), lmax + 1))
-                            cbl[mstag][xname]["b3"] = np.zeros((len(bd), lmax + 1))
+                            cbl[mstag][xname] = OrderedDict(
+                                [(k, np.zeros((len(bd), lmax + 1))) for k in beam_keys]
+                            )
                         else:
                             cbl[mstag][xname] = np.zeros((len(bd), lmax + 1))
 
                     # integrate per bin
                     for idx, (left, right) in enumerate(bd):
                         if beam_error:
-                            cbl[stag][xname]["b1"][idx, ls] = binup(
-                                d_b1[:, si, xi], left, right
-                            )
-                            cbl[stag][xname]["b2"][idx, ls] = binup(
-                                d_b2[:, si, xi], left, right
-                            )
-                            cbl[stag][xname]["b3"][idx, ls] = binup(
-                                d_b3[:, si, xi], left, right
-                            )
+                            for k in beam_keys:
+                                cbl[stag][xname][k][idx, ls] = binup(
+                                    d[k][si, xi], left, right
+                                )
                         else:
-                            cbl[stag][xname][idx, ls] = binup(d[:, si, xi], left, right)
+                            cbl[stag][xname][idx, ls] = binup(d[si, xi], left, right)
                         if spec in ["ee", "bb"]:
                             if beam_error:
-                                cbl[mstag][xname]["b1"][idx, ls] = binup(
-                                    md_b1[:, si - 1, xi], left, right
-                                )
-                                cbl[mstag][xname]["b2"][idx, ls] = binup(
-                                    md_b2[:, si - 1, xi], left, right
-                                )
-                                cbl[mstag][xname]["b3"][idx, ls] = binup(
-                                    md_b3[:, si - 1, xi], left, right
-                                )
+                                for k in beam_keys:
+                                    cbl[mstag][xname][k][idx, ls] = binup(
+                                        md[k][si - 1, xi], left, right
+                                    )
                             else:
                                 cbl[mstag][xname][idx, ls] = binup(
-                                    md[:, si - 1, xi], left, right
+                                    md[si - 1, xi], left, right
                                 )
 
         for comp in comps:
@@ -4341,7 +4412,7 @@ class XFaster(object):
             # except for res is weird so don't do it for that.
             # need n_xname x n_spec x ell
             nspec = len(specs)
-            nxmap = len(map_pairs.items())
+            nxmap = len(map_pairs)
             if comp == "fg" and fg_ell_ind != 0:
                 s_arr = (ell / 80.0) ** fg_ell_ind
                 s_arr[0] = 0
@@ -4352,49 +4423,25 @@ class XFaster(object):
                     self.md = np.multiply(
                         self.md_fg, s_arr, out=getattr(self, "md", None)
                     )
-                    bin_things(
-                        comp, self.d, self.md, None, None, None, None, None, None
-                    )
                 else:
-                    self.d_b1 = np.multiply(
-                        self.d_fg_b1, s_arr, out=getattr(self, "d_b1", None)
-                    )
-                    self.d_b2 = np.multiply(
-                        self.d_fg_b2, s_arr, out=getattr(self, "d_b2", None)
-                    )
-                    self.d_b3 = np.multiply(
-                        self.d_fg_b3, s_arr, out=getattr(self, "d_b3", None)
-                    )
-                    self.md_b1 = np.multiply(
-                        self.md_fg_b1, s_arr, out=getattr(self, "md_b1", None)
-                    )
-                    self.md_b2 = np.multiply(
-                        self.md_fg_b2, s_arr, out=getattr(self, "md_b2", None)
-                    )
-                    self.md_b3 = np.multiply(
-                        self.md_fg_b3, s_arr, out=getattr(self, "md_b3", None)
-                    )
-                    bin_things(
-                        comp,
-                        None,
-                        None,
-                        self.d_b1,
-                        self.d_b2,
-                        self.d_b3,
-                        self.md_b1,
-                        self.md_b2,
-                        self.md_b3,
-                    )
+                    for k in beam_keys:
+                        if not hasattr(self, "d"):
+                            self.d = OrderedDict([(k, None) for k in beam_keys])
+                            self.md = OrderedDict([(k, None) for k in beam_keys])
+                        self.d[k] = np.multiply(self.d_fg[k], s_arr, out=self.d[k])
+                        self.md[k] = np.multiply(self.md_fg[k], s_arr, out=self.md[k])
+                bin_things(comp, self.d, self.md)
+
             else:
-                k_arr = np.zeros([nspec, nxmap, self.lmax - 1, lmax_kern + 1])
-                mk_arr = np.zeros([2, nxmap, self.lmax - 1, lmax_kern + 1])
-                f_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
-                b_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
-                s_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
+                kshape = [nspec, nxmap, self.lmax - 1, lmax_kern + 1]
+                mkshape = [2] + kshape[1:]
+                k_arr = np.zeros(kshape)
+                mk_arr = np.zeros(mkshape)
+
+                shape = [nspec, nxmap, 1, lmax_kern + 1]
+                s_arr = np.zeros(shape)
                 if beam_error:
-                    b1_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
-                    b2_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
-                    b3_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
+                    b_arr = {k: np.zeros(shape) for k in beam_keys}
 
                 for si, spec in enumerate(specs):
                     stag = "{}_{}".format(comp, spec)
@@ -4455,102 +4502,46 @@ class XFaster(object):
 
                             continue
 
-                        # get cross spectrum transfer function
-                        if tag1 == tag2:
-                            f_arr[si, xi] = transfer[spec][tag1]
-                        else:
-                            f_arr[si, xi] = np.sqrt(
-                                transfer[spec][tag1] * transfer[spec][tag2]
-                            )
-                        # get cross spectrum beam window function
-                        b_arr[si, xi] = (
-                            self.beam_windows[spec][tag1]
-                            * self.beam_windows[spec][tag2]
-                        )[: lmax_kern + 1]
-
                         if beam_error:
-                            beam_err = self.get_beam_errors()
-                            # beam term with error needs to include cross terms
-                            # since it's squared, so bsig1, bsig2 sigma added is
-                            # c_model = mean_model +
-                            #     (bsig1 * berr1 * bl_2 + bsig2 * berr2 * bl_1 +
-                            #      bsig1 * bisg2 * berr1 * berr2) * Kll'*Fl*Cl_sky
-                            b1_err = (
-                                beam_err[spec][tag1][: lmax_kern + 1]
-                                * self.beam_windows[spec][tag1][: lmax_kern + 1]
+                            b_arr["b1"][si, xi] = beam_error[spec][tag1]
+                            b_arr["b2"][si, xi] = beam_error[spec][tag2]
+                            b_arr["b3"][si, xi] = (
+                                b_arr["b1"][si, xi] * b_arr["b2"][si, xi]
                             )
-                            b2_err = (
-                                beam_err[spec][tag2][: lmax_kern + 1]
-                                * self.beam_windows[spec][tag2][: lmax_kern + 1]
-                            )
-                            b1_arr[si, xi] = (
-                                b1_err * self.beam_windows[spec][tag2][: lmax_kern + 1]
-                            )
-                            b2_arr[si, xi] = (
-                                b2_err * self.beam_windows[spec][tag1][: lmax_kern + 1]
-                            )
-                            b3_arr[si, xi] = b1_err * b2_err
 
                         # use correct shape spectrum
                         if comp == "fg":
                             # single foreground spectrum
-                            s_arr = (
-                                cls_shape["fg"][: lmax_kern + 1]
-                                * (ell / 80.0) ** fg_ell_ind
-                            )
+                            s_arr = cls_shape["fg"][lk] * (ell / 80.0) ** fg_ell_ind
                             s_arr[0] = 0
                         else:
-                            s_arr[si, xi] = cls_shape["cmb_{}".format(spec)][
-                                : lmax_kern + 1
-                            ]
+                            s_arr[si, xi] = cls_shape["cmb_{}".format(spec)][lk]
+
                         # get cross spectrum kernel terms
-                        if spec == "tt":
-                            k_arr[si, xi] = self.kern[xname][ls, : lmax_kern + 1]
-                        elif spec in ["ee", "bb"]:
-                            k_arr[si, xi] = self.pkern[xname][ls, : lmax_kern + 1]
-                            mk_arr[si - 1, xi] = self.mkern[xname][ls, : lmax_kern + 1]
-                        elif spec in ["te", "tb"]:
-                            k_arr[si, xi] = self.xkern[xname][ls, : lmax_kern + 1]
-                        elif spec == "eb":
-                            k_arr[si, xi] = (
-                                self.pkern[xname][ls] - self.mkern[xname][ls]
-                            )[:, : lmax_kern + 1]
-                # need last 3 dims of kernel to match other arrays
-                k_arr = np.transpose(k_arr, axes=[2, 0, 1, 3])
-                mk_arr = np.transpose(mk_arr, axes=[2, 0, 1, 3])
+                        k_arr[si, xi] = mll[spec][xname][ls, lk]
+                        if spec in ["ee", "bb"]:
+                            mspec = spec + "_mix"
+                            mk_arr[si - 1, xi] = mll[mspec][xname][ls, lk]
+
                 if s_arr.ndim == 1:
                     s_arr_md = s_arr
                 else:
                     s_arr_md = s_arr[1:3]
                 if not beam_error:
-                    d = k_arr * b_arr * f_arr * s_arr
-                    md = mk_arr * b_arr[1:3] * f_arr[1:3] * s_arr_md
+                    d = k_arr * s_arr
+                    md = mk_arr * s_arr_md
                     if comp == "fg":
                         self.d_fg = np.copy(d)
                         self.md_fg = np.copy(md)
-                    d_b1 = None
-                    d_b2 = None
-                    d_b3 = None
-                    md_b1 = None
-                    md_b2 = None
-                    md_b3 = None
                 else:
-                    d = None
-                    md = None
-                    d_b1 = k_arr * b1_arr * f_arr * s_arr
-                    d_b2 = k_arr * b2_arr * f_arr * s_arr
-                    d_b3 = k_arr * b3_arr * f_arr * s_arr
-                    md_b1 = mk_arr * b1_arr[1:3] * f_arr[1:3] * s_arr_md
-                    md_b2 = mk_arr * b2_arr[1:3] * f_arr[1:3] * s_arr_md
-                    md_b3 = mk_arr * b3_arr[1:3] * f_arr[1:3] * s_arr_md
+                    d = OrderedDict([(k, k_arr * b_arr[k] * s_arr) for k in beam_keys])
+                    md = OrderedDict(
+                        [(k, mk_arr * b_arr[k] * s_arr_md) for k in beam_keys]
+                    )
                     if comp == "fg":
-                        self.d_fg_b1 = d_b1
-                        self.d_fg_b2 = d_b2
-                        self.d_fg_b3 = d_b3
-                        self.md_fg_b1 = md_b1
-                        self.md_fg_b2 = md_b2
-                        self.md_fg_b3 = md_b3
-                bin_things(comp, d, md, d_b1, d_b2, d_b3, md_b1, md_b2, md_b3)
+                        self.d_fg = copy.deepcopy(d)
+                        self.md_fg = copy.deepcopy(md)
+                bin_things(comp, d, md)
         return cbl
 
     def get_model_spectra(
@@ -4757,9 +4748,8 @@ class XFaster(object):
                         if isinstance(cbl1, dict):
                             # has beam error terms. deal with them individually
                             cl1 = OrderedDict()
-                            cl1["b1"] = (qbs[:, None] * cbl1["b1"]).sum(axis=0)
-                            cl1["b2"] = (qbs[:, None] * cbl1["b2"]).sum(axis=0)
-                            cl1["b3"] = (qbs[:, None] * cbl1["b3"]).sum(axis=0)
+                            for k, v in cbl1.items():
+                                cl1[k] = (qbs[:, None] * v).sum(axis=0)
                         else:
                             cl1 = (qbs[:, None] * cbl1).sum(axis=0)
                         if spec in ["ee", "bb"]:
@@ -4767,15 +4757,8 @@ class XFaster(object):
                             if qbm is not None and mstag + "_mix" in cbl:
                                 cbl1_mix = cbl[mstag + "_mix"][xname]
                                 if isinstance(cbl1_mix, dict):
-                                    cl1["b1"] += (qbm[:, None] * cbl1_mix["b1"]).sum(
-                                        axis=0
-                                    )
-                                    cl1["b2"] += (qbm[:, None] * cbl1_mix["b2"]).sum(
-                                        axis=0
-                                    )
-                                    cl1["b3"] += (qbm[:, None] * cbl1_mix["b3"]).sum(
-                                        axis=0
-                                    )
+                                    for k, v in cbl1_mix.items():
+                                        cl1[k] += (qbm[:, None] * v).sum(axis=0)
                                 else:
                                     cl1 += (qbm[:, None] * cbl1_mix).sum(axis=0)
 
@@ -4801,6 +4784,7 @@ class XFaster(object):
                         ttag = "total_{}".format(spec)
                         cls[ttag].setdefault(xname, np.zeros_like(cl1))
                         cls[ttag][xname] += cl1
+
         return cls
 
     def get_data_spectra(self, map_tag=None, transfer_run=False, do_noise=True):
@@ -4971,7 +4955,14 @@ class XFaster(object):
             lfac=not return_cls,
         )
 
-    def fisher_precalc(self, cbl, cls_input, cls_noise=None, likelihood=False):
+    def fisher_precalc(
+        self,
+        cbl,
+        cls_input,
+        cls_debias=None,
+        likelihood=False,
+        windows=False,
+    ):
         """
         Pre-compute the D_ell and signal derivative matrices necessary for
         ``fisher_calc`` from the input data spectra.  This method requires bin
@@ -4987,11 +4978,13 @@ class XFaster(object):
             average ``cls_signal``.  If computing a null test, this is
             ``cls_data_null``, and otherwise it is ``cls_data``, for a single map or
             several input maps.
-        cls_noise : OrderedDict
-            If supplied, the noise spectrum is subtracted from the input.
+        cls_debias : OrderedDict
+            If supplied, the debias spectrum is subtracted from the input.
         likelihood : bool
             If True, compute just Dmat_obs_b.  Otherwise, Dmat_obs and
             dSdqb_mat1 are also computed.
+        windows : bool
+            If True, compute dSdqb and Mll for constructing window functions.
 
         Returns
         -------
@@ -5001,6 +4994,9 @@ class XFaster(object):
             Biased D_ell matrix from ``cls_input`` (for likelihood)
         dSdqb_mat1 : OrderedDict
             Signal derivative matrix from Cbl
+        Mmat : OrderedDict
+            Mode mixing matrix (Kll' * Fl * Bl^2) for constructing
+            window functions.
 
         .. note:: the output arrays are also stored as attributes of the
         parent object to avoid repeating the computation in ``fisher_calc``
@@ -5021,9 +5017,18 @@ class XFaster(object):
             Dmat_obs_b = OrderedDict()
             Dmat_obs = None
             dSdqb = None
+            Mmat = None
         else:
+            if windows:
+                Dmat_obs = None
+                Mmat = OrderedDict()
+                mll = getattr(self, "mll", None)
+                if mll is None:
+                    mll = self.kernel_precalc()
+            else:
+                Dmat_obs = OrderedDict()
+                Mmat = None
             Dmat_obs_b = None
-            Dmat_obs = OrderedDict()
             dSdqb = OrderedDict()
 
         for xname, (m0, m1) in self.map_pairs.items():
@@ -5033,6 +5038,8 @@ class XFaster(object):
 
             if likelihood:
                 Dmat_obs_b[xname] = OrderedDict()
+            elif windows:
+                Mmat[xname] = OrderedDict()
             else:
                 Dmat_obs[xname] = OrderedDict()
 
@@ -5040,10 +5047,16 @@ class XFaster(object):
                 if likelihood:
                     # without bias subtraction for likelihood
                     Dmat_obs_b[xname][spec] = cls_input[spec][xname]
+                elif windows:
+                    if spec in ["ee", "bb"]:
+                        mspec = "{}_mix".format("bb" if spec == "ee" else "ee")
+                        Mmat[xname][spec] = mll[spec][xname] + mll[mspec][xname]
+                    else:
+                        Mmat[xname][spec] = mll[spec][xname]
                 else:
-                    if cls_noise is not None:
+                    if cls_debias is not None:
                         Dmat_obs[xname][spec] = (
-                            cls_input[spec][xname] - cls_noise[spec][xname]
+                            cls_input[spec][xname] - cls_debias[spec][xname]
                         )
                     else:
                         Dmat_obs[xname][spec] = cls_input[spec][xname]
@@ -5079,7 +5092,8 @@ class XFaster(object):
                     for spec in specs:
                         # this will be filled in in fisher_calc
                         dSdqb["delta_beta"][xname][spec] = OrderedDict()
-        return Dmat_obs, Dmat_obs_b, dSdqb
+
+        return Dmat_obs, Dmat_obs_b, dSdqb, Mmat
 
     def clear_precalc(self):
         """
@@ -5088,6 +5102,8 @@ class XFaster(object):
         self.Dmat_obs = None
         self.Dmat_obs_b = None
         self.dSdqb_mat1 = None
+        self.Mmat = None
+        self.mll = None
 
     def fisher_calc(
         self,
@@ -5105,6 +5121,8 @@ class XFaster(object):
         delta_beta_prior=None,
         null_first_cmb=False,
         use_precalc=True,
+        windows=False,
+        inv_fish=None,
     ):
         """
         Re-compute the Fisher matrix and qb amplitudes based on
@@ -5140,6 +5158,8 @@ class XFaster(object):
             If True, load pre-calculated terms stored from a previous iteration,
             and store for a future iteration.  Otherwise, all calculations are
             repeated.
+        windows : bool
+            If True, return W_bl window functions for each CMB qb.
 
         Returns
         -------
@@ -5158,24 +5178,29 @@ class XFaster(object):
         pol_dim = 3 if self.pol else 1
         do_fg = "fg_tt" in cbl
 
-        dkey = "Dmat_obs_b" if likelihood else "Dmat_obs"
+        dkey = "Dmat_obs_b" if likelihood else "Mmat" if windows else "Dmat_obs"
 
         if getattr(self, dkey, None) is None or not use_precalc:
-            Dmat_obs, Dmat_obs_b, dSdqb_mat1 = self.fisher_precalc(
+            Dmat_obs, Dmat_obs_b, dSdqb_mat1, Mmat = self.fisher_precalc(
                 cbl,
                 cls_input,
-                cls_noise=cls_debias if not likelihood else None,
+                cls_debias=cls_debias,
                 likelihood=likelihood,
+                windows=windows,
             )
             if use_precalc:
                 self.Dmat_obs = Dmat_obs
                 self.Dmat_obs_b = Dmat_obs_b
                 self.dSdqb_mat1 = dSdqb_mat1
+                self.Mmat = Mmat
         else:
             if likelihood:
                 Dmat_obs_b = self.Dmat_obs_b
             else:
-                Dmat_obs = self.Dmat_obs
+                if windows:
+                    Mmat = self.Mmat
+                else:
+                    Dmat_obs = self.Dmat_obs
                 dSdqb_mat1 = self.dSdqb_mat1
 
         delta_beta = 0.0
@@ -5185,7 +5210,7 @@ class XFaster(object):
         if not likelihood:
             dSdqb_mat1_freq = copy.deepcopy(dSdqb_mat1)
 
-        if likelihood or not cond_noise:
+        if likelihood or windows or not cond_noise:
             well_cond = True
             cond_noise = None
 
@@ -5302,7 +5327,10 @@ class XFaster(object):
         if likelihood:
             Dmat_obs_b = pt.dict_to_dmat(Dmat_obs_b)
         else:
-            Dmat_obs = pt.dict_to_dmat(Dmat_obs)
+            if windows:
+                Mmat = pt.dict_to_dmat(Mmat)
+            else:
+                Dmat_obs = pt.dict_to_dmat(Dmat_obs)
             dSdqb_mat1_freq = pt.dict_to_dsdqb_mat(dSdqb_mat1_freq, self.bin_def)
         # apply ell limits
         if likelihood:
@@ -5312,13 +5340,19 @@ class XFaster(object):
             )
         else:
             ell = slice(self.lmin, self.lmax + 1)
+        wnorm = 1.0
         Dmat1 = Dmat1[..., ell]
         if likelihood:
             Dmat_obs_b = Dmat_obs_b[..., ell]
         else:
-            Dmat_obs = Dmat_obs[..., ell]
+            if windows:
+                Mmat = Mmat[..., ell]
+                ells = np.arange(ell.start, ell.stop)
+                wnorm = (2 * ells + 1) / ells / (ells + 1)
+            else:
+                Dmat_obs = Dmat_obs[..., ell]
             dSdqb_mat1_freq = dSdqb_mat1_freq[..., ell]
-        gmat = gmat[..., ell]
+        gmat = gmat[..., ell] * wnorm
 
         self.Dmat1 = Dmat1
 
@@ -5377,8 +5411,30 @@ class XFaster(object):
 
         # construct matrices for the qb and fisher terms,
         # and take the trace and sum over ell simultaneously
-        qb_vec = np.einsum("iil,ijkl,jil->k", gmat, mat, Dmat_obs) / 2.0
-        fisher = np.einsum("iil,ijkl,jiml->km", gmat, mat, dSdqb_mat1_freq) / 2
+        if not windows:
+            qb_vec = np.einsum("iil,ijkl,jil->k", gmat, mat, Dmat_obs) / 2.0
+        if not windows or (windows and inv_fish is None):
+            fisher = np.einsum("iil,ijkl,jiml->km", gmat, mat, dSdqb_mat1_freq) / 2
+
+        if windows:
+            arg = np.einsum("iil,ijkl,jiml->km", gmat, mat, Mmat)
+
+            if inv_fish is None:
+                inv_fish = np.linalg.solve(fisher, np.eye(len(fisher)))
+
+            lfac = 4 * np.pi / (2 * np.arange(self.lmax + 1) + 1)
+            wbl = np.einsum("ij,jl,l->il", inv_fish, arg, lfac)
+
+            # convert to dictionary
+            wbl = pt.arr_to_dict(wbl, qb)
+
+            # only keep CMB bins for window functions,
+            # the rest don't make any sense
+            for k in list(wbl):
+                if not k.startswith("cmb"):
+                    wbl.pop(k)
+
+            return wbl
 
         bin_index = pt.dict_to_index(qb)
 
@@ -5423,6 +5479,7 @@ class XFaster(object):
         delta_beta_prior=None,
         cond_noise=None,
         cond_criteria=None,
+        windows=False,
         like_profiles=False,
         like_profile_sigma=3.0,
         like_profile_points=100,
@@ -5471,6 +5528,8 @@ class XFaster(object):
         cond_criteria : float
             The maximum condition number allowed for Dmat1 to be acceptable
             for taking its inverse.
+        windows : bool
+            If True, include window functions for CMB bins in the output
         like_profiles : bool
             If True, compute profile likelihoods for each qb, leaving all
             others fixed at their maximum likelihood values.  Profiles are
@@ -5552,9 +5611,6 @@ class XFaster(object):
         obs, nell, debias = self.get_data_spectra(
             map_tag=map_tag, transfer_run=transfer_run
         )
-
-        # initialize matrices for precomputation
-        self.clear_precalc()
 
         bin_index = pt.dict_to_index(self.bin_def)
 
@@ -5837,6 +5893,22 @@ class XFaster(object):
                 invfish_nosampvar=inv_fish_ns,
             )
 
+            if windows:
+                # compute window functions for CMB and FG bins
+                wbl = self.fisher_calc(
+                    qb,
+                    cbl,
+                    obs,
+                    cls_noise=nell,
+                    cls_debias=None,
+                    cond_noise=None,
+                    delta_beta_prior=delta_beta_prior,
+                    null_first_cmb=null_first_cmb,
+                    windows=True,
+                    inv_fish=inv_fish,
+                )
+                out.update(wbl=wbl)
+
             if like_profiles:
                 # compute bandpower likelihoods
                 max_like = self.fisher_calc(
@@ -5897,9 +5969,6 @@ class XFaster(object):
             save_name = "ERROR_{}".format(save_name)
             self.log(msg, "error")
             self.warn(msg)
-
-        # cleanup
-        self.clear_precalc()
 
         return self.save_data(
             save_name, map_tag=map_tag, bp_opts=True, extra_tag=file_tag, **out
@@ -6019,6 +6088,7 @@ class XFaster(object):
                 ),
                 "info",
             )
+            self.clear_precalc()
             cbl = self.bin_cl_template(cls_shape, m0, transfer_run=True)
             ret = self.fisher_iterate(
                 cbl,
@@ -6100,6 +6170,7 @@ class XFaster(object):
         null_first_cmb=False,
         tophat_bins=False,
         return_cls=False,
+        windows=False,
         like_profiles=False,
         like_profile_sigma=3.0,
         like_profile_points=100,
@@ -6138,6 +6209,8 @@ class XFaster(object):
             ell-based weighting.
         return_cls : bool
             If True, return C_ls rather than D_ls
+        windows : bool
+            If True, include window functions for CMB bins in the output
         cond_criteria : float
             The maximum condition number allowed for Dmat1 to be acceptable
             for taking its inverse.
@@ -6203,6 +6276,8 @@ class XFaster(object):
                 return ret["qb"], ret["inv_fish"]
             return ret
 
+        self.clear_precalc()
+
         cbl = self.bin_cl_template(cls_shape, map_tag, transfer_run=False)
 
         ret = self.fisher_iterate(
@@ -6219,6 +6294,7 @@ class XFaster(object):
             delta_beta_prior=delta_beta_prior,
             tophat_bins=tophat_bins,
             return_cls=return_cls,
+            windows=windows,
             like_profiles=like_profiles,
             like_profile_sigma=like_profile_sigma,
             like_profile_points=like_profile_points,
