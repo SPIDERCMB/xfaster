@@ -1738,12 +1738,18 @@ class XFaster(object):
                 v = v.tolist()
             if shape_ref in [field, attr]:
                 if v.shape != tuple(shape):
-                    self.warn(
-                        "{}: Field {} has shape {}, expected {}".format(
-                            errmsg, shape_ref, v.shape, shape
+                    # check if it's just an extra dimension, ie (1,500) vs (500,)
+                    passes = False
+                    if tuple(shape)[0] == 1:
+                        if v.shape == tuple(shape)[1:]:
+                            passes = True
+                    if not passes:
+                        self.warn(
+                            "{}: Field {} has shape {}, expected {}".format(
+                                errmsg, shape_ref, v.shape, shape
+                            )
                         )
-                    )
-                    return force_rerun_children()
+                        return force_rerun_children()
             if value_ref is not None:
                 for k in [field, attr]:
                     vref = value_ref.pop(k, "undef")
@@ -1758,11 +1764,9 @@ class XFaster(object):
             if attr:
                 key = field if attr is True else attr
                 setattr(self, key, ret[field])
-
         if value_ref:
             self.warn("{}: Missing reference fields {}".format(errmsg, list(value_ref)))
             return force_rerun_children()
-
         self.log("Loaded input data from {}".format(output_file), "debug")
         if use_alt:
             # copy data to original file name
@@ -1932,7 +1936,7 @@ class XFaster(object):
             cls = (cls + cls_T) / 2.0
         if lmin:
             cls[..., :lmin] = 0
-        return cls
+        return np.atleast_2d(cls)
 
     def get_mask_weights(self, apply_gcorr=False, reload_gcorr=False):
         """
@@ -3916,7 +3920,6 @@ class XFaster(object):
 
         save_name = "beams"
         cp = "beams"
-
         ret = self.load_data(
             save_name, cp, fields=["beam_windows"], to_attrs=True, shape=beam_shape
         )
@@ -3932,11 +3935,17 @@ class XFaster(object):
         pwl = np.ones((3 if self.pol else 1, lsize))
         if pixwin:
             pwl *= 0.0
-            pixT, pixP = hp.pixwin(self.nside, pol=self.pol)
-            end = min(len(pixT), lsize)
+            pix = hp.pixwin(self.nside, pol=self.pol)
+            if self.pol:
+                pixT = pix[0]
+                pixP = pix[1]
+                end = min(len(pixT), lsize)
+                pwl[1, :end] = pixP[:end]
+                pwl[2, :end] = np.sqrt(pixT[:end] * pixP[:end])
+            else:
+                pixT = pix
+                end = min(len(pixT), lsize)
             pwl[0, :end] = pixT[:end]
-            pwl[1, :end] = pixP[:end]
-            pwl[2, :end] = np.sqrt(pixT[:end] * pixP[:end])
 
         for tag, otag in zip(self.map_tags, self.map_tags_orig):
             if otag in self.beam_product:
@@ -4529,15 +4538,22 @@ class XFaster(object):
                     s_arr_md = s_arr[1:3]
                 if not beam_error:
                     d = k_arr * s_arr
-                    md = mk_arr * s_arr_md
+                    if self.pol:
+                        md = mk_arr * s_arr_md
+                    else:
+                        md = None
                     if comp == "fg":
                         self.d_fg = np.copy(d)
+
                         self.md_fg = np.copy(md)
                 else:
                     d = OrderedDict([(k, k_arr * b_arr[k] * s_arr) for k in beam_keys])
-                    md = OrderedDict(
-                        [(k, mk_arr * b_arr[k] * s_arr_md) for k in beam_keys]
-                    )
+                    if self.pol:
+                        md = OrderedDict(
+                            [(k, mk_arr * b_arr[k] * s_arr_md) for k in beam_keys]
+                        )
+                    else:
+                        md = None
                     if comp == "fg":
                         self.d_fg = copy.deepcopy(d)
                         self.md_fg = copy.deepcopy(md)
@@ -5421,7 +5437,6 @@ class XFaster(object):
 
             if inv_fish is None:
                 inv_fish = np.linalg.solve(fisher, np.eye(len(fisher)))
-
             lfac = 4 * np.pi / (2 * np.arange(self.lmax + 1) + 1)
             wbl = np.einsum("ij,jl,l->il", inv_fish, arg, lfac)
 
@@ -5844,7 +5859,6 @@ class XFaster(object):
                 cond_noise=cond_noise,
                 Dmat_obs=self.Dmat_obs,
             )
-
         if not transfer_run:
             out.update(qb_transfer=self.qb_transfer)
             if self.template_cleaned:
