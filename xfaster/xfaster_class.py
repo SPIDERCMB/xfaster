@@ -1764,9 +1764,11 @@ class XFaster(object):
             if attr:
                 key = field if attr is True else attr
                 setattr(self, key, ret[field])
+
         if value_ref:
             self.warn("{}: Missing reference fields {}".format(errmsg, list(value_ref)))
             return force_rerun_children()
+
         self.log("Loaded input data from {}".format(output_file), "debug")
         if use_alt:
             # copy data to original file name
@@ -5437,6 +5439,7 @@ class XFaster(object):
 
             if inv_fish is None:
                 inv_fish = np.linalg.solve(fisher, np.eye(len(fisher)))
+
             lfac = 4 * np.pi / (2 * np.arange(self.lmax + 1) + 1)
             wbl = np.einsum("ij,hjl,l->hil", inv_fish, arg, lfac)
             # change to shape [bin, input spec, ell]
@@ -5860,6 +5863,7 @@ class XFaster(object):
                 cond_noise=cond_noise,
                 Dmat_obs=self.Dmat_obs,
             )
+
         if not transfer_run:
             out.update(qb_transfer=self.qb_transfer)
             if self.template_cleaned:
