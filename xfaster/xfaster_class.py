@@ -5064,11 +5064,11 @@ class XFaster(object):
                     # without bias subtraction for likelihood
                     Dmat_obs_b[xname][spec] = cls_input[spec][xname]
                 elif windows:
+                    Mmat[xname].setdefault(spec, OrderedDict())
+                    Mmat[xname][spec][spec] = mll[spec][xname]
                     if spec in ["ee", "bb"]:
-                        mspec = "{}_mix".format("bb" if spec == "ee" else "ee")
-                        Mmat[xname][spec] = mll[spec][xname] + mll[mspec][xname]
-                    else:
-                        Mmat[xname][spec] = mll[spec][xname]
+                        mspec = "bb" if spec == "ee" else "ee"
+                        Mmat[xname][spec][mspec] = mll["{}_mix".format(mspec)][xname]
                 else:
                     if cls_debias is not None:
                         Dmat_obs[xname][spec] = (
@@ -5344,7 +5344,7 @@ class XFaster(object):
             Dmat_obs_b = pt.dict_to_dmat(Dmat_obs_b)
         else:
             if windows:
-                Mmat = pt.dict_to_dmat(Mmat)
+                Mmat = pt.dict_to_Mmat(Mmat, pol=self.pol)
             else:
                 Dmat_obs = pt.dict_to_dmat(Dmat_obs)
             dSdqb_mat1_freq = pt.dict_to_dsdqb_mat(dSdqb_mat1_freq, self.bin_def)
@@ -5433,13 +5433,14 @@ class XFaster(object):
             fisher = np.einsum("iil,ijkl,jiml->km", gmat, mat, dSdqb_mat1_freq) / 2
 
         if windows:
-            arg = np.einsum("iil,ijkl,jiml->km", gmat, mat, Mmat)
+            arg = np.einsum("iil,ijkl,hjiml->hkm", gmat, mat, Mmat)
 
             if inv_fish is None:
                 inv_fish = np.linalg.solve(fisher, np.eye(len(fisher)))
             lfac = 4 * np.pi / (2 * np.arange(self.lmax + 1) + 1)
-            wbl = np.einsum("ij,jl,l->il", inv_fish, arg, lfac)
-
+            wbl = np.einsum("ij,hjl,l->hil", inv_fish, arg, lfac)
+            # change to shape [bin, input spec, ell]
+            wbl = np.transpose(wbl, axes=[1, 0, 2])
             # convert to dictionary
             wbl = pt.arr_to_dict(wbl, qb)
 
