@@ -5438,24 +5438,36 @@ class XFaster(object):
 
             # compute prefactors
             ells = np.arange(0, self.lmax + 1)
-            with np.errstate(divide='ignore'):
-                wnorm = (2.0 * ells + 1.0)
+            with np.errstate(divide="ignore"):
+                wnorm = 2.0 * ells + 1.0
                 if self.return_cls:
                     wnorm /= ells * (ells + 1.0) / 2.0 / np.pi
                 lfac = 2.0 * np.pi / (2.0 * ells + 1.0)
                 wnorm[0] = 0.0
                 lfac[0] = 0.0
 
-            arg = np.einsum('ij,kljm->klim', inv_fish, mat * wnorm[ell])
+            arg = np.einsum("ij,kljm->klim", inv_fish, mat * wnorm[ell])
 
             # only keep CMB bins for window functions,
             # the rest don't make any sense
-            qb_cmb = OrderedDict((k, v) for k, v in qb.items() if 'cmb' in k)
+            qb_cmb = OrderedDict((k, v) for k, v in qb.items() if "cmb" in k)
             bin_index = pt.dict_to_index(qb_cmb)
             cmb_bins = list(bin_index.values())
             arg = arg[:, :, np.min(cmb_bins) : np.max(cmb_bins)]
 
-            wbl = np.einsum("kkl,kmin,hmkln->ihl", gmat * lfac, arg, Mmat)
+            # now, want only to sum over ell for spectra that contribute to
+            # bin b. add an axis of len (specs) that stores these
+            arg2 = np.zeros([len(bin_index), *arg.shape])
+            for spec_num, (comp, rng) in enumerate(bin_index.items()):
+                mat_in_bin = arg[:, :, rng[0] : rng[1]]
+                arg2[spec_num, :, :, rng[0] : rng[1]] += mat_in_bin
+                # next, deal with ee<->bb mixing
+                if "ee" in comp:
+                    arg2[spec_num + 1, :, :, rng[0] : rng[1]] += mat_in_bin
+                elif "bb" in comp:
+                    arg2[spec_num - 1, :, :, rng[0] : rng[1]] += mat_in_bin
+
+            wbl = np.einsum("kkl,hkmin,hmkln->ihl", gmat * lfac, arg2, Mmat)
 
             # convert to dictionary
             wbl = pt.arr_to_dict(wbl, qb_cmb)
