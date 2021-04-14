@@ -5454,7 +5454,7 @@ class XFaster(object):
             bin_index = pt.dict_to_index(qb_cmb)
             cmb_bins = list(bin_index.values())
             arg = arg[:, :, np.min(cmb_bins) : np.max(cmb_bins)]
-
+            arg2 = np.copy(arg)
             # now, want only to sum over ell for spectra that contribute to
             # bin b. add an axis of len (specs) that stores these
             arg2 = np.zeros([len(bin_index), *arg.shape])
@@ -5462,10 +5462,10 @@ class XFaster(object):
                 mat_in_bin = arg[:, :, rng[0] : rng[1]]
                 arg2[spec_num, :, :, rng[0] : rng[1]] += mat_in_bin
                 # next, deal with ee<->bb mixing
-                if "ee" in comp:
-                    arg2[spec_num + 1, :, :, rng[0] : rng[1]] += mat_in_bin
-                elif "bb" in comp:
-                    arg2[spec_num - 1, :, :, rng[0] : rng[1]] += mat_in_bin
+                #if "ee" in comp:
+                #    arg2[spec_num + 1, :, :, rng[0] : rng[1]] += mat_in_bin
+                #elif "bb" in comp:
+                #    arg2[spec_num - 1, :, :, rng[0] : rng[1]] += mat_in_bin
 
             wbl = np.einsum("kkl,hkmin,hmkln->ihl", gmat * lfac, arg2, Mmat)
 
