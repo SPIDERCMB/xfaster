@@ -14,7 +14,6 @@ __all__ = [
     "spec_mask",
     "dict_to_dmat",
     "dict_to_dsdqb_mat",
-    "dict_to_Mmat",
     "load_compat",
     "load_pickle_compat",
     "load_and_parse",
