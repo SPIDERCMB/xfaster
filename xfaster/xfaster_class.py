@@ -5447,10 +5447,58 @@ class XFaster(object):
                 lfac[0] = 0.0
 
             arg = np.einsum("ij,kljm->klim", inv_fish, mat * wnorm[ell])
+            # arg shape (3*nmap, 3*nmap, nbins_tot, 499)
+            # mmat shape (6, 3*nmap, 3*nmap, 501, 499)
+            nmaps =1
+            self.nmaps = 1
+            ndim = nmaps * 3
+            wbl = np.zeros([120, self.lmax, len(self.specs)])
 
+            for icl, spec in enumerate(self.specs):
+                for ib in range(20):
+                    b0 = icl*20 + ib
+                    for ell in range(2, self.lmax):
+                        for i in range(self.nmaps):
+                            for j in range(i, self.nmaps):
+                                i_block = ndim*i
+                                j_block = ndim*j
+                                off_diag = 1 if i==j else 2
+                                l0 = 2
+                                l1 = self.lmax
+                                if spec[0] == 't':
+                                    i_ind = i_block
+                                elif spec[0] == 'e':
+                                    i_ind = i_block + 1
+                                elif spec[0] == 'b':
+                                    i_ind = i_block + 2
+                                if spec[1] == 't':
+                                    j_ind = j_block
+                                elif spec[1] == 'e':
+                                    j_ind = j_block + 1
+                                elif spec[1] == 'b':
+                                    j_ind = j_block + 2
+
+                                wbl[b0, ell, icl] += (
+                                    off_diag * 4 * np.pi * gmat[i_ind, j_ind, ell] *
+                                    np.sum(arg[i_ind, j_ind, b0]*
+                                           Mmat[icl, i_ind, j_ind, ell]))
+                                if spec == 'ee':
+                                    wbl[b0, ell, icl+1] += (
+                                        off_diag * 4 * np.pi * gmat[i_ind+1, j_ind+1, ell] *
+                                        np.sum(arg[i_ind+1, j_ind+1, b0]*
+                                               Mmat[icl, i_ind+1, j_ind+1, ell]))
+                                elif spec == 'bb':
+                                    wbl[b0, ell, icl-1] += (
+                                        off_diag * 4 * np.pi * gmat[i_ind-1, j_ind-1, ell] *
+                                        np.sum(arg[i_ind-1, j_ind-1, b0]*
+                                               Mmat[icl, i_ind-1, j_ind-1, ell]))
+
+            wbl = np.transpose(wbl, axes=[0,2,1])
+            qb_cmb = OrderedDict((k, v) for k, v in qb.items() if "cmb" in k)
+
+            """
             # only keep CMB bins for window functions,
             # the rest don't make any sense
-            qb_cmb = OrderedDict((k, v) for k, v in qb.items() if "cmb" in k)
             bin_index = pt.dict_to_index(qb_cmb)
             cmb_bins = list(bin_index.values())
             arg = arg[:, :, np.min(cmb_bins) : np.max(cmb_bins)]
@@ -5468,7 +5516,7 @@ class XFaster(object):
                 #    arg2[spec_num - 1, :, :, rng[0] : rng[1]] += mat_in_bin
 
             wbl = np.einsum("kkl,hkmin,hmkln->ihl", gmat * lfac, arg2, Mmat)
-
+            """
             # convert to dictionary
             wbl = pt.arr_to_dict(wbl, qb_cmb)
 
