@@ -5015,6 +5015,8 @@ class XFaster(object):
         Mmat : OrderedDict
             Mode mixing matrix (Kll' * Fl * Bl^2) for constructing
             window functions.
+        Mmat_mix : OrderedDict
+            EB mixing terms for the mode mixxing matrix
 
         .. note:: the output arrays are also stored as attributes of the
         parent object to avoid repeating the computation in ``fisher_calc``
@@ -5036,16 +5038,19 @@ class XFaster(object):
             Dmat_obs = None
             dSdqb = None
             Mmat = None
+            Mmat_mix = None
         else:
             if windows:
                 Dmat_obs = None
                 Mmat = OrderedDict()
+                Mmat_mix = OrderedDict() if self.pol else None
                 mll = getattr(self, "mll", None)
                 if mll is None:
                     mll = self.kernel_precalc()
             else:
                 Dmat_obs = OrderedDict()
                 Mmat = None
+                Mmat_mix = None
             Dmat_obs_b = None
             dSdqb = OrderedDict()
 
@@ -5058,6 +5063,8 @@ class XFaster(object):
                 Dmat_obs_b[xname] = OrderedDict()
             elif windows:
                 Mmat[xname] = OrderedDict()
+                if self.pol:
+                    Mmat_mix[xname] = OrderedDict()
             else:
                 Dmat_obs[xname] = OrderedDict()
 
@@ -5066,11 +5073,10 @@ class XFaster(object):
                     # without bias subtraction for likelihood
                     Dmat_obs_b[xname][spec] = cls_input[spec][xname]
                 elif windows:
-                    Mmat[xname].setdefault(spec, OrderedDict())
-                    Mmat[xname][spec][spec] = mll[spec][xname]
+                    Mmat[xname][spec] = mll[spec][xname]
                     if spec in ["ee", "bb"]:
                         mspec = "bb" if spec == "ee" else "ee"
-                        Mmat[xname][spec][mspec] = mll["{}_mix".format(mspec)][xname]
+                        Mmat_mix[xname][mspec] = mll["{}_mix".format(mspec)][xname]
                 else:
                     if cls_debias is not None:
                         Dmat_obs[xname][spec] = (
@@ -5111,7 +5117,7 @@ class XFaster(object):
                         # this will be filled in in fisher_calc
                         dSdqb["delta_beta"][xname][spec] = OrderedDict()
 
-        return Dmat_obs, Dmat_obs_b, dSdqb, Mmat
+        return Dmat_obs, Dmat_obs_b, dSdqb, Mmat, Mmat_mix
 
     def clear_precalc(self):
         """
@@ -5121,6 +5127,7 @@ class XFaster(object):
         self.Dmat_obs_b = None
         self.dSdqb_mat1 = None
         self.Mmat = None
+        self.Mmat_mix = None
         self.mll = None
 
     def fisher_calc(
@@ -5199,7 +5206,7 @@ class XFaster(object):
         dkey = "Dmat_obs_b" if likelihood else "Mmat" if windows else "Dmat_obs"
 
         if getattr(self, dkey, None) is None or not use_precalc:
-            Dmat_obs, Dmat_obs_b, dSdqb_mat1, Mmat = self.fisher_precalc(
+            Dmat_obs, Dmat_obs_b, dSdqb_mat1, Mmat, Mmat_mix = self.fisher_precalc(
                 cbl,
                 cls_input,
                 cls_debias=cls_debias,
@@ -5211,12 +5218,14 @@ class XFaster(object):
                 self.Dmat_obs_b = Dmat_obs_b
                 self.dSdqb_mat1 = dSdqb_mat1
                 self.Mmat = Mmat
+                self.Mmat_mix = Mmat_mix
         else:
             if likelihood:
                 Dmat_obs_b = self.Dmat_obs_b
             else:
                 if windows:
                     Mmat = self.Mmat
+                    Mmat_mix = self.Mmat_mix
                 else:
                     Dmat_obs = self.Dmat_obs
                 dSdqb_mat1 = self.dSdqb_mat1
@@ -5346,7 +5355,9 @@ class XFaster(object):
             Dmat_obs_b = pt.dict_to_dmat(Dmat_obs_b)
         else:
             if windows:
-                Mmat = pt.dict_to_Mmat(Mmat, pol=self.pol)
+                Mmat = pt.dict_to_dmat(Mmat)
+                if self.pol:
+                    Mmat_mix = pt.dict_to_dmat(Mmat_mix)
             else:
                 Dmat_obs = pt.dict_to_dmat(Dmat_obs)
             dSdqb_mat1_freq = pt.dict_to_dsdqb_mat(dSdqb_mat1_freq, self.bin_def)
@@ -5365,6 +5376,8 @@ class XFaster(object):
         else:
             if windows:
                 Mmat = Mmat[..., ell, ell]
+                if self.pol:
+                    Mmat_mix = Mmat_mix[..., ell, ell]
             else:
                 Dmat_obs = Dmat_obs[..., ell]
             dSdqb_mat1_freq = dSdqb_mat1_freq[..., ell]
@@ -5442,6 +5455,7 @@ class XFaster(object):
             if self.return_cls:
                 wnorm /= ells * (ells + 1.0) / 2.0 / np.pi
             lfac = 2.0 * np.pi / (2.0 * ells + 1.0)
+            gnorm = gmat * lfac
 
             # compute binning term
             arg = np.einsum("ij,kljm->klim", inv_fish, mat * wnorm)
@@ -5460,19 +5474,18 @@ class XFaster(object):
                 sarg = arg[:, :, left : right]
 
                 # select the spectrum terms from the kernel matrix
-                smat = spec_mask[spec][:, :, None, None] * Mmat[s]
+                smat = spec_mask[spec][:, :, None, None] * Mmat
 
                 wbl[k] = OrderedDict()
-                wbl[k][spec] = np.einsum('iil,ijkm,ijlm->kl', gmat * lfac, sarg, smat)
+                wbl[k][spec] = np.einsum('iil,ijkm,ijlm->kl', gnorm, sarg, smat)
 
                 # handle mixing terms separately
                 if spec in ['ee', 'bb']:
                     mspec = 'bb' if spec == 'ee' else 'ee'
                     ms = s + 1 if spec == 'ee' else s - 1
-                    smat = spec_mask[mspec][:, :, None, None] * Mmat[ms]
-                    wbl[k][mspec] = np.einsum('iil,ijkm,ijml->kl', gmat * lfac, sarg, smat)
+                    smat = spec_mask[mspec][:, :, None, None] * Mmat_mix
+                    wbl[k][mspec] = np.einsum('iil,ijkm,ijml->kl', gnorm, sarg, smat)
 
-            """
             # check normalization
             norm = (2.0 * ells + 1.0) / 4.0 / np.pi
             if not self.return_cls:
@@ -5481,7 +5494,6 @@ class XFaster(object):
             for k, v in wbl.items():
                 for s, vv in v.items():
                     print(k, s, np.sum(vv * norm, axis=-1))
-            """
 
             return wbl
 

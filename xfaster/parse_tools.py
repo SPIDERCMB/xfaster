@@ -450,43 +450,6 @@ def dict_to_dsdqb_mat(dsdqb_dict, bin_def):
 
     return dsdqb_mat
 
-def dict_to_Mmat(Mmat_dict, pol=True):
-    """
-    Take a Mmat dictionary and return the right shaped MMat matrix for
-    bandpower window functions:
-    (6, Nmaps * 3, Nmaps * 3, lmax + 1, lmax + 1) if pol
-    else (1, Nmaps * 3, Nmaps * 3, lmax + 1, lmax + 1)
-    """
-    # get the unique map tags in order from the keys map1:map2
-    mtags = [x.split(":")[0] for x in Mmat_dict.keys()]
-    _, uind = np.unique(mtags, return_index=True)
-    map_tags = np.asarray(mtags)[sorted(uind)]
-    map_pairs = tag_pairs(map_tags, index=True)
-
-    nmaps = len(map_tags)
-    pol_dim = 3 if pol else 1
-    inds = spec_index()
-
-    Mmat = None
-    for xname, (im0, im1) in map_pairs.items():
-        specs = Mmat_dict[xname].keys()
-        for si, spec in enumerate(specs):
-            for spec2, d2 in Mmat_dict[xname][spec].items():
-                if Mmat is None:
-                    sz = d2.shape[-1]
-                    Mmat = np.zeros(
-                        (len(specs), nmaps * pol_dim, nmaps * pol_dim, sz, sz)
-                    )
-                sind = inds[spec2]
-                ind0 = im0 * pol_dim + sind[0]
-                ind1 = im1 * pol_dim + sind[1]
-                Mmat[si, ind0, ind1] = Mmat[si, ind1, ind0] = d2
-                ind0 = im1 * pol_dim + sind[0]
-                ind1 = im0 * pol_dim + sind[1]
-                Mmat[si, ind0, ind1] = Mmat[si, ind1, ind0] = d2
-
-    return Mmat
-
 
 def load_and_parse(filename):
     """
