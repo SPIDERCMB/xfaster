@@ -5350,6 +5350,7 @@ class XFaster(object):
             else:
                 Dmat_obs = pt.dict_to_dmat(Dmat_obs)
             dSdqb_mat1_freq = pt.dict_to_dsdqb_mat(dSdqb_mat1_freq, self.bin_def)
+
         # apply ell limits
         if likelihood:
             ell = slice(
@@ -5361,14 +5362,13 @@ class XFaster(object):
         Dmat1 = Dmat1[..., ell]
         if likelihood:
             Dmat_obs_b = Dmat_obs_b[..., ell]
-            gmat = gmat[..., ell]
         else:
             if windows:
-                Mmat = Mmat[..., ell]
+                Mmat = Mmat[..., ell, ell]
             else:
                 Dmat_obs = Dmat_obs[..., ell]
-                gmat = gmat[..., ell]
             dSdqb_mat1_freq = dSdqb_mat1_freq[..., ell]
+        gmat = gmat[..., ell]
 
         self.Dmat1 = Dmat1
 
@@ -5437,88 +5437,51 @@ class XFaster(object):
                 inv_fish = np.linalg.solve(fisher, np.eye(len(fisher)))
 
             # compute prefactors
-            ells = np.arange(0, self.lmax + 1)
-            with np.errstate(divide="ignore"):
-                wnorm = 2.0 * ells + 1.0
-                if self.return_cls:
-                    wnorm /= ells * (ells + 1.0) / 2.0 / np.pi
-                lfac = 2.0 * np.pi / (2.0 * ells + 1.0)
-                wnorm[0] = 0.0
-                lfac[0] = 0.0
+            ells = np.arange(0, self.lmax + 1)[ell]
+            wnorm = 2.0 * ells + 1.0
+            if self.return_cls:
+                wnorm /= ells * (ells + 1.0) / 2.0 / np.pi
+            lfac = 2.0 * np.pi / (2.0 * ells + 1.0)
 
-            arg = np.einsum("ij,kljm->klim", inv_fish, mat * wnorm[ell])
-            # arg shape (3*nmap, 3*nmap, nbins_tot, 499)
-            # mmat shape (6, 3*nmap, 3*nmap, 501, 499)
-            nmaps =1
-            self.nmaps = 1
-            ndim = nmaps * 3
-            wbl = np.zeros([120, self.lmax, len(self.specs)])
+            # compute binning term
+            arg = np.einsum("ij,kljm->klim", inv_fish, mat * wnorm)
 
-            for icl, spec in enumerate(self.specs):
-                for ib in range(20):
-                    b0 = icl*20 + ib
-                    for ell in range(2, self.lmax):
-                        for i in range(self.nmaps):
-                            for j in range(i, self.nmaps):
-                                i_block = ndim*i
-                                j_block = ndim*j
-                                off_diag = 1 if i==j else 2
-                                l0 = 2
-                                l1 = self.lmax
-                                if spec[0] == 't':
-                                    i_ind = i_block
-                                elif spec[0] == 'e':
-                                    i_ind = i_block + 1
-                                elif spec[0] == 'b':
-                                    i_ind = i_block + 2
-                                if spec[1] == 't':
-                                    j_ind = j_block
-                                elif spec[1] == 'e':
-                                    j_ind = j_block + 1
-                                elif spec[1] == 'b':
-                                    j_ind = j_block + 2
+            wbl = OrderedDict()
+            bin_index = pt.dict_to_index(qb)
+            spec_mask = pt.spec_mask(nmaps=self.num_maps)
 
-                                wbl[b0, ell, icl] += (
-                                    off_diag * 4 * np.pi * gmat[i_ind, j_ind, ell] *
-                                    np.sum(arg[i_ind, j_ind, b0]*
-                                           Mmat[icl, i_ind, j_ind, ell]))
-                                if spec == 'ee':
-                                    wbl[b0, ell, icl+1] += (
-                                        off_diag * 4 * np.pi * gmat[i_ind+1, j_ind+1, ell] *
-                                        np.sum(arg[i_ind+1, j_ind+1, b0]*
-                                               Mmat[icl, i_ind+1, j_ind+1, ell]))
-                                elif spec == 'bb':
-                                    wbl[b0, ell, icl-1] += (
-                                        off_diag * 4 * np.pi * gmat[i_ind-1, j_ind-1, ell] *
-                                        np.sum(arg[i_ind-1, j_ind-1, b0]*
-                                               Mmat[icl, i_ind-1, j_ind-1, ell]))
+            # compute window functions for each spectrum
+            for s, (k, (left, right)) in enumerate(bin_index.items()):
+                if 'cmb' not in k:
+                    continue
+                spec = k.split('_')[-1]
 
-            wbl = np.transpose(wbl, axes=[0,2,1])
-            qb_cmb = OrderedDict((k, v) for k, v in qb.items() if "cmb" in k)
+                # select bins for corresponding spectrum
+                sarg = arg[:, :, left : right]
+
+                # select the spectrum terms from the kernel matrix
+                smat = spec_mask[spec][:, :, None, None] * Mmat[s]
+
+                wbl[k] = OrderedDict()
+                wbl[k][spec] = np.einsum('iil,ijkm,ijlm->kl', gmat * lfac, sarg, smat)
+
+                # handle mixing terms separately
+                if spec in ['ee', 'bb']:
+                    mspec = 'bb' if spec == 'ee' else 'ee'
+                    ms = s + 1 if spec == 'ee' else s - 1
+                    smat = spec_mask[mspec][:, :, None, None] * Mmat[ms]
+                    wbl[k][mspec] = np.einsum('iil,ijkm,ijml->kl', gmat * lfac, sarg, smat)
 
             """
-            # only keep CMB bins for window functions,
-            # the rest don't make any sense
-            bin_index = pt.dict_to_index(qb_cmb)
-            cmb_bins = list(bin_index.values())
-            arg = arg[:, :, np.min(cmb_bins) : np.max(cmb_bins)]
-            arg2 = np.copy(arg)
-            # now, want only to sum over ell for spectra that contribute to
-            # bin b. add an axis of len (specs) that stores these
-            arg2 = np.zeros([len(bin_index), *arg.shape])
-            for spec_num, (comp, rng) in enumerate(bin_index.items()):
-                mat_in_bin = arg[:, :, rng[0] : rng[1]]
-                arg2[spec_num, :, :, rng[0] : rng[1]] += mat_in_bin
-                # next, deal with ee<->bb mixing
-                #if "ee" in comp:
-                #    arg2[spec_num + 1, :, :, rng[0] : rng[1]] += mat_in_bin
-                #elif "bb" in comp:
-                #    arg2[spec_num - 1, :, :, rng[0] : rng[1]] += mat_in_bin
+            # check normalization
+            norm = (2.0 * ells + 1.0) / 4.0 / np.pi
+            if not self.return_cls:
+                norm /= ells * (ells + 1) / 2.0 / np.pi
 
-            wbl = np.einsum("kkl,hkmin,hmkln->ihl", gmat * lfac, arg2, Mmat)
+            for k, v in wbl.items():
+                for s, vv in v.items():
+                    print(k, s, np.sum(vv * norm, axis=-1))
             """
-            # convert to dictionary
-            wbl = pt.arr_to_dict(wbl, qb_cmb)
 
             return wbl
 
