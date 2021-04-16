@@ -3891,6 +3891,7 @@ class XFaster(object):
             opts["cls_shape"] = cls_shape
             self.save_data(save_name, **opts)
 
+        self.cls_shape = cls_shape
         return cls_shape
 
     def get_beams(self, pixwin=True):
@@ -5451,15 +5452,14 @@ class XFaster(object):
 
             # compute prefactors
             ells = np.arange(0, self.lmax + 1)[ell]
-            wnorm = 2.0 * ells + 1.0
-            if self.return_cls:
-                wnorm /= ells * (ells + 1.0) / 2.0 / np.pi
+            wnorm = 1#2.0 * ells + 1.0
+            #if self.return_cls:
+            #    wnorm /= ells * (ells + 1.0) / 2.0 / np.pi
             lfac = 2.0 * np.pi / (2.0 * ells + 1.0)
-            gnorm = gmat * lfac
+            gnorm = gmat# * lfac
 
             # compute binning term
             arg = np.einsum("ij,kljm->klim", inv_fish, mat * wnorm)
-
             wbl = OrderedDict()
             bin_index = pt.dict_to_index(qb)
             spec_mask = pt.spec_mask(nmaps=self.num_maps)
@@ -5477,23 +5477,27 @@ class XFaster(object):
                 smat = spec_mask[spec][:, :, None, None] * Mmat
 
                 wbl[k] = OrderedDict()
-                wbl[k][spec] = np.einsum('iil,ijkm,ijlm->kl', gnorm, sarg, smat)
-
+                if spec in ['tt', 'ee', 'bb']:
+                    offdiag = 1.
+                else:
+                    offdiag = 2.
+                wbl[k][spec] = np.einsum('iil,ijkl,jilm->km', gnorm, sarg, smat) * lfac * offdiag
                 # handle mixing terms separately
                 if spec in ['ee', 'bb']:
                     mspec = 'bb' if spec == 'ee' else 'ee'
                     ms = s + 1 if spec == 'ee' else s - 1
                     smat = spec_mask[mspec][:, :, None, None] * Mmat_mix
-                    wbl[k][mspec] = np.einsum('iil,ijkm,ijml->kl', gnorm, sarg, smat)
+                    wbl[k][mspec] = np.einsum('iil,ijkl,jilm->kl', gnorm, sarg, smat)*lfac
 
             # check normalization
             norm = (2.0 * ells + 1.0) / 4.0 / np.pi
-            if not self.return_cls:
-                norm /= ells * (ells + 1) / 2.0 / np.pi
+            #if not self.return_cls:
+            #    norm /= ells * (ells + 1) / 2.0 / np.pi
 
             for k, v in wbl.items():
                 for s, vv in v.items():
-                    print(k, s, np.sum(vv * norm, axis=-1))
+                    cls_shape = self.cls_shape['cmb_{}'.format(s)][ell]
+                    print(k, s, np.sum(vv * norm * cls_shape, axis=-1))
 
             return wbl
 
