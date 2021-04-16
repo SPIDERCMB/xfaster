@@ -5077,7 +5077,7 @@ class XFaster(object):
                     Mmat[xname][spec] = mll[spec][xname]
                     if spec in ["ee", "bb"]:
                         mspec = "bb" if spec == "ee" else "ee"
-                        Mmat_mix[xname][mspec] = mll["{}_mix".format(mspec)][xname]
+                        Mmat_mix[xname][spec] = mll["{}_mix".format(mspec)][xname]
                 else:
                     if cls_debias is not None:
                         Dmat_obs[xname][spec] = (
@@ -5485,8 +5485,9 @@ class XFaster(object):
                 # handle mixing terms separately
                 if spec in ['ee', 'bb']:
                     mspec = 'bb' if spec == 'ee' else 'ee'
-                    ms = s + 1 if spec == 'ee' else s - 1
-                    smat = spec_mask[mspec][:, :, None, None] * Mmat_mix
+                    smat = spec_mask[spec][:, :, None, None] * Mmat_mix
+                    l0, r0 = bin_index['cmb_{}'.format(mspec)]
+                    sarg = arg[:, :, l0 : r0]
                     wbl[k][mspec] = np.einsum('iil,ijkl,jilm->km', gnorm, sarg, smat) * lfac * offdiag
 
             # check normalization
