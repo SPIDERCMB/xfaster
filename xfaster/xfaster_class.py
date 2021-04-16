@@ -5452,14 +5452,13 @@ class XFaster(object):
 
             # compute prefactors
             ells = np.arange(0, self.lmax + 1)[ell]
-            wnorm = 1#2.0 * ells + 1.0
-            #if self.return_cls:
-            #    wnorm /= ells * (ells + 1.0) / 2.0 / np.pi
+            gnorm = gmat
+            if self.return_cls:
+                gnorm /= ells * (ells + 1.0) / 2.0 / np.pi
             lfac = 2.0 * np.pi / (2.0 * ells + 1.0)
-            gnorm = gmat# * lfac
 
             # compute binning term
-            arg = np.einsum("ij,kljm->klim", inv_fish, mat * wnorm)
+            arg = np.einsum("ij,kljm->klim", inv_fish, mat)
             wbl = OrderedDict()
             bin_index = pt.dict_to_index(qb)
             spec_mask = pt.spec_mask(nmaps=self.num_maps)
@@ -5477,11 +5476,9 @@ class XFaster(object):
                 smat = spec_mask[spec][:, :, None, None] * Mmat
 
                 wbl[k] = OrderedDict()
-                if spec in ['tt', 'ee', 'bb']:
-                    offdiag = 1.
-                else:
-                    offdiag = 2.
+                offdiag = len(np.unique(list(spec)))
                 wbl[k][spec] = np.einsum('iil,ijkl,jilm->km', gnorm, sarg, smat) * lfac * offdiag
+
                 # handle mixing terms separately
                 if spec in ['ee', 'bb']:
                     mspec = 'bb' if spec == 'ee' else 'ee'
@@ -5492,17 +5489,19 @@ class XFaster(object):
 
             # check normalization
             norm = (2.0 * ells + 1.0) / 4.0 / np.pi
-            #if not self.return_cls:
-            #    norm /= ells * (ells + 1) / 2.0 / np.pi
 
             for k, v in wbl.items():
-                tot = np.zeros((20, len(ells)))
+                tot = None
                 for s, vv in v.items():
                     cls_shape = self.cls_shape['cmb_{}'.format(s)][ell]
                     comp = vv * norm * cls_shape
-                    tot += comp
+                    if tot is None:
+                        tot = comp
+                    else:
+                        tot += comp
                     print(k, s, np.sum(comp, axis=-1))
                 print('tot', k, np.sum(tot, axis=-1))
+
             return wbl
 
         bin_index = pt.dict_to_index(qb)
