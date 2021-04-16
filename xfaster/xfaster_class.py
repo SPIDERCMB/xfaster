@@ -5487,7 +5487,7 @@ class XFaster(object):
                     mspec = 'bb' if spec == 'ee' else 'ee'
                     ms = s + 1 if spec == 'ee' else s - 1
                     smat = spec_mask[mspec][:, :, None, None] * Mmat_mix
-                    wbl[k][mspec] = np.einsum('iil,ijkl,jilm->kl', gnorm, sarg, smat)*lfac
+                    wbl[k][mspec] = np.einsum('iil,ijkl,jilm->km', gnorm, sarg, smat) * lfac * offdiag
 
             # check normalization
             norm = (2.0 * ells + 1.0) / 4.0 / np.pi
@@ -5495,10 +5495,13 @@ class XFaster(object):
             #    norm /= ells * (ells + 1) / 2.0 / np.pi
 
             for k, v in wbl.items():
+                tot = np.zeros((20, len(ells)))
                 for s, vv in v.items():
                     cls_shape = self.cls_shape['cmb_{}'.format(s)][ell]
-                    print(k, s, np.sum(vv * norm * cls_shape, axis=-1))
-
+                    comp = vv * norm * cls_shape
+                    tot += comp
+                    print(k, s, np.sum(comp, axis=-1))
+                print('tot', k, np.sum(tot, axis=-1))
             return wbl
 
         bin_index = pt.dict_to_index(qb)
