@@ -322,7 +322,7 @@ def spec_mask(spec=None, nmaps=1):
 
     for s, (i0, i1) in spec_index().items():
         mask = np.zeros((3, 3))
-        mask[i0, i1] = spec_mask[i1, i0] = 1
+        mask[i0, i1] = mask[i1, i0] = 1
         if nmaps > 1:
             mask = np.tile(mask, (nmaps, nmaps))
         spec_mask[s] = mask

@@ -5376,9 +5376,9 @@ class XFaster(object):
             Dmat_obs_b = Dmat_obs_b[..., ell]
         else:
             if windows:
-                Mmat = Mmat[..., ell, ell]
+                Mmat = Mmat[..., ell, :]
                 if self.pol:
-                    Mmat_mix = Mmat_mix[..., ell, ell]
+                    Mmat_mix = Mmat_mix[..., ell, :]
             else:
                 Dmat_obs = Dmat_obs[..., ell]
             dSdqb_mat1_freq = dSdqb_mat1_freq[..., ell]
@@ -5451,7 +5451,7 @@ class XFaster(object):
                 inv_fish = np.linalg.solve(fisher, np.eye(len(fisher)))
 
             # compute prefactors
-            ells = np.arange(0, self.lmax + 1)[ell]
+            ells = np.arange(0, self.lmax + 1)
             gnorm = gmat
             if self.return_cls:
                 gnorm /= ells * (ells + 1.0) / 2.0 / np.pi
@@ -5476,8 +5476,7 @@ class XFaster(object):
                 smat = spec_mask[spec][:, :, None, None] * Mmat
 
                 wbl[k] = OrderedDict()
-                offdiag = len(np.unique(list(spec)))
-                wbl[k][spec] = np.einsum('iil,ijkl,jilm->km', gnorm, sarg, smat) * lfac * offdiag
+                wbl[k][spec] = np.einsum('iil,ijkl,jilm->km', gnorm, sarg, smat) * lfac
 
                 # handle mixing terms separately
                 if spec in ['ee', 'bb']:
@@ -5485,7 +5484,7 @@ class XFaster(object):
                     smat = spec_mask[spec][:, :, None, None] * Mmat_mix
                     l0, r0 = bin_index['cmb_{}'.format(mspec)]
                     sarg = arg[:, :, l0 : r0]
-                    wbl[k][mspec] = np.einsum('iil,ijkl,jilm->km', gnorm, sarg, smat) * lfac * offdiag
+                    wbl[k][mspec] = np.einsum('iil,ijkl,jilm->km', gnorm, sarg, smat) * lfac
 
             # check normalization
             norm = (2.0 * ells + 1.0) / 4.0 / np.pi
@@ -5493,7 +5492,7 @@ class XFaster(object):
             for k, v in wbl.items():
                 tot = None
                 for s, vv in v.items():
-                    cls_shape = self.cls_shape['cmb_{}'.format(s)][ell]
+                    cls_shape = self.cls_shape['cmb_{}'.format(s)][:self.lmax+1]
                     comp = vv * norm * cls_shape
                     if tot is None:
                         tot = comp
