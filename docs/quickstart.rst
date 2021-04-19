@@ -10,6 +10,7 @@ Dependencies
 * ``healpy``
 * ``camb``
 * ``emcee`` (only for likelihoods)
+* ``h5py`` (only for likelihoods)
 
 XFaster is compatible with Python versions 3.0 and higher.
 
