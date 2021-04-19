@@ -3647,9 +3647,9 @@ class XFaster(object):
                 if pol:
                     sign = ((-1.0) ** (l + ll + l3)).astype(int)
                     v = j2[l3] ** 2 * dl3
-                    vp = v * (1.0 + sign) ** 2
-                    vm = v * (1.0 - sign) ** 2
-                    vx = j2[l3] * j0[l3] * dl3 * (1.0 + sign)
+                    vp = v * (1.0 + sign) / 2.0
+                    vm = v * (1.0 - sign) / 2.0
+                    vx = j2[l3] * j0[l3] * dl3
                 for xname in self.map_pairs:
                     wls1 = wls[xname][:, l3]
                     kern[xname][l, ll] += (vk * wls1[0]).sum(axis=-1)
@@ -3673,9 +3673,9 @@ class XFaster(object):
                 # apply ell scaling along the axis that we bin over
                 kern[xname][l, :] *= dll
                 if pol:
-                    pkern[xname][l, :] *= dll / 4.0
-                    mkern[xname][l, :] *= dll / 4.0
-                    xkern[xname][l, :] *= dll / 2.0
+                    pkern[xname][l, :] *= dll
+                    mkern[xname][l, :] *= dll
+                    xkern[xname][l, :] *= dll
 
         # save and return
         self.kern = kern
@@ -5454,7 +5454,7 @@ class XFaster(object):
             ells = np.arange(0, self.lmax + 1)
             gnorm = gmat
             if self.return_cls:
-                gnorm /= ells * (ells + 1.0) / 2.0 / np.pi
+                gnorm /= ells[ell] * (ells[ell] + 1.0) / 2.0 / np.pi
             lfac = 2.0 * np.pi / (2.0 * ells + 1.0)
 
             # compute binning term
