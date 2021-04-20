@@ -5453,6 +5453,7 @@ class XFaster(object):
             # compute prefactors
             ells = np.arange(0, self.lmax + 1)
             lfac = 2.0 * np.pi / (2.0 * ells + 1.0)
+            chi_bl = np.ones_like(lfac)
 
             # compute binning term
             arg = np.einsum("ij,kljm->klim", inv_fish, mat)
@@ -5469,6 +5470,12 @@ class XFaster(object):
                 # select bins for corresponding spectrum
                 sarg = arg[:, :, left : right]
 
+                # bin weighting
+                if self.weighted_bins:
+                    chi_bl = ells * (ells + 1.0) / 2.0 / np.pi
+                    for l, r in self.bin_def[k]:
+                        chi_bl[l: r] /= np.mean(chi_bl[l: r])
+
                 # select the spectrum terms from the kernel matrix
                 smat = spec_mask[spec][:, :, None, None] * Mmat
                 if spec in ['ee', 'bb']:
@@ -5477,18 +5484,13 @@ class XFaster(object):
                     smat += spec_mask[mspec][:, :, None, None] * Mmat_mix
 
                 # put it all together
-                wbl[k] = np.einsum('iil,ijkl,jilm->km', gmat, sarg, smat) * lfac
+                wbl[k] = np.einsum('iil,ijkl,jilm->km', gmat, sarg, smat) * lfac * chi_bl
 
             # check normalization
             norm = (2.0 * ells + 1.0) / 4.0 / np.pi
             for k, v in wbl.items():
                 cls_shape = self.cls_shape[k][:self.lmax+1]
-                chi_bl = np.ones_like(norm)
-                if self.weighted_bins:
-                    chi_bl = ells * (ells + 1.0) / 2.0 / np.pi
-                    for left, right in self.bin_def[k]:
-                        chi_bl[left: right] /= np.mean(chi_bl[left: right])
-                comp = v * norm * chi_bl * cls_shape
+                comp = v * norm * cls_shape
                 print(k, np.sum(comp, axis=-1))
 
             return wbl
