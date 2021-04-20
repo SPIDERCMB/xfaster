@@ -6912,7 +6912,7 @@ class XFaster(object):
             self.log(
                 "MCMC converged in {} iterations".format(sampler.iteration), "info"
             )
-            tau = sampler.get_autocorr_time()
+            tau = sampler.get_autocorr_time(tol=0)
             burnin = int(2 * np.max(tau))
             thin = int(0.5 * np.min(tau))
             samples = sampler.get_chain(discard=burnin, thin=thin, flat=True)
