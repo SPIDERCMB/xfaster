@@ -851,6 +851,7 @@ class XFaster(object):
         foreground_type=None,
         template_type=None,
         sub_planck=False,
+        sub_hm_noise=False,
     ):
         """
         Find all files for the given data root.  The data structure is::
@@ -1091,18 +1092,22 @@ class XFaster(object):
                         if not os.path.exists(nfile):
                             raise OSError("Missing hm-{} template for {}".format(hm, f))
                         tfiles.append(nfile)
-                        nfiles = sorted(
-                            glob.glob(
-                                f.replace(fs["map_root"], tnroot).replace(
-                                    ".fits", "_*.fits"
+                        if sub_hm_noise:
+                            nfiles = sorted(
+                                glob.glob(
+                                    f.replace(fs["map_root"], tnroot).replace(
+                                        ".fits", "_*.fits"
+                                    )
                                 )
                             )
-                        )
-                        if not len(nfiles):
-                            raise OSError(
-                                "Missing hm-{} template noise for {}".format(hm, f)
-                            )
-                        tnfiles.append(nfiles)
+                            if not len(nfiles):
+                                raise OSError(
+                                    "Missing hm-{} template noise for {}".format(hm, f)
+                                )
+                            tnfiles.append(nfiles)
+                        else:
+                            nfiles = []
+
                         if num_template_noise is not None:
                             if len(nfiles) != num_template_noise:
                                 raise OSError(
@@ -1129,12 +1134,13 @@ class XFaster(object):
                     ),
                     "info",
                 )
-                self.log(
-                    "Found {} template noise files in {}".format(
-                        fs["num_template_noise"], fs["template_noise_root"]
-                    ),
-                    "info",
-                )
+                if sub_hm_noise:
+                    self.log(
+                        "Found {} template noise files in {}".format(
+                            fs["num_template_noise"], fs["template_noise_root"]
+                        ),
+                        "info",
+                    )
                 self.log("Template files: {}".format(fs["template_files"]), "debug")
 
             fields = [
@@ -6251,6 +6257,7 @@ class XFaster(object):
         converge_criteria=0.01,
         reset_backend=None,
         file_tag=None,
+        sub_hm_noise=False,
     ):
         """
         Explore the likelihood, optionally with an MCMC sampler.
@@ -6629,6 +6636,7 @@ class XFaster(object):
                 self.get_masked_data(
                     template_alpha=OrderedDict(zip(alpha_tags, alpha)),
                     temp_specs=temp_specs,
+                    sub_hm_noise=sub_hm_noise,
                 )
                 clsi = self.get_data_spectra(do_noise=False)
 

@@ -403,6 +403,7 @@ def xfaster_run(
         foreground_type=foreground_type,
         template_type=template_type,
         sub_planck=sub_planck,
+        sub_hm_noise=sub_hm_noise,
     )
     config_vars.update(file_opts, "File Options")
 
@@ -513,6 +514,7 @@ def xfaster_run(
         num_walkers=mcmc_walkers,
         converge_criteria=like_converge_criteria,
         file_tag=like_tag,
+        sub_hm_noise=sub_hm_noise,
     )
     config_vars.update(like_opts, "Likelihood Estimation Options")
     config_vars.remove_option("XFaster General", "like_lmin")
@@ -575,7 +577,7 @@ def xfaster_run(
         weighted_bins=weighted_bins,
     )
 
-    if template_type is not None:
+    if template_type is not None and sub_hm_noise:
         X.log("Computing template noise ensemble averages...", "notice")
         X.get_masked_template_noise(template_type)
 
