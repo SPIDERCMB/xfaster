@@ -5474,32 +5474,22 @@ class XFaster(object):
 
                 # select the spectrum terms from the kernel matrix
                 smat = spec_mask[spec][:, :, None, None] * Mmat
-
-                wbl[k] = OrderedDict()
-                wbl[k][spec] = np.einsum('iil,ijkl,jilm->km', gnorm, sarg, smat) * lfac
-
-                # handle mixing terms separately
                 if spec in ['ee', 'bb']:
+                    # add mixing terms
                     mspec = 'bb' if spec == 'ee' else 'ee'
-                    smat = spec_mask[spec][:, :, None, None] * Mmat_mix
-                    l0, r0 = bin_index['cmb_{}'.format(mspec)]
-                    sarg = arg[:, :, l0 : r0]
-                    wbl[k][mspec] = np.einsum('iil,ijkl,jilm->km', gnorm, sarg, smat) * lfac
+                    smat += spec_mask[mspec][:, :, None, None] * Mmat_mix
+
+                # put it all together
+                wbl[k] = np.einsum('iil,ijkl,jilm->km', gnorm, sarg, smat) * lfac
 
             # check normalization
             norm = (2.0 * ells + 1.0) / 4.0 / np.pi
 
             for k, v in wbl.items():
                 tot = None
-                for s, vv in v.items():
-                    cls_shape = self.cls_shape['cmb_{}'.format(s)][:self.lmax+1]
-                    comp = vv * norm * cls_shape
-                    if tot is None:
-                        tot = comp
-                    else:
-                        tot += comp
-                    print(k, s, np.sum(comp, axis=-1))
-                print('tot', k, np.sum(tot, axis=-1))
+                cls_shape = self.cls_shape[k][:self.lmax+1]
+                comp = v * norm * cls_shape
+                print(k, np.sum(comp, axis=-1))
 
             return wbl
 
