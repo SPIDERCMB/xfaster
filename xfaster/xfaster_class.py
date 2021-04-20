@@ -6901,6 +6901,18 @@ class XFaster(object):
                 ),
                 "info",
             )
+            self.log(
+                "Tau/converge {} < iteration {}?".format(
+                    np.max(tau / converge_criteria), sampler.iteration
+                ),
+                "debug",
+            )
+            self.log(
+                "(Old tau - tau) / tau {} < conv crit {}?".format(
+                    np.max(np.abs(old_tau - tau) / tau), converge_criteria
+                ),
+                "debug",
+            )
             if converged:
                 break
             old_tau = tau
