@@ -1,0 +1,17 @@
+
+
+These three scripts are used together to iteratively solve for the g correction factor.
+
+First, run xfaster_gcal_unconstr (increase OMP threads) on a single sim index to get all the XF output files.
+This should only be run for full mission single frequency maps.
+
+Then, copy that output to a directory called xfaster_gcal_unconstr_iter. That's where things will be iterated on.
+Now, because XFaster looks specifically in the masks directory for gcorr files named mask_<freq>_gcorr.npz, you need
+to put a symlink in the mask directory named that pointing the gcorr file in your first run directory. The gcorr
+file in your first run directory will keep getting updated as you run the iteration script. If you notice that it's not changing,
+it's because your symlink hasn't worked.
+
+Now, run gcal_iter_unconstr.py. This will submit xfaster jobs for all the sims, and once those are out of the queue,
+it will automatically run compute_gcal.py to compute a new g correction factor. It will also tell you what
+this new correction factor is. Once all the EE/BB elements are sufficiently close to 1, you can stop. At this point,
+copy the final gcorr file to the mask directory with the proper name.
