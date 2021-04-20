@@ -5452,7 +5452,6 @@ class XFaster(object):
 
             # compute prefactors
             ells = np.arange(0, self.lmax + 1)
-            gnorm = gmat
             lfac = 2.0 * np.pi / (2.0 * ells + 1.0)
 
             # compute binning term
@@ -5478,19 +5477,18 @@ class XFaster(object):
                     smat += spec_mask[mspec][:, :, None, None] * Mmat_mix
 
                 # put it all together
-                wbl[k] = np.einsum('iil,ijkl,jilm->km', gnorm, sarg, smat) * lfac
+                wbl[k] = np.einsum('iil,ijkl,jilm->km', gmat, sarg, smat) * lfac
 
             # check normalization
             norm = (2.0 * ells + 1.0) / 4.0 / np.pi
-            if self.weighted_bins:
-                extra_fac = ells*(ells + 1.0) /2.0 / np.pi
-                for (left, right) in self.bin_def['cmb_tt']:
-                    extra_fac[left: right] /= np.mean(extra_fac[left:right])
-                norm *= extra_fac
-
             for k, v in wbl.items():
                 cls_shape = self.cls_shape[k][:self.lmax+1]
-                comp = v * norm * cls_shape
+                chi_bl = np.ones_like(norm)
+                if self.weighted_bins:
+                    chi_bl = ells * (ells + 1.0) / 2.0 / np.pi
+                    for left, right in self.bin_def[k]:
+                        chi_bl[left: right] /= np.mean(chi_bl[left: right])
+                comp = v * norm * chi_bl * cls_shape
                 print(k, np.sum(comp, axis=-1))
 
             return wbl
