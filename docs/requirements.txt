@@ -1,4 +1,5 @@
 sphinx_rtd_theme
 numpy
 nbsphinx
+ipykernel
 -e .
