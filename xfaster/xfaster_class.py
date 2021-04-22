@@ -5483,15 +5483,30 @@ class XFaster(object):
                     mspec = 'bb' if spec == 'ee' else 'ee'
                     smat += spec_mask[mspec][:, :, None, None] * Mmat_mix
 
-                # put it all together
-                wbl[k] = np.einsum('iil,ijkl,jilm->km', gmat, sarg, smat) * lfac * chi_bl
+                # qb window function
+                wbl1 = np.einsum('iil,ijkl,jilm->km', gmat, sarg, smat) * lfac * chi_bl
 
-            # check normalization
-            norm = (2.0 * ells + 1.0) / 4.0 / np.pi
-            for k, v in wbl.items():
-                cls_shape = self.cls_shape[k][:self.lmax+1]
-                comp = v * norm * cls_shape
-                print(k, np.sum(comp, axis=-1))
+                # check normalization
+                norm = (2.0 * ells + 1.0) / 4.0 / np.pi
+                cls_shape = self.cls_shape[k][: len(norm)]
+                self.log(
+                    "{} window function normalization: {}".format(
+                        k, np.sum(wbl1 * norm * cls_shape, axis=-1)
+                    ),
+                    "debug",
+                )
+
+                # normalization for Cb and Db
+                wnorm = np.sum(wbl1 * norm, axis=-1)
+
+                # Cb window function
+                wbl1 /= wnorm[:, None]
+
+                # Db window function
+                if not self.return_cls:
+                    wbl1 *= ells * (ells + 1.0) / 2.0 / np.pi
+
+                wbl[k] = wbl1
 
             return wbl
 
