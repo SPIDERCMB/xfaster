@@ -11,11 +11,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - with:
+    - name: Checkout github repo
+      uses: actions/checkout@v2
+      with:
         lfs: true
-    - run: |
-        git lfs checkout
+    - name: Checkout LFS objects
+      run: git lfs checkout
+    - name: Install package
+      run: |
         pip install -e .
     # Standard drop-in approach that should work for most people.
     - uses: ammaraskar/sphinx-action@master
