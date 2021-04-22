@@ -5502,10 +5502,6 @@ class XFaster(object):
                 # Cb window function
                 wbl1 /= wnorm[:, None]
 
-                # Db window function
-                if not self.return_cls:
-                    wbl1 *= ells * (ells + 1.0) / 2.0 / np.pi
-
                 wbl[k] = wbl1
 
             return wbl
