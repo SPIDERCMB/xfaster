@@ -19,6 +19,7 @@ A more in-depth exploration of the code, step by step through the algorithm, is 
 
   quickstart
   algorithm
+  notebooks/XFaster_Tutorial
   api
 
 Indices and tables
