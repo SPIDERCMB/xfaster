@@ -1,0 +1,2242 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>API Reference &mdash; xfaster 0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"TeX": {"equationNumbers": {"autoNumber": "AMS", "useLabelIds": true}}, "tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Tutorial" href="notebooks/XFaster_Tutorial.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> xfaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">Algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/XFaster_Tutorial.html">Tutorial</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-xfaster.batch_tools">batch_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-xfaster.parse_tools">parse_tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-xfaster.xfaster_class">xfaster_class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-xfaster.xfaster_exec">xfaster_exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-xfaster.xfaster_tools">xfaster_tools</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">xfaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>API Reference</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/api.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="api-reference">
+<h1>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-xfaster.batch_tools">
+<span id="batch-tools"></span><h2>batch_tools<a class="headerlink" href="#module-xfaster.batch_tools" title="Permalink to this headline">¶</a></h2>
+<p>Tools for submitting to HPC systems: PBS or SLURM</p>
+<dl class="function">
+<dt id="xfaster.batch_tools.get_job_logfile">
+<code class="sig-prename descclassname">xfaster.batch_tools.</code><code class="sig-name descname">get_job_logfile</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#get_job_logfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.batch_tools.get_job_logfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a path to use for the output log, based on job environment</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.batch_tools.batch_sub">
+<code class="sig-prename descclassname">xfaster.batch_tools.</code><code class="sig-name descname">batch_sub</code><span class="sig-paren">(</span><em class="sig-param">cmd</em>, <em class="sig-param">name=None</em>, <em class="sig-param">mem=None</em>, <em class="sig-param">nodes=None</em>, <em class="sig-param">node_list=None</em>, <em class="sig-param">ppn=None</em>, <em class="sig-param">cput=None</em>, <em class="sig-param">wallt=None</em>, <em class="sig-param">output=None</em>, <em class="sig-param">error=None</em>, <em class="sig-param">queue=None</em>, <em class="sig-param">dep_afterok=None</em>, <em class="sig-param">workdir=None</em>, <em class="sig-param">batch_args=[]</em>, <em class="sig-param">omp_threads=None</em>, <em class="sig-param">mpi_procs=None</em>, <em class="sig-param">mpi_args=''</em>, <em class="sig-param">env_script=None</em>, <em class="sig-param">env=None</em>, <em class="sig-param">nice=0</em>, <em class="sig-param">echo=True</em>, <em class="sig-param">delete=True</em>, <em class="sig-param">submit=True</em>, <em class="sig-param">scheduler='pbs'</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">exclude=None</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#batch_sub"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.batch_tools.batch_sub" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create and submit a SLURM or PBS job.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>string</em><em> or </em><em>list of strings</em>) – A command sequence to run via SLURM or PBS.
+The command will be inserted into a qsub submission script
+with all of the options specified in the remaining arguments.</p></li>
+<li><p><strong>name</strong> (<em>string</em><em>, </em><em>optional</em>) – Name of the job.</p></li>
+<li><p><strong>mem</strong> (<em>float</em><em> or </em><em>string</em><em>, </em><em>optional</em>) – Amount of memory to request for the job. float values in GB.
+Or pass a string (eg ‘4gb’) to use directly.</p></li>
+<li><p><strong>nodes</strong> (<em>int</em><em> or </em><em>string</em><em>, </em><em>optional</em>) – Number of nodes to use in job
+If a string, will be passed as-is to PBS -l node= resource
+If using SLURM and a string, will overwrite node_list if None</p></li>
+<li><p><strong>node_list</strong> (<em>string</em><em> or </em><em>list of strings</em>) – List of nodes that can be used for job. SLURM-only.</p></li>
+<li><p><strong>ppn</strong> (<em>int</em><em>, </em><em>optional</em>) – Numper of processes per node</p></li>
+<li><p><strong>cput</strong> (<em>string</em><em> or </em><em>float</em><em> or </em><em>datetime.timedelta</em><em>, </em><em>optional</em>) – Amount of CPU time requested.
+String values should be in the format HH:MM:SS, e.g. ‘10:00:00’.
+Numerical values are interpreted as a number of hours.</p></li>
+<li><p><strong>wallt</strong> (<em>string</em><em> or </em><em>float</em><em> or </em><em>datetime.timedelta</em><em>, </em><em>optional</em>) – Amount of wall clock time requested.
+String values should be in the format HH:MM:SS, e.g. ‘10:00:00’.
+Numerical values are interpreted as a number of hours.</p></li>
+<li><p><strong>output</strong> (<em>string</em><em>, </em><em>optional</em>) – PBS standard output filename.</p></li>
+<li><p><strong>error</strong> (<em>string</em><em>, </em><em>optional</em>) – PBS error output filename.</p></li>
+<li><p><strong>queue</strong> (<em>string</em><em>, </em><em>optional</em>) – The name of the queue to which to submit jobs</p></li>
+<li><p><strong>dep_afterok</strong> (<em>string</em><em> or </em><em>list of strings</em>) – Dependency. Job ID (or IDs) on which to wait for successful completion,
+before starting this job</p></li>
+<li><p><strong>workdir</strong> (<em>string</em><em>, </em><em>optional</em>) – Directory from where the script will be submitted.
+This is where the output and error files will be created
+by default.  Default: current directory.</p></li>
+<li><p><strong>batch_args</strong> (<em>string</em><em> or </em><em>list of strings</em><em>, </em><em>optional</em>) – Any additional arguments to pass to slurm/pbs.</p></li>
+<li><p><strong>omp_threads</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of OpenMP threads to use per process</p></li>
+<li><p><strong>mpi_procs</strong> (<em>int</em>) – Number of MPI processes to use.
+<code class="docutils literal notranslate"><span class="pre">mpirun</span></code> calls will be added to all lines of cmd as needed.
+If cmd contains <code class="docutils literal notranslate"><span class="pre">mpirun</span></code> or <code class="docutils literal notranslate"><span class="pre">mpiexec</span></code>, this does nothing.</p></li>
+<li><p><strong>mpi_args</strong> (<em>string</em>) – Additional command line arguments for inserted <code class="docutils literal notranslate"><span class="pre">mpirun</span></code> commands.
+If cmd contains <code class="docutils literal notranslate"><span class="pre">mpirun</span></code> or <code class="docutils literal notranslate"><span class="pre">mpiexec</span></code>, this does nothing.</p></li>
+<li><p><strong>env_script</strong> (<em>string</em><em>, </em><em>optional</em>) – Path to script to source during job script preamble
+For loading modules, setting environment variables, etc</p></li>
+<li><p><strong>env</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of environment variables to set in job script</p></li>
+<li><p><strong>nice</strong> (<em>int</em><em>, </em><em>optional</em>) – Adjust scheduling priority (SLURM only). Range from -5000 (highest
+priority) to 5000 (lowest priority).
+Note: actual submitted –nice value is 5000 higher, since negative
+values require special privilege.</p></li>
+<li><p><strong>echo</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to use bash “set -x” in job script to echo commands to stdout.</p></li>
+<li><p><strong>delete</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, delete the submit script upon job submission.</p></li>
+<li><p><strong>submit</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True (default) submit the job script once create. Will override the
+default option when False, to keep the script</p></li>
+<li><p><strong>scheduler</strong> (<em>string</em><em>, </em><em>optional</em>) – Which scheduler system to write a script for. One of “pbs” or “slurm”</p></li>
+<li><p><strong>debug</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, print the contents of the job script to stdout for debugging.</p></li>
+<li><p><strong>exclude</strong> (<em>string</em><em> or </em><em>list of strings</em>) – List of nodes that will be excluded for job. SLURM-only.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Print the working directory, and the job ID if submitted successfully.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>jobid</strong> – The ID of the submitted job.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">jobid</span> <span class="o">=</span> <span class="n">batch_sub</span><span class="p">(</span><span class="s2">&quot;echo Hello&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;testing&quot;</span><span class="p">,</span> <span class="n">nodes</span><span class="o">=</span><span class="s2">&quot;1:ppn=1&quot;</span><span class="p">,</span>
+<span class="gp">... </span><span class="n">cput</span><span class="o">=</span><span class="s1">&#39;1:00:00&#39;</span><span class="p">,</span> <span class="n">mem</span><span class="o">=</span><span class="s1">&#39;1gb&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">jobid</span><span class="p">)</span>
+<span class="go">221114.feynman.princeton.edu</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s1">&#39;testing.o221114&#39;</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+<span class="go">Hello</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.batch_tools.batch_group">
+<code class="sig-prename descclassname">xfaster.batch_tools.</code><code class="sig-name descname">batch_group</code><span class="sig-paren">(</span><em class="sig-param">cmds</em>, <em class="sig-param">group_by=1</em>, <em class="sig-param">serial=False</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#batch_group"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.batch_tools.batch_group" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create and submit SLURM or PBS job scripts for a group of similar commands. The
+commands can be grouped together into larger single jobs that run them in
+parallel on multiple processors on a node.</p>
+<p>Keyword arguments are passed on to the batch_sub function.
+These will be applied to EACH job. For example, using <code class="docutils literal notranslate"><span class="pre">nodes=&quot;1:ppn=8&quot;</span></code>
+with <code class="docutils literal notranslate"><span class="pre">group_by=8</span></code> and 16 elements in cmds will result in 2 jobs, each using
+8 processors on 1 node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmds</strong> (<em>list</em>) – The commands to run.
+The commands themselves should be a string, or a list of tokens, as
+per the <code class="docutils literal notranslate"><span class="pre">batch_sub</span></code> function.</p></li>
+<li><p><strong>group_by</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of commands to group together into a single job. Does not
+balance well when <code class="docutils literal notranslate"><span class="pre">len(cmds)%group_by</span> <span class="pre">!=</span> <span class="pre">0</span></code>
+Eg. on scinet use <code class="docutils literal notranslate"><span class="pre">group_by=8</span></code> to efficiently use whole nodes.</p></li>
+<li><p><strong>serial</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to <code class="docutils literal notranslate"><span class="pre">True</span></code> to run cmds sequentially, rather than starting them all
+in parallel. This will also work with MPI/OpenMP parallel jobs.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="xfaster.batch_tools.JobArgumentParser">
+<em class="property">class </em><code class="sig-prename descclassname">xfaster.batch_tools.</code><code class="sig-name descname">JobArgumentParser</code><span class="sig-paren">(</span><em class="sig-param">name=None</em>, <em class="sig-param">mem=None</em>, <em class="sig-param">time=None</em>, <em class="sig-param">workdir=None</em>, <em class="sig-param">outkey=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#JobArgumentParser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.batch_tools.JobArgumentParser" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="xfaster.batch_tools.JobArgumentParser.add_arguments">
+<code class="sig-name descname">add_arguments</code><span class="sig-paren">(</span><em class="sig-param">parser=None</em>, <em class="sig-param">add_group=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#JobArgumentParser.add_arguments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.batch_tools.JobArgumentParser.add_arguments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add job submission arguments to an argparse.ArgumentParser.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parser</strong> (<em>argparse.ArgumentParser</em>) – The parser to which to add arguments. If None, a new parser will
+be made and returned.</p></li>
+<li><p><strong>add_group</strong> (<em>bool</em><em> or </em><em>string</em>) – Whether to add job submit options in an argument group.
+If a string, use as description for the group.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>parser</strong> – The updated argument parser object.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>argparse.ArgumentParser</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.batch_tools.JobArgumentParser.pop_job_opts">
+<code class="sig-name descname">pop_job_opts</code><span class="sig-paren">(</span><em class="sig-param">args_dict</em>, <em class="sig-param">pop_submit=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#JobArgumentParser.pop_job_opts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.batch_tools.JobArgumentParser.pop_job_opts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pop all of the job-related options from a dictionary of arguments</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args_dict</strong> (<em>dict</em>) – The dictionary to pop from</p></li>
+<li><p><strong>pop_submit</strong> (<em>bool</em>) – Whether to also pop an argument named “submit”</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.batch_tools.JobArgumentParser.set_job_opts">
+<code class="sig-name descname">set_job_opts</code><span class="sig-paren">(</span><em class="sig-param">args</em>, <em class="sig-param">load_defaults=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#JobArgumentParser.set_job_opts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.batch_tools.JobArgumentParser.set_job_opts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set job submission options based on parsed arguments.</p>
+<p>Keyword arguments will be passed to <code class="docutils literal notranslate"><span class="pre">update</span></code>.  Can be used to override
+particular job submission options. Any argument to the <code class="docutils literal notranslate"><span class="pre">batch_sub</span></code> or
+<code class="docutils literal notranslate"><span class="pre">batch_group</span></code> functions can be overridden in this way.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> (<em>argparse.Namespace</em><em> or </em><em>dict</em>) – The parsed command line arguments (from
+argparse.ArgumentParser.parse_args()).</p></li>
+<li><p><strong>load_defaults</strong> (<em>bool</em>) – Whether to automatically load the default value for options</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.batch_tools.JobArgumentParser.submit">
+<code class="sig-name descname">submit</code><span class="sig-paren">(</span><em class="sig-param">jobs</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#JobArgumentParser.submit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.batch_tools.JobArgumentParser.submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit jobs based on the parsed arguments. Must be called after
+set_job_opts.</p>
+<p>Keyword arguments will be passed to <code class="docutils literal notranslate"><span class="pre">update</span></code>.  Can be used to override
+particular job submission options. Any argument to the <code class="docutils literal notranslate"><span class="pre">batch_sub</span></code> or
+<code class="docutils literal notranslate"><span class="pre">batch_group</span></code> functions can be overridden in this way.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>jobs</strong> (<em>string</em><em> or </em><em>list of strings</em>) – The job(s) to submit.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>List of job IDs for submitted jobs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.batch_tools.JobArgumentParser.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#JobArgumentParser.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.batch_tools.JobArgumentParser.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update particular job submission options.</p>
+<p>Keyword arguments can be used to override particular job submission
+options. Any argument to the <code class="docutils literal notranslate"><span class="pre">batch_sub</span></code> or <code class="docutils literal notranslate"><span class="pre">batch_group</span></code> functions
+can be overridden in this way.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-xfaster.parse_tools">
+<span id="parse-tools"></span><h2>parse_tools<a class="headerlink" href="#module-xfaster.parse_tools" title="Permalink to this headline">¶</a></h2>
+<p>Tools for parsing XFasters outputs and intermediate data structures</p>
+<dl class="function">
+<dt id="xfaster.parse_tools.parse_data">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">parse_data</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">field</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#parse_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.parse_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Look for a field in some data, return as a dictionary with
+descriptive keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>str</em><em> or </em><em>dict</em>) – Either the path to an npz file on disk or a loaded npz dict.</p></li>
+<li><p><strong>field</strong> (<em>str</em>) – Which key in data to return as a dictionary.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.dict_to_arr">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">dict_to_arr</code><span class="sig-paren">(</span><em class="sig-param">d</em>, <em class="sig-param">out=None</em>, <em class="sig-param">flatten=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#dict_to_arr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.dict_to_arr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform ordered dict into an array, if all items are same shape</p>
+<p>If not all items are the same shape, eg, for qb, or if flatten=True,
+flatten everything into a vector</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.arr_to_dict">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">arr_to_dict</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">ref_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#arr_to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.arr_to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform an array of data into a dictionary keyed by the same keys in
+ref_dict, with data divided into chunks of the same length as in ref_dict.
+Requires that the length of the array is the sum of the lengths of the
+arrays in each entry of ref_dict.  The other dimensions of the input
+array and reference dict can differ.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.unique_tags">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">unique_tags</code><span class="sig-paren">(</span><em class="sig-param">tags</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#unique_tags"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.unique_tags" title="Permalink to this definition">¶</a></dt>
+<dd><p>If map tags are repeated (eg, two 150 maps in different chunk
+subdirectories), return a list modifying them with an index</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.tag_pairs">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">tag_pairs</code><span class="sig-paren">(</span><em class="sig-param">tags</em>, <em class="sig-param">index=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#tag_pairs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.tag_pairs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an OrderedDict whose keys are pairs of tags in the format “tag1:tag2”
+and whose values are a tuple of the two tags used to construct each key, or
+a tuple of the indices of the two tags in the original tag list, if <code class="docutils literal notranslate"><span class="pre">index</span></code>
+is True.  If <code class="docutils literal notranslate"><span class="pre">index</span></code> is a list, then it should be a list the same length as
+<code class="docutils literal notranslate"><span class="pre">tags</span></code>, and the tuple is populated by indexing into <code class="docutils literal notranslate"><span class="pre">index</span></code> using the two
+indices of the tags in the original tag list.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">tags</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tag_pairs</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+<span class="go">OrderedDict([(&#39;a:a&#39;, (&#39;a&#39;, &#39;a&#39;)), (&#39;a:b&#39;, (&#39;a&#39;, &#39;b&#39;)), (&#39;b:b&#39;, (&#39;b&#39;, &#39;b&#39;))])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tag_pairs</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">OrderedDict([(&#39;a:a&#39;, (0, 0)), (&#39;a:b&#39;, (0, 1)), (&#39;b:b&#39;, (1, 1))])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tag_pairs</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">])</span>
+<span class="go">OrderedDict([(&#39;a:a&#39;, (&#39;c&#39;, &#39;c&#39;)), (&#39;a:b&#39;, (&#39;c&#39;, &#39;d&#39;)), (&#39;b:b&#39;, (&#39;d&#39;, &#39;d&#39;))])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.dict_to_index">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">dict_to_index</code><span class="sig-paren">(</span><em class="sig-param">d</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#dict_to_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.dict_to_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a dictionary of (start, stop) indices that correspond to the
+location of each sub-array when the dict is converted to a single array
+using <code class="docutils literal notranslate"><span class="pre">dict_to_arr</span></code>.</p>
+<p class="rubric">Examples</p>
+<p>To use this function to index into a (nbins, nbins) array, create
+the index dictionary:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bin_def</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">27</span><span class="p">],</span> <span class="p">[</span><span class="mi">27</span><span class="p">,</span> <span class="mi">52</span><span class="p">]]))</span>
+<span class="gp">... </span>                      <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;cmb_tt&#39;</span><span class="p">,</span> <span class="s1">&#39;cmb_ee&#39;</span><span class="p">,</span> <span class="s1">&#39;cmb_bb&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bin_index</span> <span class="o">=</span> <span class="n">dict_to_index</span><span class="p">(</span><span class="n">bin_def</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bin_index</span>
+<span class="go">OrderedDict([(&#39;cmb_tt&#39;, (0, 2)),</span>
+<span class="go">             (&#39;cmb_ee&#39;, (2, 4)),</span>
+<span class="go">             (&#39;cmb_bb&#39;, (4, 6))])</span>
+</pre></div>
+</div>
+<p>To extract the TT bins from the fisher matrix:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fisher</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sl_tt</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="o">*</span><span class="n">bin_index</span><span class="p">[</span><span class="s1">&#39;cmb_tt&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fisher_tt</span> <span class="o">=</span> <span class="n">fisher</span><span class="p">[</span><span class="n">sl_tt</span><span class="p">,</span> <span class="n">sl_tt</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>To extract all the CMB bins from the fisher matrix:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sl_cmb</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">bin_index</span><span class="p">[</span><span class="s1">&#39;cmb_tt&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">bin_index</span><span class="p">[</span><span class="s1">&#39;cmb_bb&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fisher_cmb</span> <span class="o">=</span> <span class="n">fisher</span><span class="p">[</span><span class="n">sl_cmb</span><span class="p">,</span> <span class="n">sl_cmb</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.dict_to_dmat">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">dict_to_dmat</code><span class="sig-paren">(</span><em class="sig-param">dmat_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#dict_to_dmat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.dict_to_dmat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a dmat dictionary and return the right shaped Dmat matrix:
+(Nmaps * 3, Nmaps * 3, lmax + 1) if pol else
+(Nmaps, Nmaps, lmax + 1)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.dict_to_dsdqb_mat">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">dict_to_dsdqb_mat</code><span class="sig-paren">(</span><em class="sig-param">dsdqb_dict</em>, <em class="sig-param">bin_def</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#dict_to_dsdqb_mat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.dict_to_dsdqb_mat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a dSdqb dictionary and return the right shaped dSdqb matrix:
+(Nmaps * 3, Nmaps * 3, nbins_cmb+nbins_fg+nbins_res, lmax + 1) if pol
+else first two dimensions are Nmaps.</p>
+<p>If gmat is given, the terms in the resulting matrix are multiplied by the
+appriopriate mode density term.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.load_compat">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">load_compat</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#load_compat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.load_compat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load and decode a numpy archive file from disk.</p>
+<p>Backward compatible with python2 data files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.load_pickle_compat">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">load_pickle_compat</code><span class="sig-paren">(</span><em class="sig-param">filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#load_pickle_compat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.load_pickle_compat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a pickle file from the given filename.
+Ensure that the file is open in mode ‘rb’ (required for python3), and
+that the encoding is set to ‘latin1’ in python3.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.load_and_parse">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">load_and_parse</code><span class="sig-paren">(</span><em class="sig-param">filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#load_and_parse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.load_and_parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a .npz data file from disk and parse all the fields it contains.</p>
+<p>Returns a dictionary of parsed fields.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.corr_index">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">corr_index</code><span class="sig-paren">(</span><em class="sig-param">idx</em>, <em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#corr_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.corr_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>This gets the index of the auto spectrum when getting all
+pairwise combinations of n maps</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>idx</strong> (<em>int</em>) – The index of the map in the list of maps being looped through.</p></li>
+<li><p><strong>n</strong> (<em>int</em>) – The number of maps being looped through.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>index</strong> – Index of auto spectrum</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.num_maps">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">num_maps</code><span class="sig-paren">(</span><em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#num_maps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.num_maps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns how many maps there are if there are n total cross spectra.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.num_corr">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">num_corr</code><span class="sig-paren">(</span><em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#num_corr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.num_corr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns how many cross spectra there are if there are n total maps.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-xfaster.xfaster_class">
+<span id="xfaster-class"></span><h2>xfaster_class<a class="headerlink" href="#module-xfaster.xfaster_class" title="Permalink to this headline">¶</a></h2>
+<p>The main class where the algorithmic steps are defined</p>
+<dl class="class">
+<dt id="xfaster.xfaster_class.XFasterConfig">
+<em class="property">class </em><code class="sig-prename descclassname">xfaster.xfaster_class.</code><code class="sig-name descname">XFasterConfig</code><span class="sig-paren">(</span><em class="sig-param">defaults=None</em>, <em class="sig-param">default_sec='Uncategorized'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFasterConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFasterConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>ConfigParser subclass for storing command line options and config.</p>
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFasterConfig.sort">
+<code class="sig-name descname">sort</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFasterConfig.sort"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFasterConfig.sort" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort the items in each section of the configuration alphabetically.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFasterConfig.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param">options</em>, <em class="sig-param">section=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFasterConfig.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFasterConfig.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update configuration options with a dictionary. Behaves like
+dict.update() for specified section but also clears options of the same
+name from the default section.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>options</strong> (<em>dict</em>) – The options to update</p></li>
+<li><p><strong>section</strong> (<em>string</em><em>, </em><em>optional</em>) – Name of section to update. Default: self.default_sec</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFasterConfig.write">
+<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param">fp=None</em>, <em class="sig-param">sort=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFasterConfig.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFasterConfig.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write an .ini-format representation of the configuration state.
+Keys are stored alphabetically if <cite>sort</cite> is True.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fp</strong> (<em>file object</em>) – If None, write to <cite>sys.stdout</cite>.</p></li>
+<li><p><strong>sort</strong> (<em>bool</em>) – If True, sort items in each section alphabetically.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="xfaster.xfaster_class.XFaster">
+<em class="property">class </em><code class="sig-prename descclassname">xfaster.xfaster_class.</code><code class="sig-name descname">XFaster</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">lmax=500</em>, <em class="sig-param">pol=True</em>, <em class="sig-param">pol_mask=True</em>, <em class="sig-param">output_root=None</em>, <em class="sig-param">output_tag=None</em>, <em class="sig-param">verbose='notice'</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">checkpoint=None</em>, <em class="sig-param">add_log=False</em>, <em class="sig-param">ref_freq=353.0</em>, <em class="sig-param">beta_ref=1.54</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.alm2cl">
+<code class="sig-name descname">alm2cl</code><span class="sig-paren">(</span><em class="sig-param">m1</em>, <em class="sig-param">m2=None</em>, <em class="sig-param">lmin=2</em>, <em class="sig-param">lmax=None</em>, <em class="sig-param">symmetric=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.alm2cl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.alm2cl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for healpy.alm2cl.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>m1</strong> (<em>array_like</em>) – Masked alms for map1</p></li>
+<li><p><strong>m2</strong> (<em>array_like</em>) – Masked alms for map2</p></li>
+<li><p><strong>lmin</strong> (<em>int</em>) – The minimum ell bin to include in the output Cls.  All ell
+bins below this are nulled out.</p></li>
+<li><p><strong>lmax</strong> (<em>int</em>) – The maximum ell bin to compute.  If None, this is set to the
+lmax value with which the class was initialized.</p></li>
+<li><p><strong>symmetric</strong> (<em>bool</em>) – If True, the average cross spectrum of (m1-x-m2 + m2-x-m1) / 2.
+is computed.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>cls</strong> – Cross-spectrum of m1-x-m2.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array_like</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.apply_mask">
+<code class="sig-name descname">apply_mask</code><span class="sig-paren">(</span><em class="sig-param">m</em>, <em class="sig-param">mask</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.apply_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.apply_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the input mask to the data map, in place.</p>
+<p>If the map is polarized, the appropriate mask is applied
+to the polarization data, depending on whether the mask
+is also polarized.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>m</strong> (<em>array_like</em>) – Input map (T/Q/U if polarized, T-only if not)
+This array is modified in place.</p></li>
+<li><p><strong>mask</strong> (<em>array_like</em>) – Mask to apply (T/P if polarized, T-only if not)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.bin_cl_template">
+<code class="sig-name descname">bin_cl_template</code><span class="sig-paren">(</span><em class="sig-param">cls_shape</em>, <em class="sig-param">map_tag=None</em>, <em class="sig-param">transfer_run=False</em>, <em class="sig-param">beam_error=False</em>, <em class="sig-param">fg_ell_ind=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.bin_cl_template"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.bin_cl_template" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the Cbl matrix from the input shape spectrum.</p>
+<p>This method requires beam windows, kernels and transfer functions
+(if <code class="docutils literal notranslate"><span class="pre">transfer_run</span></code> is False) to have been precomputed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cls_shape</strong> (<em>array_like</em>) – The shape spectrum to use.  This can be computed using
+<code class="docutils literal notranslate"><span class="pre">get_signal_shape</span></code> or otherwise.</p></li>
+<li><p><strong>map_tag</strong> (<em>str</em>) – If supplied, the Cbl is computed only for the given map tag
+(or cross if map_tag is map_tag1:map_tag2).
+Otherwise, it is computed for all maps and crosses.</p></li>
+<li><p><strong>transfer_run</strong> (<em>bool</em>) – If True, this assumes a unity transfer function for all bins, and
+the output Cbl is used to compute the transfer functions that are
+then loaded when this method is called with <code class="docutils literal notranslate"><span class="pre">transfer_run</span> <span class="pre">=</span> <span class="pre">False</span></code>.</p></li>
+<li><p><strong>beam_error</strong> (<em>bool</em>) – If True, use beam error envelope instead of beam to get cbls that
+are 1 sigma beam error envelope offset of signal terms.</p></li>
+<li><p><strong>fg_ell_ind</strong> (<em>float</em>) – If binning foreground shape, offset the ell index from the reference
+by this amount.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>cbl</strong> – The Cbl matrix, indexed by component and spectrum, then by map
+cross, e.g. <code class="docutils literal notranslate"><span class="pre">cbl['cmb_tt']['map1:map2']</span></code>
+E/B mixing terms are stored in elements <code class="docutils literal notranslate"><span class="pre">cbl[:,</span> <span class="pre">1,</span> <span class="pre">:]</span></code>,
+and unmixed terms are stored in elements <code class="docutils literal notranslate"><span class="pre">cbl[:,</span> <span class="pre">0,</span> <span class="pre">:]</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict of arrays (num_bins, 2, lmax + 1)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="xfaster.xfaster_class.XFaster.checkpoint_tree">
+<code class="sig-name descname">checkpoint_tree</code><em class="property"> = {'bandpowers': ['likelihood'], 'beam_errors': ['likelihood'], 'beams': ['transfer'], 'data': ['bandpowers'], 'files': ['masks', 'sims', 'data'], 'kernels': ['transfer', 'bandpowers'], 'masks': ['kernels', 'sims_transfer', 'sims', 'data'], 'shape': ['bandpowers'], 'shape_transfer': ['transfer'], 'sims': ['bandpowers'], 'sims_transfer': ['transfer'], 'template_noise': ['bandpowers'], 'transfer': ['bandpowers']}</em><a class="headerlink" href="#xfaster.xfaster_class.XFaster.checkpoint_tree" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="xfaster.xfaster_class.XFaster.checkpoints">
+<code class="sig-name descname">checkpoints</code><em class="property"> = ['files', 'masks', 'kernels', 'sims_transfer', 'shape_transfer', 'transfer', 'sims', 'beams', 'data', 'template_noise', 'shape', 'bandpowers', 'beam_errors', 'likelihood']</em><a class="headerlink" href="#xfaster.xfaster_class.XFaster.checkpoints" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.clear_precalc">
+<code class="sig-name descname">clear_precalc</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.clear_precalc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.clear_precalc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear variables pre-computed with <code class="docutils literal notranslate"><span class="pre">fisher_precalc</span></code>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="xfaster.xfaster_class.XFaster.data_version">
+<code class="sig-name descname">data_version</code><em class="property"> = 1</em><a class="headerlink" href="#xfaster.xfaster_class.XFaster.data_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.do_qb2cb">
+<code class="sig-name descname">do_qb2cb</code><span class="sig-paren">(</span><em class="sig-param">qb</em>, <em class="sig-param">cls_shape</em>, <em class="sig-param">inv_fish=None</em>, <em class="sig-param">tophat_bins=False</em>, <em class="sig-param">return_cls=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.do_qb2cb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.do_qb2cb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute binned output spectra and covariances by averaging
+the shape spectrum over each bin, and applying the appropriate
+<code class="docutils literal notranslate"><span class="pre">qb</span></code> bandpower amplitude.</p>
+<p>This method is used internally by <code class="docutils literal notranslate"><span class="pre">fisher_calc</span></code>, and requires
+bin definitions to have been pre-loaded using <code class="docutils literal notranslate"><span class="pre">get_bin_def</span></code>
+or <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>qb</strong> (<em>dict</em>) – Bandpower amplitudes for each spectrum bin.</p></li>
+<li><p><strong>cls_shape</strong> (<em>dict</em>) – Shape spectrum</p></li>
+<li><p><strong>inv_fish</strong> (<em>array_like</em><em>, </em><em>(</em><em>nbins</em><em>, </em><em>nbins</em><em>)</em>) – Inverse fisher matrix for computing the bin errors
+and covariance.  If not supplied, these are not computed.</p></li>
+<li><p><strong>tophat_bins</strong> (<em>bool</em>) – If True, compute binned bandpowers using a tophat weight.
+Otherwise a logarithmic ell-space weighting is applied.</p></li>
+<li><p><strong>return_cls</strong> (<em>bool</em>) – If True, return binned C_l spectrum rather than the default D_l</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>cb</strong> (<em>dict of arrays</em>) – Binned spectrum</p></li>
+<li><p><strong>dcb</strong> (<em>dict of arrays</em>) – Binned spectrum error, if <code class="docutils literal notranslate"><span class="pre">inv_fish</span></code> is not None</p></li>
+<li><p><strong>ellb</strong> (<em>dict of arrays</em>) – Average bin center</p></li>
+<li><p><strong>cov</strong> (<em>array_like, (nbins, nbins)</em>) – Binned spectrum covariance, if <code class="docutils literal notranslate"><span class="pre">inv_fish</span></code> is not None</p></li>
+<li><p><strong>qb2cb</strong> (<em>dict</em>) – The conversion factor from <code class="docutils literal notranslate"><span class="pre">qb</span></code> to <code class="docutils literal notranslate"><span class="pre">cb</span></code>, computed by
+averaging over the input shape spectrum.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.fisher_calc">
+<code class="sig-name descname">fisher_calc</code><span class="sig-paren">(</span><em class="sig-param">qb</em>, <em class="sig-param">cbl</em>, <em class="sig-param">cls_input</em>, <em class="sig-param">cls_noise=None</em>, <em class="sig-param">cls_debias=None</em>, <em class="sig-param">cls_model=None</em>, <em class="sig-param">cond_noise=None</em>, <em class="sig-param">cond_criteria=None</em>, <em class="sig-param">likelihood=False</em>, <em class="sig-param">like_lmin=2</em>, <em class="sig-param">like_lmax=None</em>, <em class="sig-param">delta_beta_prior=None</em>, <em class="sig-param">null_first_cmb=False</em>, <em class="sig-param">use_precalc=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.fisher_calc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.fisher_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Re-compute the Fisher matrix and qb amplitudes based on
+input data spectra.  This method is called iteratively
+by <code class="docutils literal notranslate"><span class="pre">fisher_iterate</span></code>, and requires bin definitions precomputed
+by <code class="docutils literal notranslate"><span class="pre">get_bin_def</span></code> or <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>qb</strong> (<em>OrderedDict</em>) – Bandpower amplitudes, typically computed in a previous call
+to this method.</p></li>
+<li><p><strong>cbl</strong> (<em>OrderedDict</em>) – Cbl matrix computed by <code class="docutils literal notranslate"><span class="pre">bin_cl_template</span></code> for a given
+shape spectrum.</p></li>
+<li><p><strong>cls_input</strong> (<em>OrderedDict</em>) – Input spectra.  If computing a transfer function,
+this is the average <code class="docutils literal notranslate"><span class="pre">cls_signal</span></code>.  If computing a null
+test, this is <code class="docutils literal notranslate"><span class="pre">cls_data_null</span></code>, and otherwise it is
+<code class="docutils literal notranslate"><span class="pre">cls_data</span></code>, for a single map or several input maps.</p></li>
+<li><p><strong>cls_noise</strong> (<em>OrderedDict</em>) – If supplied, the noise spectrum is applied to the model spectrum.</p></li>
+<li><p><strong>cls_debias</strong> (<em>OrderedDict</em>) – If supplied, the debias spectrum is subtracted from the input.</p></li>
+<li><p><strong>cond_criteria</strong> (<em>float</em>) – The maximum condition number allowed for Dmat1 to be acceptable
+for taking its inverse.</p></li>
+<li><p><strong>likelihood</strong> (<em>bool</em>) – If True, return the likelihood for the given input bandpowers, shapes
+and data spectra.  Otherwise, computes output bandpowers and the fisher
+covariance for a NR iteration.</p></li>
+<li><p><strong>use_precalc</strong> (<em>bool</em>) – If True, load pre-calculated terms stored from a previous iteration,
+and store for a future iteration.  Otherwise, all calculations are
+repeated.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>qb</strong> (<em>OrderedDict</em>) – New bandpower amplitudes</p></li>
+<li><p><strong>inv_fish</strong> (<em>array_like</em>) – Inverse Fisher correlation matrix over all bins</p></li>
+<li><p><em>– or –</em></p></li>
+<li><p><strong>likelihood</strong> (<em>scalar</em>) – Likelihood of the given input parameters.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.fisher_iterate">
+<code class="sig-name descname">fisher_iterate</code><span class="sig-paren">(</span><em class="sig-param">cbl</em>, <em class="sig-param">cls_shape</em>, <em class="sig-param">map_tag=None</em>, <em class="sig-param">iter_max=200</em>, <em class="sig-param">converge_criteria=0.005</em>, <em class="sig-param">qb_start=None</em>, <em class="sig-param">transfer_run=False</em>, <em class="sig-param">save_iters=False</em>, <em class="sig-param">tophat_bins=False</em>, <em class="sig-param">return_cls=False</em>, <em class="sig-param">null_first_cmb=False</em>, <em class="sig-param">delta_beta_prior=None</em>, <em class="sig-param">cond_noise=None</em>, <em class="sig-param">cond_criteria=None</em>, <em class="sig-param">like_profiles=False</em>, <em class="sig-param">like_profile_sigma=3.0</em>, <em class="sig-param">like_profile_points=100</em>, <em class="sig-param">file_tag=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.fisher_iterate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.fisher_iterate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate over the Fisher calculation to compute bandpower estimates
+assuming an input shape spectrum.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cbl</strong> (<em>OrderedDict</em>) – Cbl matrix computed from an input shape spectrum</p></li>
+<li><p><strong>cls_shape</strong> (<em>OrderedDict</em>) – Input shape spectrum</p></li>
+<li><p><strong>map_tag</strong> (<em>str</em>) – If not None, then iteration is performed over the spectra
+corresponding to the given map, rather over all possible
+combinations of map-map cross-spectra. In this case, the first
+dimension of the input cbl must be of size 1 (this is done
+automatically by calling <code class="docutils literal notranslate"><span class="pre">bin_cl_template(...,</span> <span class="pre">map_tag=&lt;map_tag&gt;)</span></code>.</p></li>
+<li><p><strong>iter_max</strong> (<em>int</em>) – Maximum number of iterations to perform.  if this limit is
+reached, a warning is issued.</p></li>
+<li><p><strong>converge_criteria</strong> (<em>float</em>) – Maximum fractional change in qb that indicates convergence and
+stops iteration.</p></li>
+<li><p><strong>qb_start</strong> (<em>OrderedDict</em>) – Initial guess at <code class="docutils literal notranslate"><span class="pre">qb</span></code> bandpower amplitudes.  If None, unity is
+assumed for all bins.</p></li>
+<li><p><strong>transfer_run</strong> (<em>bool</em>) – If True, the input Cls passed to <code class="docutils literal notranslate"><span class="pre">fisher_calc</span></code> are the average
+of the signal simulations, and noise cls are ignored.
+If False, the input Cls are either <code class="docutils literal notranslate"><span class="pre">cls_data_null</span></code>
+(for null tests) or <code class="docutils literal notranslate"><span class="pre">cls_data</span></code>.  See <code class="docutils literal notranslate"><span class="pre">get_masked_data</span></code> for
+how these are computed.  The input noise is similarly either
+<code class="docutils literal notranslate"><span class="pre">cls_noise_null</span></code> or <code class="docutils literal notranslate"><span class="pre">cls_noise</span></code>.</p></li>
+<li><p><strong>save_iters</strong> (<em>bool</em>) – If True, the output data from each Fisher iteration are stored
+in an individual npz file.</p></li>
+<li><p><strong>tophat_bins</strong> (<em>bool</em>) – If True, use uniform weights within each bin rather than any
+ell-based weighting.</p></li>
+<li><p><strong>return_cls</strong> (<em>bool</em>) – If True, return C_l spectrum rather than D_l spectrum</p></li>
+<li><p><strong>cond_criteria</strong> (<em>float</em>) – The maximum condition number allowed for Dmat1 to be acceptable
+for taking its inverse.</p></li>
+<li><p><strong>like_profiles</strong> (<em>bool</em>) – If True, compute profile likelihoods for each qb, leaving all
+others fixed at their maximum likelihood values.  Profiles are
+computed over a range +/–sigma as estimated from the diagonals
+of the inverse Fisher matrix.</p></li>
+<li><p><strong>like_profile_sigma</strong> (<em>float</em>) – Range in units of 1sigma over which to compute profile likelihoods</p></li>
+<li><p><strong>like_profile_points</strong> (<em>int</em>) – Number of points to sample along the likelihood profile</p></li>
+<li><p><strong>file_tag</strong> (<em>string</em>) – If supplied, appended to the bandpowers filename.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p><strong>data</strong> – The results of the Fisher iteration process.  This dictionary
+contains the fields:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">qb</span> <span class="p">:</span> <span class="n">converged</span> <span class="n">bandpower</span> <span class="n">amplitudes</span>
+<span class="n">cb</span> <span class="p">:</span> <span class="n">output</span> <span class="n">binned</span> <span class="n">spectrum</span>
+<span class="n">dcb</span> <span class="p">:</span> <span class="n">binned</span> <span class="n">spectrum</span> <span class="n">errors</span>
+<span class="n">ellb</span> <span class="p">:</span> <span class="nb">bin</span> <span class="n">centers</span>
+<span class="n">cov</span> <span class="p">:</span> <span class="n">spectrum</span> <span class="n">covariance</span>
+<span class="n">inv_fish</span> <span class="p">:</span> <span class="n">inverse</span> <span class="n">fisher</span> <span class="n">matrix</span>
+<span class="n">fqb</span> <span class="p">:</span> <span class="n">fractional</span> <span class="n">change</span> <span class="ow">in</span> <span class="n">qb</span> <span class="k">for</span> <span class="n">the</span> <span class="n">last</span> <span class="n">iteration</span>
+<span class="n">qb2cb</span> <span class="p">:</span> <span class="n">conversion</span> <span class="n">factor</span>
+<span class="n">cbl</span> <span class="p">:</span> <span class="n">Cbl</span> <span class="n">matrix</span>
+<span class="n">cls_model</span> <span class="p">:</span> <span class="n">unbinned</span> <span class="n">model</span> <span class="n">spectrum</span> <span class="n">computed</span> <span class="kn">from</span> <span class="nn">Cbl</span>
+<span class="n">bin_def</span> <span class="p">:</span> <span class="nb">bin</span> <span class="n">definition</span> <span class="n">array</span>
+<span class="n">cls_obs</span> <span class="p">:</span> <span class="n">observed</span> <span class="nb">input</span> <span class="n">spectra</span>
+<span class="n">cls_noise</span> <span class="p">:</span> <span class="n">noise</span> <span class="n">spectra</span>
+<span class="n">cls_shape</span> <span class="p">:</span> <span class="n">shape</span> <span class="n">spectrum</span>
+<span class="n">iters</span> <span class="p">:</span> <span class="n">number</span> <span class="n">of</span> <span class="n">iterations</span> <span class="n">completed</span>
+</pre></div>
+</div>
+<p>If <code class="docutils literal notranslate"><span class="pre">transfer_run</span></code> is False, this dictionary also contains:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">qb_transfer</span> <span class="p">:</span> <span class="n">transfer</span> <span class="n">function</span> <span class="n">amplitudes</span>
+<span class="n">nbins_res</span> <span class="p">:</span> <span class="n">number</span> <span class="n">of</span> <span class="n">residual</span> <span class="n">bins</span>
+</pre></div>
+</div>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method stores outputs to files with name ‘transfer’ for transfer
+function runs (if <code class="docutils literal notranslate"><span class="pre">transfer_run</span> <span class="pre">=</span> <span class="pre">True</span></code>), otherwise with name
+‘bandpowers’.  Outputs from each individual iteration, containing
+only the quantities that change with each step, are stored in
+separate files with the same name (and different index).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.fisher_precalc">
+<code class="sig-name descname">fisher_precalc</code><span class="sig-paren">(</span><em class="sig-param">cbl</em>, <em class="sig-param">cls_input</em>, <em class="sig-param">cls_noise=None</em>, <em class="sig-param">likelihood=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.fisher_precalc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.fisher_precalc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pre-compute the D_ell and signal derivative matrices necessary for
+<code class="docutils literal notranslate"><span class="pre">fisher_calc</span></code> from the input data spectra.  This method requires bin
+definitions precomputed by <code class="docutils literal notranslate"><span class="pre">get_bin_def</span></code> or <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cbl</strong> (<em>OrderedDict</em>) – Cbl dict computed by <code class="docutils literal notranslate"><span class="pre">bin_cl_template</span></code> for a given
+shape spectrum.</p></li>
+<li><p><strong>cls_input</strong> (<em>OrderedDict</em>) – Input spectra.  If computing a transfer function, this is the
+average <code class="docutils literal notranslate"><span class="pre">cls_signal</span></code>.  If computing a null test, this is
+<code class="docutils literal notranslate"><span class="pre">cls_data_null</span></code>, and otherwise it is <code class="docutils literal notranslate"><span class="pre">cls_data</span></code>, for a single map or
+several input maps.</p></li>
+<li><p><strong>cls_noise</strong> (<em>OrderedDict</em>) – If supplied, the noise spectrum is subtracted from the input.</p></li>
+<li><p><strong>likelihood</strong> (<em>bool</em>) – If True, compute just Dmat_obs_b.  Otherwise, Dmat_obs and
+dSdqb_mat1 are also computed.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>Dmat_obs</strong> (<em>OrderedDict</em>) – De-biased D_ell matrix from <code class="docutils literal notranslate"><span class="pre">cls_input</span></code></p></li>
+<li><p><strong>Dmat_obs_b</strong> (<em>OrderedDict</em>) – Biased D_ell matrix from <code class="docutils literal notranslate"><span class="pre">cls_input</span></code> (for likelihood)</p></li>
+<li><p><strong>dSdqb_mat1</strong> (<em>OrderedDict</em>) – Signal derivative matrix from Cbl</p></li>
+<li><p><em>.. note:: the output arrays are also stored as attributes of the</em></p></li>
+<li><p>parent object to avoid repeating the computation in <code class="docutils literal notranslate"><span class="pre">fisher_calc</span></code></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_bandpowers">
+<code class="sig-name descname">get_bandpowers</code><span class="sig-paren">(</span><em class="sig-param">cls_shape</em>, <em class="sig-param">map_tag=None</em>, <em class="sig-param">converge_criteria=0.005</em>, <em class="sig-param">iter_max=200</em>, <em class="sig-param">return_qb=False</em>, <em class="sig-param">save_iters=False</em>, <em class="sig-param">delta_beta_prior=None</em>, <em class="sig-param">cond_noise=None</em>, <em class="sig-param">cond_criteria=None</em>, <em class="sig-param">null_first_cmb=False</em>, <em class="sig-param">tophat_bins=False</em>, <em class="sig-param">return_cls=False</em>, <em class="sig-param">like_profiles=False</em>, <em class="sig-param">like_profile_sigma=3.0</em>, <em class="sig-param">like_profile_points=100</em>, <em class="sig-param">file_tag=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_bandpowers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_bandpowers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the maximum likelihood bandpowers of the data, assuming
+a given input spectrum shape.  Requires the transfer function to
+have been computed and loaded using <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cls_shape</strong> (<em>array_like</em>) – Input shape spectrum.  Can differ from that used to compute the
+transfer function.</p></li>
+<li><p><strong>map_tag</strong> (<em>string</em>) – If not None, then iteration is performed over the spectra
+corresponding to the given map, rather over all possible
+combinations of map-map cross-spectra. In this case, the first
+dimension of the input cbl must be of size 1 (this is done
+automatically by calling <code class="docutils literal notranslate"><span class="pre">bin_cl_template(...,</span> <span class="pre">map_tag=&lt;map_tag&gt;)</span></code>.</p></li>
+<li><p><strong>converge_criteria</strong> (<em>float</em>) – Maximum fractional change in qb that indicates convergence and
+stops iteration.</p></li>
+<li><p><strong>iter_max</strong> (<em>int</em>) – Maximum number of iterations to perform.  if this limit is
+reached, a warning is issued.</p></li>
+<li><p><strong>return_qb</strong> (<em>bool</em>) – If True, only the maximum likelihood <code class="docutils literal notranslate"><span class="pre">qb</span></code> values are returned.
+Otherwise, the complete output dictionary is returned.</p></li>
+<li><p><strong>save_iters</strong> (<em>bool</em>) – If True, the output data from each Fisher iteration are stored
+in an individual npz file.</p></li>
+<li><p><strong>tophat_bins</strong> (<em>bool</em>) – If True, use uniform weights within each bin rather than any
+ell-based weighting.</p></li>
+<li><p><strong>return_cls</strong> (<em>bool</em>) – If True, return C_ls rather than D_ls</p></li>
+<li><p><strong>cond_criteria</strong> (<em>float</em>) – The maximum condition number allowed for Dmat1 to be acceptable
+for taking its inverse.</p></li>
+<li><p><strong>like_profiles</strong> (<em>bool</em>) – If True, compute profile likelihoods for each qb, leaving all
+others fixed at their maximum likelihood values.  Profiles are
+computed over a range +/–sigma as estimated from the diagonals
+of the inverse Fisher matrix.</p></li>
+<li><p><strong>like_profile_sigma</strong> (<em>float</em>) – Range in units of 1sigma over which to compute profile likelihoods</p></li>
+<li><p><strong>like_profile_points</strong> (<em>int</em>) – Number of points to sample along the likelihood profile</p></li>
+<li><p><strong>file_tag</strong> (<em>string</em>) – If supplied, appended to the bandpowers filename.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>data</strong> (<em>dict</em>) – Dictionary of maximum likelihood quantities, as output by
+<code class="docutils literal notranslate"><span class="pre">fisher_iterate</span></code>.</p></li>
+<li><p><em>– or –</em></p></li>
+<li><p><strong>qb, inv_fish</strong> (<em>array_like</em>) – Maximum likelihood bandpower amplitudes and fisher covariance.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is called at the ‘bandpowers’ checkpoint, and loads or
+saves a data dictionary named ‘bandpowers’ with the quantities
+returned by <code class="docutils literal notranslate"><span class="pre">fisher_iterate</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_beam_errors">
+<code class="sig-name descname">get_beam_errors</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_beam_errors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_beam_errors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get error envelope to multiply beam by (so, to get beam + 2 sigma error,
+do beam * (1 + 2 * beam_error))</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_beams">
+<code class="sig-name descname">get_beams</code><span class="sig-paren">(</span><em class="sig-param">pixwin=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_beams"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_beams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return beam window functions for all input map tags.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pixwin</strong> (<em>bool</em>) – If True, the pixel window function for the map <code class="docutils literal notranslate"><span class="pre">nside</span></code> is
+applied to the Gaussian beams.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>beam_windows</strong> – A dictionary of beam window function arrays
+(3 x lmax+1 if pol, 1 x lmax+1 if not) for each map tag</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is called at the ‘beams’ checkpoint and loads or saves
+a dictionary containing just the <code class="docutils literal notranslate"><span class="pre">beam_windows</span></code> key to disk.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_bin_def">
+<code class="sig-name descname">get_bin_def</code><span class="sig-paren">(</span><em class="sig-param">bin_width=25</em>, <em class="sig-param">lmin=2</em>, <em class="sig-param">tbeb=False</em>, <em class="sig-param">foreground_fit=False</em>, <em class="sig-param">bin_width_fg=25</em>, <em class="sig-param">residual_fit=False</em>, <em class="sig-param">res_specs=None</em>, <em class="sig-param">bin_width_res=25</em>, <em class="sig-param">weighted_bins=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_bin_def"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_bin_def" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the bin definition array that defines the bins for each output
+spectrum.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bin_width</strong> (<em>int</em><em> or </em><em>list of ints</em>) – Width of each spectrum bin.  If a scalar, the same width is applied
+to all cross spectra.  Otherwise, must be a list of up to six
+elements, listing bin widths for the spectra in the order (TT, EE,
+BB, TE, EB, TB).</p></li>
+<li><p><strong>lmin</strong> (<em>int</em>) – Minimum ell for binned spectra</p></li>
+<li><p><strong>tbeb</strong> (<em>bool</em>) – If True, EB and TB bins are constructed so that these spectra are
+computed by the estimator.  Otherwise, these spectra are fixed at
+zero.</p></li>
+<li><p><strong>foreground_fit</strong> (<em>bool</em>) – If True, construct bin definitions for foreground components as
+well.</p></li>
+<li><p><strong>bin_width_fg</strong> (<em>int</em><em> or </em><em>list of ints</em>) – Width of each foreground spectrum bin.  If a scalar, the same width
+is applied to all cross spectra.  Otherwise, must be a list of up to
+six elements, listing bin widths for the spectra in the order (TT,
+EE, BB, TE, EB, TB).</p></li>
+<li><p><strong>residual_fit</strong> (<em>bool</em>) – If True, fit for (compute bandpower amplitudes for) several wide
+bins of excess noise.</p></li>
+<li><p><strong>res_specs</strong> (<em>list of strings</em>) – List of spectra which are to be included in the residual fit.  Can
+be individual spectra (‘tt’, ‘ee’, ‘bb’), or ‘eebb’ to fit for EE
+and BB residuals simultaneously.  If not supplied, this defaults to
+[‘eebb’] for polarized maps, and [‘tt’] for unpolarized maps.</p></li>
+<li><p><strong>bin_width_res</strong> (<em>int</em><em> or </em><em>list of ints</em>) – Width of each residual spectrum bin.  If a scalar, the same width
+is applied to all spectra for all cross spectra.  Otherwise, must
+be a list of up to nspec * nmaps elements, listing bin widths for
+each of the spectra in <code class="docutils literal notranslate"><span class="pre">res_specs</span></code> in order, then ordered by map.</p></li>
+<li><p><strong>weighted_bins</strong> (<em>bool</em>) – If True, use an lfac-weighted binning operator to construct Cbls.
+By default, a flat binning operator is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>bin_def</strong> – The bin definition dictionary.  Each key contains a Nx2 array
+that defines the left and right edges for each bin of the
+corresponding spectrum.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_data_spectra">
+<code class="sig-name descname">get_data_spectra</code><span class="sig-paren">(</span><em class="sig-param">map_tag=None</em>, <em class="sig-param">transfer_run=False</em>, <em class="sig-param">do_noise=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_data_spectra"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_data_spectra" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return data and noise spectra for the given map tag(s).  Data spectra
+and signal/noise sim spectra must have been precomputed or loaded from
+disk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>map_tag</strong> (<em>str</em>) – If None, all map-map cross-spectra are included in the outputs.
+Otherwise, only the autospectra of the given map are included.</p></li>
+<li><p><strong>transfer_run</strong> (<em>bool</em>) – If True, the data cls are the average of the signal simulations, and
+noise cls are ignored.  If False, the data cls are either
+<code class="docutils literal notranslate"><span class="pre">cls_data_null</span></code> (for null tests) or <code class="docutils literal notranslate"><span class="pre">cls_data</span></code>.  See
+<code class="docutils literal notranslate"><span class="pre">get_masked_data</span></code> for how these are computed.  The input noise is
+similarly either <code class="docutils literal notranslate"><span class="pre">cls_noise_null</span></code> or <code class="docutils literal notranslate"><span class="pre">cls_noise</span></code>.</p></li>
+<li><p><strong>do_noise</strong> (<em>bool</em>) – If True, return noise spectra along with data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>obs</strong> (<em>OrderedDict</em>) – Dictionary of data cross spectra</p></li>
+<li><p><strong>nell</strong> (<em>OrderedDict</em>) – Dictionary of noise cross spectra, or None if transfer_run is True.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_filename">
+<code class="sig-name descname">get_filename</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">ext='.npz'</em>, <em class="sig-param">map_tag=None</em>, <em class="sig-param">iter_index=None</em>, <em class="sig-param">extra_tag=None</em>, <em class="sig-param">bp_opts=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_filename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a standard output file path to read or write.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>string</em>) – String name of output type.  E.g. ‘data_xcorr’ for data
+cross-correlation spectra.
+If an output tag is set, the name is appended with
+‘_&lt;output_tag&gt;’.</p></li>
+<li><p><strong>ext</strong> (<em>string</em>) – File extension.  The default (‘.npz’) is used for storing
+output data dictionaries.</p></li>
+<li><p><strong>map_tag</strong> (<em>string</em>) – If supplied, the name is appended with ‘_map_&lt;map_tag&gt;’.
+Use this argument when storing output data in a loop over
+input maps.</p></li>
+<li><p><strong>iter_index</strong> (<em>int</em>) – If supplied, the name is appended with ‘_iter&lt;iter_index&gt;’</p></li>
+<li><p><strong>extra_tag</strong> (<em>string</em>) – If supplied the extra tag is appended to the name as is.</p></li>
+<li><p><strong>bp_opts</strong> (<em>bool</em>) – If True, the output filename is constructed  by checking the
+following list  of options used in constructing bandpowers:
+ensemble_mean, ensemble_median, sim_index, template_cleaned,
+weighted_bins, signal_type_sim, noise_type_sim</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>filename</strong> – Output filename as <code class="docutils literal notranslate"><span class="pre">&lt;output_root&gt;/&lt;name&gt;&lt;ext&gt;</span></code>, where
+&lt;name&gt; can optionally include the map index, iteration index
+or output tag.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_files">
+<code class="sig-name descname">get_files</code><span class="sig-paren">(</span><em class="sig-param">data_root</em>, <em class="sig-param">data_subset='full/*0'</em>, <em class="sig-param">signal_subset='*'</em>, <em class="sig-param">noise_subset='*'</em>, <em class="sig-param">data_type='raw'</em>, <em class="sig-param">noise_type='stationary'</em>, <em class="sig-param">noise_type_sim=None</em>, <em class="sig-param">mask_type='hitsmask_tailored'</em>, <em class="sig-param">signal_type='r0p03'</em>, <em class="sig-param">signal_type_sim=None</em>, <em class="sig-param">signal_transfer_type=None</em>, <em class="sig-param">data_root2=None</em>, <em class="sig-param">data_subset2=None</em>, <em class="sig-param">foreground_type=None</em>, <em class="sig-param">template_type=None</em>, <em class="sig-param">sub_planck=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find all files for the given data root.  The data structure is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">data_root</span><span class="o">&gt;</span>
+    <span class="o">-&gt;</span> <span class="n">data_</span><span class="o">&lt;</span><span class="n">data_type</span><span class="o">&gt;</span>
+        <span class="o">-&gt;</span> <span class="n">full</span>
+            <span class="o">-&gt;</span> <span class="n">map_x1</span><span class="o">.</span><span class="n">fits</span>
+            <span class="o">...</span>
+            <span class="o">-&gt;</span> <span class="n">map_150</span><span class="o">.</span><span class="n">fits</span>
+            <span class="o">-&gt;</span> <span class="n">map_90</span><span class="o">.</span><span class="n">fits</span>
+        <span class="o">-&gt;</span> <span class="mi">1</span><span class="n">of4</span> <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">full</span><span class="p">)</span>
+        <span class="o">-&gt;</span> <span class="mi">2</span><span class="n">of4</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="o">-&gt;</span> <span class="mi">3</span><span class="n">of4</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="o">-&gt;</span> <span class="mi">4</span><span class="n">of4</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    <span class="o">-&gt;</span> <span class="n">signal_</span><span class="o">&lt;</span><span class="n">signal_type</span><span class="o">&gt;</span>
+       <span class="o">-&gt;</span> <span class="n">spec_signal_</span><span class="o">&lt;</span><span class="n">signal_type</span><span class="o">&gt;.</span><span class="n">dat</span>
+       <span class="o">-&gt;</span> <span class="n">full</span>
+          <span class="o">-&gt;</span> <span class="n">map_x1_0000</span><span class="o">.</span><span class="n">fits</span>
+          <span class="o">...</span>
+          <span class="o">-&gt;</span> <span class="n">map_90_</span><span class="c1">####.fits</span>
+       <span class="o">-&gt;</span> <span class="mi">1</span><span class="n">of4</span> <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">full</span><span class="p">)</span>
+       <span class="o">-&gt;</span> <span class="mi">2</span><span class="n">of4</span> <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">full</span><span class="p">)</span>
+       <span class="o">-&gt;</span> <span class="mi">3</span><span class="n">of4</span> <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">full</span><span class="p">)</span>
+       <span class="o">-&gt;</span> <span class="mi">4</span><span class="n">of4</span> <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">full</span><span class="p">)</span>
+    <span class="o">-&gt;</span> <span class="n">noise_</span><span class="o">&lt;</span><span class="n">noise_type</span><span class="o">&gt;</span> <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">signal_</span><span class="o">&lt;</span><span class="n">signal_type</span><span class="o">&gt;</span><span class="p">)</span>
+    <span class="o">-&gt;</span> <span class="n">masks_</span><span class="o">&lt;</span><span class="n">mask_type</span><span class="o">&gt;</span>
+        <span class="o">-&gt;</span> <span class="n">mask_map_x1</span><span class="o">.</span><span class="n">fits</span>
+        <span class="o">...</span>
+        <span class="o">-&gt;</span> <span class="n">mask_map_90</span><span class="o">.</span><span class="n">fits</span>
+        <span class="o">-&gt;</span> <span class="n">mask_map_150</span><span class="o">.</span><span class="n">fits</span>
+    <span class="o">-&gt;</span> <span class="n">foreground_</span><span class="o">&lt;</span><span class="n">foreground_type</span><span class="o">&gt;</span>
+        <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">signal_</span><span class="o">&lt;</span><span class="n">signal_type</span><span class="o">&gt;</span><span class="p">)</span>
+    <span class="o">-&gt;</span> <span class="n">templates_</span><span class="o">&lt;</span><span class="n">template_type</span><span class="o">&gt;</span>
+       <span class="o">-&gt;</span> <span class="n">halfmission</span><span class="o">-</span><span class="mi">1</span>
+          <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">data_</span><span class="o">&lt;</span><span class="n">data_type</span><span class="o">&gt;</span><span class="p">)</span>
+       <span class="o">-&gt;</span> <span class="n">halfmission</span><span class="o">-</span><span class="mi">2</span>
+          <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">data_</span><span class="o">&lt;</span><span class="n">data_type</span><span class="o">&gt;</span><span class="p">)</span>
+    <span class="o">-&gt;</span> <span class="n">reobs_planck</span> <span class="p">(</span><span class="k">if</span> <span class="n">sub_planck</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+       <span class="o">-&gt;</span> <span class="n">halfmission</span><span class="o">-</span><span class="mi">1</span>
+          <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">data_</span><span class="o">&lt;</span><span class="n">data_type</span><span class="o">&gt;</span><span class="p">)</span>
+       <span class="o">-&gt;</span> <span class="n">halfmission</span><span class="o">-</span><span class="mi">2</span>
+          <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">data_</span><span class="o">&lt;</span><span class="n">data_type</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="o">&lt;</span><span class="n">data_root2</span><span class="o">&gt;</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_root</strong> (<em>string</em>) – Top level path containing subdirectories for data, signal sims,
+noise sims, and masks.</p></li>
+<li><p><strong>data_subset</strong> (<em>string</em>) – Subset of maps to use for spectrum estimation.  This should be
+a string that is parseable using <code class="docutils literal notranslate"><span class="pre">glob</span></code> on the path
+<code class="docutils literal notranslate"><span class="pre">data_&lt;data_type&gt;/&lt;data_subset&gt;.fits</span></code>.  For example,
+<code class="docutils literal notranslate"><span class="pre">'full/*0'</span></code> will expand to read in the 150 GHz and 90GHz maps.
+Maps are then sorted in alphabetical order, and identified
+by their file tag, where each filename is <code class="docutils literal notranslate"><span class="pre">map_&lt;tag&gt;.fits</span></code>.</p></li>
+<li><p><strong>signal_subset</strong> (<em>string</em>) – Subset of map tags to use for spectrum estimation for signal
+sims.  This should be a string that is parseable using <code class="docutils literal notranslate"><span class="pre">glob</span></code>
+that is added onto the data_subset path to indicate which sims
+to use. For example, for all, use <code class="docutils literal notranslate"><span class="pre">'*'</span></code>. For the first 300 sims,
+use <code class="docutils literal notranslate"><span class="pre">'0[0-2]*'</span></code>.</p></li>
+<li><p><strong>noise_subset</strong> (<em>string</em>) – Subset of map tags to use for spectrum estimation for noise
+sims.  This should be a string that is parseable using <code class="docutils literal notranslate"><span class="pre">glob</span></code>
+that is added onto the data_subset path to indicate which sims
+to use. For example, for all, use <code class="docutils literal notranslate"><span class="pre">'*'</span></code>. For the first 300 sims,
+use <code class="docutils literal notranslate"><span class="pre">'0[0-2]*'</span></code>.</p></li>
+<li><p><strong>data_type</strong> (<em>string</em>) – The type of data to use.</p></li>
+<li><p><strong>noise_type</strong> (<em>string</em>) – The variant of noise simulation to use, e.g. ‘stationary’,
+‘variable’, etc.  The directory should contain the same number
+of simulations for each map tag.</p></li>
+<li><p><strong>noise_type_sim</strong> (<em>string</em>) – The variant of noise sims to use for sim_index fake data map.
+This enables having a different noise sim ensemble to use for
+sim_index run than the ensemble from which the noise is computed.</p></li>
+<li><p><strong>mask_type</strong> (<em>string</em>) – The variant of mask to use, e.g. ‘hitsmask’, etc.
+XXX: for the time being we assume a mask per file tag,
+rather than a mask per file in <code class="docutils literal notranslate"><span class="pre">data_&lt;data_type&gt;</span></code>.</p></li>
+<li><p><strong>signal_type</strong> (<em>string</em>) – The variant of signal simulation to use, typically identified
+by the input spectrum model used to generate it, e.g ‘r0p03’.</p></li>
+<li><p><strong>signal_type_sim</strong> (<em>string</em>) – The variant of signal sims to use for sim_index fake data map.
+This enables having a different noise sim ensemble to use for
+sim_index run than the ensemble from which the signal is computed.</p></li>
+<li><p><strong>signal_transfer_type</strong> (<em>string</em>) – The variant of signal simulation to use for transfer function
+calculation, typically identified by the input spectrum model
+used to generate it, e.g ‘r0p03’. This directory may also contain
+a copy of the input spectrum, to make sure that the correct
+spectrum is used to compute the transfer function.</p></li>
+<li><p><strong>data_subset2</strong> (<em>data_root2</em><em>,</em>) – The root and subset for a second set of data.
+If either of these is keywords is supplied, then the two data
+sets are treated as two halves of a null test.  In this case,
+XFaster computes the sum and difference spectra for each map
+tag in order to estimate a null spectrum.</p></li>
+<li><p><strong>foreground_type</strong> (<em>string</em>) – Tag for directory (foreground_&lt;foreground_type&gt;) where foreground
+sims are that should be added to the signal and noise sims
+when running in sim_index mode. Note: the same foreground sim
+map is used for each sim_index, despite signal and noise sims
+changing.</p></li>
+<li><p><strong>template_type</strong> (<em>string</em>) – Tag for directory (templates_&lt;template_type&gt;) containing templates
+(e.g. a foreground model) to be scaled by a scalar value per
+map tag and subtracted from the data. The directory contains one
+template per map tag.</p></li>
+<li><p><strong>sub_planck</strong> (<em>bool</em>) – If True, subtract reobserved Planck from maps. Properly uses half
+missions so no Planck autos are used. Useful for removing expected
+signal residuals from null tests. Maps are expected to be in
+reobs_planck directory</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>file_settings</strong> – A dictionary of file settings used throughout the run.
+These are stored in full as <code class="docutils literal notranslate"><span class="pre">&lt;output_root&gt;/files_&lt;output_tag&gt;.npz</span></code>,
+and a subset are added to the run configuration file
+<code class="docutils literal notranslate"><span class="pre">&lt;output_root&gt;/config_&lt;output_tag&gt;.txt</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_kernels">
+<code class="sig-name descname">get_kernels</code><span class="sig-paren">(</span><em class="sig-param">window_lmax=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_kernels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_kernels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute kernels using the mask cross-spectra.  This follows
+the polspice azimuthal approximation for the kernel computation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>window_lmax</strong> (<em>int</em>) – The window within which the kernel is computed about
+each ell bin.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is called at the ‘kernels’ checkpoint and loads or saves
+the following data keys to disk:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>kern, pkern, mkern, xkern<span class="classifier">(num_mask_corr, lmax+1, 2*lmax+1)</span></dt><dd><p>Temperature and polarization kernels</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_likelihood">
+<code class="sig-name descname">get_likelihood</code><span class="sig-paren">(</span><em class="sig-param">qb, inv_fish, map_tag=None, cls_shape=None, null_first_cmb=False, lmin=33, lmax=250, mcmc=True, alpha_tags=['95', '150'], beam_tags=['95', '150'], r_prior=[0, inf], alpha_prior=[0, inf], res_prior=None, beam_prior=[0, 1], betad_prior=[0, 1], dust_amp_prior=[0, inf], dust_ellind_prior=[0, 1], num_walkers=50, num_steps=20000, converge_criteria=0.01, reset_backend=None, file_tag=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Explore the likelihood, optionally with an MCMC sampler.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>qb</strong> (<em>OrderedDict</em>) – Bandpower parameters previously computed by Fisher iteration.</p></li>
+<li><p><strong>inv_fish</strong> (<em>array_like</em>) – Inverse Fisher matrix computed with the input qb’s.</p></li>
+<li><p><strong>map_tag</strong> (<em>string</em>) – If not None, then the likelihood is sampled using the spectra
+corresponding to the given map, rather over all possible
+combinations of map-map cross-spectra.  The input qb’s and inv_fish
+must have been computed with the same option.</p></li>
+<li><p><strong>cls_shape</strong> (<em>array_like</em>) – Input shape spectrum used to compute the qb’s.  Required if r_prior
+is None.</p></li>
+<li><p><strong>mcmc</strong> (<em>bool</em>) – If True, sample the likelihood using an MCMC sampler.  Remaining options
+determine parameter space and sampler configuration.</p></li>
+<li><p><strong>r_prior</strong> (<em>2-list</em><em> or </em><em>None</em>) – Prior upper and lower bound on tensor to scalar ratio.  If None, the
+fiducial shape spectrum is assumed, and the r parameter space is not
+varied.</p></li>
+<li><p><strong>alpha_prior</strong> (<em>2-list</em><em> or </em><em>None</em>) – Prior upper and lower bound on template coefficients.  If None, the
+alpha parameter space is not varied.</p></li>
+<li><p><strong>res_prior</strong> (<em>2-list</em><em> or </em><em>none</em>) – Prior upper and lower bound on residual qbs.  If None, the
+res parameter space is not varied.</p></li>
+<li><p><strong>beam_prior</strong> (<em>2-list</em><em> or </em><em>none</em>) – Prior mean and width of gaussian width on beam error (when
+multiplied by beam error envelope).  If None, the
+beam parameter space is not varied.</p></li>
+<li><p><strong>betad_prior</strong> (<em>2-list</em><em> or </em><em>none</em>) – Prior mean and width of gaussian width on dust spectral index.
+If None, the dust index parameter space is not varied.</p></li>
+<li><p><strong>dust_amp_prior</strong> (<em>2-list</em><em> or </em><em>none</em>) – Prior upper and lower bound on dust amplitude.
+If None, the dust amp parameter space is not varied.</p></li>
+<li><p><strong>dust_ellind_prior</strong> (<em>2-list</em><em> or </em><em>none</em>) – Prior mean and width of Gaussian prior on difference in dust ell
+power law index. If None, don’t vary from reference if fitting dust
+power spectrum model.</p></li>
+<li><p><strong>num_walkers</strong> (<em>int</em>) – Number of unique walkers with which to sample the parameter space.</p></li>
+<li><p><strong>num_steps</strong> (<em>int</em>) – Number of steps each walker should take in sampling the parameter space.</p></li>
+<li><p><strong>reset_backend</strong> (<em>bool</em>) – If True, clear the backend buffer before sampling.  If False,
+samples are appended to the existing buffer.  If not supplied,
+set to True if the checkpoint has been forced to be rerun.</p></li>
+<li><p><strong>file_tag</strong> (<em>string</em>) – If supplied, appended to the likelihood filename.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_map">
+<code class="sig-name descname">get_map</code><span class="sig-paren">(</span><em class="sig-param">filename</em>, <em class="sig-param">check_nside=True</em>, <em class="sig-param">cache=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load an input map from file or from an internal cache.  Maps are
+checked to make sure they all have a consistent size, and optionally
+cached to limit disk I/O.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>string</em>) – Path to file on disk.</p></li>
+<li><p><strong>check_nside</strong> (<em>bool</em>) – If True (default), make sure that all maps have the same <code class="docutils literal notranslate"><span class="pre">nside</span></code>,
+and that it satisfies <code class="docutils literal notranslate"><span class="pre">lmax</span> <span class="pre">&lt;=</span> <span class="pre">4</span> <span class="pre">*</span> <span class="pre">nside</span></code>.</p></li>
+<li><p><strong>cache</strong> (<em>bool</em>) – If True, cache the map in memory to avoid rereading from disk.
+Use this for maps that are used multiple times by the algoritm
+(e.g. masks).</p></li>
+<li><p><strong>remaining arguments are passed to healpy.read_map.</strong> (<em>Any</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>map</strong> – 2D map array containing 1 (T) or 3 (T/Q/U) maps.
+If the XFaster class was initialized with <code class="docutils literal notranslate"><span class="pre">pol</span> <span class="pre">=</span> <span class="pre">True</span></code>, this
+returns a 2D array of T/Q/U maps from the file. Otherwise a
+(1, npix) array is returned containing only the T map.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array_like</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_mask">
+<code class="sig-name descname">get_mask</code><span class="sig-paren">(</span><em class="sig-param">filename</em>, <em class="sig-param">cache=True</em>, <em class="sig-param">check_lims=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load an input mask from file or from an internal cache.
+See <code class="docutils literal notranslate"><span class="pre">XFaster.get_map</span></code> for details.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>string</em>) – Path to mask file on disk.</p></li>
+<li><p><strong>cache</strong> (<em>bool</em>) – This option defaults to True, since masks are typically used
+for all data and sims for a given map tag.</p></li>
+<li><p><strong>check_lims</strong> (<em>bool</em>) – If True, values in the mask outside of [0,1] are fixed to
+these limits.</p></li>
+<li><p><strong>remaining arguments are passed to XFaster.get_map.</strong> (<em>Any</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>mask</strong> – 2D array containing 1 (T) or 2 (T/P) maps;  If the XFaster class
+was initialized with <code class="docutils literal notranslate"><span class="pre">pol_mask</span> <span class="pre">=</span> <span class="pre">True</span></code>, this returns a 2D array
+containing both T and P masks.  Otherwise, a (1, npix) is
+returned containing only the T map.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array_like</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_mask_weights">
+<code class="sig-name descname">get_mask_weights</code><span class="sig-paren">(</span><em class="sig-param">apply_gcorr=False</em>, <em class="sig-param">reload_gcorr=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_mask_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_mask_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute cross spectra of the masks for each data map.</p>
+<p>Mode counting matrices are also computed and stored for each mask.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>apply_gcorr</strong> (<em>bool</em>) – If True, a correction factor is applied to the g (mode counting)
+matrix.  The correction factor should have been pre-computed for
+each map tag.</p></li>
+<li><p><strong>reload_gcorr</strong> (<em>bool</em>) – If True, reload the gcorr file from the masks directory. Useful when
+iteratively solving for the correction terms.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is called at the ‘masks’ checkpoint, loads or saves a
+data dictionary with the following keys:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>wls<span class="classifier">(num_map_corr, num_pol_mask_corr, lmax + 1)</span></dt><dd><p>mask1-x-mask2 mask cross spectra for every mask pair</p>
+</dd>
+<dt>fsky, w1, w2, w4<span class="classifier">(num_map_corr, num_pol_mask_corr)</span></dt><dd><p>sky fraction and weighted modes per mask product</p>
+</dd>
+<dt>gmat<span class="classifier">(num_maps * num_pol_mask_corr, ) * 2</span></dt><dd><dl class="simple">
+<dt>mode-counting matrix, computed from</dt><dd><p>g = fsky * w2 ** 2 / w4</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+<p>Where the dimensions of each item are determined from:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>num_map_corr<span class="classifier">Nmap * (Nmap + 1) / 2</span></dt><dd><p>number of map-map correlations</p>
+</dd>
+<dt>num_pol_mask_corr<span class="classifier">3 (TT, TP, PP) if pol else 1 (TT)</span></dt><dd><p>number of mask spectrum correlations</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_masked_data">
+<code class="sig-name descname">get_masked_data</code><span class="sig-paren">(</span><em class="sig-param">template_alpha=None</em>, <em class="sig-param">sub_planck=False</em>, <em class="sig-param">sub_hm_noise=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_masked_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_masked_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute cross spectra of the data maps.</p>
+<p>Map and mask files must have been loaded in by calling the <code class="docutils literal notranslate"><span class="pre">get_files</span></code>
+method with the appropriate file selection options.</p>
+<p>If only one dataset is selected, spectra are computed for every
+combination of pairs of data maps.  This results in N * (N + 1) / 2
+cross spectra for N maps.  A unique mask is used for each input map.</p>
+<p>If two datasets are selected, then sum and difference cross-spectra are
+computed by summing and differencing the two datasets.  A unique mask is
+used for each map in the first dataset, and the same mask is applied to
+the corresponding map in the second dataset, so that both halves are
+masked identically.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">template_alpha</span></code> is supplied, the values given are applied to an
+appropriate template, and the result is subtracted from the data alms
+with map tags in the dictionary.  Map alms are cached to speed up
+processing, if this method is called repeatedly with different values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>template_alpha</strong> (<em>dict</em>) – Dictionary of template scaling factors to apply to foreground
+templates to be subtracted from the data.  Keys should match
+original map tags in the data set.</p></li>
+<li><p><strong>sub_planck</strong> (<em>bool</em>) – If True, subtract reobserved Planck from maps. Properly uses half
+missions so no Planck autos are used. Useful for removing expected
+signal residuals from null tests.</p></li>
+<li><p><strong>sub_hm_noise</strong> (<em>bool</em>) – If True, subtract average of Planck ffp10 noise crosses to debias
+template-cleaned spectra.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is called at the ‘data’ checkpoint, loads or saves a data
+dictionary with the following keys:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>cls_data<span class="classifier">OrderedDict</span></dt><dd><p>map1-x-map2 cross spectra for every map pair. This contains the
+sum cross spectra if constructing a null test, or the
+template-subtracted cross spectra if <code class="docutils literal notranslate"><span class="pre">template_alpha</span></code> is
+supplied.</p>
+</dd>
+<dt>cls_data_null<span class="classifier">OrderedDict</span></dt><dd><p>(map1a-map1b)-x-(map2a-map2b) difference cross spectra
+for every map pair, if computing a null test</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_masked_fake_data">
+<code class="sig-name descname">get_masked_fake_data</code><span class="sig-paren">(</span><em class="sig-param">fake_data_r=None</em>, <em class="sig-param">fake_data_template=None</em>, <em class="sig-param">sim_index=None</em>, <em class="sig-param">template_alpha=None</em>, <em class="sig-param">noise_type=None</em>, <em class="sig-param">do_noise=True</em>, <em class="sig-param">do_signal=True</em>, <em class="sig-param">save_data=False</em>, <em class="sig-param">sub_hm_noise=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_masked_fake_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_masked_fake_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>In memory, make a fake data map with signal, noise, and
+foregrounds.
+Signal maps are signal_scalar + fake_data_r * signal_tensor
+where scalar maps are assumed to be in signal_r0 directory
+and tensor maps are assumed to be in signal_r0tens directory.
+sim_index is used to determine which sims. Noise maps taken
+from usual noise directory. Templates read read from
+templates_fake_data_template/halfmission-1.</p>
+<p>This function doesn’t write anything to disk. It just constructs
+the maps and computes the Cls and replaces data cls with them</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_masked_sims">
+<code class="sig-name descname">get_masked_sims</code><span class="sig-paren">(</span><em class="sig-param">ensemble_mean=False</em>, <em class="sig-param">ensemble_median=False</em>, <em class="sig-param">sim_index=None</em>, <em class="sig-param">transfer=False</em>, <em class="sig-param">do_noise=True</em>, <em class="sig-param">sims_add_alms=True</em>, <em class="sig-param">lmin=2</em>, <em class="sig-param">qb_file=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_masked_sims"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_masked_sims" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute average signal and noise spectra for a given
+ensemble of maps.  The same procedure that is used for computing
+data cross spectra is used for each realization in the sim
+ensemble, and only the average spectra for all realizations
+are stored.</p>
+<p>See <code class="docutils literal notranslate"><span class="pre">get_masked_data</span></code> for more details on how cross spectra
+are computed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ensemble_mean</strong> (<em>bool</em>) – If true, the mean signal + noise spectrum is used in place
+of input data.  This is useful for testing the behavior of
+the estimator and mapmaker independently of the data.</p></li>
+<li><p><strong>ensemble_median</strong> (<em>bool</em>) – If true, the median signal + noise spectrum is used in place
+of input data.  This is useful for testing the behavior of
+the estimator and mapmaker independently of the data.</p></li>
+<li><p><strong>sim_index</strong> (<em>int</em>) – If not None, substitute the sim_index S+N alms for the observed alms</p></li>
+<li><p><strong>sims_add_alms</strong> (<em>bool</em>) – If True and sim_index is not None, add sim alms instead of sim Cls
+to include signal and noise correlations</p></li>
+<li><p><strong>qb_file</strong> (<em>string</em>) – Pointer to a bandpowers.npz file in the output directory. If used
+in sim_index mode, the noise sim read from disk will be corrected
+by the residual qb values stored in qb_file.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is called at the ‘sims’ checkpoint, and loads or saves
+a data dictionary with the following entries:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cls_signal</span> <span class="p">:</span> <span class="o">&lt;</span><span class="n">same</span> <span class="n">shape</span> <span class="k">as</span> <span class="n">cls_data</span><span class="o">&gt;</span>
+<span class="n">cls_signal_null</span> <span class="p">:</span> <span class="o">&lt;</span><span class="n">same</span> <span class="k">as</span> <span class="n">cls_data</span><span class="o">&gt;</span>
+    <span class="n">Average</span> <span class="n">signal</span> <span class="n">spectra</span> <span class="p">(</span><span class="nb">sum</span> <span class="ow">and</span> <span class="n">difference</span> <span class="k">if</span> <span class="n">computing</span>
+    <span class="n">a</span> <span class="n">null</span> <span class="n">test</span><span class="p">)</span><span class="o">.</span>
+<span class="n">cls_noise</span> <span class="p">:</span> <span class="o">&lt;</span><span class="n">same</span> <span class="n">shape</span> <span class="k">as</span> <span class="n">cls_data</span><span class="o">&gt;</span>
+<span class="n">cls_noise_null</span> <span class="p">:</span> <span class="o">&lt;</span><span class="n">same</span> <span class="k">as</span> <span class="n">cls_data</span><span class="o">&gt;</span>
+    <span class="n">Average</span> <span class="n">null</span> <span class="n">spectra</span> <span class="p">(</span><span class="nb">sum</span> <span class="ow">and</span> <span class="n">difference</span> <span class="k">if</span> <span class="n">computing</span>
+    <span class="n">a</span> <span class="n">null</span> <span class="n">test</span><span class="p">)</span><span class="o">.</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_masked_template_noise">
+<code class="sig-name descname">get_masked_template_noise</code><span class="sig-paren">(</span><em class="sig-param">template_type</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_masked_template_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_masked_template_noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute hm1, hm2, and hm1xhm2 template noise spectra from
+sim ensemble</p>
+<p class="rubric">Notes</p>
+<p>This method is called at the ‘template_noise’ checkpoint,
+and loads or saves a data dictionary with the following entries:</p>
+<blockquote>
+<div><p>cls_tnoise_hm1 : &lt;same shape as cls_data&gt;
+cls_tnoise_hm2 : &lt;same shape as cls_data&gt;
+cls_tnoise_hm1xhm2 : &lt;same shape as cls_data&gt;</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_model_spectra">
+<code class="sig-name descname">get_model_spectra</code><span class="sig-paren">(</span><em class="sig-param">qb</em>, <em class="sig-param">cbl</em>, <em class="sig-param">delta=True</em>, <em class="sig-param">res=True</em>, <em class="sig-param">cls_noise=None</em>, <em class="sig-param">cond_noise=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_model_spectra"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_model_spectra" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute unbinned model spectra from qb amplitudes and a Cbl matrix.
+Requires pre-loaded bin definitions using <code class="docutils literal notranslate"><span class="pre">get_bin_def</span></code> or
+<code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>.</p>
+<p>This method is used internally by <code class="docutils literal notranslate"><span class="pre">fisher_calc</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>qb</strong> (<em>dict of arrays</em>) – Array of bandpowers for every spectrum bin.</p></li>
+<li><p><strong>cbl</strong> (<em>dict</em>) – Cbl dict as computed by <code class="docutils literal notranslate"><span class="pre">bin_cl_template</span></code>.</p></li>
+<li><p><strong>delta</strong> (<em>bool</em>) – If True, evaluate the foreground model at the spectral
+index offset by qb[‘delta_beta’]</p></li>
+<li><p><strong>res</strong> (<em>bool</em>) – If True, include the residual noise model terms.</p></li>
+<li><p><strong>cls_noise</strong> (<em>OrderedDict</em>) – If supplied, the noise spectrum is applied to the model spectrum.</p></li>
+<li><p><strong>cond_noise</strong> (<em>float</em>) – Conditioning noise amplitude to add to TT, EE and BB autospectra,
+to improve convergence of the fisher iterations.  The noise model
+is constant cond_noise for EE, BB and 10x that for TT.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>cls</strong> – Model spectra.  Keyed by spectrum type, e.g. ‘total_xx’ for the
+total model spectrom, ‘fg_xx’ for the foreground terms, ‘res_xx’ for
+the residual (noise) terms, where ‘xx’ is one of the six power
+spectrum components (tt, ee, bb, te, eb, tb).  Each entry in the
+dictionary is itself a dictionary keyed by map cross, e.g.
+‘map1:map1’ for an autospectrum term, ‘map1:map2’ for a cross
+spectrum, etc, and the map names are the same as those in the
+<code class="docutils literal notranslate"><span class="pre">map_tags</span></code> attribute.  Each individual spectrum is an array of
+length <code class="docutils literal notranslate"><span class="pre">lmax</span> <span class="pre">+</span> <span class="pre">1</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict of arrays</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_signal_shape">
+<code class="sig-name descname">get_signal_shape</code><span class="sig-paren">(</span><em class="sig-param">filename=None</em>, <em class="sig-param">r=None</em>, <em class="sig-param">component=None</em>, <em class="sig-param">flat=None</em>, <em class="sig-param">signal_mask=None</em>, <em class="sig-param">transfer=False</em>, <em class="sig-param">save=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_signal_shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_signal_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a shape spectrum for input to the Fisher iteration algorithm.</p>
+<p>If the spectrum is used as input to <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>, it must match
+the spectrum used to generate the simulations, in order to compute
+the correct transfer function.</p>
+<p>Alternatively, the spectrum can be computed using CAMB for arbitrary
+values of <code class="docutils literal notranslate"><span class="pre">r</span></code>, typically used to compute the <code class="docutils literal notranslate"><span class="pre">r</span></code> likelihood once
+the bandpowers have been computed.</p>
+<p>Finally, the spectrum can be flat in ell^2 Cl.  This is typically
+used as the input shape for computing bandpowers for a null test.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>string</em>) – Filename for a spectrum on disk.  If None, and <code class="docutils literal notranslate"><span class="pre">r</span></code> is None and
+<code class="docutils literal notranslate"><span class="pre">flat</span></code> is False, this will search for a spectrum stored in
+<code class="docutils literal notranslate"><span class="pre">signal_&lt;signal_type&gt;/spec_signal_&lt;signal_type&gt;.dat</span></code>.
+Otherwise, if the filename is a relative path and not found,
+the config directory is searched.</p></li>
+<li><p><strong>r</strong> (<em>float</em>) – If supplied and <code class="docutils literal notranslate"><span class="pre">flat</span></code> is False, a spectrum is computed using
+CAMB for the given <code class="docutils literal notranslate"><span class="pre">r</span></code> value.  Overrides <code class="docutils literal notranslate"><span class="pre">filename</span></code>.</p></li>
+<li><p><strong>component</strong> (<em>'scalar'</em><em>, </em><em>'tensor'</em><em>, </em><em>'fg'</em>) – If ‘scalar’, and <code class="docutils literal notranslate"><span class="pre">r</span></code> is not None, return just the r=0 scalar terms
+in the signal model.  If ‘tensor’, return just the tensor component
+scaled by the input <code class="docutils literal notranslate"><span class="pre">r</span></code> value. If ‘fg’, return just fg term</p></li>
+<li><p><strong>flat</strong> (<em>float</em>) – If given, a spectrum that is flat in ell^2 Cl is returned, with
+amplitude given by the supplied value. Overrides all other options.</p></li>
+<li><p><strong>signal_mask</strong> (<em>str array</em>) – Include only these spectra, others set to zero.
+Options: TT, EE, BB, TE, EB, TB</p></li>
+<li><p><strong>transfer</strong> (<em>bool</em>) – If True, this is a transfer function run. If <code class="docutils literal notranslate"><span class="pre">filename</span></code> is None
+and <code class="docutils literal notranslate"><span class="pre">r</span></code> is None and <code class="docutils literal notranslate"><span class="pre">flat</span></code> is False, will search for a spectrum
+stored in
+<code class="docutils literal notranslate"><span class="pre">signal_&lt;signal_transfer_type&gt;/spec_signal_&lt;signal_transfer_type&gt;.dat</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>cls</strong> – Dictionary keyed by spectrum (cmb_tt, cmb_ee, … , fg), each
+entry containing a vector of length 2 * lmax + 1</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>OrderedDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.get_transfer">
+<code class="sig-name descname">get_transfer</code><span class="sig-paren">(</span><em class="sig-param">cls_shape</em>, <em class="sig-param">converge_criteria=0.005</em>, <em class="sig-param">iter_max=200</em>, <em class="sig-param">save_iters=False</em>, <em class="sig-param">fix_bb_xfer=False</em>, <em class="sig-param">tophat_bins=False</em>, <em class="sig-param">return_cls=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_transfer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_transfer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the transfer function from signal simulations created using
+the same spectrum as the input shape.</p>
+<p>This raises a ValueError if a negative transfer function amplitude
+is found.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cls_shape</strong> (<em>OrderedDict</em>) – Input shape spectrum.  Must match the input spectrum used to
+generate the signal simulations.</p></li>
+<li><p><strong>converge_criteria</strong> (<em>float</em>) – Maximum fractional change in qb that indicates convergence and
+stops iteration.</p></li>
+<li><p><strong>iter_max</strong> (<em>int</em>) – Maximum number of iterations to perform.  if this limit is
+reached, a warning is issued.</p></li>
+<li><p><strong>save_iters</strong> (<em>bool</em>) – If True, the output data from each Fisher iteration are stored
+in an individual npz file.</p></li>
+<li><p><strong>fix_bb_xfer</strong> (<em>bool</em>) – If True, after transfer functions have been calculated, impose
+the BB xfer is exactly equal to the EE transfer.</p></li>
+<li><p><strong>tophat_bins</strong> (<em>bool</em>) – If True, use uniform weights within each bin rather than any
+ell-based weighting.</p></li>
+<li><p><strong>return_cls</strong> (<em>bool</em>) – If True, return C_l spectrum rather than D_l spectrum</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>qb_transfer</strong> – Binned transfer function for each map</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>OrderedDict</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is called at the ‘transfer’ checkpoint, and loads or saves
+a data dictionary named ‘transfer_all’ with the following entries:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>nbins<span class="classifier">int</span></dt><dd><p>number of bins</p>
+</dd>
+<dt>bin_def<span class="classifier">(nbins, 3)</span></dt><dd><p>bin definition array (see <code class="docutils literal notranslate"><span class="pre">get_bin_def</span></code>)</p>
+</dd>
+<dt>qb_transfer<span class="classifier">(num_maps, nbins)</span></dt><dd><p>binned transfer function for each map</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Additionally the final output of <code class="docutils literal notranslate"><span class="pre">fisher_iterate</span></code> is stored
+in a dictionary called <code class="docutils literal notranslate"><span class="pre">transfer_map&lt;idx&gt;</span></code> for each map.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.init_log">
+<code class="sig-name descname">init_log</code><span class="sig-paren">(</span><em class="sig-param">level='notice'</em>, <em class="sig-param">filename=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.init_log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.init_log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the logger from the input keyword arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>level</strong> (<em>string</em><em>, </em><em>optional</em><em>, </em><em>default: &quot;notice&quot;</em>) – Verbosity level.
+Options are “critical”, “error”, “warning”, “notice”, “info”, “debug”, “all”.</p></li>
+<li><p><strong>filename</strong> (<em>string</em><em>, </em><em>optional</em>) – Logging output filename.  Default: None (print to sys.stdout)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.load_data">
+<code class="sig-name descname">load_data</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">checkpoint</em>, <em class="sig-param">fields=None</em>, <em class="sig-param">to_attrs=True</em>, <em class="sig-param">shape=None</em>, <em class="sig-param">shape_ref=None</em>, <em class="sig-param">alt_name=None</em>, <em class="sig-param">value_ref=None</em>, <em class="sig-param">optional=None</em>, <em class="sig-param">**file_opts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.load_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.load_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load xfaster data from an output npz file on disk.</p>
+<p>This method is called throughout the code at various checkpoints.  If
+the data exist on disk, they are loaded and returned.  If the data are
+missing or otherwise incompatible, they are recomputed by the calling
+method, and trigger all subsequent data to also be recomputed.  Data
+handling is described in the <code class="docutils literal notranslate"><span class="pre">Notes</span></code> section for methods that use this
+functionality.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>string</em>) – The name of the data set.  The filename is contructed from this
+as <code class="docutils literal notranslate"><span class="pre">&lt;output_root&gt;/&lt;name&gt;_&lt;output_tag&gt;.npz</span></code>.  If the file is not
+found then the data are recomputed.</p></li>
+<li><p><strong>checkpoint</strong> (<em>string</em>) – The name of the checkpoint to which this dataset applies.
+If XFaster is initialized at this checkpoint, or if any of the
+file checks enabled with the following options fails, all
+quantities from this point forward are recomputed.</p></li>
+<li><p><strong>fields</strong> (<em>list of strings</em>) – List of fields that should be present in the data file.
+If any are not found, the entire dataset and all subsequent
+step are recomputed.</p></li>
+<li><p><strong>to_attrs</strong> (<em>bool</em><em> or </em><em>list of bools</em><em> or </em><em>strings</em>) – If True, all items in <code class="docutils literal notranslate"><span class="pre">fields</span></code> are stored as attributes of the
+parent object.  If A list of booleans, must have the same length
+as <code class="docutils literal notranslate"><span class="pre">fields</span></code>; any field for which this list item is True is then
+stored as an attribute of the object.  If any list item is a string,
+then the corresponding field is stored as an attribute with this
+new name.</p></li>
+<li><p><strong>shape</strong> (<em>tuple of ints</em>) – If set, the field specified by <code class="docutils literal notranslate"><span class="pre">shape_ref</span></code> is checked to have this
+shape.  If this check fails, then all data are recomputed.</p></li>
+<li><p><strong>shape_ref</strong> (<em>string</em>) – The reference field whose shape is checked against <code class="docutils literal notranslate"><span class="pre">shape</span></code>.
+If None and <code class="docutils literal notranslate"><span class="pre">shape</span></code> is set, use the first field in <code class="docutils literal notranslate"><span class="pre">fields</span></code>.</p></li>
+<li><p><strong>options are passed to get_filename for constructing the</strong> (<em>Remaining</em>) – </p></li>
+<li><p><strong>file path.</strong> (<em>output</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>data</strong> – If all checks above succeed, the requested data are returned.
+If any tests fail, None is returned, and all subsequent calls
+to <code class="docutils literal notranslate"><span class="pre">load_data</span></code> also return None to trigger recomputing all data
+that may depend on this dataset.
+The output dictionary has the additional key ‘output_file’ which
+is set to the path to the data file on disk.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.load_map_config">
+<code class="sig-name descname">load_map_config</code><span class="sig-paren">(</span><em class="sig-param">filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.load_map_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.load_map_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the input map configuration file.</p>
+<p>The configuration file should be a file that is readable using
+<code class="docutils literal notranslate"><span class="pre">ConfigParser</span></code>.  It must contain at least a single section called
+“frequencies”, with keys for each map tag that may be used by the
+algorithm.  If using the harmonic-domain foreground fitting portions of
+the algorith, the value of each key should be the observing frequency in
+GHz that is appropriate for each tag.  Otherwise, these frequencies can
+be any floating point value.</p>
+<p>Other optional sections include:</p>
+<p><strong>beam</strong>:
+Beam window specifications for each of the tags in “frequencies”.  The
+“beam_product” key should be a path to a .npz file containing a
+dictionary of beam windows keyed by tag.  The “beam_product_error” key
+should be a path to a similar dictionary containing fraction beam error
+envelopes, also keyed by tag.  See <code class="docutils literal notranslate"><span class="pre">get_beams</span></code> or <code class="docutils literal notranslate"><span class="pre">get_beam_errors</span></code>
+for more details.</p>
+<p><strong>fwhm</strong>:
+If using a Gaussian beam model, this section should contain a list of
+FWHM in arcmin for each such tag in “frequencies”.  Keys missing here
+should be present in the beam product file.</p>
+<p><strong>fwhm_err</strong>:
+If using a Gaussian beam model, this section should contain a list of
+fractional errors on the FWHM for each such tag in “frequencies”.  Keys
+missing here should be present in the beam error product file.</p>
+<p><strong>transfer</strong>:
+If present, this section should contain each of the keys in
+“frequencies”, with the value set to “true” if a transfer function
+should be computed for the tag, and “false” otherwise (in which case the
+transfer function will be set to unity for all bins).  This option is
+useful for including, e.g. optimally weighted Planck maps with no
+transfer function in a joint analysis.  If not supplied, it is assumed
+that a transfer function should be computed for every tag in
+“frequencies”.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.log">
+<code class="sig-name descname">log</code><span class="sig-paren">(</span><em class="sig-param">message</em>, <em class="sig-param">level=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log a message with the given logging level.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>level</strong> (<em>string</em><em>, </em><em>default : None</em>) – Logging level.  Must be one of “critical”, “error”, “warning”,
+“notice”, “info”, “debug”, “all”.  If not supplied, “all” is assumed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.map2alm">
+<code class="sig-name descname">map2alm</code><span class="sig-paren">(</span><em class="sig-param">m</em>, <em class="sig-param">pol=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.map2alm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.map2alm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for healpy.map2alm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>m</strong> (<em>array_like</em>) – Masked input map for which Alms are computed.</p></li>
+<li><p><strong>pol</strong> (<em>bool</em>) – If None, this is set using the value with which the object
+was initialized.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>alms</strong> – Alms for the input map, computed using the equivalent of
+<code class="docutils literal notranslate"><span class="pre">healpy.map2alm(m,</span> <span class="pre">lmax,</span> <span class="pre">pol=self.pol,</span> <span class="pre">use_weights=True)</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array_like</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.save_config">
+<code class="sig-name descname">save_config</code><span class="sig-paren">(</span><em class="sig-param">cfg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.save_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.save_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save a configuration file for the current run on disk.
+This method is used by <code class="docutils literal notranslate"><span class="pre">xfaster_run</span></code> to store the config
+in <code class="docutils literal notranslate"><span class="pre">&lt;output_root&gt;/config_&lt;output_tag&gt;.txt</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.save_data">
+<code class="sig-name descname">save_data</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">from_attrs=[]</em>, <em class="sig-param">**data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.save_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.save_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save xfaster data to an output npz file on disk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>string</em>) – The name of the data set.  The filename is contructed from this as
+<code class="docutils literal notranslate"><span class="pre">&lt;output_root&gt;/&lt;name&gt;_&lt;output_tag&gt;.npz</span></code>.  If the file is not found
+then the data are recomputed.</p></li>
+<li><p><strong>from_attrs</strong> (<em>list of strings</em>) – A list of object attributes which should be stored in the data file.</p></li>
+<li><p><strong>map_tag</strong> (<em>str</em>) – Load the dataset corresponding to this map.
+See <code class="docutils literal notranslate"><span class="pre">get_filename</span></code> for documentation.</p></li>
+<li><p><strong>iter_index</strong> (<em>int</em>) – Load the dataset corresponding to this iteration index.
+See <code class="docutils literal notranslate"><span class="pre">get_filename</span></code> for documentation.</p></li>
+<li><p><strong>bp_opts</strong> (<em>bool</em>) – Format output bandpowers file.  See <code class="docutils literal notranslate"><span class="pre">get_filename</span></code> for documentation.</p></li>
+<li><p><strong>remaining keyword arguments are added to the output dictionary.</strong> (<em>Any</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>data</strong> – A copy of the data dictionary that was stored to disk.
+The output dictionary has the additional key ‘output_file’ which
+is set to the path to the data file on disk.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.warn">
+<code class="sig-name descname">warn</code><span class="sig-paren">(</span><em class="sig-param">message</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.warn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.warn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log a warning message</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="xfaster.xfaster_class.XFasterWarning">
+<em class="property">exception </em><code class="sig-prename descclassname">xfaster.xfaster_class.</code><code class="sig-name descname">XFasterWarning</code><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFasterWarning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFasterWarning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Warning generated by the XFaster algorithm.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-xfaster.xfaster_exec">
+<span id="xfaster-exec"></span><h2>xfaster_exec<a class="headerlink" href="#module-xfaster.xfaster_exec" title="Permalink to this headline">¶</a></h2>
+<p>The module containing the master function that performs all the algorithm steps in order, and optionally
+submits the job to a grid system</p>
+<dl class="function">
+<dt id="xfaster.xfaster_exec.xfaster_run">
+<code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">xfaster_run</code><span class="sig-paren">(</span><em class="sig-param">config='config_example.ini', pol=True, pol_mask=True, bin_width=25, lmin=2, lmax=500, multi_map=True, likelihood=False, mcmc=True, output_root=None, output_tag=None, data_root='all', data_subset='full/*0', signal_subset='*', noise_subset='*', mask_type='hitsmask_tailored', data_type='raw', noise_type='stationary', signal_type='r0p03', signal_transfer_type=None, signal_spec=None, signal_transfer_spec=None, model_r=None, data_root2=None, data_subset2=None, residual_fit=True, foreground_fit=False, bin_width_fg=30, res_specs=None, bin_width_res=25, weighted_bins=False, ensemble_mean=False, ensemble_median=False, sim_index=None, sims_add_alms=True, converge_criteria=0.005, iter_max=200, tbeb=False, fix_bb_xfer=False, window_lmax=None, like_lmin=33, like_lmax=250, like_profiles=False, like_profile_sigma=3.0, like_profile_points=100, pixwin=True, save_iters=False, verbose='notice', debug=False, checkpoint=None, add_log=False, cond_noise=1e-05, cond_criteria=5000.0, null_first_cmb=False, ref_freq=359.7, beta_ref=1.54, delta_beta_prior=0.5, noise_type_sim=None, signal_type_sim=None, foreground_type=None, template_type=None, template_alpha_tags=['95', '150'], template_alpha=[0.015, 0.043], sub_hm_noise=True, tophat_bins=False, return_cls=False, apply_gcorr=False, reload_gcorr=False, qb_file=None, like_alpha_tags=['95', '150'], alpha_prior=[-inf, inf], r_prior=[-inf, inf], res_prior=None, like_beam_tags=['95', '150'], beam_prior=None, betad_prior=None, dust_amp_prior=None, dust_ellind_prior=None, mcmc_walkers=50, like_converge_criteria=0.01, bp_tag=None, like_tag=None, sub_planck=False, fake_data_r=None, fake_data_template=None, do_fake_signal=True, do_fake_noise=True, save_fake_data=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#xfaster_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.xfaster_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function for running the XFaster algorithm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>string</em>) – Configuration file. If path doesn’t exist, assumed
+to be in xfaster/config/&lt;config&gt;</p></li>
+<li><p><strong>pol</strong> (<em>bool</em>) – If True, polarization spectra are computed.</p></li>
+<li><p><strong>pol_mask</strong> (<em>bool</em>) – If True, a separate mask is applied for Q/U maps.</p></li>
+<li><p><strong>bin_width</strong> (<em>int</em><em> or </em><em>array_like of 6 ints</em>) – Width of each ell bin for each of the six output spectra
+(TT, EE, BB, TE, EB, TB).  EE/BB bins should be the same
+in order to handle mixing correctly.</p></li>
+<li><p><strong>lmin</strong> (<em>int</em>) – Minimum ell for which to compute spectra.</p></li>
+<li><p><strong>lmax</strong> (<em>int</em>) – Maximum ell for which to compute spectra.</p></li>
+<li><p><strong>weighted_bins</strong> (<em>bool</em>) – If True, use an lfac-weighted binning operator to construct Cbls.
+By default, a flat binning operator is used.</p></li>
+<li><p><strong>multi_map</strong> (<em>bool</em>) – If True, compute all cross-spectra between maps</p></li>
+<li><p><strong>likelihood</strong> (<em>bool</em>) – If True, compute the r likelihood</p></li>
+<li><p><strong>mcmc</strong> (<em>bool</em>) – If True, sample the r likelihood using an MCMC sampler</p></li>
+<li><p><strong>output_root</strong> (<em>string</em>) – Directory in which to store output files</p></li>
+<li><p><strong>output_tag</strong> (<em>string</em>) – File tag for output files</p></li>
+<li><p><strong>data_root</strong> (<em>string</em>) – Root directory where all input files are stored</p></li>
+<li><p><strong>data_subset</strong> (<em>string</em>) – The subset of the data maps to include from each data split
+Must be a glob-parseable string</p></li>
+<li><p><strong>signal_subset</strong> (<em>string</em>) – The subset of the signal sims to include
+Must be a glob-parseable string</p></li>
+<li><p><strong>noise_subset</strong> (<em>string</em>) – The subset of the noise sims to include
+Must be a glob-parseable string</p></li>
+<li><p><strong>data_type</strong> (<em>string</em>) – The data type to use</p></li>
+<li><p><strong>noise_type</strong> (<em>string</em>) – The variant of noise sims to use</p></li>
+<li><p><strong>noise_type_sim</strong> (<em>string</em>) – The variant of noise sims to use for sim_index fake data map.
+This enables having a different noise sim ensemble to use for
+sim_index run than the ensemble from which the noise is computed.</p></li>
+<li><p><strong>mask_type</strong> (<em>string</em>) – The variant of mask to use</p></li>
+<li><p><strong>signal_type</strong> (<em>string</em>) – The variant of signal sims to use</p></li>
+<li><p><strong>signal_type_sim</strong> (<em>string</em>) – The variant of signal sims to use for sim_index face data map.
+This enables having a different noise sim ensemble to use for
+sim_index run than the ensemble from which the signal is computed.</p></li>
+<li><p><strong>signal_transfer_type</strong> (<em>string</em>) – The variant of signal sims to use for transfer function</p></li>
+<li><p><strong>signal_spec</strong> (<em>string</em>) – The spectrum data file to use for estimating bandpowers.  If not
+supplied, will search for <code class="docutils literal notranslate"><span class="pre">spec_signal_&lt;signal_type&gt;.dat</span></code> in the signal
+sim directory.</p></li>
+<li><p><strong>signal_transfer_spec</strong> (<em>string</em>) – The spectrum data file used to generate signal sims.  If not
+supplied, will search for <code class="docutils literal notranslate"><span class="pre">spec_signal_&lt;signal_type&gt;.dat</span></code> in the
+transfer signal sim directory. Used for computing transfer functions.</p></li>
+<li><p><strong>model_r</strong> (<em>float</em>) – The <code class="docutils literal notranslate"><span class="pre">r</span></code> value to use to compute a spectrum for estimating bandpowers.
+Overrides <code class="docutils literal notranslate"><span class="pre">signal_spec</span></code>.</p></li>
+<li><p><strong>data_subset2</strong> (<em>data_root2</em><em>,</em>) – If either of these is set, XFaster performs a null test between these
+two data halves.</p></li>
+<li><p><strong>residual_fit</strong> (<em>bool</em>) – True is residual shape is being fit to the power. The residual shape
+can be split into a number of bins -&gt; nbins_res. The residual bins can
+be marginalised over in the final output.</p></li>
+<li><p><strong>foreground_fit</strong> (<em>bool</em>) – Include foreground residuals in the residual bins to be fit</p></li>
+<li><p><strong>res_specs</strong> (<em>list of strings</em>) – Spectra to include in noise residual fitting.  List values can be any of
+the cross spectra TT, EE, BB, TE, EB, TB, or EEBB for fitting EE and BB
+residuals simultaneously.  If not supplied, this defaults to EEBB for
+polarized maps, or TT for unpolarized maps.</p></li>
+<li><p><strong>bin_width_res</strong> (<em>int</em>) – Width of each bin to use for residual noise fitting</p></li>
+<li><p><strong>ensemble_mean</strong> (<em>bool</em>) – If True, substitute S+N ensemble means for Cls to test biasing</p></li>
+<li><p><strong>ensemble_median</strong> (<em>bool</em>) – If True, substitute S+N ensemble median for Cls to test biasing</p></li>
+<li><p><strong>sim_index</strong> (<em>int</em>) – If not None, substitute the sim_index S+N map for observed Cls</p></li>
+<li><p><strong>sims_add_alms</strong> (<em>bool</em>) – If True and sim_index is not None, add sim alms instead of sim Cls
+to include signal and noise correlations</p></li>
+<li><p><strong>converge_criteria</strong> (<em>float</em>) – The maximum fractional change in qb to signal convergence and
+end iteration</p></li>
+<li><p><strong>iter_max</strong> (<em>int</em>) – The maximum number of iterations</p></li>
+<li><p><strong>tbeb</strong> (<em>bool</em>) – If True, compute TB/EB spectra.</p></li>
+<li><p><strong>null_bb_xfer</strong> (<em>bool</em>) – If True, after transfer functions have been calculated, impose
+the BB xfer is exactly equal to the EE transfer.</p></li>
+<li><p><strong>window_lmax</strong> (<em>int</em>) – The size of the window used in computing the mask kernels</p></li>
+<li><p><strong>like_lmin</strong> (<em>int</em>) – The minimum ell value to be included in the likelihood calculation</p></li>
+<li><p><strong>like_lmax</strong> (<em>int</em>) – The maximum ell value to be included in the likelihood calculation</p></li>
+<li><p><strong>like_profiles</strong> (<em>bool</em>) – If True, compute profile likelihoods for each qb, leaving all
+others fixed at their maximum likelihood values.  Profiles are
+computed over a range +/–sigma as estimated from the diagonals
+of the inverse Fisher matrix.</p></li>
+<li><p><strong>like_profile_sigma</strong> (<em>float</em>) – Range in units of 1sigma over which to compute profile likelihoods</p></li>
+<li><p><strong>like_profile_points</strong> (<em>int</em>) – Number of points to sample along the likelihood profile</p></li>
+<li><p><strong>pixwin</strong> (<em>bool</em>) – If True, apply pixel window functions to beam windows.</p></li>
+<li><p><strong>save_iters</strong> (<em>bool</em>) – If True, store the output of each Fisher iteration, in addition to
+the end result.</p></li>
+<li><p><strong>verbose</strong> (<em>string</em>) – Logging verbosity level.  If True, defaults to ‘notice’.</p></li>
+<li><p><strong>debug</strong> (<em>bool</em>) – Store extra data in output files for debugging.</p></li>
+<li><p><strong>checkpoint</strong> (<em>string</em>) – If supplied, re-compute all steps of the algorithm from this point
+forward.  Valid checkpoints are [‘files’, ‘masks’, ‘kernels’, ‘sims_transfer’, ‘shape_transfer’, ‘transfer’, ‘sims’, ‘beams’, ‘data’, ‘template_noise’, ‘shape’, ‘bandpowers’, ‘beam_errors’, ‘likelihood’]</p></li>
+<li><p><strong>add_log</strong> (<em>bool</em>) – If True, write log output to a file instead of to STDOUT.
+The log will be in <code class="docutils literal notranslate"><span class="pre">&lt;output_root&gt;/run_&lt;output_tag&gt;.log</span></code>.
+This option is useful for logging to file for jobs that
+are run directly (rather than submitted).</p></li>
+<li><p><strong>cond_noise</strong> (<em>float</em>) – The level of regularizing noise to add to EE and BB diagonals.</p></li>
+<li><p><strong>cond_criteria</strong> (<em>float</em>) – Threshold on covariance condition number. Above this, regularizing noise
+will be added to covariance to condition it.</p></li>
+<li><p><strong>null_first_cmb</strong> (<em>bool</em>) – Keep first CMB bandpowers fixed to input shape (qb=1).</p></li>
+<li><p><strong>foreground_fit</strong> – Fit for a dust component. Only for multi(freq)-map runs</p></li>
+<li><p><strong>bin_width_fg</strong> (<em>int</em><em> or </em><em>array_like of 6 ints</em>) – Width of each ell bin for each of the six output foreground spectra
+(TT, EE, BB, TE, EB, TB).  EE/BB bins should be the same
+in order to handle mixing correctly.</p></li>
+<li><p><strong>ref_freq</strong> (<em>float</em>) – In GHz, reference frequency for dust model. Dust bandpowers output
+will be at this reference frequency.</p></li>
+<li><p><strong>beta_ref</strong> (<em>float</em>) – The spectral index of the dust model. This is a fixed value, with
+an additive deviation from this value fit for in foreground fitting
+mode.</p></li>
+<li><p><strong>delta_beta_prior</strong> (<em>float</em>) – The width of the prior on the additive change from beta_ref. If you
+don’t want the code to fit for a spectral index different
+from beta_ref, set this to be a very small value (O(1e-10)).</p></li>
+<li><p><strong>foreground_type</strong> (<em>string</em>) – Tag for directory (foreground_&lt;foreground_type&gt;) where foreground
+sims are that should be added to the signal and noise sims
+when running in sim_index mode. Note: the same foreground sim
+map is used for each sim_index, despite signal and noise sims
+changing.</p></li>
+<li><p><strong>template_type</strong> (<em>string</em>) – Tag for directory (templates_&lt;template_type&gt;) containing templates
+(e.g. a foreground model) to be scaled by a scalar value per
+map tag and subtracted from the data. The directory is assumed
+to contain halfmission-1 and halfmission-2 subdirectories, each
+containing one template per map tag.</p></li>
+<li><p><strong>template_alpha_tags</strong> (<em>list of strings</em>) – List of map tags from which foreground template maps should be
+subtracted.  These should be the original map tags, not
+those generated for chunk sets.</p></li>
+<li><p><strong>template_alpha</strong> (<em>list of floats</em>) – Scalar to be applied to template map for subtraction from each of the
+data with tags in the list <code class="docutils literal notranslate"><span class="pre">template_alpha_tags</span></code>.</p></li>
+<li><p><strong>sub_hm_noise</strong> (<em>bool</em>) – If True, subtract average of Planck ffp10 noise crosses to debias
+template-cleaned spectra</p></li>
+<li><p><strong>tophat_bins</strong> (<em>bool</em>) – If True, use uniform weights within each bin rather than any
+ell-based weighting.</p></li>
+<li><p><strong>return_cls</strong> (<em>bool</em>) – If True, return C_l spectrum rather than the D_l spectrum</p></li>
+<li><p><strong>apply_gcorr</strong> (<em>bool</em>) – If True, a correction factor is applied to the g (mode counting)
+matrix.  The correction factor should have been pre-computed
+for each map tag.</p></li>
+<li><p><strong>reload_gcorr</strong> (<em>bool</em>) – If True, reload the gcorr file from the masks directory. Useful when
+iteratively solving for the correction terms.</p></li>
+<li><p><strong>qb_file</strong> (<em>string</em>) – Pointer to a bandpowers.npz file in the output directory. If used
+in sim_index mode, the noise sim read from disk will be corrected
+by the residual qb values stored in qb_file.</p></li>
+<li><p><strong>sub_planck</strong> (<em>bool</em>) – If True, subtract reobserved Planck from maps. Properly uses half
+missions so no Planck autos are used. Useful for removing expected
+signal residuals from null tests.</p></li>
+<li><p><strong>fake_data_r</strong> (<em>float</em>) – If not None, construct a fake data map from scalar + r* tensor
+signal maps + noise + alpha*template, where signal and noise maps
+use the sim_index options, and alpha and template options are given
+by their respective options</p></li>
+<li><p><strong>fake_data_template</strong> (<em>str</em>) – If not None, add halfmission-1 template in this directory scaled by
+alpha to fake data maps</p></li>
+<li><p><strong>do_fake_signal</strong> (<em>bool</em>) – If true, use sim_index to set signal seed. If false, always use seed 0.</p></li>
+<li><p><strong>do_fake_noise</strong> (<em>bool</em>) – If true, use sim_index to set noise seed. If false, always use seed 0.</p></li>
+<li><p><strong>save_fake_data</strong> (<em>bool</em>) – If true, save data_xcorr file to disk for fake data.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.xfaster_exec.xfaster_parse">
+<code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">xfaster_parse</code><span class="sig-paren">(</span><em class="sig-param">args=None</em>, <em class="sig-param">test=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#xfaster_parse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.xfaster_parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a parsed dictionary of arguments for the xfaster execution script.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> (<em>list of strings</em><em>, </em><em>optional</em>) – If not supplied, read from the command line (sys.argv) by argparse.</p></li>
+<li><p><strong>test</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, raise a RuntimeError instead of exiting.  Useful for
+interactive testing.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>args</strong> – Dictionary of parsed options</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.xfaster_exec.xfaster_submit">
+<code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">xfaster_submit</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#xfaster_submit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.xfaster_submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit a single xfaster job. The arguments here should agree exactly
+with the command line flags for submit mode, with kwargs passed to
+<code class="docutils literal notranslate"><span class="pre">xfaster_run</span></code>. Run <code class="docutils literal notranslate"><span class="pre">xfaster</span> <span class="pre">--help</span></code> for help.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.xfaster_exec.xfaster_main">
+<code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">xfaster_main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#xfaster_main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.xfaster_main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main entry point for command-line interface.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="xfaster.xfaster_exec.XFasterJobGroup">
+<em class="property">class </em><code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">XFasterJobGroup</code><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#XFasterJobGroup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.XFasterJobGroup" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="xfaster.xfaster_exec.XFasterJobGroup.add_job">
+<code class="sig-name descname">add_job</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#XFasterJobGroup.add_job"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.XFasterJobGroup.add_job" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add xfaster job to script.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Keyword Arguments</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>should correspond to arguments accepted by xfaster_run.</strong> (<em>Most</em>) – </p></li>
+<li><p><strong>job-related arguments are present</strong><strong>, </strong><strong>they will be passed to</strong> (<em>If</em>) – </p></li>
+<li><p><strong>set_job_options.</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_exec.XFasterJobGroup.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#XFasterJobGroup.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.XFasterJobGroup.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize to a reset state.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_exec.XFasterJobGroup.set_job_options">
+<code class="sig-name descname">set_job_options</code><span class="sig-paren">(</span><em class="sig-param">output=None</em>, <em class="sig-param">cput=None</em>, <em class="sig-param">wallt=None</em>, <em class="sig-param">ppn=8</em>, <em class="sig-param">nodes=1</em>, <em class="sig-param">mem=5</em>, <em class="sig-param">env_script=None</em>, <em class="sig-param">omp_threads=None</em>, <em class="sig-param">nice=0</em>, <em class="sig-param">queue=None</em>, <em class="sig-param">job_prefix=None</em>, <em class="sig-param">test=False</em>, <em class="sig-param">pbs=False</em>, <em class="sig-param">workdir=None</em>, <em class="sig-param">dep_afterok=None</em>, <em class="sig-param">exclude=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#XFasterJobGroup.set_job_options"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.XFasterJobGroup.set_job_options" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse options that control the job script, rather than xfaster.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="xfaster.xfaster_exec.XFasterJobGroup.submit">
+<code class="sig-name descname">submit</code><span class="sig-paren">(</span><em class="sig-param">group_by=None</em>, <em class="sig-param">verbose=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#XFasterJobGroup.submit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.XFasterJobGroup.submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit jobs that have been added.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>group_by</strong> (<em>int</em><em>, </em><em>optional</em>) – Group xfaster calls into jobs with this many calls each.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-xfaster.xfaster_tools">
+<span id="xfaster-tools"></span><h2>xfaster_tools<a class="headerlink" href="#module-xfaster.xfaster_tools" title="Permalink to this headline">¶</a></h2>
+<p>More generic functions used by methods in xfaster_class</p>
+<dl class="function">
+<dt id="xfaster.xfaster_tools.wigner3j">
+<code class="sig-prename descclassname">xfaster.xfaster_tools.</code><code class="sig-name descname">wigner3j</code><span class="sig-paren">(</span><em class="sig-param">l2</em>, <em class="sig-param">m2</em>, <em class="sig-param">l3</em>, <em class="sig-param">m3</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_tools.html#wigner3j"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_tools.wigner3j" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wigner 3j symbols computed for all valid values of <code class="docutils literal notranslate"><span class="pre">L</span></code>, as in:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{pmatrix}
+ \ell_2 &amp; \ell_3 &amp; L \\
+ m_2 &amp; m_3 &amp; 0 \\
+\end{pmatrix}\end{split}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>m2</strong><strong>, </strong><strong>l3</strong><strong>, </strong><strong>m3</strong> (<em>l2</em><em>,</em>) – The ell and m values for which to compute the symbols.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>fj</strong> (<em>array_like</em>) – Array of size <code class="docutils literal notranslate"><span class="pre">l2</span> <span class="pre">+</span> <span class="pre">l3</span> <span class="pre">+</span> <span class="pre">2</span></code>, indexed by <code class="docutils literal notranslate"><span class="pre">L</span></code></p></li>
+<li><p><strong>lmin</strong> (<em>int</em>) – The minimum value of <code class="docutils literal notranslate"><span class="pre">L</span></code> for which <code class="docutils literal notranslate"><span class="pre">fj</span></code> is non-zero.</p></li>
+<li><p><strong>lmax</strong> (<em>int</em>) – The maximum value of <code class="docutils literal notranslate"><span class="pre">L</span></code> for which <code class="docutils literal notranslate"><span class="pre">fj</span></code> is non-zero.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.xfaster_tools.get_camb_cl">
+<code class="sig-prename descclassname">xfaster.xfaster_tools.</code><code class="sig-name descname">get_camb_cl</code><span class="sig-paren">(</span><em class="sig-param">r</em>, <em class="sig-param">lmax</em>, <em class="sig-param">nt=None</em>, <em class="sig-param">spec='total'</em>, <em class="sig-param">lfac=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_tools.html#get_camb_cl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_tools.get_camb_cl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute camb spectrum with tensors and lensing.</p>
+<p>Parameter values are from arXiv:1807.06209 Table 1 Plik best fit</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>r</strong> (<em>float</em>) – Tensor-to-scalar ratio</p></li>
+<li><p><strong>lmax</strong> (<em>int</em>) – Maximum ell for which to compute spectra</p></li>
+<li><p><strong>nt</strong> (<em>scalar</em><em>, </em><em>optional</em>) – Tensor spectral index.  If not supplied, assumes
+slow-roll consistency relation.</p></li>
+<li><p><strong>spec</strong> (<em>string</em><em>, </em><em>optional</em>) – Spectrum component to return.  Can be ‘total’, ‘unlensed_total’,
+‘unlensed_scalar’, ‘lensed_scalar’, ‘tensor’, ‘lens_potential’.</p></li>
+<li><p><strong>lfac</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, multiply Cls by ell*(ell+1)/2/pi</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>cls</strong> – Array of spectra of shape (lmax + 1, nspec).
+Diagonal ordering (TT, EE, BB, TE).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array_like</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.xfaster_tools.expand_qb">
+<code class="sig-prename descclassname">xfaster.xfaster_tools.</code><code class="sig-name descname">expand_qb</code><span class="sig-paren">(</span><em class="sig-param">qb</em>, <em class="sig-param">bin_def</em>, <em class="sig-param">lmax=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_tools.html#expand_qb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_tools.expand_qb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expand a qb-type array to an ell-by-ell spectrum using bin_def.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>qb</strong> (<em>array_like</em><em>, </em><em>(</em><em>nbins</em><em>,</em><em>)</em>) – Array of bandpower deviations</p></li>
+<li><p><strong>bin_def</strong> (<em>array_like</em><em>, </em><em>(</em><em>nbins</em><em>, </em><em>2</em><em>)</em>) – Array of bin edges for each bin</p></li>
+<li><p><strong>lmax</strong> (<em>int</em><em>, </em><em>optional</em>) – If supplied, limit the output spectrum to this value.
+Otherwise the output spectrum extends to include the last bin.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>cl</strong> – Array of expanded bandpowers</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array_like, (lmax + 1,)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.xfaster_tools.bin_spec">
+<code class="sig-prename descclassname">xfaster.xfaster_tools.</code><code class="sig-name descname">bin_spec</code><span class="sig-paren">(</span><em class="sig-param">qb</em>, <em class="sig-param">cls_shape</em>, <em class="sig-param">bin_def</em>, <em class="sig-param">inv_fish=None</em>, <em class="sig-param">tophat=False</em>, <em class="sig-param">lfac=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_tools.html#bin_spec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_tools.bin_spec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute binned output spectra and covariances by averaging the shape
+spectrum over each bin, and applying the appropriate <code class="docutils literal notranslate"><span class="pre">qb</span></code> bandpower
+amplitude.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>qb</strong> (<em>dict</em>) – Bandpower amplitudes for each spectrum bin.</p></li>
+<li><p><strong>cls_shape</strong> (<em>dict</em>) – Shape spectrum</p></li>
+<li><p><strong>bin_def</strong> (<em>dict</em>) – Bin definition dictionary</p></li>
+<li><p><strong>inv_fish</strong> (<em>array_like</em><em>, </em><em>(</em><em>nbins</em><em>, </em><em>nbins</em><em>)</em>) – Inverse fisher matrix for computing the bin errors and covariance.  If
+not supplied, these are not computed.</p></li>
+<li><p><strong>tophat</strong> (<em>bool</em>) – If True, compute binned bandpowers using a tophat weight.  Otherwise a
+logarithmic ell-space weighting is applied.</p></li>
+<li><p><strong>lfac</strong> (<em>bool</em>) – If False, return binned C_l spectrum rather than the default D_l</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>cb</strong> (<em>dict of arrays</em>) – Binned spectrum</p></li>
+<li><p><strong>dcb</strong> (<em>dict of arrays</em>) – Binned spectrum error, if <code class="docutils literal notranslate"><span class="pre">inv_fish</span></code> is not None</p></li>
+<li><p><strong>ellb</strong> (<em>dict of arrays</em>) – Average bin center</p></li>
+<li><p><strong>cov</strong> (<em>array_like, (nbins, nbins)</em>) – Binned spectrum covariance, if <code class="docutils literal notranslate"><span class="pre">inv_fish</span></code> is not None</p></li>
+<li><p><strong>qb2cb</strong> (<em>dict</em>) – The conversion factor from <code class="docutils literal notranslate"><span class="pre">qb</span></code> to <code class="docutils literal notranslate"><span class="pre">cb</span></code>, computed by averaging over the
+input shape spectrum.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.xfaster_tools.scale_dust">
+<code class="sig-prename descclassname">xfaster.xfaster_tools.</code><code class="sig-name descname">scale_dust</code><span class="sig-paren">(</span><em class="sig-param">freq0</em>, <em class="sig-param">freq1</em>, <em class="sig-param">ref_freq</em>, <em class="sig-param">beta</em>, <em class="sig-param">delta_beta=None</em>, <em class="sig-param">deriv=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_tools.html#scale_dust"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_tools.scale_dust" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the factor by which you must dividide the cross spectrum from maps of
+frequencies freq0 and freq1 to match the dust power at ref_freq given
+spectra index beta.</p>
+<p>If deriv is True, return the frequency scaling at the reference beta,
+and the first derivative w.r.t. beta.</p>
+<p>Otherwise if delta_beta is given, return the scale factor adjusted
+for a linearized offset delta_beta from the reference beta.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="notebooks/XFaster_Tutorial.html" class="btn btn-neutral float-left" title="Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, A. Gambrel, A. Rahlin, C. Contaldi.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

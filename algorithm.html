@@ -1,0 +1,390 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Algorithm &mdash; xfaster 0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"TeX": {"equationNumbers": {"autoNumber": "AMS", "useLabelIds": true}}, "tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tutorial" href="notebooks/XFaster_Tutorial.html" />
+    <link rel="prev" title="Quick Start" href="quickstart.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> xfaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/XFaster_Tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">xfaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Algorithm</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/algorithm.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="algorithm">
+<h1>Algorithm<a class="headerlink" href="#algorithm" title="Permalink to this headline">¶</a></h1>
+<p>Here we describe in some detail the XFaster algorithm and how it is derived.
+The code implementation of this algorithm is described in <a class="reference internal" href="notebooks/XFaster_Tutorial.html#Tutorial"><span class="std std-ref">the tutorial</span></a>.</p>
+<p>XFaster is a hybrid of two types of estimators: a pseudo-<span class="math notranslate nohighlight">\(C_\ell\)</span> Monte Carlo estimator a la MASTER and PolSPICE, and a quadratic estimator. The latter is the special sauce, so we’ll go into some detail about it here.</p>
+<p>First, we’ll introduce the Newton method for iteratively finding the root of a function. There are helpful pictures to visualize how this method works <a class="reference external" href="https://en.wikipedia.org/wiki/Newton%27s_method">on wikipedia</a>. Say you have some continuous function, <span class="math notranslate nohighlight">\(f\)</span>, and your initial guess for its root is <span class="math notranslate nohighlight">\(x_0\)</span>. We can Taylor expand <span class="math notranslate nohighlight">\(f\)</span> around this guess like so:</p>
+<div class="math notranslate nohighlight" id="equation-eq1">
+<span class="eqno">(1)<a class="headerlink" href="#equation-eq1" title="Permalink to this equation">¶</a></span>\[f\left(x_{0}+\epsilon\right)=f\left(x_{0}\right)+f^{\prime}\left(x_{0}\right) \epsilon+\frac{1}{2} f^{\prime \prime}\left(x_{0}\right) \epsilon^{2}+\ldots\]</div>
+<p>And to first order,</p>
+<div class="math notranslate nohighlight" id="equation-eq2">
+<span class="eqno">(2)<a class="headerlink" href="#equation-eq2" title="Permalink to this equation">¶</a></span>\[f\left(x_{0}+\epsilon\right) \approx f\left(x_{0}\right)+f^{\prime}\left(x_{0}\right) \epsilon\]</div>
+<p>We set the left side to zero, and solve for the step size for the next iteration:</p>
+<div class="math notranslate nohighlight" id="equation-eq3">
+<span class="eqno">(3)<a class="headerlink" href="#equation-eq3" title="Permalink to this equation">¶</a></span>\[\epsilon_{0}=-\frac{f\left(x_{0}\right)}{f^{\prime}\left(x_{0}\right)}\]</div>
+<p>We solve for <span class="math notranslate nohighlight">\(f\)</span> and <span class="math notranslate nohighlight">\(f'\)</span> at the new guess, and continue the iteration, where the forumula for each next guess of the root is:</p>
+<div class="math notranslate nohighlight" id="equation-eq4">
+<span class="eqno">(4)<a class="headerlink" href="#equation-eq4" title="Permalink to this equation">¶</a></span>\[x_{n+1}=x_{n}+\epsilon_{n}=x_{n}-\frac{f\left(x_{n}\right)}{f^{\prime}\left(x_{n}\right)}\]</div>
+<p>A major caveat with using this method is that if the derivative goes to zero near the starting or final root guess, things blow up and it will not converge. However, if the function is well behaved, and the initial guess is close enough, it can be shown that this method converges quadratically.</p>
+<p>Ultimately, XFaster isn’t going to solve for a root; it’s going to find the extreme of some function. So instead of finding where <span class="math notranslate nohighlight">\(f=0\)</span>, we want to find where its first derivative goes to 0. So now we’re going to take the first derivative of equation 1 and set it equal to 0:</p>
+<div class="math notranslate nohighlight" id="equation-eq5">
+<span class="eqno">(5)<a class="headerlink" href="#equation-eq5" title="Permalink to this equation">¶</a></span>\[0=\frac{d}{dx}\left(f\left(x_{0}\right)+f^{\prime}\left(x_{0}\right) \epsilon_{0}+\frac{1}{2} f^{\prime \prime}\left(x_{0}\right) \epsilon_{0}^{2}\right)=f^{\prime}\left(x_{0}\right)+f^{\prime \prime}\left(x_{0}\right) \epsilon_{0}\]</div>
+<p>where we’re throwing out terms higher than second derivative. Now, our step size is given by</p>
+<div class="math notranslate nohighlight" id="equation-eq6">
+<span class="eqno">(6)<a class="headerlink" href="#equation-eq6" title="Permalink to this equation">¶</a></span>\[\epsilon_{0}=-\frac{f^{\prime}\left(x_{0}\right)}{f^{\prime \prime}\left(x_{0}\right)}\]</div>
+<p>Extending this method to multiple variables, the first derivative becomes a gradient, and the second derivative becomes the Hessian:</p>
+<div class="math notranslate nohighlight" id="equation-eq7">
+<span class="eqno">(7)<a class="headerlink" href="#equation-eq7" title="Permalink to this equation">¶</a></span>\[\begin{split}\mathbf{H}=\left[\begin{array}{cccc}{\frac{\partial^{2} f}{\partial x_{1}^{2}}} &amp; {\frac{\partial^{2} f}{\partial x_{1} \partial x_{2}}} &amp; {\cdots} &amp; {\frac{\partial^{2} f}{\partial x_{1} \partial x_{n}}} \\ {\frac{\partial^{2} f}{\partial x_{2} \partial x_{1}}} &amp; {\frac{\partial^{2} f}{\partial x_{2}^{2}}} &amp; {\cdots} &amp; {\frac{\partial^{2} f}{\partial x_{2} \partial x_{n}}} \\ {\vdots} &amp; {\vdots} &amp; {\ddots} &amp; {\vdots} \\ {\frac{\partial^{2} f}{\partial x_{n} \partial x_{1}}} &amp; {\frac{\partial^{2} f}{\partial x_{n} \partial x_{2}}} &amp; {\cdots} &amp; {\frac{\partial^{2} f}{\partial x_{n}^{2}}}\end{array}\right]\end{split}\]</div>
+<p>for an expression for the local extremum of</p>
+<div class="math notranslate nohighlight" id="equation-step">
+<span class="eqno">(8)<a class="headerlink" href="#equation-step" title="Permalink to this equation">¶</a></span>\[x^1_{n}=x^0_{n}-\mathbf{H}^{-1} \nabla f\left(x^0_{n}\right)\]</div>
+<p>Because it’s costly to compute <span class="math notranslate nohighlight">\(H\)</span> for each iteration, we can instead make the approximation of using its expectation value, which does not depend on the data. This is equivalent to the Fisher information matrix:</p>
+<div class="math notranslate nohighlight" id="equation-fish-approx">
+<span class="eqno">(9)<a class="headerlink" href="#equation-fish-approx" title="Permalink to this equation">¶</a></span>\[\mathcal{F}_{i j}=\left\langle\mathbf{H}_{i j}\right\rangle=\left\langle\frac{\partial^{2} f}{\partial x_{i} \partial x_{j}}\right\rangle\]</div>
+<p>This has all so far been an abstract exercise in how to find the values of the variables that maximize some function that depends on them. Now let’s get into what XFaster uses it for, maximizing the likelihood function, which we approximate to be Gaussian:</p>
+<div class="math notranslate nohighlight" id="equation-eqn10">
+<span class="eqno">(10)<a class="headerlink" href="#equation-eqn10" title="Permalink to this equation">¶</a></span>\[\mathcal{L}(\mathbf{d} | \theta)=\frac{1}{|2 \pi \mathbf{C}|^{1 / 2}} \exp \left(-\frac{1}{2} \mathbf{d} \cdot \mathbf{C}^{-1} \cdot \mathbf{d}^{T}\right)\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathbf{d}\)</span> is an observed data set, <span class="math notranslate nohighlight">\(\theta\)</span> are the model parameters, and <span class="math notranslate nohighlight">\(\mathbf{C}\)</span> is the covariance matrix, which depends on the model parameters: <span class="math notranslate nohighlight">\(\textbf{C}(\theta)=\textbf{S}(\theta)+\textbf{N}\)</span>, where <span class="math notranslate nohighlight">\(\textbf{S}\)</span> is signal and <span class="math notranslate nohighlight">\(\textbf{N}\)</span> is noise.</p>
+<p>For XFaster, our parameters, <span class="math notranslate nohighlight">\(\theta\)</span> that will be fit to the data are the bandpowers, <span class="math notranslate nohighlight">\(\mathcal{C}_\ell\)</span>. We want to maximize the log likelihood (so we can take derivatives more easily and since it is maximized where the likelihood is maximized), so we can use Equation <a class="reference internal" href="#equation-step">(8)</a> and the Fisher approximation of Equation <a class="reference internal" href="#equation-fish-approx">(9)</a> to write down the size of the step we need from our initial bandpower guess:</p>
+<div class="math notranslate nohighlight" id="equation-cell">
+<span class="eqno">(11)<a class="headerlink" href="#equation-cell" title="Permalink to this equation">¶</a></span>\[\delta \mathcal{C}_{\ell}=\frac{1}{2} \sum_{\ell^\prime} \mathcal{F}_{\ell \ell^{\prime}}^{-1} \operatorname{Tr}\left[\left(\mathbf{C}^{-1} \frac{\partial \mathbf{S}}{\partial \mathcal{C}_{\ell}} \mathbf{C}^{-1}\right)\left(\mathbf{d} \mathbf{d}^{T}-\mathbf{C}\right)\right]\]</div>
+<div class="math notranslate nohighlight" id="equation-fisher-ell">
+<span class="eqno">(12)<a class="headerlink" href="#equation-fisher-ell" title="Permalink to this equation">¶</a></span>\[\mathcal{F}_{\ell \ell^{\prime}}=\frac{1}{2} \operatorname{Tr}\left[\mathbf{C}^{-1} \frac{\partial \mathbf{S}}{\partial \mathcal{C}_{\ell}} \mathbf{C}^{-1} \frac{\partial \mathbf{S}}{\partial \mathcal{C}_{\ell^{\prime}}} \right]\]</div>
+<p>where I’ve left out all the math to get the first and second derivatives. <strong>Note: I will use :math:`mathcal{C}` for bandpowers and :math:`C` for covariance. Similarly, the Fisher matrix will be :math:`mathcal{F}` and the transfer function will be :math:`F`.</strong></p>
+<p>Now, instead of iterating on the steps toward the maximum, XFaster iterates towards the bandpowers themselves. It does this by reconfiguring the second term in the trace in Equation <a class="reference internal" href="#equation-cell">(11)</a>, which should iteratively get closer to zero, and instead reformats it to be the estimate of the measured signal:</p>
+<div class="math notranslate nohighlight" id="equation-eq12">
+<span class="eqno">(13)<a class="headerlink" href="#equation-eq12" title="Permalink to this equation">¶</a></span>\[\mathcal{C}_{\ell}=\frac{1}{2} \sum_{\ell'} \mathcal{F}_{\ell \ell^{\prime}}^{-1} \operatorname{Tr}\left[\left(\mathbf{C_{\ell'}}^{-1} \frac{\partial \mathbf{S_{\ell'}}}{\partial \mathcal{C}_{\ell'}} \mathbf{C_{\ell'}}^{-1}\right)\left(\mathbf{C}_{\ell'}^{o b s}-\langle\mathbf{N_{\ell'}}\rangle\right)\right]\]</div>
+<p>where the <span class="math notranslate nohighlight">\(\langle\mathbf{N}\rangle\)</span> is the ensemble average of the noise simulations, needed to debias the total covariance of the data to leave an estimate of signal alone.</p>
+<p>From here, XFaster makes a few more approximations to make the matrix operations manageable. We approximate our noise to be diagonal and uncorrelated with signal, and the signal will be averaged into bins to reduce correlations among modes from using less than the full sky. So now, the covariance for the cut sky is approximated as:</p>
+<div class="math notranslate nohighlight" id="equation-eq13">
+<span class="eqno">(14)<a class="headerlink" href="#equation-eq13" title="Permalink to this equation">¶</a></span>\[\tilde{C}_{\ell m, \ell^{\prime} m^{\prime}}=\delta_{\ell \ell^{\prime}} \delta_{m m^{\prime}}\left(\tilde{\mathcal{C}}_{\ell}+\left\langle\tilde{N}_{\ell}\right\rangle\right)\]</div>
+<p>The thing that our instrument measures is this pseudo-<span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span> spectrum. We ultimately want to know the full sky power spectrum, <span class="math notranslate nohighlight">\(\mathcal{C}_\ell\)</span>. For TT, for example, that’s related to our measured <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span> s by</p>
+<div class="math notranslate nohighlight" id="equation-eq14">
+<span class="eqno">(15)<a class="headerlink" href="#equation-eq14" title="Permalink to this equation">¶</a></span>\[\tilde{\mathcal{C}}_{\ell}^{TT}=\sum_{\ell^{\prime}} K_{\ell \ell^{\prime}}^{TT} F_{\ell^{\prime}}^{TT} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{TT}\]</div>
+<p>where  <span class="math notranslate nohighlight">\(K_{\ell, \ell'}\)</span> is the coupling kernel that accounts for mode mixing due to the non-orthogonality of the spherical harmonic basis on the cut sky, <span class="math notranslate nohighlight">\(F_\ell\)</span> is the filter transfer function, and <span class="math notranslate nohighlight">\(B_\ell\)</span> is the beam window function.</p>
+<p>This is written on an <span class="math notranslate nohighlight">\(\ell\)</span> by <span class="math notranslate nohighlight">\(\ell\)</span> basis, but in practice we’ll want to bin to reduce signal correlations and increase signal to noise, so we add the binning operator <span class="math notranslate nohighlight">\(\chi_b\)</span>:</p>
+<div class="math notranslate nohighlight" id="equation-eq15">
+<span class="eqno">(16)<a class="headerlink" href="#equation-eq15" title="Permalink to this equation">¶</a></span>\[\tilde{\mathcal{C}}_{\ell}^{TT}=\sum_b q_b \sum_{\ell^{\prime}} K_{\ell \ell^{\prime}}^{TT} F_{\ell^{\prime}}^{TT} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{TT} \chi_{b}\left(\ell^{\prime}\right)\]</div>
+<p>where I’ve now added in a coefficient, <span class="math notranslate nohighlight">\(q_b\)</span>, which accounts for any deviation of our measured bandpowers from the signal we expect our instrument to have measured. In practice, <span class="math notranslate nohighlight">\(q_b\)</span> is actually what XFaster solves for. So now, instead of using <span class="math notranslate nohighlight">\(\mathcal{C}_\ell\)</span> as the parameter we are optimizing, we instead solve for the maximum likelihood with respect to the bandpower deviations, <span class="math notranslate nohighlight">\(q_b\)</span>:</p>
+<div class="math notranslate nohighlight" id="equation-qb">
+<span class="eqno">(17)<a class="headerlink" href="#equation-qb" title="Permalink to this equation">¶</a></span>\[q_{b}=\frac{1}{2} \sum_{b^{\prime}} \mathcal{F}_{b b^{\prime}}^{-1} \sum_{\ell} (2 \ell+1) \operatorname{Tr}\left[ \left(\tilde{\mathbf{D}}_{\ell}^{-1} \frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b^{\prime}}} \tilde{\mathbf{D}}_{\ell}^{-1}\right)\mathbf{g}\left(\tilde{\mathbf{D}}_{\ell}^{o b s}-\tilde{\mathbf{N}}_{\ell}\right)\mathbf{g}^T\right]\]</div>
+<div class="math notranslate nohighlight" id="equation-fisher">
+<span class="eqno">(18)<a class="headerlink" href="#equation-fisher" title="Permalink to this equation">¶</a></span>\[\mathcal{F}_{b b^{\prime}}=\frac{1}{2} \sum_{\ell} (2 \ell+1)\operatorname{Tr}\left[\tilde{\mathbf{D}}_{\ell}^{-1} \frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b}} \tilde{\mathbf{D}}_{\ell}^{-1} \mathbf{g}\frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b^{\prime}}}\mathbf{g}^T\right]\]</div>
+<p>where now instead of solving for just TT for one map, I’m generalizing to a matrix form where</p>
+<div class="math notranslate nohighlight" id="equation-dell">
+<span class="eqno">(19)<a class="headerlink" href="#equation-dell" title="Permalink to this equation">¶</a></span>\[\begin{split}\tilde{\mathbf{D}}_{\ell}=
+\begin{bmatrix}
+\tilde{\mathbf{D}}_{\ell}^{1x1} &amp; \tilde{\mathbf{D}}_{\ell}^{1x2} &amp; \tilde{\mathbf{D}}_{\ell}^{1x3} &amp; \cdots &amp; \tilde{\mathbf{D}}_{\ell}^{1xN} \\
+\tilde{\mathbf{D}}_{\ell}^{2x1} &amp; \tilde{\mathbf{D}}_{\ell}^{2x2} &amp; \tilde{\mathbf{D}}_{\ell}^{2x3} &amp; \cdots &amp; \vdots \\
+\tilde{\mathbf{D}}_{\ell}^{3x1} &amp; \tilde{\mathbf{D}}_{\ell}^{3x2} &amp; \tilde{\mathbf{D}}_{\ell}^{3x3} &amp; \cdots &amp; \vdots \\
+\vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+\tilde{\mathbf{D}}_{\ell}^{Nx1} &amp; \cdots &amp; \cdots &amp; \cdots &amp; \tilde{\mathbf{D}}_{\ell}^{NxN}\\
+\end{bmatrix}\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(N\)</span> is the number of maps, and each element of the above matrix is a 3x3 subblock of <span class="math notranslate nohighlight">\(\tilde{C}_\ell\)</span> s for that map cross (<a href="#id1"><span class="problematic" id="id2">*</span></a>note: this the the full covariance, <span class="math notranslate nohighlight">\(\tilde{C}_\ell\)</span> , not only the signal part, <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span> <a href="#id3"><span class="problematic" id="id4">*</span></a>):</p>
+<div class="math notranslate nohighlight" id="equation-eq19">
+<span class="eqno">(20)<a class="headerlink" href="#equation-eq19" title="Permalink to this equation">¶</a></span>\[\begin{split}\tilde{\mathbf{D}}_{\ell}^{1\times 1}=\left[\begin{array}{ccc}{\tilde{\mathrm{C}}_{\ell}^{T T}} &amp; {\tilde{\mathrm{C}}_{\ell}^{T E}} &amp; {\tilde{\mathrm{C}}_{\ell}^{T B}} \\ {\tilde{\mathrm{C}}_{\ell}^{T E}} &amp; {\tilde{\mathrm{C}}_{\ell}^{E E}} &amp; {\tilde{\mathrm{C}}_{\ell}^{E B}} \\ {\tilde{\mathrm{C}}_{\ell}^{T B}} &amp; {\tilde{\mathrm{C}}_{\ell}^{E B}} &amp; {\tilde{\mathrm{C}}_{\ell}^{B B}}\end{array}\right]_{1\times 1}\end{split}\]</div>
+<p>We’ve also reduced the trace over $ell$ in equations <a class="reference internal" href="#equation-cell">(11)</a> and <a class="reference internal" href="#equation-fisher-ell">(12)</a> to the number of modes we measure, assuming isotropy: <span class="math notranslate nohighlight">\(\sum_{\ell}(2\ell+1)\mathbf{gg}^T\)</span>, where <span class="math notranslate nohighlight">\(g\)</span> is a weighting factor accounting for the effective number of degrees of freedom of the map.  And the trace in equations <a class="reference internal" href="#equation-qb">(17)</a> and <a class="reference internal" href="#equation-fisher">(18)</a> is over the various map cross spectrum components.</p>
+<p>There is some complication that arises from building the non-TT components of the signal covariance, which is that there is mixing between T <span class="math notranslate nohighlight">\(\leftrightarrow\)</span> E,B and E <span class="math notranslate nohighlight">\(\leftrightarrow\)</span> B caused by the masking. We account for this with the proper combination of shape operators, <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span>, along with their associated amplitudes, where the shape operators are defined below:</p>
+<div class="math notranslate nohighlight" id="equation-cbl">
+<span class="eqno">(21)<a class="headerlink" href="#equation-cbl" title="Permalink to this equation">¶</a></span>\[\begin{split}\begin{aligned}
+\tilde{\mathcal{C}}_{b \ell}^{T T}&amp;=\sum_{\ell^{\prime}} K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{T T} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{TT} \chi_{b}\left(\ell^{\prime}\right) \\
+{}_\pm \tilde{\mathcal{C}}_{b \ell}^{EE}&amp;=\sum_{\ell^{\prime}} {}_\pm K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{EE} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{EE} \chi_{b}\left(\ell^{\prime}\right) \\
+{}_\pm \tilde{\mathcal{C}}_{b \ell}^{BB}&amp;=\sum_{\ell^{\prime}} {}_\pm K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{BB} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{BB} \chi_{b}\left(\ell^{\prime}\right) \\
+\tilde{\mathcal{C}}_{b \ell}^{TE}&amp;=\sum_{\ell^{\prime}} {}_\times K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{TE} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{TE} \chi_{b}\left(\ell^{\prime}\right) \\
+\tilde{\mathcal{C}}_{b \ell}^{TB}&amp;=\sum_{\ell^{\prime}} {}_\times K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{TB} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{TB} \chi_{b}\left(\ell^{\prime}\right) \\
+\tilde{\mathcal{C}}_{b \ell}^{EB}&amp;=\sum_{\ell^{\prime}} ({}_+ K_{\ell \ell^{\prime}}-{}_- K_{\ell \ell^{\prime}}) F_{\ell^{\prime}}^{EB} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{EB} \chi_{b}\left(\ell^{\prime}\right) \\
+\end{aligned}\end{split}\]</div>
+<p>The shape operators, or “Cee-bee-ells” are simply understood to be the binned power we would expect given what we know of the coupling between our experiment and the sky. We have different shape expectations for the different signals we measure. Chiefly, the four that XFaster has currently implemented are CMB, dust, residual noise (that is, noise that is not accounted for in the noise simulation ensemble), and null signal. Each of these modifies the equation above somewhat, and we’ll go into more detail about that further on in this guide.</p>
+<p>The signal component of the covariance can then be written as</p>
+<div class="math notranslate nohighlight" id="equation-signal">
+<span class="eqno">(22)<a class="headerlink" href="#equation-signal" title="Permalink to this equation">¶</a></span>\[\begin{split}\tilde{\mathbf{S}}_\ell=
+\begin{bmatrix}
+\sum_b q_b^{TT}\tilde{\mathcal{C}}_{b\ell}^{TT} &amp; \sum_b q_b^{TE}\tilde{\mathcal{C}}_{b\ell}^{TE} &amp; \sum_b q_b^{TB}\tilde{\mathcal{C}}_{b\ell}^{TB} \\
+-- &amp; \sum_b q_b^{EE} {}_+\tilde{\mathcal{C}}_{b\ell}^{EE}+ \sum_b q_b^{BB} {}_-\tilde{\mathcal{C}}_{b\ell}^{BB} &amp; \sum_b q_b^{EB}\tilde{\mathcal{C}}_{b\ell}^{EB} \\
+-- &amp; -- &amp; \sum_b q_b^{BB} {}_+\tilde{\mathcal{C}}_{b\ell}^{BB}+ \sum_b q_b^{EE} {}_-\tilde{\mathcal{C}}_{b\ell}^{EE} \\
+\end{bmatrix}\end{split}\]</div>
+<p>To construct equations <a class="reference internal" href="#equation-qb">(17)</a> and <a class="reference internal" href="#equation-fisher">(18)</a>, we need to take the derivatives of equation <a class="reference internal" href="#equation-signal">(22)</a> with respect to each <span class="math notranslate nohighlight">\(q_b\)</span>. It’s straightforward to read off the derivative terms:</p>
+<div class="math notranslate nohighlight" id="equation-dsdqb">
+<span class="eqno">(23)<a class="headerlink" href="#equation-dsdqb" title="Permalink to this equation">¶</a></span>\[\begin{split}\begin{align}
+\frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b}^{TT}} &amp;=
+\begin{bmatrix}
+\tilde{\mathcal{C}}_{b\ell}^{TT} &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 \\
+\end{bmatrix}
+\nonumber
+&amp;
+\frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b}^{TE}} &amp;=
+\begin{bmatrix}
+0 &amp; \tilde{\mathcal{C}}_{b\ell}^{TE} &amp; 0 \\ \tilde{\mathcal{C}}_{b\ell}^{TE} &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 \\
+\end{bmatrix}
+\nonumber
+\\
+\nonumber
+\\
+\frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b}^{EE}} &amp;=
+\begin{bmatrix}
+0 &amp; 0 &amp; 0 \\ 0 &amp; {}_+\tilde{\mathcal{C}}_{b\ell}^{EE} &amp; 0 \\ 0 &amp; 0 &amp; {}_-\tilde{\mathcal{C}}_{b\ell}^{EE} \\
+\end{bmatrix}
+\nonumber
+&amp;
+\frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b}^{BB}} &amp;=
+\begin{bmatrix}
+0 &amp; 0 &amp; 0 \\ 0 &amp; {}_-\tilde{\mathcal{C}}_{b\ell}^{BB} &amp; 0 \\ 0 &amp; 0 &amp; {}_+\tilde{\mathcal{C}}_{b\ell}^{BB} \\
+\end{bmatrix}
+\\
+\nonumber
+\\
+\frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b}^{TB}} &amp;=
+\begin{bmatrix}
+0 &amp; 0 &amp; \tilde{\mathcal{C}}_{b\ell}^{TB} \\ 0 &amp; 0 &amp; 0 \\ \tilde{\mathcal{C}}_{b\ell}^{TB} &amp; 0 &amp; 0 \\
+\end{bmatrix}
+\nonumber
+&amp;
+\frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b}^{EB}} &amp;=
+\begin{bmatrix}
+0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; \tilde{\mathcal{C}}_{b\ell}^{EB} \\ 0 &amp; \tilde{\mathcal{C}}_{b\ell}^{EB} &amp; 0 \\
+\end{bmatrix}
+\nonumber
+\\
+\end{align}\end{split}\]</div>
+<p>So now everything is set up that we need, and we just need to build the ingredients. The rest of this document will be how we get each of the terms, but the main engine of XFaster, once it has all the ingredients, is to iterate on equations <a class="reference internal" href="#equation-qb">(17)</a> and <a class="reference internal" href="#equation-fisher">(18)</a>. So,</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Start with an initial guess at the $q_b$s, which we set to be 1.</p></li>
+<li><p>Compute the Fisher matrix with Equation <a class="reference internal" href="#equation-fisher">(18)</a>.</p></li>
+<li><p>Plug that into Equation <a class="reference internal" href="#equation-qb">(17)</a> to get a new guess for <span class="math notranslate nohighlight">\(q_b\)</span>.</p></li>
+<li><p>Repeat until some convergence criterion is met.</p></li>
+</ol>
+</div></blockquote>
+<p>We can use all these same tools to also fit for the transfer function– instead of using <span class="math notranslate nohighlight">\(\tilde{\mathbf{D}}_\ell^{obs}-\tilde{\mathbf{N}}_\ell\)</span> for our measured signal spectrum, we just use the ensemble average of the signal simulations, and set <span class="math notranslate nohighlight">\(F_\ell\)</span> in Equation <a class="reference internal" href="#equation-cbl">(21)</a> to be 1. Then, the <span class="math notranslate nohighlight">\(q_b\)</span> s that pop out are just the transfer function itelf, and the inverse Fisher matrix gives the error on the transfer function.</p>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="notebooks/XFaster_Tutorial.html" class="btn btn-neutral float-right" title="Tutorial" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="quickstart.html" class="btn btn-neutral float-left" title="Quick Start" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, A. Gambrel, A. Rahlin, C. Contaldi.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

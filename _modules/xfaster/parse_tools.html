@@ -1,0 +1,646 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>xfaster.parse_tools &mdash; xfaster 0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"TeX": {"equationNumbers": {"autoNumber": "AMS", "useLabelIds": true}}, "tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> xfaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../algorithm.html">Algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/XFaster_Tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">xfaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>xfaster.parse_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for xfaster.parse_tools</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;parse_data&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dict_to_arr&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;arr_to_dict&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;unique_tags&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tag_pairs&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dict_to_index&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dict_to_dmat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dict_to_dsdqb_mat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;load_compat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;load_pickle_compat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;load_and_parse&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;corr_index&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;num_maps&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;num_corr&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="corr_index"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.corr_index">[docs]</a><span class="k">def</span> <span class="nf">corr_index</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This gets the index of the auto spectrum when getting all</span>
+<span class="sd">    pairwise combinations of n maps</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    idx : int</span>
+<span class="sd">        The index of the map in the list of maps being looped through.</span>
+<span class="sd">    n : int</span>
+<span class="sd">        The number of maps being looped through.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    index : int</span>
+<span class="sd">        Index of auto spectrum</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">idx</span> <span class="o">*</span> <span class="n">n</span> <span class="o">-</span> <span class="n">idx</span> <span class="o">*</span> <span class="p">(</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span></div>
+
+
+<div class="viewcode-block" id="num_maps"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.num_maps">[docs]</a><span class="k">def</span> <span class="nf">num_maps</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns how many maps there are if there are n total cross spectra.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">8</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span></div>
+
+
+<div class="viewcode-block" id="num_corr"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.num_corr">[docs]</a><span class="k">def</span> <span class="nf">num_corr</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns how many cross spectra there are if there are n total maps.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">n</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span></div>
+
+
+<div class="viewcode-block" id="unique_tags"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.unique_tags">[docs]</a><span class="k">def</span> <span class="nf">unique_tags</span><span class="p">(</span><span class="n">tags</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    If map tags are repeated (eg, two 150 maps in different chunk</span>
+<span class="sd">    subdirectories), return a list modifying them with an index</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">tags</span><span class="p">))</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">tags</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">tags</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">tags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+        <span class="n">new_tags</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">tags</span><span class="p">):</span>
+            <span class="n">indices</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tags</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">tags</span> <span class="o">==</span> <span class="n">m</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># append an index</span>
+                <span class="n">new_tags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">indices</span><span class="p">[</span><span class="n">m</span><span class="p">]))</span>
+                <span class="n">indices</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">new_tags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_tags</span></div>
+
+
+<div class="viewcode-block" id="tag_pairs"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.tag_pairs">[docs]</a><span class="k">def</span> <span class="nf">tag_pairs</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return an OrderedDict whose keys are pairs of tags in the format &quot;tag1:tag2&quot;</span>
+<span class="sd">    and whose values are a tuple of the two tags used to construct each key, or</span>
+<span class="sd">    a tuple of the indices of the two tags in the original tag list, if ``index``</span>
+<span class="sd">    is True.  If ``index`` is a list, then it should be a list the same length as</span>
+<span class="sd">    ``tags``, and the tuple is populated by indexing into ``index`` using the two</span>
+<span class="sd">    indices of the tags in the original tag list.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">        &gt;&gt;&gt; tags = [&#39;a&#39;, &#39;b&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; tag_pairs(tags)</span>
+<span class="sd">        OrderedDict([(&#39;a:a&#39;, (&#39;a&#39;, &#39;a&#39;)), (&#39;a:b&#39;, (&#39;a&#39;, &#39;b&#39;)), (&#39;b:b&#39;, (&#39;b&#39;, &#39;b&#39;))])</span>
+<span class="sd">        &gt;&gt;&gt; tag_pairs(tags, index=True)</span>
+<span class="sd">        OrderedDict([(&#39;a:a&#39;, (0, 0)), (&#39;a:b&#39;, (0, 1)), (&#39;b:b&#39;, (1, 1))])</span>
+<span class="sd">        &gt;&gt;&gt; tag_pairs(tags, index=[&#39;c&#39;, &#39;d&#39;])</span>
+<span class="sd">        OrderedDict([(&#39;a:a&#39;, (&#39;c&#39;, &#39;c&#39;)), (&#39;a:b&#39;, (&#39;c&#39;, &#39;d&#39;)), (&#39;b:b&#39;, (&#39;d&#39;, &#39;d&#39;))])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pairs</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">it0</span><span class="p">,</span> <span class="n">t0</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tags</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">it1</span><span class="p">,</span> <span class="n">t1</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">it0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tags</span><span class="p">)),</span> <span class="n">tags</span><span class="p">[</span><span class="n">it0</span><span class="p">:]):</span>
+            <span class="n">xname</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">t1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">pair</span> <span class="o">=</span> <span class="p">(</span><span class="n">index</span><span class="p">[</span><span class="n">it0</span><span class="p">],</span> <span class="n">index</span><span class="p">[</span><span class="n">it1</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">pair</span> <span class="o">=</span> <span class="p">(</span><span class="n">it0</span><span class="p">,</span> <span class="n">it1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pair</span> <span class="o">=</span> <span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">t1</span><span class="p">)</span>
+            <span class="n">pairs</span><span class="p">[</span><span class="n">xname</span><span class="p">]</span> <span class="o">=</span> <span class="n">pair</span>
+    <span class="k">return</span> <span class="n">pairs</span></div>
+
+
+<span class="k">def</span> <span class="nf">dict_decode</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Recursively decode key or value bytestrings in a dictionary.</span>
+<span class="sd">    Useful when loading a bytes-encoded numpy archive file from disk.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">d</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">d</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;S&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">d</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">d</span>
+    <span class="n">d2</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="vm">__class__</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+        <span class="n">d2</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">dict_decode</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d2</span>
+
+
+<div class="viewcode-block" id="load_compat"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.load_compat">[docs]</a><span class="k">def</span> <span class="nf">load_compat</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load and decode a numpy archive file from disk.</span>
+
+<span class="sd">    Backward compatible with python2 data files.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;encoding&quot;</span><span class="p">,</span> <span class="s2">&quot;latin1&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">__version__</span> <span class="o">&gt;=</span> <span class="s2">&quot;1.16.0&quot;</span><span class="p">:</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;allow_pickle&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">out</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">out</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># convert singletons to scalars</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">&quot;item&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+        <span class="c1"># handle unicode data</span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">dict_decode</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+        <span class="n">out</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="load_pickle_compat"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.load_pickle_compat">[docs]</a><span class="k">def</span> <span class="nf">load_pickle_compat</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load a pickle file from the given filename.</span>
+<span class="sd">    Ensure that the file is open in mode &#39;rb&#39; (required for python3), and</span>
+<span class="sd">    that the encoding is set to &#39;latin1&#39; in python3.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">pickle</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;read&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">filename</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;rb&quot;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;latin1&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Reopening file </span><span class="si">{}</span><span class="s2"> in mode &#39;rb&#39; for unpickling&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="n">filename</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;latin1&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="parse_data"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.parse_data">[docs]</a><span class="k">def</span> <span class="nf">parse_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Look for a field in some data, return as a dictionary with</span>
+<span class="sd">    descriptive keys.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    data : str or dict</span>
+<span class="sd">        Either the path to an npz file on disk or a loaded npz dict.</span>
+<span class="sd">    field : str</span>
+<span class="sd">        Which key in data to return as a dictionary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">load_compat</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="n">version</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_version&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">.xfaster_class</span> <span class="kn">import</span> <span class="n">XFaster</span>
+
+    <span class="n">dv</span> <span class="o">=</span> <span class="n">XFaster</span><span class="o">.</span><span class="n">data_version</span>
+
+    <span class="c1"># add backward-compatibile parsing here if necessary</span>
+    <span class="k">if</span> <span class="n">version</span> <span class="o">!=</span> <span class="n">dv</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Incompatible data file version.  Found </span><span class="si">{}</span><span class="s2">, expected </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">version</span><span class="p">,</span> <span class="n">dv</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c1"># if versions match, then data is already stored in the proper format</span>
+    <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="n">field</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="dict_to_arr"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.dict_to_arr">[docs]</a><span class="k">def</span> <span class="nf">dict_to_arr</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Transform ordered dict into an array, if all items are same shape</span>
+
+<span class="sd">    If not all items are the same shape, eg, for qb, or if flatten=True,</span>
+<span class="sd">    flatten everything into a vector</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">d</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">dict_to_arr</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">out</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="n">flatten</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">out</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">val</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">flatten</span><span class="p">:</span>
+                    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">out</span><span class="p">,</span> <span class="n">val</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">val</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="arr_to_dict"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.arr_to_dict">[docs]</a><span class="k">def</span> <span class="nf">arr_to_dict</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">ref_dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Transform an array of data into a dictionary keyed by the same keys in</span>
+<span class="sd">    ref_dict, with data divided into chunks of the same length as in ref_dict.</span>
+<span class="sd">    Requires that the length of the array is the sum of the lengths of the</span>
+<span class="sd">    arrays in each entry of ref_dict.  The other dimensions of the input</span>
+<span class="sd">    array and reference dict can differ.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ref_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">bd</span> <span class="ow">in</span> <span class="n">ref_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">idx</span> <span class="p">:</span> <span class="n">idx</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">bd</span><span class="p">)]</span>
+        <span class="n">idx</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bd</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="dict_to_index"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.dict_to_index">[docs]</a><span class="k">def</span> <span class="nf">dict_to_index</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Construct a dictionary of (start, stop) indices that correspond to the</span>
+<span class="sd">    location of each sub-array when the dict is converted to a single array</span>
+<span class="sd">    using ``dict_to_arr``.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    To use this function to index into a (nbins, nbins) array, create</span>
+<span class="sd">    the index dictionary:</span>
+
+<span class="sd">    &gt;&gt;&gt; bin_def = OrderedDict((k, np.array([[2, 27], [27, 52]]))</span>
+<span class="sd">    ...                       for k in [&#39;cmb_tt&#39;, &#39;cmb_ee&#39;, &#39;cmb_bb&#39;])</span>
+<span class="sd">    &gt;&gt;&gt; bin_index = dict_to_index(bin_def)</span>
+<span class="sd">    &gt;&gt;&gt; bin_index</span>
+<span class="sd">    OrderedDict([(&#39;cmb_tt&#39;, (0, 2)),</span>
+<span class="sd">                 (&#39;cmb_ee&#39;, (2, 4)),</span>
+<span class="sd">                 (&#39;cmb_bb&#39;, (4, 6))])</span>
+
+<span class="sd">    To extract the TT bins from the fisher matrix:</span>
+
+<span class="sd">    &gt;&gt;&gt; fisher = np.random.randn(12, 12)</span>
+<span class="sd">    &gt;&gt;&gt; sl_tt = slice(*bin_index[&#39;cmb_tt&#39;])</span>
+<span class="sd">    &gt;&gt;&gt; fisher_tt = fisher[sl_tt, sl_tt]</span>
+
+<span class="sd">    To extract all the CMB bins from the fisher matrix:</span>
+
+<span class="sd">    &gt;&gt;&gt; sl_cmb = slice(bin_index[&#39;cmb_tt&#39;][0], bin_index[&#39;cmb_bb&#39;][1])</span>
+<span class="sd">    &gt;&gt;&gt; fisher_cmb = fisher[sl_cmb, sl_cmb]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">index</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">idx</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+        <span class="n">idx</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">index</span></div>
+
+
+<div class="viewcode-block" id="dict_to_dmat"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.dict_to_dmat">[docs]</a><span class="k">def</span> <span class="nf">dict_to_dmat</span><span class="p">(</span><span class="n">dmat_dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Take a dmat dictionary and return the right shaped Dmat matrix:</span>
+<span class="sd">    (Nmaps * 3, Nmaps * 3, lmax + 1) if pol else</span>
+<span class="sd">    (Nmaps, Nmaps, lmax + 1)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nmaps</span> <span class="o">=</span> <span class="n">num_maps</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dmat_dict</span><span class="p">))</span>
+
+    <span class="c1"># get the unique map tags in order from the keys map1:map2</span>
+    <span class="n">mtags</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">dmat_dict</span><span class="p">]</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">uind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">mtags</span><span class="p">,</span> <span class="n">return_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">map_tags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mtags</span><span class="p">)[</span><span class="nb">sorted</span><span class="p">(</span><span class="n">uind</span><span class="p">)]</span>
+    <span class="n">map_pairs</span> <span class="o">=</span> <span class="n">tag_pairs</span><span class="p">(</span><span class="n">map_tags</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">nmaps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">map_tags</span><span class="p">)</span>
+    <span class="n">pol_dim</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">Dmat</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">inds</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;tt&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="s2">&quot;ee&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="s2">&quot;bb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+        <span class="s2">&quot;te&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="s2">&quot;eb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+        <span class="s2">&quot;tb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="n">xname</span><span class="p">,</span> <span class="p">(</span><span class="n">im0</span><span class="p">,</span> <span class="n">im1</span><span class="p">)</span> <span class="ow">in</span> <span class="n">map_pairs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">pol_dim</span> <span class="o">=</span> <span class="mi">3</span> <span class="k">if</span> <span class="s2">&quot;ee&quot;</span> <span class="ow">in</span> <span class="n">dmat_dict</span><span class="p">[</span><span class="n">xname</span><span class="p">]</span> <span class="k">else</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">spec</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">dmat_dict</span><span class="p">[</span><span class="n">xname</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">Dmat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">pol_dim</span> <span class="o">*</span> <span class="n">nmaps</span><span class="p">,</span> <span class="n">pol_dim</span> <span class="o">*</span> <span class="n">nmaps</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+                    <span class="n">shape</span> <span class="o">+=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">),)</span>
+                <span class="n">Dmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+            <span class="n">sind</span> <span class="o">=</span> <span class="n">inds</span><span class="p">[</span><span class="n">spec</span><span class="p">]</span>
+            <span class="n">xind</span> <span class="o">=</span> <span class="n">im0</span> <span class="o">*</span> <span class="n">pol_dim</span> <span class="o">+</span> <span class="n">sind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">yind</span> <span class="o">=</span> <span class="n">im1</span> <span class="o">*</span> <span class="n">pol_dim</span> <span class="o">+</span> <span class="n">sind</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">Dmat</span><span class="p">[</span><span class="n">xind</span><span class="p">,</span> <span class="n">yind</span><span class="p">]</span> <span class="o">=</span> <span class="n">Dmat</span><span class="p">[</span><span class="n">yind</span><span class="p">,</span> <span class="n">xind</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+            <span class="n">xind</span> <span class="o">=</span> <span class="n">im1</span> <span class="o">*</span> <span class="n">pol_dim</span> <span class="o">+</span> <span class="n">sind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">yind</span> <span class="o">=</span> <span class="n">im0</span> <span class="o">*</span> <span class="n">pol_dim</span> <span class="o">+</span> <span class="n">sind</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">Dmat</span><span class="p">[</span><span class="n">xind</span><span class="p">,</span> <span class="n">yind</span><span class="p">]</span> <span class="o">=</span> <span class="n">Dmat</span><span class="p">[</span><span class="n">yind</span><span class="p">,</span> <span class="n">xind</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="k">return</span> <span class="n">Dmat</span></div>
+
+
+<div class="viewcode-block" id="dict_to_dsdqb_mat"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.dict_to_dsdqb_mat">[docs]</a><span class="k">def</span> <span class="nf">dict_to_dsdqb_mat</span><span class="p">(</span><span class="n">dsdqb_dict</span><span class="p">,</span> <span class="n">bin_def</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Take a dSdqb dictionary and return the right shaped dSdqb matrix:</span>
+<span class="sd">    (Nmaps * 3, Nmaps * 3, nbins_cmb+nbins_fg+nbins_res, lmax + 1) if pol</span>
+<span class="sd">    else first two dimensions are Nmaps.</span>
+
+<span class="sd">    If gmat is given, the terms in the resulting matrix are multiplied by the</span>
+<span class="sd">    appriopriate mode density term.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># get the unique map tags in order from the keys map1:map2</span>
+    <span class="n">mtags</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">dsdqb_dict</span><span class="p">[</span><span class="s2">&quot;cmb&quot;</span><span class="p">]]</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">uind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">mtags</span><span class="p">,</span> <span class="n">return_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">map_tags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mtags</span><span class="p">)[</span><span class="nb">sorted</span><span class="p">(</span><span class="n">uind</span><span class="p">)]</span>
+    <span class="n">map_pairs</span> <span class="o">=</span> <span class="n">tag_pairs</span><span class="p">(</span><span class="n">map_tags</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">nmaps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">map_tags</span><span class="p">)</span>
+    <span class="n">pol_dim</span> <span class="o">=</span> <span class="mi">3</span> <span class="k">if</span> <span class="s2">&quot;cmb_ee&quot;</span> <span class="ow">in</span> <span class="n">bin_def</span> <span class="k">else</span> <span class="mi">1</span>
+
+    <span class="n">inds</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;tt&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="s2">&quot;ee&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="s2">&quot;bb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+        <span class="s2">&quot;te&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="s2">&quot;eb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+        <span class="s2">&quot;tb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+    <span class="p">}</span>
+
+    <span class="n">bin_index</span> <span class="o">=</span> <span class="n">dict_to_index</span><span class="p">(</span><span class="n">bin_def</span><span class="p">)</span>
+    <span class="n">nbins</span> <span class="o">=</span> <span class="n">bin_index</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">bin_index</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">dsdqb_mat</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">seen_keys</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">)</span> <span class="ow">in</span> <span class="n">bin_index</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">bins</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;delta_beta&quot;</span><span class="p">:</span>
+            <span class="n">comp</span> <span class="o">=</span> <span class="s2">&quot;delta_beta&quot;</span>
+            <span class="n">specs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;tt&quot;</span><span class="p">,</span> <span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">,</span> <span class="s2">&quot;te&quot;</span><span class="p">,</span> <span class="s2">&quot;eb&quot;</span><span class="p">,</span> <span class="s2">&quot;tb&quot;</span><span class="p">]</span>
+            <span class="n">pairs</span> <span class="o">=</span> <span class="n">map_pairs</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">comp</span><span class="p">,</span> <span class="n">rem</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;_&quot;</span> <span class="ow">in</span> <span class="n">rem</span><span class="p">:</span>
+                <span class="n">specs</span><span class="p">,</span> <span class="n">tag</span> <span class="o">=</span> <span class="n">rem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">xname</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">:</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+                <span class="n">pairs</span> <span class="o">=</span> <span class="p">{</span><span class="n">xname</span><span class="p">:</span> <span class="n">map_pairs</span><span class="p">[</span><span class="n">xname</span><span class="p">]}</span>
+                <span class="k">if</span> <span class="n">specs</span> <span class="o">==</span> <span class="s2">&quot;eebb&quot;</span><span class="p">:</span>
+                    <span class="n">specs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">specs</span> <span class="o">=</span> <span class="p">[</span><span class="n">specs</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">specs</span> <span class="o">=</span> <span class="p">[</span><span class="n">rem</span><span class="p">]</span>
+                <span class="n">pairs</span> <span class="o">=</span> <span class="n">map_pairs</span>
+
+        <span class="k">if</span> <span class="n">comp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dsdqb_dict</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="k">for</span> <span class="n">xname</span><span class="p">,</span> <span class="p">(</span><span class="n">im0</span><span class="p">,</span> <span class="n">im1</span><span class="p">)</span> <span class="ow">in</span> <span class="n">pairs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">xname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dsdqb_dict</span><span class="p">[</span><span class="n">comp</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">spec</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dsdqb_dict</span><span class="p">[</span><span class="n">comp</span><span class="p">][</span><span class="n">xname</span><span class="p">]:</span>
+                    <span class="k">continue</span>
+                <span class="k">for</span> <span class="n">spec2</span><span class="p">,</span> <span class="n">d2</span> <span class="ow">in</span> <span class="n">dsdqb_dict</span><span class="p">[</span><span class="n">comp</span><span class="p">][</span><span class="n">xname</span><span class="p">][</span><span class="n">spec</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">dsdqb_mat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">sz</span> <span class="o">=</span> <span class="n">d2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="n">dsdqb_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                            <span class="p">(</span><span class="n">nmaps</span> <span class="o">*</span> <span class="n">pol_dim</span><span class="p">,</span> <span class="n">nmaps</span> <span class="o">*</span> <span class="n">pol_dim</span><span class="p">,</span> <span class="n">nbins</span><span class="p">,</span> <span class="n">sz</span><span class="p">)</span>
+                        <span class="p">)</span>
+                    <span class="n">sind</span> <span class="o">=</span> <span class="n">inds</span><span class="p">[</span><span class="n">spec2</span><span class="p">]</span>
+                    <span class="n">ind0</span> <span class="o">=</span> <span class="n">im0</span> <span class="o">*</span> <span class="n">pol_dim</span> <span class="o">+</span> <span class="n">sind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">ind1</span> <span class="o">=</span> <span class="n">im1</span> <span class="o">*</span> <span class="n">pol_dim</span> <span class="o">+</span> <span class="n">sind</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">dsdqb_mat</span><span class="p">[</span><span class="n">ind0</span><span class="p">,</span> <span class="n">ind1</span><span class="p">,</span> <span class="n">bins</span><span class="p">]</span> <span class="o">=</span> <span class="n">dsdqb_mat</span><span class="p">[</span><span class="n">ind1</span><span class="p">,</span> <span class="n">ind0</span><span class="p">,</span> <span class="n">bins</span><span class="p">]</span> <span class="o">=</span> <span class="n">d2</span>
+                    <span class="n">ind0</span> <span class="o">=</span> <span class="n">im1</span> <span class="o">*</span> <span class="n">pol_dim</span> <span class="o">+</span> <span class="n">sind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">ind1</span> <span class="o">=</span> <span class="n">im0</span> <span class="o">*</span> <span class="n">pol_dim</span> <span class="o">+</span> <span class="n">sind</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">dsdqb_mat</span><span class="p">[</span><span class="n">ind0</span><span class="p">,</span> <span class="n">ind1</span><span class="p">,</span> <span class="n">bins</span><span class="p">]</span> <span class="o">=</span> <span class="n">dsdqb_mat</span><span class="p">[</span><span class="n">ind1</span><span class="p">,</span> <span class="n">ind0</span><span class="p">,</span> <span class="n">bins</span><span class="p">]</span> <span class="o">=</span> <span class="n">d2</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen_keys</span><span class="p">:</span>
+                    <span class="n">seen_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="c1"># transfer function runs do not include tbeb in the dsdqb matrix</span>
+    <span class="n">nbins_seen</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">bin_index</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">seen_keys</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">nbins_seen</span> <span class="o">!=</span> <span class="n">nbins</span><span class="p">:</span>
+        <span class="n">dsdqb_mat</span> <span class="o">=</span> <span class="n">dsdqb_mat</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">nbins_seen</span><span class="p">,</span> <span class="p">:]</span>
+
+    <span class="k">return</span> <span class="n">dsdqb_mat</span></div>
+
+
+<div class="viewcode-block" id="load_and_parse"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.load_and_parse">[docs]</a><span class="k">def</span> <span class="nf">load_and_parse</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load a .npz data file from disk and parse all the fields it contains.</span>
+
+<span class="sd">    Returns a dictionary of parsed fields.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">load_compat</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="n">ret</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, A. Gambrel, A. Rahlin, C. Contaldi.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

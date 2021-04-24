@@ -1,0 +1,1590 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Tutorial"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "This tutorial is also a Jupyter notebook, which can be found in [the example notebooks directory](https://github.com/annegambrel/xfaster/tree/main/example/notebooks)."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## The main ingredients of the XFaster code"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Before we get into the functions that produce each of the components that gets fed into equations \\ref{eq:qb} and \\ref{eq:fisher}, let's first talk about how XFaster is structured and what it expects as inputs.\n",
+    "\n",
+    "There are two main python modules in XFaster: `xfaster_exec.py` and `xfaster_class.py`. `xfaster_exec` was written to mirror `unimap_exec`. It contains two main functions: `xfaster_run` and `xfaster_submit`. `xfaster_run` calls all of the functions to make XFaster happen (all located in `xfaster_class`) in the order they need to happen. `xfaster_submit` takes arguments for submitting the job to a queue. XFaster is not highly parallelized like `unimap`. The only real benefit it can get from using multiple cores is through the OMP speed up from numpy matrix operations. Therefore, unless you're drowning in more cores than you know what to do with, I would recommend only using one core for XFaster jobs, and splitting things up as best you can in other ways (ie, if running sims, have a handful of sims per job instead of running them all in series). \n",
+    "\n",
+    "There are a few other modules you might interact with: \n",
+    "* `xfaster_tools.py`: contains small functions used in xfaster_class\n",
+    "* `parse_tools.py`: contains a bunch of tools for converting between data structures, especially between dictionaries and matrices\n",
+    "* `output_class.py`: contains tools for parsing data on disk for post-processing. This will only be very useful if you're looking at XFaster outputs created prior to July 22, 2019, when things were stored as arrays instead of dictionaries. We would now recommend loading the outputs directly with `xfaster.load_and_parse('<output>.npz')` and grabbing things in the dictionaries there. This is illustrated in the last section of this document."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Specifying what data to use"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "So the top level thing you interact with is `xfaster_exec`, which takes your arguments, and has some reasonable defaults for any you don't provide. What does it take other than arguments? Maps! It wants a bunch of signal and noise simulations, in addition to the data maps and masks. Rather than pointing to each map individually, we have a directory structure that the code expects. I've put the ensemble on labah, and its contents look like this:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ls ../maps_example"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Each of data, signal, noise, and mask has a top level directory with a preordained, fixed prefix (`data`, `signal`, `noise`, `mask`) and then some suffix specified by the user which is appended with an underscore. So, for example, to run XFaster on this set of maps, I need to specify in my arguments: `clean_type=raw` (this is a confusing name for a variable, but just remember this designates the data type), `signal_type=flatBBDl`, `noise_type=stationary`, `mask_type=pointsource_latlon_aphalfdeg`.\n",
+    "\n",
+    "Masks have to be named a certain way within the directory (`mask_map_<tag>.fits`) and have to contain both an I and P mask if running XFaster in polarized mode (which you should always be doing). We have always used the same mask for I and P, but it's not required. You must have a mask file for each map tag, so if I'm doing a run with maps for 90 and 150 GHz maps, I need a mask for each of those, even if it's the same mask. You can use symlinks to save on disk space in that case.\n",
+    "\n",
+    "To indicate which maps I want, I pass the argument `data_subset` a glob-parseable path relative to the top level data directory-- in this case, `data_raw`. [Glob](https://docs.python.org/3/library/glob.html) works just like the unix shell does for matching file paths, so it is easy to test in advance which maps you're going to get. Say I want to do a 150 GHz spectrum using the quarter chunks. I'm going to test this first!"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ls ../maps_example/data_raw/*150* #nope"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ls ../maps_example/data_raw/*/*150* #yep-- data_subset='*/*150*' "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Or instead, if I want to run over all the maps, I would do"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ls ../maps_example/data_raw/*/* # data_subset='*/*'"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "This is all implemented in `_get_files` like so:\n",
+    "```python\n",
+    "# find all map files\n",
+    "map_root = os.path.join(data_root, 'data_{}'.format(clean_type))\n",
+    "map_files = []\n",
+    "data_subset = data_subset.split(\",\")\n",
+    "for f in np.atleast_1d(data_subset):\n",
+    "    map_files.extend(glob.glob(os.path.join(map_root,\n",
+    "                                            '{}.fits'.format(f))))\n",
+    "map_files = sorted(map_files)\n",
+    "map_files = [f for f in map_files if\n",
+    "             os.path.basename(f).startswith('map_')]\n",
+    "map_tags = [os.path.splitext(os.path.basename(f))[0].split('_', 1)[1]\n",
+    "            for f in map_files]\n",
+    "```\n",
+    "So you've specified which data maps you want to compute power spectra for. A reasonable question would be, does that globbable expression then just get applied to the signal and noise directory to get signal and noise maps? If it did, that would mean my first expression for the 150 GHz maps would also get every 150th sim. Instead, XFaster uses whatever matches it found in data, and tries to match those to maps in the sims directory, with the only difference the sim index that's appended. Here's what that looks like for signal sims, in the same function:\n",
+    "```python\n",
+    "# find all corresponding signal sims\n",
+    "signal_root = os.path.join(data_root, 'signal_{}'.format(signal_type))\n",
+    "num_signal = None\n",
+    "signal_files = []\n",
+    "for f in map_files:\n",
+    "    sfiles = sorted(glob.glob(\n",
+    "        f.replace(map_root, signal_root).replace(\n",
+    "            '.fits', '_{}.fits'.format(signal_subset))))\n",
+    "    nsims1 = len(sfiles)\n",
+    "    if not nsims1:\n",
+    "        raise OSError('Missing signal sims for {}'.format(f))\n",
+    "    num_signal = nsims1\n",
+    "    signal_files.append(sfiles)\n",
+    "```"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "It's easy to get errors at the reading files step. Add log messages around here to see what's going wrong. XFaster requires that all your maps have the same number of sims, though you are allowed to have a different from of signal and noise sims. In the labah data set, I have 1000 signal and noise sims for SPIDER, but only 200 of each for Planck. So I need to tell XFaster to only use the first 200 signal and noise sims it finds. I can do that using the `signal_subset` and `noise_subset` arguments, which default to `'*'`. Now, I need to specify (in a glob-parseable manner) which tags that come after `map_90_`, eg, to use. Each sim is indexed with four digits, so `map_90_0000.fits, map_90_0001.fits`, etc. If I want the first 200 of each sim, I'm first going to test my expression (I'm piping it into a line count to reduce the output, but you don't have to):"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ls ../maps_example/signal_synfast/full/map_95_0[0-1] | wc -l # this won't work"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ls ../maps_example/signal_synfast/full/map_95_0[0-1]* | wc -l # yep! signal_subset='0[0-1]*';"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Step by step through the functions called in xfaster_exec"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now we'll proceed to stepping through each function in xfaster_exec. You'll never run the code this way, you'll just call xfaster_run or xfaster_submit with the arguments that then get passed to these functions. But we'll do it this way so we can illustrate some of the intermediate data products as we go.\n",
+    "\n",
+    "I'll do a run with all six SPIDER and Planck frequencies. First, we'll import XFaster and initialize our XFaster class with some arguments."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import xfaster as xf\n",
+    "import matplotlib.pyplot as plt\n",
+    "from matplotlib import colors\n",
+    "import numpy as np"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X = xf.XFaster(config=\"../config_example.ini\", output_root=\"../outputs_example\", verbose=\"info\",\n",
+    "              output_tag=\"95x150\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### get_files"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "I'm just going to use the first 100 sims to reduce the time it takes me to run this notebook, but you should use as many sims as are available to you to get the best results."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "file_opts = {\n",
+    "    \"data_root\": \"../maps_example\",\n",
+    "    \"data_subset\": \"full/*95,full/*150\",\n",
+    "    \"data_type\": \"raw\",\n",
+    "    \"noise_type\": \"gaussian\",\n",
+    "    \"mask_type\": \"rectangle\",\n",
+    "    \"signal_type\": \"synfast\",\n",
+    "}\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "file_vars = X.get_files(**file_opts)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### get_bin_def"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now we set up a dictionary that tells where the edges of the CMB bins are for each spectrum."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "bd = X.get_bin_def(bin_width=25, lmin=2, tbeb=True, foreground_fit=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "bd.keys()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "bd['cmb_tt']"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### get_mask_weights"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "w_stuff = X.get_mask_weights()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Notice here that XFaster first checked if a file existed on disk with the information we're trying to compute. It has a checkpointing system, such that if a file exists with the data you want, it won't recompute it *unless* you've specified with the `checkpoint` argument that you want to recompute that step. If we did specify `checkpoint=masks`, it would redo the `get_mask_weights` function, and every step beyond that in the pipeline, whether or not they have already been stored to disk."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "w_stuff.keys()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The main outputs of this step are the $g$ term that we need for the Fisher matrix and $q_b$ equations ($\\ref{eq:qb}, \\ref{eq:fisher}$), and $wls$, the cross spectra of the masks. Within the dictionary are also the components used to make $g$. \n",
+    "\n",
+    "First, $wls$ is just $map2alm$, and then $alm2cl$ healpy routines on the masks. If you're doing a polarized spectrum, the resulting array is 3 x lmax, where the elements are (intensity, pol, intensity x pol). Since our intensity and pol masks are the same, all three elements are the same, and look like this (plotted as $D_\\ell$):"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ell = np.arange(501)\n",
+    "lfac = ell * (ell+1) / (2*np.pi)\n",
+    "plt.plot(lfac * w_stuff['wls']['150:150'][0])\n",
+    "plt.ylabel(r'$\\frac{\\ell(\\ell+1)}{2\\pi}w_\\ell$')\n",
+    "plt.xlabel(r'$\\ell$')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Note:** most of the quantities in XFaster are ordered dictionaries, where we've tried to keep the following tree structure:\n",
+    "1. Spectra (either plain ['tt', 'ee'], etc, or ['cmb_tt', 'cmb_ee', ..., 'fg_tt', 'fg_ee', ..., 'res_tt', ...]\n",
+    "2. Map/map cross. Crosses are indicated with a colon and are in alphabetical order (so 90 is last): ['100:100', '100:143', '100:150', ..., '90:90']\n",
+    "3. Stuff. Typically an array, though depending on the data structure, it could be a more deeply nested dictionary."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now I'll step through the parts of the code that make up the $g$ term for one mask:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\"\"\"\n",
+    "# NBD replace this with generating the map and then doing things with it \n",
+    "import healpy as hp\n",
+    "imask = hp.read_map(\"../maps_example/masks_rectangle/mask_map_150.fits\", \n",
+    "                    field=None)\n",
+    "imask[imask==hp.UNSEEN] = 0\n",
+    "# this is an array that has one Npix vector for I and one Npix vector for P. \n",
+    "# Turn it into I, Q, U:\n",
+    "imask = np.vstack([imask, imask[1]]) # shape (3, npix)\n",
+    "# *if* we used different masks, we would need to compute all possible products \n",
+    "# of each of the two masks\n",
+    "jmask = imask\n",
+    "mask = np.einsum('i...,j...->ij...', imask, jmask)  # resulting shape (3, 3, npix)\n",
+    "# counts is:\n",
+    "# [[nonzero TxT, nonzero TxP, nonzero TxP],\n",
+    "#  [nonzero TxP, nonzero PxP, nonzero PxP],\n",
+    "#  [nonzero TxP, nonzero PxP, nonzero PxP]]\n",
+    "counts = np.count_nonzero(mask, axis=-1).astype(float)\n",
+    "print(counts)\n",
+    "\"\"\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\"\"\"\n",
+    "# fsky is the fraction of pixels that are nonzero, independent\n",
+    "# of weight\n",
+    "fsky = counts / X.npix\n",
+    "print(fsky)\n",
+    "\"\"\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\"\"\"\n",
+    "# w1, w2, and w4 are the first, second, and fourth moments of the mask. \n",
+    "# These now take into account the apodization.\n",
+    "w1 = np.sum(mask, axis=-1) / counts\n",
+    "w2 = np.sum(mask ** 2, axis=-1) / counts\n",
+    "w4 = np.sum(mask ** 4, axis=-1) / counts\n",
+    "\"\"\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#print(w1)\n",
+    "#print(w2)\n",
+    "#print(w4)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\"\"\"\n",
+    "fsky_eff = fsky * w2 ** 2 / w4 * (1.0 + 4.0 * fsky)\n",
+    "print(fsky_eff)\n",
+    "\"\"\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "If we were using a different mask for the two maps that went into computing `fsky_eff`, it would not be diagonal.  Because we symmetrize all cross spectra, we want to compute a symmetrized quantity here as well."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "\"\"\"\n",
+    "fsky_eff = (fsky_eff + fsky_eff.T) / 2.0\n",
+    "print(fsky_eff)\n",
+    "\"\"\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The $g$ term in equations \\ref{eq:qb} and \\ref{eq:fisher} accounts for loss of modes due to the cut sky.  It affects the error bars that are computed from the inverse of Equation \\ref{eq:fisher} (smaller mask means more variance), but leaves the $q_b$'s unbiased.  As written, the $\\mathbf{g}$ matrices contain each of the elements in `fsky_eff` along the diagonal.  However, to simplify the array mathematics in the code, we represent the matrix as a dictionary that is effectively the unique elements of $\\mathbf{g}\\mathbf{g^T}$:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(X.gmat['150:150'])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### get_kernels"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The next step is to compute the kernels for each mask auto and cross spectrum.  In the MASTER formalism, the kernel couples modes to each other on the sky due to the finite dimensions of the mask that is applied to each map that goes into computing a cross spectrum.  That is to say, the measured power at a particular $\\ell$ is a weighted average over several other neighboring modes $\\ell^\\prime$, and $K_{\\ell\\ell^\\prime}$ is the matrix that applies this weighting.\n",
+    "\n",
+    "The kernels are computed from the power spectrum of the mask, which we'll call $\\mathcal{W}_\\ell$ (stored as `wls` above), and we compute separate kernels for each of the power spectra, and for each unique pair of maps `i` and `j`.\n",
+    "\n",
+    "The set of kernels are:\n",
+    "\n",
+    "\\begin{equation}\n",
+    "\\begin{aligned}\n",
+    "K^{ij}_{\\ell\\ell^\\prime} &= \\frac{2 \\ell^\\prime + 1}{4 \\pi} \\sum_L (2 L + 1) \\mathcal{W}^{TT,ij}_L\n",
+    "\\begin{pmatrix}\n",
+    "\\ell & \\ell^\\prime & L \\\\\n",
+    "0 & 0 & 0\n",
+    "\\end{pmatrix}^2 \\\\\n",
+    "_\\pm K^{ij}_{\\ell\\ell^\\prime} &= \\frac{2 \\ell^\\prime + 1}{4 \\pi} \\sum_L \\frac{1}{2}(2 L + 1) \\mathcal{W}^{PP,ij}_L\n",
+    "\\begin{pmatrix}\n",
+    "\\ell & \\ell^\\prime & L \\\\\n",
+    "2 & -2 & 0\n",
+    "\\end{pmatrix}^2 \\cdot \\frac{1}{2} \\left(1 \\pm (-1)^{\\ell + \\ell^\\prime + L}\\right) \\\\\n",
+    "_\\times K^{ij}_{\\ell\\ell^\\prime} &= \\frac{2 \\ell^\\prime + 1}{4 \\pi} \\sum_L (2 L + 1) \\mathcal{W}^{TP,ij}_L\n",
+    "\\begin{pmatrix}\n",
+    "\\ell & \\ell^\\prime & L \\\\\n",
+    "2 & -2 & 0\n",
+    "\\end{pmatrix} \\begin{pmatrix}\n",
+    "\\ell & \\ell^\\prime & L \\\\\n",
+    "0 & 0 & 0\n",
+    "\\end{pmatrix}\n",
+    "\\end{aligned}\n",
+    "\\label{eq:kernels}\n",
+    "\\end{equation}\n",
+    "\n",
+    "The $\\pm$ kernels are used to compute $EE$, $BB$ and $EB$ power spectrum terms, with the $-$ term in particular used to account for mixing between $E$ and $B$ due to the mask.  The $\\times$ kernel is used to compute the $TE$ and $TB$ spectra.\n",
+    "\n",
+    "Let's plot some of these up.  Because we are using the same mask for all maps, the kernels for each $ij$ pair will look identical."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "k = X.get_kernels()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, ax = plt.subplots(2, 2, figsize=(12,5.5))\n",
+    "m = ax[0,0].imshow(k['kern']['150:150'], norm=colors.LogNorm(vmax=0.01, vmin=1e-10))\n",
+    "ax[0,0].set_title('kern')\n",
+    "ax[0,0].set_ylabel('$\\ell$')\n",
+    "ax[0,1].imshow(k['pkern']['150:150'], norm=colors.LogNorm(vmax=0.01, vmin=1e-10))\n",
+    "ax[0,1].set_title('pkern')\n",
+    "ax[1,0].imshow(k['mkern']['150:150'], norm=colors.LogNorm(vmax=0.01, vmin=1e-10))\n",
+    "ax[1,0].set_title('mkern')\n",
+    "ax[1,0].set_ylabel('$\\ell$')\n",
+    "ax[1,0].set_xlabel('$\\ell^\\prime$')\n",
+    "ax[1,1].imshow(np.abs(k['xkern']['150:150']), norm=colors.LogNorm(vmax=0.01, vmin=1e-10))\n",
+    "ax[1,1].set_title('xkern')\n",
+    "ax[1,1].set_xlabel('$\\ell^\\prime$')\n",
+    "fig.colorbar(m, ax=ax.ravel().tolist());"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Note that the shorter dimension ($\\ell$) of each kernel goes up to $\\ell_{max}$, and the longer dimension ($\\ell^\\prime$) extends to $2 \\ell_{max} + 1$.  The kernels are apodized, so that for any row $\\ell$, the kernels are zero for values $\\ell^\\prime > \\ell + \\ell_{max}$.  The longer dimension is summed over in computing the $\\tilde{\\mathcal{C}}_{b\\ell}$ terms."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### get_masked_sims"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now we want to get the ensemble average of all of our signal simulations, which we're going to use to calculate the filter transfer function and also to build the CMB signal model we are comparing our data to. The same function, `get_masked_sims` computes the $\\tilde{\\mathcal{C}}_\\ell$s for signal and noise. To start with, we just want the signal ensemble, so get_masked_sims is called as such:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "s = X.get_masked_sims(transfer=True, do_noise=False)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "This function is doing a very simple thing. For each pair of maps of a given sim index, it \n",
+    "1. Applies the mask.\n",
+    "2. Transforms the maps into $a_{\\ell m}$s using the healpy routine `map2alm`.\n",
+    "3. Transforms those into $\\tilde{\\mathcal{C}}_\\ell$s for that pair using the healpy routine `alm2cl`.\n",
+    "4. Adds the $\\tilde{\\mathcal{C}}_\\ell$s to a running average for that particular map cross and spectrum.\n",
+    "\n",
+    "It only does `map2alm` once per map and caches the result for use in other cross spectra since this is the slowest step in the function.\n",
+    "\n",
+    "These spectra have all the effects of the masking, filtering, and beam included. Let's compare a couple of them to get a sense for what they look like."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, ax = plt.subplots(1, 2)\n",
+    "ax[0].plot(lfac * s['cls_signal']['tt']['95:95'], label='95 auto')\n",
+    "ax[0].plot(lfac * s['cls_signal']['tt']['150:150'], label='150 auto')\n",
+    "ax[0].plot(lfac * s['cls_signal']['tt']['150:95'], label='95 x 150')\n",
+    "ax[0].legend()\n",
+    "ax[0].set_ylabel(r'$D_\\ell [\\mu \\mathrm{K}^2]$')\n",
+    "ax[0].set_xlabel(r'$\\ell$')\n",
+    "ax[0].set_title('TT')\n",
+    "ax[1].plot(lfac * s['cls_signal']['ee']['95:95'], label='95 auto')\n",
+    "ax[1].plot(lfac * s['cls_signal']['ee']['150:150'], label='150 auto')\n",
+    "ax[1].plot(lfac * s['cls_signal']['ee']['150:95'], label='95 x 150')\n",
+    "ax[1].legend()\n",
+    "ax[1].set_xlabel(r'$\\ell$')\n",
+    "ax[1].set_title('EE')\n",
+    "fig.suptitle('cls_signal')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "This set of maps uses regular unimap reobserved constrained synfast sims for SPIDER. The Planck signal sims are not reobserved, but are smoothed to a uniform Gaussian with FWHM=15'. **Note:** XFaster is hardcoded to only expect Planck maps in this form. It does not solve for their transfer function (though that might change) and assumes if it is a Planck map, it has had its original beam deconvolved and smoothed with a common 15 arcmin Gaussian. So it's clear in these plots that the Planck maps have more power, since they both haven't had the heavy SPIDER filtering at low ell and the larger SPIDER beams applied at high ell.\n",
+    "\n",
+    "The result of `get_masked_sims` is a spectrum per map cross per spectrum type (TT, EE, etc), which will ultimately be used to make up the $\\tilde{\\mathbf{D}}_\\ell^{sig}$ matrix that we'll use for computing the transfer function in `get_transfer` below."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### get_beams"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The next component we need for our equations is the beam window function, $B_\\ell$. XFaster does not solve for this-- you have to tell it what it is. For SPIDER, we use the `beam20` product, and for Planck, we've smoothed each map to a common 15 arcmin Gaussian (which included deconvolving the original Planck beam for each map).\n",
+    "\n",
+    "In `xfaster_exec`, there are optional arguments for this function if you have one ensemble of sims from which to compute the transfer function, and one from which to get the final shape spectrum expected. We used that in the past since transfer function calculation would go haywire at high ell since the beam had cut off so much power. Now, we just look at low ells, so we don't bother with this extra set of sims."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "beams = X.get_beams(pixwin=True)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We could have a different beam for intensity and polarization. In practice, we don't, so each of the spectrum fields for beam is the same. Let's plot them for each map."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "for freq in X.map_tags:\n",
+    "    plt.plot(beams['tt'][freq], label=freq)\n",
+    "plt.legend()\n",
+    "plt.ylabel(r'$B_\\ell$')\n",
+    "plt.xlabel(r'$\\ell$')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### get_signal_shape"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's check in on our progress of components we've computed. We're trying to build everything to make up our $\\tilde{\\mathcal{C}}^{XY}_{b\\ell}$s, which as a reminder are the following quantity.\n",
+    "\n",
+    "\\begin{equation}\n",
+    "\\tilde{\\mathcal{C}}^{XY}_{b\\ell} = \\sum_{\\ell^{\\prime}} K_{\\ell \\ell^{\\prime}}^{X Y} F_{\\ell^{\\prime}}^{X Y} B_{\\ell^{\\prime}}^{2} \\mathcal{C}_{\\ell^{\\prime}}^{X Y} \\chi_{b}\\left(\\ell^{\\prime}\\right)\n",
+    "\\end{equation}\n",
+    "\n",
+    "We have $K_{\\ell, \\ell'}$ and $B_{\\ell}$. For the transfer function calculation, we're going to set $F_\\ell$ to 1 so that we measure $q_b$s as the deviation from a uniform transfer function for our simulations. Binning, $\\chi_b$ has been chosen. All that's left is the full sky signal shape, $\\mathcal{C}_{\\ell'}^{XY}$. For calculating the transfer function, this is just the shape spectrum that went into making our simulations. The script we use to make the XFaster ensembles, `spider_tools/analysis/maps/xfaster_maps.py`, copies the spectrum it used to make the signal sim maps for reobservation into the top level of the signal sim directory. XFaster looks here for that spectrum, or you can explicitly feed the file in as an argument (the file must be an output file of CAMB-- XFaster expects that formatting and those units.)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "signal_shape = X.get_signal_shape()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "These will look familiar to you. Note that they are as long as the long dimension of the $K_{\\ell\\ell'}$, which is 2*lmax + 1."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ell2 = np.arange(1001)\n",
+    "lfac2 = ell2 * (ell2 + 1) / (2*np.pi)\n",
+    "fig, ax = plt.subplots(2, 3, figsize=(10,7))\n",
+    "ax = ax.flatten()\n",
+    "for i, (s, spec) in enumerate(signal_shape.items()):\n",
+    "    ax[i].plot(lfac2 * spec)\n",
+    "    ax[i].set_title(s)\n",
+    "    if i in [0,3]:\n",
+    "        ax[i].set_ylabel(r'$D_\\ell [\\mu\\mathrm{K}^2]$')\n",
+    "    if i in [3,4,5]:\n",
+    "        ax[i].set_xlabel(r'$\\ell$')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### get_transfer"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We now have everything we need to compute the transfer function, which is computed per map per spectrum per CMB bin. As a refresher, we're trying to get $q_b^{transfer}$, which is the same as our original expression for $q_b$ in Equation \\ref{eq:qb}, except now we set noise=0, transfer function=1, and instead of using data for our observed signal, we use the ensemble average of our signal sims:\n",
+    "\n",
+    "\\begin{equation}\n",
+    "q_{b}^{transfer}=\\frac{1}{2} \\sum_{b^{\\prime}} \\mathcal{F}_{b b^{\\prime}}^{-1} \\sum_{\\ell} (2 \\ell+1) \\operatorname{Tr}\\left[ \\left(\\tilde{\\mathbf{D}}_{\\ell}^{-1} \\frac{\\partial \\tilde{\\mathbf{S}}_{\\ell}}{\\partial q_{b^{\\prime}}} \\tilde{\\mathbf{D}}_{\\ell}^{-1}\\right)\\mathbf{g}\\tilde{\\mathbf{D}}_{\\ell}^{signal}\\mathbf{g}^T\\right]\n",
+    "\\label{eq:qb_transfer}\n",
+    "\\end{equation}\n",
+    "\n",
+    "The expression for the Fisher matrix does not change, other than the fact that its constituents are the same as detailed above for the transfer function.\n",
+    "\n",
+    "$\\frac{\\partial \\tilde{\\mathbf{S}}_{\\ell}}{\\partial q_{b^{\\prime}}}$ is what's detailed in Equation $\\ref{eq:dsdqb}$. For the transfer function, since we set noise to be zero, $\\tilde{\\mathbf{D}}_\\ell$ is equivalent to $\\tilde{\\mathbf{S}}_\\ell$ in Equation \\ref{eq:qb_transfer}. \n",
+    "\n",
+    "Within the code, `get_transfer` basically has two steps within the function itself, which it performs per map. \n",
+    "1. Load up the $\\tilde{\\mathcal{C}}_{b\\ell}$: \n",
+    "```python \n",
+    "cbl = self.bin_cl_template(cls_shape_trf, m0, transfer_run=True)\n",
+    "```\n",
+    "`cls_shape_trf` is signal_shape that we calculated earlier, `m0` is the map, which is used to select the beam and kernel, and `transfer_run=True` sets the $F_\\ell$ term to 1.\n",
+    "2. Run `fisher_iterate`.\n",
+    "```python\n",
+    "ret = self.fisher_iterate(cbl, cls_shape_trf, m0, transfer_run=True,\n",
+    "                          iter_max=iter_max, converge_criteria=converge_criteria,\n",
+    "                          save_iters=save_iters, cond_noise=cond_noise,\n",
+    "                          tophat_bins=tophat_bins)\n",
+    "```\n",
+    "\n",
+    "We'll talk more in the `get_bandpowers` section about the details that happen from here, but broadly, XFaster takes all the inputs we've calculated and a starting $q_b$ guess (1 for all bins), computes the Fisher matrix, plugs that into the $q_b$ equation to get a new $q_b$, and repeats. Once the maximum of |(qb_new-qb)/qb| < converge_criteria, it stops iterating and saves the result.\n",
+    "\n",
+    "One additional check that `get_transfer` does is to look for transfer function values that are negative. If it finds any, it changes that bin value to the average of the orignal value and the next bin's value. This typically happens due to poor choices of binning or too small a number of signal simulations.\n",
+    "\n",
+    "Also, Only TT, EE, BB, and TE transfer functions are calculated. EB and TB are computed as\n",
+    "```python\n",
+    "qb['cmb_eb'] = np.sqrt(np.abs(qb['cmb_ee'] * qb['cmb_bb']))\n",
+    "qb['cmb_tb'] = np.sqrt(np.abs(qb['cmb_tt'] * qb['cmb_bb']))\n",
+    "```"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(signal_shape.keys())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "transfer = X.get_transfer(signal_shape)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's look at a couple transfer functions."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, ax = plt.subplots(1, 2, figsize=(10,7))\n",
+    "ax = ax.flatten()\n",
+    "plot_inds = {'95': 0, '150': 1}\n",
+    "for s, spec in transfer.items():\n",
+    "    for m, fl in spec.items():\n",
+    "        ax[plot_inds[m]].plot(fl, label=s.split('_')[-1])\n",
+    "        if 'tt' in s:\n",
+    "            ax[plot_inds[m]].set_title(m)\n",
+    "for i in range(2):\n",
+    "    ax[i].set_xlabel('bin')\n",
+    "for i in [0]:\n",
+    "    ax[i].set_ylabel(r'$F_\\ell$')\n",
+    "ax[0].legend()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### get_bin_def (round 2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Up to this point, we've been working towards getting the transfer function. Now, we want to set things up for solving for CMB bandpowers, and optionally foreground and/or noise residual bandpowers. We start by adding information about the binning we want for those terms to the `bin_def` dictionary."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "bin_def = X.get_bin_def(bin_width=25, lmin=2, tbeb=True,\n",
+    "                        foreground_fit=False,\n",
+    "                        residual_fit=True, res_specs=['eebb'],\n",
+    "                        bin_width_res=100)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "bin_def.keys()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "So now we've set up everything we're going to solve for. Note that the residuals have a couple of unique features. Since we set `res_specs=['eebb']`, XFaster wills solve for a single amplitude for the EE and BB noise residuals. We could have instead set it to `['ee', 'bb']` or `['tt', 'ee', 'bb']`. The default at the moment is to solve for EE and BB together. Also note that noise residuals are fit per map, and that is to that map's auto-spectrum. We'll look more at that in the `get_bandpowers` section.\n",
+    "\n",
+    "It's straightforward here to see how many parameters ($q_b$s) XFaster will be solving for-- just the total number of bins in bin_def: 120 for CMB, and 10 for noise residuals = 130."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from xfaster import parse_tools as pt\n",
+    "pt.dict_to_arr(bin_def).shape"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### get_masked_xcorr"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cls_data = X.get_masked_data()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "This is straightforward. It's using the healpy routines `map2alm` and `alm2cls` to get all the auto and cross spectra of the data maps. These are all built into the matrix $\\tilde{\\mathbf{D}}_\\ell^{obs}$ in Equation \\ref{eq:qb}. Let's look at a couple!"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, ax = plt.subplots(1, 2)\n",
+    "ax[0].plot(lfac * cls_data['cls_data']['tt']['95:95'], label='95 auto')\n",
+    "ax[0].plot(lfac * cls_data['cls_data']['tt']['150:150'], label='150 auto')\n",
+    "ax[0].plot(lfac * cls_data['cls_data']['tt']['150:95'], label='95 x 150')\n",
+    "ax[0].legend()\n",
+    "ax[0].set_ylabel(r'$D_\\ell [\\mu \\mathrm{K}^2]$')\n",
+    "ax[0].set_xlabel(r'$\\ell$')\n",
+    "ax[0].set_title('TT')\n",
+    "ax[1].plot(lfac * cls_data['cls_data']['ee']['95:95'], label='95 auto')\n",
+    "ax[1].plot(lfac * cls_data['cls_data']['ee']['150:150'], label='150 auto')\n",
+    "ax[1].plot(lfac * cls_data['cls_data']['ee']['150:95'], label='95 x 150')\n",
+    "ax[1].legend()\n",
+    "ax[1].set_xlabel(r'$\\ell$')\n",
+    "ax[1].set_title('EE')\n",
+    "fig.suptitle('cls_data')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### get_masked_sims (round 2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now we do the same thing for all the sims. We've already done the signal sims since those were used for the transfer function, so the code sees that they're on disk and doesn't recompute them. It doesn't find the noise sims, so it computes those for each sim index for each auto and cross.\n",
+    "\n",
+    "There are a few options you can use here. These options do not affect the ensemble average for signal and noise sims that are used to build the equations for $q_b$ and the Fisher matrix. Instead, they are for use when you don't want XFaster to compute bandpowers for data, but for simulations instead. If `ensemble_mean=True`, XFaster will replace the observed data matrix, $\\tilde{\\mathbf{D}}_\\ell^{obs}$, with the ensemble average of signal plus the ensemble average of the noise sims. If `sim_index` is not None, it will replace the data matrix with the signal + noise spectra from the sim specified. If `sims_add_alms=True`, it will do that addition in $a_{\\ell m}$s. If it is False, it will do the addition in $\\tilde{\\mathcal{C}}_\\ell$s. The latter would not include signal cross noise; the former would."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sims = X.get_masked_sims(ensemble_mean=False, sim_index=None, sims_add_alms=True)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now we have signal and noise in our sims dictionary. We've looked some signal spectra. Let's look at the same in noise."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, ax = plt.subplots(1, 2)\n",
+    "ax[0].plot(lfac * sims['cls_noise']['tt']['95:95'], label='95 auto')\n",
+    "ax[0].plot(lfac * sims['cls_noise']['tt']['150:150'], label='150 auto')\n",
+    "ax[0].plot(lfac * sims['cls_noise']['tt']['150:95'], label='95 x 150')\n",
+    "ax[0].legend()\n",
+    "ax[0].set_ylabel(r'$D_\\ell [\\mu \\mathrm{K}^2]$')\n",
+    "ax[0].set_xlabel(r'$\\ell$')\n",
+    "ax[0].set_title('TT')\n",
+    "ax[1].plot(lfac * sims['cls_noise']['ee']['95:95'], label='95 auto')\n",
+    "ax[1].plot(lfac * sims['cls_noise']['ee']['150:150'], label='150 auto')\n",
+    "ax[1].plot(lfac * sims['cls_noise']['ee']['150:95'], label='95 x 150')\n",
+    "ax[1].legend()\n",
+    "ax[1].set_xlabel(r'$\\ell$')\n",
+    "ax[1].set_title('EE')\n",
+    "fig.suptitle('cls_noise')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### get_beams (round 2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "There's now another call to get_beams, which is totally superfluous if you're using the same signal sims for transfer functions that you are for your signal ensemble average. But, if you wanted to use a narrower beam for the former and a more realistic wider beam for the latter, this is where you'd load up the latter. For our case, we'll do it just so you can see the log message."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "b = X.get_beams(pixwin=True)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### get_bandpowers"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now we put it all together!  The function `get_bandpowers` works just like `get_transfer`, with the transfer function terms no longer set to unity, and instead constructed from the $q_b$'s computed by `get_transfer`.\n",
+    "\n",
+    "#### Constructing the model spectrum\n",
+    "\n",
+    "The first step is to construct the $\\tilde{\\mathcal{C}}_{b\\ell}$'s including all of the additional components in the model.  There are now two new pieces here: a foreground component that varies with frequency, and includes a linearized component for its spectral index, and so-called \"noise residuals\" that account for the inaccuracy of our noise model in the auto-spectra."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cbl = X.bin_cl_template(signal_shape, map_tag=None, transfer_run=False)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's plot up each set of components individually.  First, the CMB component, which should look familiar.  Each color represents the $\\tilde{\\mathcal{C}}_{b\\ell}$ for a single bin.  The black lines show the total shape of each component in $\\ell$, assuming the $q_b$ applied to each bin is set to 1.  This is what we call the *model spectrum* that we are fitting to.  Notice that the EE and BB mixing terms have very broad bins and are very low amplitude.  This is due to the shape of the $_{-}K_{\\ell\\ell^\\prime}$ kernel as a function of $\\ell$.  These shapes will look different for each map cross, due to differences in each transfer function and beam."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, axs = plt.subplots(2, 4, figsize=(14,7), sharex=True)\n",
+    "axs = axs.ravel()\n",
+    "ell = np.arange(501)\n",
+    "ellfac = ell * (ell + 1) / 2.0 / np.pi\n",
+    "comps = ['cmb_tt', 'cmb_te', 'cmb_ee', 'cmb_ee_mix', 'cmb_eb', 'cmb_tb', 'cmb_bb', 'cmb_bb_mix']\n",
+    "for ax, comp in zip(axs, comps):\n",
+    "    ax.set_title('150 x 150 {}'.format(comp))\n",
+    "    cbl1 = cbl[comp]['150:150']\n",
+    "    d = cbl1.sum(axis=0)\n",
+    "    ax.plot(d * ellfac, 'k')\n",
+    "    for d in cbl1:\n",
+    "        ax.plot(d * ellfac)\n",
+    "for i in [0,4]:\n",
+    "    axs[i].set_ylabel('$D_\\ell$')\n",
+    "for i in range(4,8):\n",
+    "    axs[i].set_xlabel('$\\ell$')\n",
+    "plt.tight_layout()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The next model component that we include accounts for residual noise in the auto-spectra.  These $\\tilde{\\mathcal{C}}_{b\\ell}$ terms do not include any transfer functions, beams or mode mixing kernels.  They are derived from the *simulated* noise spectra $\\tilde{N}_\\ell$ that are subtracted from the *measured* data as in equation \\ref{eq:qb}.  These terms act as corrections to the noise model by adjusting the auto-spectrum noise components to agree with the cross terms.\n",
+    "\n",
+    "We fit only for the EE and BB components, and we do so in a simultaneous way.  That is, each $q_b^{res,EEBB}$ applies to both $\\tilde{\\mathcal{C}}_{b\\ell}^{EE}$ and $\\tilde{\\mathcal{C}}_{b\\ell}^{BB}$ here.  The TT spectrum is very much signal dominated, so we don't bother correcting TT auto spectra this way.\n",
+    "\n",
+    "The residual signal model is thus:\n",
+    "\n",
+    "\\begin{equation}\n",
+    "\\tilde{\\mathbf{S}}_\\ell^{res,ij} = \\delta_{ij}\\,\n",
+    "\\begin{bmatrix}\n",
+    "0 & 0 & 0 \\\\ \n",
+    "0 & \\sum_b q_b^{EEBB} \\tilde{\\mathcal{C}}_{b\\ell}^{EE} & 0 \\\\ \n",
+    "0 & 0 & \\sum_b q_b^{EEBB} \\tilde{\\mathcal{C}}_{b\\ell}^{BB} \\\\ \n",
+    "\\end{bmatrix}_{\\,res,ij}\n",
+    "\\label{eq:signal_res}\n",
+    "\\end{equation}\n",
+    "\n",
+    "and the derivatives are\n",
+    "\n",
+    "\\begin{equation}\n",
+    "\\frac{\\partial \\tilde{\\mathbf{S}}_\\ell}{\\partial q_b^{res,ij,EEBB}} = \\delta_{ij}\\,\n",
+    "\\begin{bmatrix}\n",
+    "0 & 0 & 0 \\\\ \n",
+    "0 & \\tilde{\\mathcal{C}}_{b\\ell}^{EE} & 0 \\\\ \n",
+    "0 & 0 & \\tilde{\\mathcal{C}}_{b\\ell}^{BB} \\\\ \n",
+    "\\end{bmatrix}_{\\,res,ij}\n",
+    "\\label{eq:signal_res_deriv}\n",
+    "\\end{equation}"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, axs = plt.subplots(1, 2, sharex=True, figsize=(7,3.5))\n",
+    "axs = axs.ravel()\n",
+    "ell = np.arange(501)\n",
+    "ellfac = ell * (ell + 1) / 2.0 / np.pi\n",
+    "comps = ['res_ee', 'res_bb']\n",
+    "for ax, comp in zip(axs, comps):\n",
+    "    ax.set_title('150 x 150 {}'.format(comp))\n",
+    "    cbl1 = cbl[comp]['150:150']\n",
+    "    d = cbl1.sum(axis=0)\n",
+    "    ax.plot(d * ellfac, 'k')\n",
+    "    for d in cbl1:\n",
+    "        ax.plot(d * ellfac)\n",
+    "for i in [0]:\n",
+    "    axs[i].set_ylabel('$D_\\ell$')\n",
+    "for i in range(2):\n",
+    "    axs[i].set_xlabel('$\\ell$')\n",
+    "plt.tight_layout()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Next we add our actual noise simulations to the model.  The residual noise terms discussed above are designed to account for inaccuracies in this model.  We assume that the cross terms are accurate, and only correct the auto spectra for EE and BB in this way.\n",
+    "\n",
+    "We often find that the fisher iterations have trouble converging due to degeneracies in the lower bins, so we also include a term we call \"conditioning noise\" along the TT/EE/BB diagonals as well.  The conditioning noise is modeled as:\n",
+    "\n",
+    "\\begin{equation}\n",
+    "\\tilde{\\mathbf{S}}_\\ell^{cond,ij,XY} = \\delta_{ij} c_{XY} \\frac{\\ell + 1}{\\ell^2}\n",
+    "\\end{equation}\n",
+    "\n",
+    "where $c_{EE} = c_{BB}$ is parameterized by the `cond_noise` option, typically a small number O(0.01) or less, $c_{TT} = 100 c_{EE}$ and all others are 0.\n",
+    "\n",
+    "To plot up both of these model components, along with all of the terms discussed above, let's call an internal function that computes the model spectrum for us, given the $\\tilde{\\mathcal{C}}_{b\\ell}$ terms and some model parameters $q_b$."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from collections import OrderedDict\n",
+    "# construct a dummy qb array to compute input model\n",
+    "qb = OrderedDict([(k, np.ones(len(v))) for k, v in X.bin_def.items()])\n",
+    "cls_model = X.get_model_spectra(qb, cbl, delta=True, cls_noise=X.cls_noise, cond_noise=0.03)\n",
+    "\n",
+    "fig, axs = plt.subplots(2, 3, figsize=(11,7))\n",
+    "axs = axs.ravel()\n",
+    "ell = np.arange(501)\n",
+    "ellfac = ell * (ell + 1) / 2.0 / np.pi\n",
+    "xname = '150:150'\n",
+    "for comp in ['cmb', 'noise', 'res', 'cond', 'total']:\n",
+    "    for ax, spec in zip(axs, ['tt', 'ee', 'bb', 'te', 'eb', 'tb']):\n",
+    "        stag = '{}_{}'.format(comp, spec)\n",
+    "        if stag not in cls_model:\n",
+    "            ax.plot(0, 0, label=comp)\n",
+    "            continue\n",
+    "        if comp in ['res', 'total']:\n",
+    "            ax.plot(ellfac * cls_model[stag][xname], label=comp, linestyle='--')\n",
+    "        else:\n",
+    "            ax.plot(ellfac * cls_model[stag][xname], label=comp)\n",
+    "        ax.set_title('150 x 150 {}'.format(spec))\n",
+    "        if spec in ['ee', 'bb']:\n",
+    "            ax.set_ylim(-0.01, 0.175)\n",
+    "axs[0].legend()\n",
+    "for i in [0,3]:\n",
+    "    axs[i].set_ylabel('$D_\\ell$')\n",
+    "for i in range(3,6):\n",
+    "    axs[i].set_xlabel('$\\ell$')\n",
+    "plt.tight_layout()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, axs = plt.subplots(2, 3, figsize=(11,7))\n",
+    "axs = axs.ravel()\n",
+    "ell = np.arange(501)\n",
+    "ellfac = ell * (ell + 1) / 2.0 / np.pi\n",
+    "xname = '150:95'\n",
+    "for comp in ['cmb', 'noise', 'res', 'cond', 'total']:\n",
+    "    for ax, spec in zip(axs, ['tt', 'ee', 'bb', 'te', 'eb', 'tb']):\n",
+    "        stag = '{}_{}'.format(comp, spec)\n",
+    "        if stag not in cls_model or xname not in cls_model[stag]:\n",
+    "            ax.plot(0, 0, label=comp)\n",
+    "            continue\n",
+    "        ax.plot(ellfac * cls_model[stag][xname], label=comp)\n",
+    "        ax.set_title('150 x 90 {}'.format(spec))\n",
+    "axs[0].legend()\n",
+    "for i in [0,3]:\n",
+    "    axs[i].set_ylabel('$D_\\ell$')\n",
+    "for i in range(3,6):\n",
+    "    axs[i].set_xlabel('$\\ell$')\n",
+    "plt.tight_layout()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Note that neither conditioning noise nor residual terms are present in the 150x90 spectra.\n",
+    "\n",
+    "Note also that the shape of the conditioning noise is counter-intuitive.  It should be largest at low ell to improve convergence, but it is not.  This seems like a bug."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Computing the Fisher matrix\n",
+    "\n",
+    "Ok! Now that we have all the pieces in place, all that's left is to do some matrix math and iterate over equations \\ref{eq:qb} and \\ref{eq:fisher} until the results converge.  The two equations are constructed in the function `fisher_calc`, which is called iteratively by `fisher_iterate` until convergence is reached.\n",
+    "\n",
+    "In order to make all the quantities we've computed look like matrices, we have two utility functions, `dict_to_dmat` and `dict_to_dsdqb_mat`, that convert the dictionaries `Dmat1` (corresponding to $\\mathbf{D}_\\ell$ in the equations) and `dSdqb_mat1_freq` ($\\partial \\mathbf{S}_\\ell / \\partial q_b$) into matrices.\n",
+    "\n",
+    "The `Dmat1` matrix has shape `(3 * num_maps, 3 * num_maps, lmax + 1)` and contains the `total` model terms for each map cross spectrum, ordered as in equation \\ref{eq:dell}.  The `dSdqb_mat1_freq` matrix has shape `(3 * num_maps, 3 * num_maps, nbins, lmax + 1)` and includes the CMB, residuals and frequency-corrected foreground components for all the crosses. We then compute the quantity\n",
+    "\n",
+    "\\begin{equation}\n",
+    "\\mathbf{D}^{-1} \\frac{\\partial \\mathbf{S}}{\\partial q_b} \\mathbf{D}^{-1}\n",
+    "\\end{equation}\n",
+    "\n",
+    "using the following code:\n",
+    "\n",
+    "```python\n",
+    "Dmat1 = np.linalg.inv(Dmat1.swapaxes(0, -1)).swapaxes(0, -1)\n",
+    "eye = np.eye(len(gmat))\n",
+    "mat1 = np.einsum('ij...,jk...->ik...', eye, Dmat1)\n",
+    "mat2 = np.einsum('klm...,ln...->knm...', dSdqb_mat1_freq, Dmat1)\n",
+    "mat = np.einsum('ik...,knm...->inm...', mat1, mat2)\n",
+    "```\n",
+    "\n",
+    "The first line computes the inverse of $D$, ell-by-ell along the first two dimensions.  The next two lines are necessary due to some quirk of memory access in python; this is just multiplying the first two dimensions of `Dmat1` by the identity matrix.  The last two lines do the matrix multiplication along the first two dimensions of each of the matrices.\n",
+    "\n",
+    "Now, we apply the $\\mathbf{g}$ correction factor as in equations \\ref{eq:qb} and \\ref{eq:fisher}.  The following two lines multiply $\\mathbf{gg}^T$ element-by-element along the first two dimensions of `Dmat_obs` and `dSdqb_mat1_freq`.\n",
+    "\n",
+    "```python\n",
+    "Dmat_obs_g = gmat[..., None] * Dmat_obs\n",
+    "dSdqb_mat1_g = gmat[..., None, None] * dSdqb_mat1_freq\n",
+    "```\n",
+    "\n",
+    "Next we compute the big matrices in equations \\ref{eq:qb} and \\ref{eq:fisher} and compute their traces in a single step:\n",
+    "\n",
+    "```python\n",
+    "matd = np.einsum('ijk...,ji...->k...', mat, Dmat_obs_g)\n",
+    "mats = np.einsum('ijk...,jil...->kl...', mat, dSdqb_mat1_g)\n",
+    "```\n",
+    "\n",
+    "And finally, we sum over $\\ell$ to compute $v_b = \\sum_b' \\mathcal{F}_{bb^\\prime}q_{b'}$ and $\\mathcal{F}_{bb^\\prime}$. $v_b$ now just needs the inverse Fisher matrix applied to it to get $q_b$.\n",
+    "\n",
+    "```python\n",
+    "qb_vec = np.dot(matd, ellfac) / 2.0\n",
+    "fisher = np.dot(mats, ellfac) / 2.0\n",
+    "```"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Inverting the Fisher matrix\n",
+    "\n",
+    "Now we take the inverse.  The `solve` function in the `numpy.linalg` library does so efficiently:\n",
+    "\n",
+    "```python\n",
+    "qb_vec = np.linalg.solve(fisher, qb_vec)\n",
+    "inv_fish = np.linalg.solve(fisher, np.eye(len(qb_vec)))\n",
+    "```\n",
+    "\n",
+    "With each iteration, we compare the new `qb_vec` quantity to the previous one, until the maximum fractional change in any element of the array is less than the convergence criterion (0.005 is typical)."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#### Constructing final bandpowers\n",
+    "\n",
+    "To construct bandpowers, we need to apply the $q_b$ parameters to the input shape spectra.  This is done by integrating over each bin using a weighting scheme.  The quantity we want in the end should be in units of $\\mathcal{D}_\\ell = \\ell (\\ell + 1) C_\\ell / 2\\pi$, where $C_\\ell$ is the appropriate input shape spectrum.\n",
+    "Assuming some weighted integral $\\mathcal{I}_b$ for a given bin, we compute each bandpower as a weighted integral of $\\ell (\\ell + 1) C_\\ell / 2\\pi$, scaled by the appropriate $q_b$, and normalized by the integral of the weights:\n",
+    "\n",
+    "\\begin{equation}\n",
+    "\\mathcal{D}_b = q_b \\frac{ \\mathcal{I}_b\\left[\\frac{\\ell (\\ell + 1)}{2\\pi} C_\\ell \\right] }{ \\mathcal{I}_b\\left[ 1 \\right] }\n",
+    "\\end{equation}\n",
+    "\n",
+    "Similarly, the errors on each bandpower are:\n",
+    "\n",
+    "\\begin{equation}\n",
+    "\\Delta\\mathcal{D}_b = \\sqrt{F^{-1}_{bb}} \\frac{ \\mathcal{I}_b\\left[\\frac{\\ell (\\ell + 1)}{2\\pi} C_\\ell \\right] }{ \\mathcal{I}_b\\left[ 1 \\right] }\n",
+    "\\end{equation}\n",
+    "\n",
+    "To be specific, we define the weighted integral as:\n",
+    "\n",
+    "\\begin{equation}\n",
+    "\\mathcal{I}_b\\left[f_\\ell\\right] = \\sum_\\ell \\frac{1}{2} \\frac{2\\ell + 1}{\\ell (\\ell + 1)} \\chi_b(\\ell) \\, f_\\ell\n",
+    "\\end{equation}\n",
+    "\n",
+    "where $\\chi_b(\\ell)$ is a top-hat function with value 1 within the bin and 0 outside of it. This weighting scheme is taken from [Section 4.2 of Bond, Jaffe, and Knox (2000)](https://arxiv.org/pdf/astro-ph/9808264.pdf). With this definition, the bin centers are:\n",
+    "\n",
+    "\\begin{equation}\n",
+    "\\ell_b = \\frac{ \\mathcal{I}_b\\left[\\frac{\\ell (\\ell + 1)}{2\\pi} C_\\ell \\, \\ell \\right] }{ \\mathcal{I}_b\\left[ \\frac{\\ell (\\ell + 1)}{2\\pi} C_\\ell \\right] }\n",
+    "\\end{equation}\n",
+    "\n",
+    "While this definition of the integral is sufficient, the more accurate calculation constructs $\\chi_b(\\ell)$ as a window function that includes beam, transfer function and kernel effects that distribute power as a function of $\\ell$.  This has yet to be implemented."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Looking at results"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "bp = X.get_bandpowers(signal_shape, converge_criteria=0.005, iter_max=200, save_iters=True,\n",
+    "                      cond_noise=0.03)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "In the plot below, we'll plot up the maximum fractional change in $q_b$ with iteration. This information is printed in the logs, but it's helpful to visualize on a plot. You can see it bounce around early on before settling down and ultimately stopping once it gets to the desginated criterion."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import glob\n",
+    "iters = glob.glob('../outputs_example/95x150/bandpowers_iter*')\n",
+    "### Figure for seeing how convergence looks in fqb\n",
+    "fig_fqb, ax_fqb = plt.subplots()\n",
+    "ax_fqb.axhline(0.005, label='convergence criterion', color='C1')\n",
+    "ax_fqb.set_title('Max fractional change in qb vs iter')\n",
+    "ax_fqb.set_ylabel('Maximum absolute fqb')\n",
+    "ax_fqb.set_xlabel('Iteration')\n",
+    "fqb = np.zeros(len(iters))\n",
+    "for i, bp0 in enumerate(iters):\n",
+    "    b = xf.load_and_parse(bp0)\n",
+    "    fqb[i] = np.max(np.abs(b['fqb']))\n",
+    "ax_fqb.plot(fqb, marker='o')\n",
+    "ax_fqb.legend()\n",
+    "ax_fqb.set_yscale('log')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now let's see how the total model (summing up the $q_b\\mathcal{C}_{b\\ell}$ terms for every component) to see how it converges to fit the data. Within a few iterations, it's quite close."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "### Figure for looking at how sum(qbCbl) changes with iteration to match data\n",
+    "figtmp = plt.figure()\n",
+    "tmpplot = plt.imshow(np.zeros((2,2)), cmap=plt.cm.get_cmap('viridis'),vmin=0, vmax=len(iters))\n",
+    "plt.close(figtmp)\n",
+    "fig_dat, ax_dat = plt.subplots(2,3, figsize=(15,10))\n",
+    "ax_dat = ax_dat.flatten()\n",
+    "specs = ['tt', 'ee', 'bb', 'te', 'tb', 'eb']\n",
+    "colors = plt.cm.get_cmap('viridis', len(iters)).colors\n",
+    "for s, spec in enumerate(specs):\n",
+    "    ax_dat[s].set_title(spec)\n",
+    "for i, bp0 in enumerate(iters):\n",
+    "    b = xf.load_and_parse(bp0)\n",
+    "    for s, spec in enumerate(specs):\n",
+    "        if i == 0:\n",
+    "            # data cls don't change with iter- plot once.\n",
+    "            ax_dat[s].plot(b['cls_obs'][spec]['150:95'] * lfac, color='gray', label='data')\n",
+    "        ax_dat[s].plot(b['cls_model']['total_'+spec]['150:95'] * lfac, color=colors[i])\n",
+    "for i in [0, 3]:\n",
+    "    ax_dat[i].set_ylabel(r'$D_\\ell$')\n",
+    "for i in range(3,5):\n",
+    "    ax_dat[i].set_xlabel(r'$\\ell$')\n",
+    "ax_dat[0].legend()\n",
+    "fig_dat.colorbar(tmpplot, label='Iteration', ax=ax_dat.ravel().tolist(), \n",
+    "                 orientation='horizontal', shrink=0.5)\n",
+    "\n",
+    "fig_dat.suptitle(r'90$\\times$150 GHz total power fit')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now let's look at just the $q_b$ values for each of the different component and see how they converge as a function of iteration and bin. The lowest bins tend to have the biggest moves, but for all components, everything gets close to its final value within a handful of iterations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "### Figure for looking at how qb for each bandpower changes with iteration\n",
+    "figtmp = plt.figure()\n",
+    "tmpplot = plt.imshow(np.zeros((2,2)), cmap=plt.cm.get_cmap('viridis'),vmin=0, vmax=len(iters))\n",
+    "plt.close(figtmp)\n",
+    "specs = ['tt', 'ee', 'bb', 'te', 'tb', 'eb']\n",
+    "colors = plt.cm.get_cmap('viridis', len(iters)).colors\n",
+    "scatter = 1. / 50.\n",
+    "for comp in ['cmb']:\n",
+    "    fig_dat, ax_dat = plt.subplots(3,2, figsize=(20,15))\n",
+    "    fig_dat.suptitle(comp+r' $q_b$ vs. iteration')\n",
+    "    ax_dat = ax_dat.flatten()\n",
+    "    for s, spec in enumerate(specs):\n",
+    "        ax_dat[s].set_title(spec)\n",
+    "        ax_dat[s].axhline(1, color='gray', alpha=0.7)\n",
+    "    for i, bp0 in enumerate(iters):\n",
+    "        b = xf.load_and_parse(bp0)\n",
+    "        for s, spec in enumerate(specs):\n",
+    "            ax_dat[s].scatter(np.arange(20) + scatter * i, \n",
+    "                              b['qb'][comp+'_'+spec], color=colors[i], s=4)\n",
+    "    for i in [0, 2, 4]:\n",
+    "        ax_dat[i].set_ylabel(r'$q_b$')\n",
+    "    for i in range(4,5):\n",
+    "        ax_dat[i].set_xlabel('bin')\n",
+    "\n",
+    "    plt.subplots_adjust(wspace=0.05, hspace=0.01)\n",
+    "    fig_dat.colorbar(tmpplot, label='Iteration', ax=ax_dat.ravel().tolist(), \n",
+    "                     orientation='horizontal', shrink=0.5)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Now plot residuals\n",
+    "fig_dat, ax_dat = plt.subplots(1,2, figsize=(10,8))\n",
+    "fig_dat.suptitle(r'res $q_b$ vs. iteration')\n",
+    "ax_dat = ax_dat.flatten()\n",
+    "maps = [x for x in b['qb'] if 'res' in x]\n",
+    "for s, m0 in enumerate(maps):\n",
+    "    ax_dat[s].set_title(m0)\n",
+    "    ax_dat[s].axhline(0, color='gray', alpha=0.7)\n",
+    "    ax_dat[s].set_ylim(-2,2)\n",
+    "for i, bp0 in enumerate(iters):\n",
+    "    b = xf.load_and_parse(bp0)\n",
+    "    for s, m0 in enumerate(maps):\n",
+    "        ax_dat[s].scatter(np.arange(5) + scatter * i, \n",
+    "                          b['qb'][m0], color=colors[i], s=4)\n",
+    "for i in [0]:\n",
+    "    ax_dat[i].set_ylabel(r'$q_b$')\n",
+    "for i in range(2):\n",
+    "    ax_dat[i].set_xlabel('bin')\n",
+    "\n",
+    "plt.subplots_adjust(wspace=0.05, hspace=0.01)\n",
+    "fig_dat.colorbar(tmpplot, label='Iteration', ax=ax_dat.ravel().tolist(), \n",
+    "                 orientation='horizontal', shrink=0.5)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now that everything has converged, let's plot up what the final bandpowers and error bars look like. XFaster saves the binned bandpowers as $D_\\ell$s, though they are labeled `cb`. The error bars are in `dcb`, and those are also computed without sample variance in `dcb_nosampvar`. Covariance is in `cov`, and it also has a no sample variance version, `cov_nosampvar`. I'll plot up the starting models as well to see how far XFaster had to adjust to match the data.\n",
+    "\n",
+    "To calculate error bars and covariances without sample variance, XFaster just does one final calculation of the Fisher matrix (after everything has converged), with all the $q_b$s set to a very small number, thereby nulling out the signal. The error bars and covariance without sample variance come from that Fisher matrix."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#bp = xf.load_and_parse('/mnt/scratch1/spectra_spider_planck/sp_pl/bandpowers_sp_pl.npz')\n",
+    "for comp in ['cmb']:\n",
+    "    fig, ax = plt.subplots(3,2, figsize=(20,15))\n",
+    "    ax = ax.flatten()\n",
+    "    fig.suptitle('{} final estimated bandpowers'.format(comp))\n",
+    "    for s, spec in enumerate(specs):\n",
+    "        sn = '{}_{}'.format(comp, spec)\n",
+    "        ax[s].set_title(spec)\n",
+    "        ax[s].plot(lfac * signal_shape[sn][:501], 'k-', label='Model')     \n",
+    "        ax[s].errorbar(bp['ellb'][sn], bp['cb'][sn], bp['dcb'][sn], label='sampvar') \n",
+    "        ax[s].errorbar(bp['ellb'][sn]+2, bp['cb'][sn], bp['dcb_nosampvar'][sn], label='no sampvar')\n",
+    "    ax[0].legend()\n",
+    "    for i in [0, 2, 4]:\n",
+    "        ax[i].set_ylabel(r'$D_\\ell$')\n",
+    "    for i in [4,5]:\n",
+    "        ax[i].set_xlabel(r'$\\ell$')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "The error bars are just the diagonal of the covariance matrix. Is this a good approximation for our real error? Let's look at the covariance matrix with and without sample variance."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from matplotlib.colors import LogNorm\n",
+    "norm = LogNorm(vmin=10, vmax=1e4)\n",
+    "fig, ax = plt.subplots(1, 2, figsize=(15,10))\n",
+    "fig.suptitle('Covariance')\n",
+    "p = ax[0].imshow(np.abs(bp['cov']), norm=norm)\n",
+    "ax[0].set_title('With sample variance')\n",
+    "ax[1].imshow(np.abs(bp['cov_nosampvar']), norm=norm)\n",
+    "fig_dat.colorbar(p, label='Covariance', ax=ax.ravel().tolist(), \n",
+    "                 orientation='horizontal', shrink=0.5)\n",
+    "ax[1].set_title('Without sample variance')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "This is a 120 x 120 bin matrix, with each of the 20 bins for each spectrum in order (TT, EE, BB, TE, EB, TB)."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Other useful things"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "* **Null tests**\n",
+    " * To run a null test, you just provide two data roots (`data_root` and `data_root2`) corresponding to the map directories of the two halves of the null. \n",
+    " * When XFaster is computing $\\mathcal{C}_\\ell$s from signal sims, noise sims, and data, it loads up both maps, and then computes the spectrum both of (map1+map2)/2 and (map1-map2)/2. It uses the former to compute transfer functions, and the latter for bandpowers.\n",
+    " * The model spectrum fit for is flat in $D_\\ell$ with an amplitude of 1e-5 (0 causes singular matrix problems in the Fisher computation). \n",
+    "* **Foreground sims**\n",
+    " * If you have some foreground sims, say from PySM sitting on disk, and you want XFaster to add them to a CMB signal sim, then in addition to setting `sim_index` to your desired CMB signal sim index, set `foreground_type`. This argument works the same way as `clean_type`-- it looks for maps in the directory in your data root in the folder `foreground_<foreground_type>` that match the map tags you asked for in `data_subset`. \n",
+    "* `noise_type_sim`\n",
+    " * SPIDER's noise sims aren't a super good estimate of our actual noise. That's why we fit for noise residuals! If you want to run a sim that tests how well this works, you can use a different noise sim than one from your ensemble used to calculate $<N_\\ell>$ when doing a `sim_index` run. Feed the tag for the other noise sim directory to `noise_type_sim` (works just like `noise_type`) to use a sim with the same sim index from that directory instead."
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.2"
+  },
+  "toc": {
+   "base_numbering": 1,
+   "nav_menu": {},
+   "number_sections": true,
+   "sideBar": true,
+   "skip_h1_title": true,
+   "title_cell": "Table of Contents",
+   "title_sidebar": "Contents",
+   "toc_cell": false,
+   "toc_position": {
+    "height": "calc(100% - 180px)",
+    "left": "10px",
+    "top": "150px",
+    "width": "239.35px"
+   },
+   "toc_section_display": true,
+   "toc_window_display": false
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
