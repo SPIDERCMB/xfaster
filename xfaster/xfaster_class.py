@@ -1427,6 +1427,7 @@ class XFaster(object):
         self.log("Reading map from {}".format(filename), "all")
         m = np.atleast_2d(hp.read_map(filename, verbose=False, **kwargs))
         m[hp.mask_bad(m)] = 0
+        m[np.isnan(m)] = 0
 
         if check_nside:
 
@@ -2328,7 +2329,7 @@ class XFaster(object):
                 return {k: getattr(self, k) for k in save_attrs}
 
             if template_fit and getattr(self, "template_cleaned", False):
-                if template_alpha == self.template_alpha:
+                if np.all(template_alpha == self.template_alpha):
                     return {k: getattr(self, k) for k in save_attrs}
 
                 apply_template()
@@ -2352,7 +2353,7 @@ class XFaster(object):
             if all([x is None for x in template_alpha.values()]):
                 self.template_cleaned = False
                 return ret
-            if template_alpha == self.template_alpha:
+            if np.all(template_alpha == self.template_alpha):
                 self.template_cleaned = True
                 return ret
             apply_template()

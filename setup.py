@@ -32,6 +32,6 @@ setup(
     packages=["xfaster"],
     package_dir={"xfaster": "xfaster"},
     entry_points={"console_scripts": ["xfaster=xfaster:xfaster_main"]},
-    install_requires=["numpy>1.10.0", "healpy", "camb", "emcee"],
+    install_requires=["numpy>1.10.0", "healpy", "camb", "emcee", "h5py"],
     python_requires='>=3.0',
 )

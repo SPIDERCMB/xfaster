@@ -45,6 +45,7 @@ extensions = [
     'sphinx_rtd_theme',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
+    'nbsphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -74,6 +75,10 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
 
+# Automatic equation numbering
+mathjax_config = {
+'TeX': {'equationNumbers': {'autoNumber': 'AMS', 'useLabelIds': True}},
+}
 
 # -- Options for HTML output -------------------------------------------------
 
