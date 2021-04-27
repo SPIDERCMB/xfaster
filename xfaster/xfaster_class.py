@@ -4179,7 +4179,7 @@ class XFaster(object):
                     w = lfac[left: right] / np.mean(lfac[left: right])
                 else:
                     w = 1.0
-            bin_weights[k].append(w)
+                bin_weights[k].append(w)
 
         self.lmin = lmin
         self.nbins_cmb = nbins_cmb
