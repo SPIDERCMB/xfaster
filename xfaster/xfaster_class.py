@@ -5501,12 +5501,9 @@ class XFaster(object):
                     "debug",
                 )
 
-                # normalization for Cb and Db
+                # normalization for Cb and Db, for CosmoMC and friends
                 wnorm = np.sum(wbl1 * norm, axis=-1)
-
-                # Cb window function
-                wbl1 /= wnorm[:, None] * ells * (ells + 1.0) / 2.0 / np.pi
-
+                wbl1 *= ells * (ells + 1.0) / 2.0 / np.pi / wnorm[:, None]
                 wbl[k] = wbl1
 
             return wbl
