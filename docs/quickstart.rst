@@ -22,7 +22,7 @@ After cloning the repo (`<https://github.com/annegambrel/xfaster>`_), install xf
 
 Example Script
 --------------
-To get started with the code before running it on your data, you can run through the example, described in more detail in the :ref:`Algorithm<Algorithm: Step by Step>` link.
+To get started with the code before running it on your data, you can run through the example, described in more detail in the :ref:`Tutorial<Tutorial>` link.
 First, generate the small ensemble of maps by running `make_example_maps.py <https://github.com/annegambrel/xfaster/blob/main/example/make_example_maps.py>`_ in the ``examples`` directory.
 This should take about 15 minutes on an 8-core laptop.
 Then, run `xfaster_example.py <https://github.com/annegambrel/xfaster/blob/main/example/xfaster_example.py>`_.
@@ -90,7 +90,7 @@ This spectrum in used in computing the transfer function.
 One mask is required per map tag.
 These files begin with ``mask_map_`` instead of ``map_``.
 
-Optional inputs are described in :ref:`Algorithm<Algorithm: Step by Step>`.
+Optional inputs are described in :ref:`Tutorial<Tutorial>`.
 
 Non-Map Data
 ............
@@ -154,7 +154,7 @@ The files written to disk are:
 
   * The likelihoods for parameters
 
-For a detailed overview of the various fields contained in each dictionary, see :ref:`Algorithm<Algorithm: Step by Step>`.
+For a detailed overview of the various fields contained in each dictionary, see :ref:`Tutorial<Tutorial>`.
 
 Whenever you want to read in some data the XFaster code wrote, you'll want to use the function ``load_and_parse``.
 This includes all the files detailed in the list above.
