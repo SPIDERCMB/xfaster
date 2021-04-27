@@ -1,7 +1,10 @@
+'''
+A XFaster submission script to generate ensemble-mean and simulation runs for gcorr calculation.
+'''
+
 import os
 import xfaster as xf
 import argparse as ap
-
 
 P = ap.ArgumentParser()
 P.add_argument('-f', '--first', default=0, type=int)
@@ -12,24 +15,22 @@ P.add_argument('--no-gcorr', dest='gcorr', default=True, action='store_false')
 P.add_argument('--no-submit', dest='submit', action='store_false')
 
 args = P.parse_args()
-
 seeds = list(range(args.first, args.first + args.num))
 if args.ensemble_mean:
     seeds = [seeds[0]]
 
-for tag in ['100']:#['90', '150']:
+tags = ['90','150']
+for tag in tags:
     opts = dict(
         data_root='/data/agambrel/XF_NonNull_Sept18',
         output_root=os.path.join('/data/agambrel/spectra', args.output),
         output_tag=tag,
         tbeb=True,
         bin_width=25,
-        lmin=8,#33,
+        lmin=8, #33
         lmax=407,
         iter_max=200,
         mask_type="pointsource_latlon",
-        # signal_subset='0[0-1]*',
-        # noise_subset='0[0-1]*',
         noise_type=None,
         signal_type='flatBBDl_unconstr',
         clean_type='raw',
@@ -50,7 +51,7 @@ for tag in ['100']:#['90', '150']:
         nodes=1,
         ppn=1,
         mem=6,
-        omp_threads=1, #if (not args.ensemble_mean and len(seeds) > 1) else 18,
+        omp_threads=1, #Increase for runs that generates sim_xcorr files,
         slurm=True,
         wallt=4,
     )
@@ -59,12 +60,12 @@ for tag in ['100']:#['90', '150']:
 
     for s in seeds:
         fname = os.path.join(
-            '/data/agambrel/spectra', args.output, tag,
+            '/path/to/output/', args.output, tag, #Put your output path here.
             'bandpowers_sim{:04d}_{}.npz'.format(s, tag)
         )
         if args.ensemble_mean or not os.path.exists(fname):
-        #if 1:
-            if not args.ensemble_mean:
+            
+	    if not args.ensemble_mean:
                 opts.update(sim_index=s)
             if args.submit:
                 xf.xfaster_submit(**opts)

@@ -1,15 +1,19 @@
+'''
+A iteration script used to solve non-null g_corr factors.
+Also has an option to plot gcorr changes for debugging. 
+'''
 import os
 import numpy as np
 import xfaster as xf
 from time import sleep
 import copy
 from collections import OrderedDict
+
 from matplotlib import use
 use('agg')
 import matplotlib.pyplot as plt
 
 update = True
-
 specs = ['tt', 'ee', 'bb', 'te', 'eb', 'tb']
 
 run_name = 'xfaster_gcal_unconstr'
@@ -17,7 +21,7 @@ run_name_iter = run_name + '_iter'
 ref_dir = os.path.join('/data', 'agambrel', 'spectra', run_name)
 rundir = ref_dir + '_iter'
 
-tags = ['100']#['90', '150']
+tags = ['90', '150']
 
 for tag in tags:
     ref_file = os.path.join(ref_dir, '{0}/gcorr_{0}_iter.npz'.format(tag))
@@ -51,25 +55,18 @@ for tag in tags:
         print('didnt get new gcorr, this must be first')
 
     np.savez_compressed(ref_file.replace('_iter.npz', '_prev.npz'), **gcorr)
-    #print('gcorr new {}'.format(gcorr_new['gcorr']))
-    #print('gcorr old {}'.format(gcorr['gcorr']))
+    
     gcorr['gcorr'] = xf.arr_to_dict(
         xf.dict_to_arr(gcorr['gcorr'], flatten=True)
         * xf.dict_to_arr(gcorr_new['gcorr'], flatten=True),
         gcorr['gcorr']
     )
-    # # fix garbage bin
-    #gcorr['gcorr']['tt'][:] = 1.0
     fig, ax = plt.subplots(2, 3)
     ax = ax.flatten()
     for i, (k, v) in enumerate(gcorr['gcorr'].items()):
-        #if first:
         v[0] = 0.5
-        #v[1] = 0.5
         if k in ['te', 'eb', 'tb']:
-            # set gcorr to 1 since it has no effect
-            v[:] = 1#np.sqrt(gcorr['gcorr'][k[0]*2]*gcorr['gcorr'][k[1]*2])
-        # undo iteration if g value falls below threshold
+            v[:] = 1
         v[v < 0.05] /= gcorr_new['gcorr'][k][v < 0.05]
         v[v > 5] /= gcorr_new['gcorr'][k][v > 5]
         for v0, val in enumerate(v):
@@ -80,11 +77,7 @@ for tag in tags:
                     v[v0] = 1.2
         ax[i].plot(v)
         ax[i].set_title(k)
-    """
-        elif k in ['tt', 'te']:
-             v[0] = 0.2
-        # v[0] = 1 if first else 0.2
-    """
+    
     print(gcorr['gcorr'])
     plt.savefig(os.path.join(rundir, 'plots', 'gcorr_tot_{}.png'.format(tag)))
 

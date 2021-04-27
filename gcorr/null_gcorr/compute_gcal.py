@@ -37,7 +37,7 @@ def xfaster_run_ensemble(output_root=None, output_tag=None):
 
     for filename in files:
 	bp = xf.load_and_parse(filename)
-        inv_fish = bp['inv_fish']
+        inv_fish = bp['invfish_nosampvar']
 	inv_fishes.append(inv_fish)	
         bad = np.where(np.diag(inv_fish) < 0)[0]
         if len(bad):
@@ -65,14 +65,16 @@ def xfaster_run_ensemble(output_root=None, output_tag=None):
      
     outfile = os.path.join(output_root, 'gcorr{}.npz'.format(output_tag))
     np.savez_compressed(outfile, **out)
+    
+    print("Computed new gcorr_correction from the 500 simulations.")
     print(out['gcorr'])
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     import argparse as ap
     P = ap.ArgumentParser()
     P.add_argument('output_tag')
     P.add_argument('-r', '--root', default='xfaster_gcal_unconstr')
     args = P.parse_args()
 
-    xfaster_run_ensemble(os.path.join('/mnt/spider2/xsong/null_tests/202103_gcorrfull/', args.root), args.output_tag)
+    xfaster_run_ensemble(os.path.join('/path/to/output/', args.root), args.output_tag) #Set your own output_root
