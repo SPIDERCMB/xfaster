@@ -4168,6 +4168,19 @@ class XFaster(object):
 
             self.log("Added {} residual bins to bin_def".format(nbins_res), "debug")
 
+        ell = np.arange(self.lmax + 1)
+        lfac = ell * (ell + 1) / 2.0 / np.pi
+
+        bin_weights = OrderedDict()
+        for k, bd in bin_def.items():
+            bin_weights[k] = []
+            for left, right in bd:
+                if weighted_bins:
+                    w = lfac[left: right] / np.mean(lfac[left: right])
+                else:
+                    w = 1.0
+            bin_weights[k].append(w)
+
         self.lmin = lmin
         self.nbins_cmb = nbins_cmb
         self.nbins_fg = nbins_fg
@@ -4175,6 +4188,7 @@ class XFaster(object):
         self.bin_def = bin_def
         self.specs = specs
         self.weighted_bins = weighted_bins
+        self.bin_weights = bin_weights
 
         return self.bin_def
 
@@ -4359,20 +4373,9 @@ class XFaster(object):
             cls_nxs1 = self.cls_nxs1_null if self.null_run else self.cls_nxs1
 
         ell = np.arange(lmax_kern + 1)
-        lfac = ell * (ell + 1) / 2.0 / np.pi
 
-        if self.weighted_bins:
-
-            def binup(d, left, right):
-                w = lfac[left:right]
-                # normalize
-                w = w / w.sum() * len(w)
-                return (d[..., left:right] * w).sum(axis=-1)
-
-        else:
-
-            def binup(d, left, right):
-                return d[..., left:right].sum(axis=-1)
+        def binup(d, left, right, weights):
+            return (d[..., left:right] * weights).sum(axis=-1)
 
         def bin_things(comp, d, md):
             if "res" in comp:
@@ -4385,6 +4388,7 @@ class XFaster(object):
                     mstag = stag + "_mix"
                     cbl.setdefault(mstag, OrderedDict())
                 bd = self.bin_def[stag]
+                bw = self.bin_weights[stag]
                 for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
                     if beam_error:
                         cbl[stag][xname] = OrderedDict(
@@ -4401,23 +4405,25 @@ class XFaster(object):
                             cbl[mstag][xname] = np.zeros((len(bd), lmax + 1))
 
                     # integrate per bin
-                    for idx, (left, right) in enumerate(bd):
+                    for idx, ((left, right), weights) in enumerate(zip(bd, bw)):
                         if beam_error:
                             for k in beam_keys:
                                 cbl[stag][xname][k][idx, ls] = binup(
-                                    d[k][si, xi], left, right
+                                    d[k][si, xi], left, right, weights
                                 )
                         else:
-                            cbl[stag][xname][idx, ls] = binup(d[si, xi], left, right)
+                            cbl[stag][xname][idx, ls] = binup(
+                                d[si, xi], left, right, weights
+                            )
                         if spec in ["ee", "bb"]:
                             if beam_error:
                                 for k in beam_keys:
                                     cbl[mstag][xname][k][idx, ls] = binup(
-                                        md[k][si - 1, xi], left, right
+                                        md[k][si - 1, xi], left, right, weights
                                     )
                             else:
                                 cbl[mstag][xname][idx, ls] = binup(
-                                    md[si - 1, xi], left, right
+                                    md[si - 1, xi], left, right, weights
                                 )
 
         for comp in comps:
@@ -5454,7 +5460,6 @@ class XFaster(object):
             # compute prefactors
             ells = np.arange(0, self.lmax + 1)
             lfac = 2.0 * np.pi / (2.0 * ells + 1.0)
-            chi_bl = np.ones_like(lfac)
 
             # compute binning term
             arg = np.einsum("ij,kljm->klim", inv_fish, mat)
@@ -5469,13 +5474,7 @@ class XFaster(object):
                 spec = k.split('_')[-1]
 
                 # select bins for corresponding spectrum
-                sarg = arg[:, :, left : right]
-
-                # bin weighting
-                if self.weighted_bins:
-                    chi_bl = ells * (ells + 1.0) / 2.0 / np.pi
-                    for l, r in self.bin_def[k]:
-                        chi_bl[l: r] /= np.mean(chi_bl[l: r])
+                sarg = arg[:, :, left: right]
 
                 # select the spectrum terms from the kernel matrix
                 smat = spec_mask[spec][:, :, None, None] * Mmat
@@ -5483,6 +5482,11 @@ class XFaster(object):
                     # add mixing terms
                     mspec = 'bb' if spec == 'ee' else 'ee'
                     smat += spec_mask[mspec][:, :, None, None] * Mmat_mix
+
+                # bin weighting, allowing for overlapping bin edges
+                chi_bl = np.zeros_like(lfac)
+                for (l, r), w in zip(self.bin_def[k], self.bin_weights[k]):
+                    chi_bl[l: r] += w
 
                 # qb window function
                 wbl1 = np.einsum('iil,ijkl,jilm->km', gmat, sarg, smat) * lfac * chi_bl
