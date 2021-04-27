@@ -5505,7 +5505,7 @@ class XFaster(object):
                 wnorm = np.sum(wbl1 * norm, axis=-1)
 
                 # Cb window function
-                wbl1 /= wnorm[:, None]
+                wbl1 /= wnorm[:, None] * ells * (ells + 1.0) / 2.0 / np.pi
 
                 wbl[k] = wbl1
 
