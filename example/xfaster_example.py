@@ -47,6 +47,7 @@ xfaster_opts = {
     "converge_criteria": 0.005,
     "iter_max": 200,
     "save_iters": False,
+    "windows": True,
     # likelihood
     "like_lmin": 26,
     "like_lmax": 250,
