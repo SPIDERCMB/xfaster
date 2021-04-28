@@ -4176,7 +4176,7 @@ class XFaster(object):
             bin_weights[k] = []
             for left, right in bd:
                 if weighted_bins:
-                    w = lfac[left: right] / np.mean(lfac[left: right])
+                    w = lfac[left:right] / np.mean(lfac[left:right])
                 else:
                     w = 1.0
                 bin_weights[k].append(w)
@@ -5469,27 +5469,27 @@ class XFaster(object):
 
             # compute window functions for each spectrum
             for k, (left, right) in bin_index.items():
-                if 'cmb' not in k:
+                if "cmb" not in k:
                     continue
-                spec = k.split('_')[1]
+                spec = k.split("_")[1]
 
                 # select bins for corresponding spectrum
-                sarg = arg[:, :, left: right]
+                sarg = arg[:, :, left:right]
 
                 # select the spectrum terms from the kernel matrix
                 smat = spec_mask[spec][:, :, None, None] * Mmat
-                if spec in ['ee', 'bb']:
+                if spec in ["ee", "bb"]:
                     # add mixing terms
-                    mspec = 'bb' if spec == 'ee' else 'ee'
+                    mspec = "bb" if spec == "ee" else "ee"
                     smat += spec_mask[mspec][:, :, None, None] * Mmat_mix
 
                 # bin weighting, allowing for overlapping bin edges
                 chi_bl = np.zeros_like(lfac)
                 for (l, r), w in zip(self.bin_def[k], self.bin_weights[k]):
-                    chi_bl[l: r] += w
+                    chi_bl[l:r] += w
 
                 # qb window function
-                wbl1 = np.einsum('iil,ijkl,jilm->km', gmat, sarg, smat) * lfac * chi_bl
+                wbl1 = np.einsum("iil,ijkl,jilm->km", gmat, sarg, smat) * lfac * chi_bl
 
                 # check normalization
                 norm = (2.0 * ells + 1.0) / 4.0 / np.pi
