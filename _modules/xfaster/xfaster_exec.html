@@ -226,6 +226,7 @@
     <span class="n">tbeb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">fix_bb_xfer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">window_lmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">windows</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">like_lmin</span><span class="o">=</span><span class="mi">33</span><span class="p">,</span>
     <span class="n">like_lmax</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span>
     <span class="n">like_profiles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -385,6 +386,8 @@
 <span class="sd">        the BB xfer is exactly equal to the EE transfer.</span>
 <span class="sd">    window_lmax : int</span>
 <span class="sd">        The size of the window used in computing the mask kernels</span>
+<span class="sd">    windows : bool</span>
+<span class="sd">        If True compute window functions for each CMB bin in the output</span>
 <span class="sd">    like_lmin : int</span>
 <span class="sd">        The minimum ell value to be included in the likelihood calculation</span>
 <span class="sd">    like_lmax : int</span>
@@ -601,6 +604,7 @@
         <span class="n">return_cls</span><span class="o">=</span><span class="n">return_cls</span><span class="p">,</span>
         <span class="n">apply_gcorr</span><span class="o">=</span><span class="n">apply_gcorr</span><span class="p">,</span>
         <span class="n">reload_gcorr</span><span class="o">=</span><span class="n">reload_gcorr</span><span class="p">,</span>
+        <span class="n">windows</span><span class="o">=</span><span class="n">windows</span><span class="p">,</span>
         <span class="n">like_profiles</span><span class="o">=</span><span class="n">like_profiles</span><span class="p">,</span>
         <span class="n">like_profile_sigma</span><span class="o">=</span><span class="n">like_profile_sigma</span><span class="p">,</span>
         <span class="n">like_profile_points</span><span class="o">=</span><span class="n">like_profile_points</span><span class="p">,</span>
@@ -644,6 +648,7 @@
     <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;cond_criteria&quot;</span><span class="p">)</span>
     <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;delta_beta_prior&quot;</span><span class="p">)</span>
     <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;null_first_cmb&quot;</span><span class="p">)</span>
+    <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;windows&quot;</span><span class="p">)</span>
     <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;like_profiles&quot;</span><span class="p">)</span>
     <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;like_profile_sigma&quot;</span><span class="p">)</span>
     <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;like_profile_points&quot;</span><span class="p">)</span>

@@ -174,6 +174,8 @@
     <span class="s2">&quot;unique_tags&quot;</span><span class="p">,</span>
     <span class="s2">&quot;tag_pairs&quot;</span><span class="p">,</span>
     <span class="s2">&quot;dict_to_index&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;spec_index&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;spec_mask&quot;</span><span class="p">,</span>
     <span class="s2">&quot;dict_to_dmat&quot;</span><span class="p">,</span>
     <span class="s2">&quot;dict_to_dsdqb_mat&quot;</span><span class="p">,</span>
     <span class="s2">&quot;load_compat&quot;</span><span class="p">,</span>
@@ -454,6 +456,46 @@
     <span class="k">return</span> <span class="n">index</span></div>
 
 
+<div class="viewcode-block" id="spec_index"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.spec_index">[docs]</a><span class="k">def</span> <span class="nf">spec_index</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the matrix indices of the given spectrum within a 3x3 matrix.  If</span>
+<span class="sd">    ``spec`` is None, return a dictionary of such indices keyed by spectrum.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inds</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;tt&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s2">&quot;bb&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s2">&quot;te&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s2">&quot;eb&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s2">&quot;tb&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">]),</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">inds</span>
+    <span class="k">return</span> <span class="n">inds</span><span class="p">[</span><span class="n">spec</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="spec_mask"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.spec_mask">[docs]</a><span class="k">def</span> <span class="nf">spec_mask</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nmaps</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a mask for extracting spectrum terms from a matrix of shape (3 *</span>
+<span class="sd">    nmaps, 3 * nmaps).  If ``spec`` is None, returns a dictionary of masks keyed</span>
+<span class="sd">    by spectrum.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">spec_mask</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="p">(</span><span class="n">i0</span><span class="p">,</span> <span class="n">i1</span><span class="p">)</span> <span class="ow">in</span> <span class="n">spec_index</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+        <span class="n">mask</span><span class="p">[</span><span class="n">i0</span><span class="p">,</span> <span class="n">i1</span><span class="p">]</span> <span class="o">=</span> <span class="n">mask</span><span class="p">[</span><span class="n">i1</span><span class="p">,</span> <span class="n">i0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">nmaps</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="p">(</span><span class="n">nmaps</span><span class="p">,</span> <span class="n">nmaps</span><span class="p">))</span>
+        <span class="n">spec_mask</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">mask</span>
+
+    <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">spec_mask</span>
+    <span class="k">return</span> <span class="n">spec_mask</span><span class="p">[</span><span class="n">spec</span><span class="p">]</span></div>
+
+
 <div class="viewcode-block" id="dict_to_dmat"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.dict_to_dmat">[docs]</a><span class="k">def</span> <span class="nf">dict_to_dmat</span><span class="p">(</span><span class="n">dmat_dict</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Take a dmat dictionary and return the right shaped Dmat matrix:</span>
@@ -472,14 +514,7 @@
     <span class="n">pol_dim</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="n">Dmat</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">inds</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;tt&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
-        <span class="s2">&quot;ee&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-        <span class="s2">&quot;bb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-        <span class="s2">&quot;te&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-        <span class="s2">&quot;eb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-        <span class="s2">&quot;tb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-    <span class="p">}</span>
+    <span class="n">inds</span> <span class="o">=</span> <span class="n">spec_index</span><span class="p">()</span>
 
     <span class="k">for</span> <span class="n">xname</span><span class="p">,</span> <span class="p">(</span><span class="n">im0</span><span class="p">,</span> <span class="n">im1</span><span class="p">)</span> <span class="ow">in</span> <span class="n">map_pairs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="n">pol_dim</span> <span class="o">=</span> <span class="mi">3</span> <span class="k">if</span> <span class="s2">&quot;ee&quot;</span> <span class="ow">in</span> <span class="n">dmat_dict</span><span class="p">[</span><span class="n">xname</span><span class="p">]</span> <span class="k">else</span> <span class="mi">1</span>
@@ -487,7 +522,7 @@
             <span class="k">if</span> <span class="n">Dmat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">pol_dim</span> <span class="o">*</span> <span class="n">nmaps</span><span class="p">,</span> <span class="n">pol_dim</span> <span class="o">*</span> <span class="n">nmaps</span><span class="p">)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
-                    <span class="n">shape</span> <span class="o">+=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">),)</span>
+                    <span class="n">shape</span> <span class="o">+=</span> <span class="n">val</span><span class="o">.</span><span class="n">shape</span>
                 <span class="n">Dmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
             <span class="n">sind</span> <span class="o">=</span> <span class="n">inds</span><span class="p">[</span><span class="n">spec</span><span class="p">]</span>
             <span class="n">xind</span> <span class="o">=</span> <span class="n">im0</span> <span class="o">*</span> <span class="n">pol_dim</span> <span class="o">+</span> <span class="n">sind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -518,15 +553,7 @@
     <span class="n">nmaps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">map_tags</span><span class="p">)</span>
     <span class="n">pol_dim</span> <span class="o">=</span> <span class="mi">3</span> <span class="k">if</span> <span class="s2">&quot;cmb_ee&quot;</span> <span class="ow">in</span> <span class="n">bin_def</span> <span class="k">else</span> <span class="mi">1</span>
 
-    <span class="n">inds</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;tt&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
-        <span class="s2">&quot;ee&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-        <span class="s2">&quot;bb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-        <span class="s2">&quot;te&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-        <span class="s2">&quot;eb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-        <span class="s2">&quot;tb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
-    <span class="p">}</span>
-
+    <span class="n">inds</span> <span class="o">=</span> <span class="n">spec_index</span><span class="p">()</span>
     <span class="n">bin_index</span> <span class="o">=</span> <span class="n">dict_to_index</span><span class="p">(</span><span class="n">bin_def</span><span class="p">)</span>
     <span class="n">nbins</span> <span class="o">=</span> <span class="n">bin_index</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">bin_index</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 

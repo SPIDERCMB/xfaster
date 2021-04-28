@@ -492,6 +492,21 @@ the index dictionary:</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="xfaster.parse_tools.spec_index">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">spec_index</code><span class="sig-paren">(</span><em class="sig-param">spec=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#spec_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.spec_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the matrix indices of the given spectrum within a 3x3 matrix.  If
+<code class="docutils literal notranslate"><span class="pre">spec</span></code> is None, return a dictionary of such indices keyed by spectrum.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="xfaster.parse_tools.spec_mask">
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">spec_mask</code><span class="sig-paren">(</span><em class="sig-param">spec=None</em>, <em class="sig-param">nmaps=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#spec_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.spec_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a mask for extracting spectrum terms from a matrix of shape (3 *
+nmaps, 3 * nmaps).  If <code class="docutils literal notranslate"><span class="pre">spec</span></code> is None, returns a dictionary of masks keyed
+by spectrum.</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="xfaster.parse_tools.dict_to_dmat">
 <code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">dict_to_dmat</code><span class="sig-paren">(</span><em class="sig-param">dmat_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#dict_to_dmat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.dict_to_dmat" title="Permalink to this definition">¶</a></dt>
 <dd><p>Take a dmat dictionary and return the right shaped Dmat matrix:
@@ -660,7 +675,7 @@ This array is modified in place.</p></li>
 
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.bin_cl_template">
-<code class="sig-name descname">bin_cl_template</code><span class="sig-paren">(</span><em class="sig-param">cls_shape</em>, <em class="sig-param">map_tag=None</em>, <em class="sig-param">transfer_run=False</em>, <em class="sig-param">beam_error=False</em>, <em class="sig-param">fg_ell_ind=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.bin_cl_template"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.bin_cl_template" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">bin_cl_template</code><span class="sig-paren">(</span><em class="sig-param">cls_shape</em>, <em class="sig-param">map_tag=None</em>, <em class="sig-param">transfer_run=False</em>, <em class="sig-param">beam_error=False</em>, <em class="sig-param">use_precalc=True</em>, <em class="sig-param">fg_ell_ind=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.bin_cl_template"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.bin_cl_template" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the Cbl matrix from the input shape spectrum.</p>
 <p>This method requires beam windows, kernels and transfer functions
 (if <code class="docutils literal notranslate"><span class="pre">transfer_run</span></code> is False) to have been precomputed.</p>
@@ -677,15 +692,19 @@ the output Cbl is used to compute the transfer functions that are
 then loaded when this method is called with <code class="docutils literal notranslate"><span class="pre">transfer_run</span> <span class="pre">=</span> <span class="pre">False</span></code>.</p></li>
 <li><p><strong>beam_error</strong> (<em>bool</em>) – If True, use beam error envelope instead of beam to get cbls that
 are 1 sigma beam error envelope offset of signal terms.</p></li>
+<li><p><strong>use_precalc</strong> (<em>bool</em>) – If True, load pre-calculated terms stored from a previous iteration,
+and store for a future iteration.  Otherwise, all calculations are
+repeated.</p></li>
 <li><p><strong>fg_ell_ind</strong> (<em>float</em>) – If binning foreground shape, offset the ell index from the reference
 by this amount.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><strong>cbl</strong> – The Cbl matrix, indexed by component and spectrum, then by map
-cross, e.g. <code class="docutils literal notranslate"><span class="pre">cbl['cmb_tt']['map1:map2']</span></code>
-E/B mixing terms are stored in elements <code class="docutils literal notranslate"><span class="pre">cbl[:,</span> <span class="pre">1,</span> <span class="pre">:]</span></code>,
-and unmixed terms are stored in elements <code class="docutils literal notranslate"><span class="pre">cbl[:,</span> <span class="pre">0,</span> <span class="pre">:]</span></code>.</p>
+cross, e.g. <code class="docutils literal notranslate"><span class="pre">cbl['cmb_tt']['map1:map2']</span></code>.  E/B mixing terms are
+stored in elements <code class="docutils literal notranslate"><span class="pre">cbl['cmb_ee_mix']</span></code> and <code class="docutils literal notranslate"><span class="pre">cbl['cmb_bb_mix']</span></code>,
+and unmixed terms are stored in elements <code class="docutils literal notranslate"><span class="pre">cbl['cmb_ee']</span></code> and
+<code class="docutils literal notranslate"><span class="pre">cbl['cmb_bb']</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>dict of arrays (num_bins, 2, lmax + 1)</p>
@@ -751,7 +770,7 @@ averaging over the input shape spectrum.</p></li>
 
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.fisher_calc">
-<code class="sig-name descname">fisher_calc</code><span class="sig-paren">(</span><em class="sig-param">qb</em>, <em class="sig-param">cbl</em>, <em class="sig-param">cls_input</em>, <em class="sig-param">cls_noise=None</em>, <em class="sig-param">cls_debias=None</em>, <em class="sig-param">cls_model=None</em>, <em class="sig-param">cond_noise=None</em>, <em class="sig-param">cond_criteria=None</em>, <em class="sig-param">likelihood=False</em>, <em class="sig-param">like_lmin=2</em>, <em class="sig-param">like_lmax=None</em>, <em class="sig-param">delta_beta_prior=None</em>, <em class="sig-param">null_first_cmb=False</em>, <em class="sig-param">use_precalc=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.fisher_calc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.fisher_calc" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">fisher_calc</code><span class="sig-paren">(</span><em class="sig-param">qb</em>, <em class="sig-param">cbl</em>, <em class="sig-param">cls_input</em>, <em class="sig-param">cls_noise=None</em>, <em class="sig-param">cls_debias=None</em>, <em class="sig-param">cls_model=None</em>, <em class="sig-param">cond_noise=None</em>, <em class="sig-param">cond_criteria=None</em>, <em class="sig-param">likelihood=False</em>, <em class="sig-param">like_lmin=2</em>, <em class="sig-param">like_lmax=None</em>, <em class="sig-param">delta_beta_prior=None</em>, <em class="sig-param">null_first_cmb=False</em>, <em class="sig-param">use_precalc=True</em>, <em class="sig-param">windows=False</em>, <em class="sig-param">inv_fish=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.fisher_calc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.fisher_calc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Re-compute the Fisher matrix and qb amplitudes based on
 input data spectra.  This method is called iteratively
 by <code class="docutils literal notranslate"><span class="pre">fisher_iterate</span></code>, and requires bin definitions precomputed
@@ -777,6 +796,7 @@ covariance for a NR iteration.</p></li>
 <li><p><strong>use_precalc</strong> (<em>bool</em>) – If True, load pre-calculated terms stored from a previous iteration,
 and store for a future iteration.  Otherwise, all calculations are
 repeated.</p></li>
+<li><p><strong>windows</strong> (<em>bool</em>) – If True, return W_bl window functions for each CMB qb.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -793,7 +813,7 @@ repeated.</p></li>
 
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.fisher_iterate">
-<code class="sig-name descname">fisher_iterate</code><span class="sig-paren">(</span><em class="sig-param">cbl</em>, <em class="sig-param">cls_shape</em>, <em class="sig-param">map_tag=None</em>, <em class="sig-param">iter_max=200</em>, <em class="sig-param">converge_criteria=0.005</em>, <em class="sig-param">qb_start=None</em>, <em class="sig-param">transfer_run=False</em>, <em class="sig-param">save_iters=False</em>, <em class="sig-param">tophat_bins=False</em>, <em class="sig-param">return_cls=False</em>, <em class="sig-param">null_first_cmb=False</em>, <em class="sig-param">delta_beta_prior=None</em>, <em class="sig-param">cond_noise=None</em>, <em class="sig-param">cond_criteria=None</em>, <em class="sig-param">like_profiles=False</em>, <em class="sig-param">like_profile_sigma=3.0</em>, <em class="sig-param">like_profile_points=100</em>, <em class="sig-param">file_tag=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.fisher_iterate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.fisher_iterate" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">fisher_iterate</code><span class="sig-paren">(</span><em class="sig-param">cbl</em>, <em class="sig-param">cls_shape</em>, <em class="sig-param">map_tag=None</em>, <em class="sig-param">iter_max=200</em>, <em class="sig-param">converge_criteria=0.005</em>, <em class="sig-param">qb_start=None</em>, <em class="sig-param">transfer_run=False</em>, <em class="sig-param">save_iters=False</em>, <em class="sig-param">tophat_bins=False</em>, <em class="sig-param">return_cls=False</em>, <em class="sig-param">null_first_cmb=False</em>, <em class="sig-param">delta_beta_prior=None</em>, <em class="sig-param">cond_noise=None</em>, <em class="sig-param">cond_criteria=None</em>, <em class="sig-param">windows=False</em>, <em class="sig-param">like_profiles=False</em>, <em class="sig-param">like_profile_sigma=3.0</em>, <em class="sig-param">like_profile_points=100</em>, <em class="sig-param">file_tag=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.fisher_iterate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.fisher_iterate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Iterate over the Fisher calculation to compute bandpower estimates
 assuming an input shape spectrum.</p>
 <dl class="field-list simple">
@@ -825,6 +845,7 @@ ell-based weighting.</p></li>
 <li><p><strong>return_cls</strong> (<em>bool</em>) – If True, return C_l spectrum rather than D_l spectrum</p></li>
 <li><p><strong>cond_criteria</strong> (<em>float</em>) – The maximum condition number allowed for Dmat1 to be acceptable
 for taking its inverse.</p></li>
+<li><p><strong>windows</strong> (<em>bool</em>) – If True, include window functions for CMB bins in the output</p></li>
 <li><p><strong>like_profiles</strong> (<em>bool</em>) – If True, compute profile likelihoods for each qb, leaving all
 others fixed at their maximum likelihood values.  Profiles are
 computed over a range +/–sigma as estimated from the diagonals
@@ -875,7 +896,7 @@ separate files with the same name (and different index).</p>
 
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.fisher_precalc">
-<code class="sig-name descname">fisher_precalc</code><span class="sig-paren">(</span><em class="sig-param">cbl</em>, <em class="sig-param">cls_input</em>, <em class="sig-param">cls_noise=None</em>, <em class="sig-param">likelihood=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.fisher_precalc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.fisher_precalc" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">fisher_precalc</code><span class="sig-paren">(</span><em class="sig-param">cbl</em>, <em class="sig-param">cls_input</em>, <em class="sig-param">cls_debias=None</em>, <em class="sig-param">likelihood=False</em>, <em class="sig-param">windows=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.fisher_precalc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.fisher_precalc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pre-compute the D_ell and signal derivative matrices necessary for
 <code class="docutils literal notranslate"><span class="pre">fisher_calc</span></code> from the input data spectra.  This method requires bin
 definitions precomputed by <code class="docutils literal notranslate"><span class="pre">get_bin_def</span></code> or <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>.</p>
@@ -888,9 +909,10 @@ shape spectrum.</p></li>
 average <code class="docutils literal notranslate"><span class="pre">cls_signal</span></code>.  If computing a null test, this is
 <code class="docutils literal notranslate"><span class="pre">cls_data_null</span></code>, and otherwise it is <code class="docutils literal notranslate"><span class="pre">cls_data</span></code>, for a single map or
 several input maps.</p></li>
-<li><p><strong>cls_noise</strong> (<em>OrderedDict</em>) – If supplied, the noise spectrum is subtracted from the input.</p></li>
+<li><p><strong>cls_debias</strong> (<em>OrderedDict</em>) – If supplied, the debias spectrum is subtracted from the input.</p></li>
 <li><p><strong>likelihood</strong> (<em>bool</em>) – If True, compute just Dmat_obs_b.  Otherwise, Dmat_obs and
 dSdqb_mat1 are also computed.</p></li>
+<li><p><strong>windows</strong> (<em>bool</em>) – If True, compute dSdqb and Mll for constructing window functions.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -898,6 +920,9 @@ dSdqb_mat1 are also computed.</p></li>
 <li><p><strong>Dmat_obs</strong> (<em>OrderedDict</em>) – De-biased D_ell matrix from <code class="docutils literal notranslate"><span class="pre">cls_input</span></code></p></li>
 <li><p><strong>Dmat_obs_b</strong> (<em>OrderedDict</em>) – Biased D_ell matrix from <code class="docutils literal notranslate"><span class="pre">cls_input</span></code> (for likelihood)</p></li>
 <li><p><strong>dSdqb_mat1</strong> (<em>OrderedDict</em>) – Signal derivative matrix from Cbl</p></li>
+<li><p><strong>Mmat</strong> (<em>OrderedDict</em>) – Mode mixing matrix (Kll’ * Fl * Bl^2) for constructing
+window functions.</p></li>
+<li><p><strong>Mmat_mix</strong> (<em>OrderedDict</em>) – EB mixing terms for the mode mixxing matrix</p></li>
 <li><p><em>.. note:: the output arrays are also stored as attributes of the</em></p></li>
 <li><p>parent object to avoid repeating the computation in <code class="docutils literal notranslate"><span class="pre">fisher_calc</span></code></p></li>
 </ul>
@@ -908,7 +933,7 @@ dSdqb_mat1 are also computed.</p></li>
 
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.get_bandpowers">
-<code class="sig-name descname">get_bandpowers</code><span class="sig-paren">(</span><em class="sig-param">cls_shape</em>, <em class="sig-param">map_tag=None</em>, <em class="sig-param">converge_criteria=0.005</em>, <em class="sig-param">iter_max=200</em>, <em class="sig-param">return_qb=False</em>, <em class="sig-param">save_iters=False</em>, <em class="sig-param">delta_beta_prior=None</em>, <em class="sig-param">cond_noise=None</em>, <em class="sig-param">cond_criteria=None</em>, <em class="sig-param">null_first_cmb=False</em>, <em class="sig-param">tophat_bins=False</em>, <em class="sig-param">return_cls=False</em>, <em class="sig-param">like_profiles=False</em>, <em class="sig-param">like_profile_sigma=3.0</em>, <em class="sig-param">like_profile_points=100</em>, <em class="sig-param">file_tag=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_bandpowers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_bandpowers" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_bandpowers</code><span class="sig-paren">(</span><em class="sig-param">cls_shape</em>, <em class="sig-param">map_tag=None</em>, <em class="sig-param">converge_criteria=0.005</em>, <em class="sig-param">iter_max=200</em>, <em class="sig-param">return_qb=False</em>, <em class="sig-param">save_iters=False</em>, <em class="sig-param">delta_beta_prior=None</em>, <em class="sig-param">cond_noise=None</em>, <em class="sig-param">cond_criteria=None</em>, <em class="sig-param">null_first_cmb=False</em>, <em class="sig-param">tophat_bins=False</em>, <em class="sig-param">return_cls=False</em>, <em class="sig-param">windows=False</em>, <em class="sig-param">like_profiles=False</em>, <em class="sig-param">like_profile_sigma=3.0</em>, <em class="sig-param">like_profile_points=100</em>, <em class="sig-param">file_tag=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_bandpowers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_bandpowers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the maximum likelihood bandpowers of the data, assuming
 a given input spectrum shape.  Requires the transfer function to
 have been computed and loaded using <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>.</p>
@@ -933,6 +958,7 @@ in an individual npz file.</p></li>
 <li><p><strong>tophat_bins</strong> (<em>bool</em>) – If True, use uniform weights within each bin rather than any
 ell-based weighting.</p></li>
 <li><p><strong>return_cls</strong> (<em>bool</em>) – If True, return C_ls rather than D_ls</p></li>
+<li><p><strong>windows</strong> (<em>bool</em>) – If True, include window functions for CMB bins in the output</p></li>
 <li><p><strong>cond_criteria</strong> (<em>float</em>) – The maximum condition number allowed for Dmat1 to be acceptable
 for taking its inverse.</p></li>
 <li><p><strong>like_profiles</strong> (<em>bool</em>) – If True, compute profile likelihoods for each qb, leaving all
@@ -1658,6 +1684,26 @@ Options are “critical”, “error”, “warning”, “notice”, “info”
 </dd></dl>
 
 <dl class="method">
+<dt id="xfaster.xfaster_class.XFaster.kernel_precalc">
+<code class="sig-name descname">kernel_precalc</code><span class="sig-paren">(</span><em class="sig-param">map_tag=None</em>, <em class="sig-param">transfer_run=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.kernel_precalc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.kernel_precalc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the mixing kernels M_ll’ = K_ll’ * F_l’ * B_l’^2.  Called by
+<code class="docutils literal notranslate"><span class="pre">bin_cl_template</span></code> to pre-compute kernel terms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>map_tag</strong> (<em>str</em>) – If supplied, the kernels are computed only for the given map tag
+(or cross if map_tag is map_tag1:map_tag2).
+Otherwise, it is computed for all maps and crosses.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>mll</strong> – Dictionary of M_ll’ matrices, keyed by spec and xname.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>OrderedDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.load_data">
 <code class="sig-name descname">load_data</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">checkpoint</em>, <em class="sig-param">fields=None</em>, <em class="sig-param">to_attrs=True</em>, <em class="sig-param">shape=None</em>, <em class="sig-param">shape_ref=None</em>, <em class="sig-param">alt_name=None</em>, <em class="sig-param">value_ref=None</em>, <em class="sig-param">optional=None</em>, <em class="sig-param">**file_opts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.load_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.load_data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load xfaster data from an output npz file on disk.</p>
@@ -1839,7 +1885,7 @@ is set to the path to the data file on disk.</p>
 submits the job to a grid system</p>
 <dl class="function">
 <dt id="xfaster.xfaster_exec.xfaster_run">
-<code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">xfaster_run</code><span class="sig-paren">(</span><em class="sig-param">config='config_example.ini', pol=True, pol_mask=True, bin_width=25, lmin=2, lmax=500, multi_map=True, likelihood=False, mcmc=True, output_root=None, output_tag=None, data_root='all', data_subset='full/*0', signal_subset='*', noise_subset='*', mask_type='hitsmask_tailored', data_type='raw', noise_type='stationary', signal_type='r0p03', signal_transfer_type=None, signal_spec=None, signal_transfer_spec=None, model_r=None, data_root2=None, data_subset2=None, residual_fit=True, foreground_fit=False, bin_width_fg=30, res_specs=None, bin_width_res=25, weighted_bins=False, ensemble_mean=False, ensemble_median=False, sim_index=None, sims_add_alms=True, converge_criteria=0.005, iter_max=200, tbeb=False, fix_bb_xfer=False, window_lmax=None, like_lmin=33, like_lmax=250, like_profiles=False, like_profile_sigma=3.0, like_profile_points=100, pixwin=True, save_iters=False, verbose='notice', debug=False, checkpoint=None, add_log=False, cond_noise=1e-05, cond_criteria=5000.0, null_first_cmb=False, ref_freq=359.7, beta_ref=1.54, delta_beta_prior=0.5, noise_type_sim=None, signal_type_sim=None, foreground_type=None, template_type=None, template_alpha_tags=['95', '150'], template_alpha=[0.015, 0.043], sub_hm_noise=True, tophat_bins=False, return_cls=False, apply_gcorr=False, reload_gcorr=False, qb_file=None, like_alpha_tags=['95', '150'], alpha_prior=[-inf, inf], r_prior=[-inf, inf], res_prior=None, like_beam_tags=['95', '150'], beam_prior=None, betad_prior=None, dust_amp_prior=None, dust_ellind_prior=None, mcmc_walkers=50, like_converge_criteria=0.01, bp_tag=None, like_tag=None, sub_planck=False, fake_data_r=None, fake_data_template=None, do_fake_signal=True, do_fake_noise=True, save_fake_data=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#xfaster_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.xfaster_run" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">xfaster_run</code><span class="sig-paren">(</span><em class="sig-param">config='config_example.ini', pol=True, pol_mask=True, bin_width=25, lmin=2, lmax=500, multi_map=True, likelihood=False, mcmc=True, output_root=None, output_tag=None, data_root='all', data_subset='full/*0', signal_subset='*', noise_subset='*', mask_type='hitsmask_tailored', data_type='raw', noise_type='stationary', signal_type='r0p03', signal_transfer_type=None, signal_spec=None, signal_transfer_spec=None, model_r=None, data_root2=None, data_subset2=None, residual_fit=True, foreground_fit=False, bin_width_fg=30, res_specs=None, bin_width_res=25, weighted_bins=False, ensemble_mean=False, ensemble_median=False, sim_index=None, sims_add_alms=True, converge_criteria=0.005, iter_max=200, tbeb=False, fix_bb_xfer=False, window_lmax=None, windows=False, like_lmin=33, like_lmax=250, like_profiles=False, like_profile_sigma=3.0, like_profile_points=100, pixwin=True, save_iters=False, verbose='notice', debug=False, checkpoint=None, add_log=False, cond_noise=1e-05, cond_criteria=5000.0, null_first_cmb=False, ref_freq=359.7, beta_ref=1.54, delta_beta_prior=0.5, noise_type_sim=None, signal_type_sim=None, foreground_type=None, template_type=None, template_alpha_tags=['95', '150'], template_alpha=[0.015, 0.043], sub_hm_noise=True, tophat_bins=False, return_cls=False, apply_gcorr=False, reload_gcorr=False, qb_file=None, like_alpha_tags=['95', '150'], alpha_prior=[-inf, inf], r_prior=[-inf, inf], res_prior=None, like_beam_tags=['95', '150'], beam_prior=None, betad_prior=None, dust_amp_prior=None, dust_ellind_prior=None, mcmc_walkers=50, like_converge_criteria=0.01, bp_tag=None, like_tag=None, sub_planck=False, fake_data_r=None, fake_data_template=None, do_fake_signal=True, do_fake_noise=True, save_fake_data=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#xfaster_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.xfaster_run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main function for running the XFaster algorithm.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1909,6 +1955,7 @@ end iteration</p></li>
 <li><p><strong>null_bb_xfer</strong> (<em>bool</em>) – If True, after transfer functions have been calculated, impose
 the BB xfer is exactly equal to the EE transfer.</p></li>
 <li><p><strong>window_lmax</strong> (<em>int</em>) – The size of the window used in computing the mask kernels</p></li>
+<li><p><strong>windows</strong> (<em>bool</em>) – If True compute window functions for each CMB bin in the output</p></li>
 <li><p><strong>like_lmin</strong> (<em>int</em>) – The minimum ell value to be included in the likelihood calculation</p></li>
 <li><p><strong>like_lmax</strong> (<em>int</em>) – The maximum ell value to be included in the likelihood calculation</p></li>
 <li><p><strong>like_profiles</strong> (<em>bool</em>) – If True, compute profile likelihoods for each qb, leaving all
