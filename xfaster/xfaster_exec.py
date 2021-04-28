@@ -62,6 +62,7 @@ def xfaster_run(
     tbeb=False,
     fix_bb_xfer=False,
     window_lmax=None,
+    windows=False,
     like_lmin=33,
     like_lmax=250,
     like_profiles=False,
@@ -221,6 +222,8 @@ def xfaster_run(
         the BB xfer is exactly equal to the EE transfer.
     window_lmax : int
         The size of the window used in computing the mask kernels
+    windows : bool
+        If True compute window functions for each CMB bin in the output
     like_lmin : int
         The minimum ell value to be included in the likelihood calculation
     like_lmax : int
@@ -437,6 +440,7 @@ def xfaster_run(
         return_cls=return_cls,
         apply_gcorr=apply_gcorr,
         reload_gcorr=reload_gcorr,
+        windows=windows,
         like_profiles=like_profiles,
         like_profile_sigma=like_profile_sigma,
         like_profile_points=like_profile_points,
@@ -480,6 +484,7 @@ def xfaster_run(
     fisher_opts.pop("cond_criteria")
     fisher_opts.pop("delta_beta_prior")
     fisher_opts.pop("null_first_cmb")
+    fisher_opts.pop("windows")
     fisher_opts.pop("like_profiles")
     fisher_opts.pop("like_profile_sigma")
     fisher_opts.pop("like_profile_points")

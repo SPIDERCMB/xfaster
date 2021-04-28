@@ -10,6 +10,8 @@ __all__ = [
     "unique_tags",
     "tag_pairs",
     "dict_to_index",
+    "spec_index",
+    "spec_mask",
     "dict_to_dmat",
     "dict_to_dsdqb_mat",
     "load_compat",
@@ -290,6 +292,46 @@ def dict_to_index(d):
     return index
 
 
+def spec_index(spec=None):
+    """
+    Return the matrix indices of the given spectrum within a 3x3 matrix.  If
+    ``spec`` is None, return a dictionary of such indices keyed by spectrum.
+    """
+    inds = OrderedDict(
+        [
+            ("tt", [0, 0]),
+            ("ee", [1, 1]),
+            ("bb", [2, 2]),
+            ("te", [0, 1]),
+            ("eb", [1, 2]),
+            ("tb", [0, 2]),
+        ]
+    )
+    if spec is None:
+        return inds
+    return inds[spec]
+
+
+def spec_mask(spec=None, nmaps=1):
+    """
+    Return a mask for extracting spectrum terms from a matrix of shape (3 *
+    nmaps, 3 * nmaps).  If ``spec`` is None, returns a dictionary of masks keyed
+    by spectrum.
+    """
+    spec_mask = OrderedDict()
+
+    for s, (i0, i1) in spec_index().items():
+        mask = np.zeros((3, 3))
+        mask[i0, i1] = mask[i1, i0] = 1
+        if nmaps > 1:
+            mask = np.tile(mask, (nmaps, nmaps))
+        spec_mask[s] = mask
+
+    if spec is None:
+        return spec_mask
+    return spec_mask[spec]
+
+
 def dict_to_dmat(dmat_dict):
     """
     Take a dmat dictionary and return the right shaped Dmat matrix:
@@ -308,14 +350,7 @@ def dict_to_dmat(dmat_dict):
     pol_dim = 0
 
     Dmat = None
-    inds = {
-        "tt": [0, 0],
-        "ee": [1, 1],
-        "bb": [2, 2],
-        "te": [0, 1],
-        "eb": [1, 2],
-        "tb": [0, 2],
-    }
+    inds = spec_index()
 
     for xname, (im0, im1) in map_pairs.items():
         pol_dim = 3 if "ee" in dmat_dict[xname] else 1
@@ -323,7 +358,7 @@ def dict_to_dmat(dmat_dict):
             if Dmat is None:
                 shape = (pol_dim * nmaps, pol_dim * nmaps)
                 if not np.isscalar(val):
-                    shape += (len(val),)
+                    shape += val.shape
                 Dmat = np.zeros(shape)
             sind = inds[spec]
             xind = im0 * pol_dim + sind[0]
@@ -354,15 +389,7 @@ def dict_to_dsdqb_mat(dsdqb_dict, bin_def):
     nmaps = len(map_tags)
     pol_dim = 3 if "cmb_ee" in bin_def else 1
 
-    inds = {
-        "tt": [0, 0],
-        "ee": [1, 1],
-        "bb": [2, 2],
-        "te": [0, 1],
-        "eb": [1, 2],
-        "tb": [0, 2],
-    }
-
+    inds = spec_index()
     bin_index = dict_to_index(bin_def)
     nbins = bin_index[list(bin_index)[-1]][-1]
 
