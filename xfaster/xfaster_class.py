@@ -5468,10 +5468,10 @@ class XFaster(object):
             spec_mask = pt.spec_mask(nmaps=self.num_maps)
 
             # compute window functions for each spectrum
-            for s, (k, (left, right)) in enumerate(bin_index.items()):
+            for k, (left, right) in bin_index.items():
                 if 'cmb' not in k:
                     continue
-                spec = k.split('_')[-1]
+                spec = k.split('_')[1]
 
                 # select bins for corresponding spectrum
                 sarg = arg[:, :, left: right]
@@ -5966,7 +5966,8 @@ class XFaster(object):
             )
 
             if windows:
-                # compute window functions for CMB and FG bins
+                # compute window functions for CMB bins
+                self.log("Calculating window functions for CMB bins", "info")
                 wbl = self.fisher_calc(
                     qb,
                     cbl,
@@ -5983,6 +5984,7 @@ class XFaster(object):
 
             if like_profiles:
                 # compute bandpower likelihoods
+                self.log("Calculating bandpower profile likelihoods", "info")
                 max_like = self.fisher_calc(
                     qb,
                     cbl,
