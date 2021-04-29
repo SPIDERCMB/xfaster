@@ -32,8 +32,8 @@ This runs XFaster on the example maps, so you can see the step-by-step process a
 Setting up your data
 --------------------
 
-Maps
-....
+Map Data
+........
 
 The code requires a certain directory structure for your input maps:
 
@@ -165,34 +165,61 @@ Here, we have the two map auto-spectra first, and then the cross between them.
 If there are multiple maps with the same tag but that use different <<data_subsets>> as described in :ref:`Maps<Maps>` above, these will be assigned an additional numerical tag, so you might have something like ``95_0:95_1`` for the cross between map 95 in data_subset1 and data_subset2.
 
 Below, we show how to load up some bandpowers, error bars, transfer function, and r-likelihood from the example script outputs.
+This script is also in the repo: `xfaster/example/plot_outputs.py <https://githu\b.com/annegambrel/xfaster/blob/main/example/plot_outputs.py>`_
 
 .. code-block:: python
 
-    import xfaster as xf
+    import numpy as np
     import matplotlib.pyplot as plt
+    import xfaster as xf
+    from xfaster import xfaster_tools as xft
+
+    # First, load up inputs to our sims so we can check how well they're recovered
+    # (bearing in mind, this is a single sim, so noise fluctuations and sample
+    # variance will cause scatter.
+    r_in = 1.0
+    Dls_in = xft.get_camb_cl(r=r_in, lmax=500, lfac=True)
+    Fl_in = np.loadtxt("maps_example/transfer_example.txt")
 
     # load up bandpowers file, where most of the useful stuff is stored
     bp = xf.load_and_parse("outputs_example/95x150/bandpowers_95x150.npz")
-    ee_bin_centers = bp["ellb"]["cmb_ee"] # weighted bin centers
-    ee_specs = bp["cb"]["cmb_ee"] # estimated CMB spectra with ell*(ell+1)/(2pi) factors
-    ee_errs = bp["dcb"]["cmb_ee"] # estimated CMB error bars
-    spec_cov = bp["cov"] # Nspec * Nbin square covariance matrix
-    ee_transfer_95 = bp["qb_transfer"]["cmb_ee"]["95"] # transfer function using the same bins
+    ee_bin_centers = bp["ellb"]["cmb_ee"]  # weighted bin centers
+    ee_specs = bp["cb"]["cmb_ee"]  # estimated CMB spectra with ell*(ell+1)/(2pi) factors
+    ee_errs = bp["dcb"]["cmb_ee"]  # estimated CMB error bars
+    spec_cov = bp["cov"]  # Nspec * Nbin square covariance matrix
+    ee_transfer_150 = bp["qb_transfer"]["cmb_ee"]["150"]  # transfer function using the same bins
 
-    fig, axs = plt.subplots(2, 1)
-    axs[0].plot(ee_bin_centers, ee_transfer_95)
-    axs[0].set_ylabel(r"$F_\ell$")
-    axs[1].errorbar(ee_bin_centers, ee_specs, ee_errs)
-    axs[1].set_ylabel(r"$\ell(\ell+1)C_\ell/2\pi\, [\mu K_{CMB}]$")
+    fig, axs = plt.subplots(3, 1, figsize=(4,6))
+    axs[0].plot(Fl_in[:500], color="k", label="Input Transfer Function")
+    axs[0].plot(ee_bin_centers, ee_transfer_150, label="Estimated Transfer Function")
+    axs[0].set_ylabel(r"$F_\ell^{EE}$")
+    axs[0].set_xlabel(r"$\ell$")
+    axs[0].legend()
+
+    axs[1].plot(Dls_in[1], color="k", label="Input CMB")
+    axs[1].errorbar(ee_bin_centers, ee_specs, ee_errs, label="Output CMB Estimate")
+    axs[1].set_ylabel(r"$\ell(\ell+1)C_\ell^{EE}/2\pi\, [\mu K_{CMB}]$")
     axs[1].set_xlabel(r"$\ell$")
+    axs[1].legend()
 
     # Now get r-likelihood-- should be near the input r=1, but with scatter since it's
     # just one sim realization
     lk = xf.load_and_parse("outputs_example/95x150/like_mcmc_95x150.npz")
-    fig = plt.figure()
-    plt.hist(lk["samples"])
-    plt.xlabel(r"$r$")
 
+    axs[2].axvline(r_in, color="k", label="Input r")
+    axs[2].hist(lk["samples"], label="r posterior")
+    axs[2].set_xlabel(r"$r$")
+    axs[2].legend()
+    plt.tight_layout()
+    plt.savefig("outputs_example.png")
     plt.show()
+
+
+The results should look like what's shown below.
+We recover our inputs pretty well within expected noise and signal variance.
+Recovery is a bit worse at high ell because we aren't accounting for leakage from even higher up bins-- you'll want to use an :math:`\ell_{max}` a bit above what you plan to use for analysis for this reason.
+
+.. image:: ../example/outputs_example.png
+  :width: 400
 
 And that covers the basics!
