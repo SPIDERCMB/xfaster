@@ -5459,7 +5459,7 @@ class XFaster(object):
 
             # compute prefactors
             ells = np.arange(0, self.lmax + 1)
-            lfac = 2.0 * np.pi / (2.0 * ells + 1.0)
+            lfac = ells * (ells + 1.0) / (2.0 * ells + 1.0)
 
             # compute binning term
             arg = np.einsum("ij,kljm->klim", inv_fish, mat)
@@ -5492,7 +5492,8 @@ class XFaster(object):
                 wbl1 = np.einsum("iil,ijkl,jilm->km", gmat, sarg, smat) * lfac * chi_bl
 
                 # check normalization
-                norm = (2.0 * ells + 1.0) / 4.0 / np.pi
+                norm = np.zeros_like(lfac)
+                norm[1:] = 1.0 / (2.0 * lfac[1:])
                 cls_shape = self.cls_shape[k][: len(norm)]
                 self.log(
                     "{} window function normalization: {}".format(
@@ -5502,8 +5503,7 @@ class XFaster(object):
                 )
 
                 # normalization for Cb and Db, for CosmoMC and friends
-                wnorm = np.sum(wbl1 * norm, axis=-1)
-                wbl1 *= ells * (ells + 1.0) / 2.0 / np.pi / wnorm[:, None]
+                wbl1 /= np.sum(wbl1 * norm, axis=-1)[:, None]
                 wbl[k] = wbl1
 
             return wbl
