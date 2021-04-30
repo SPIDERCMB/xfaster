@@ -4489,32 +4489,19 @@ class XFaster(object):
                                             bd = self.bin_def[v]
                                 else:
                                     bd = self.bin_def[v]
-                            for comp in [
-                                "res0_nxn",
-                                "res1_nxn",
-                                "res0_sxn",
-                                "res1_sxn",
-                                "res0_nxs",
-                                "res1_nxs",
-                                "res",
+                            for comp, cls in [
+                                ("res0_nxn", cls_noise0),
+                                ("res1_nxn", cls_noise1),
+                                ("res0_sxn", cls_sxn0),
+                                ("res1_sxn", cls_sxn1),
+                                ("res0_nxs", cls_nxs0),
+                                ("res1_nxs", cls_nxs1),
+                                ("res", cls_noise),
                             ]:
                                 stag = "{}_{}".format(comp, spec)
                                 cbl.setdefault(stag, OrderedDict())
                                 cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
-                                if comp == "res0_nxn":
-                                    cl1 = cls_noise0[spec][xname]
-                                elif comp == "res1_nxn":
-                                    cl1 = cls_noise1[spec][xname]
-                                elif comp == "res0_sxn":
-                                    cl1 = cls_sxn0[spec][xname]
-                                elif comp == "res1_sxn":
-                                    cl1 = cls_sxn1[spec][xname]
-                                elif comp == "res0_nxs":
-                                    cl1 = cls_nxs0[spec][xname]
-                                elif comp == "res1_nxs":
-                                    cl1 = cls_sxn1[spec][xname]
-                                elif comp == "res":
-                                    cl1 = cls_noise[spec][xname]
+                                cl1 = cls[spec][xname]
                                 for idx, (left, right) in enumerate(bd):
                                     lls = slice(left, right)
                                     cbl[stag][xname][idx, lls] = np.copy(cl1[lls])
@@ -4542,32 +4529,24 @@ class XFaster(object):
                             mspec = spec + "_mix"
                             mk_arr[si - 1, xi] = mll[mspec][xname][ls, lk]
 
+                md = None
                 if s_arr.ndim == 1:
                     s_arr_md = s_arr
                 else:
                     s_arr_md = s_arr[1:3]
-                if not beam_error:
-                    d = k_arr * s_arr
+                d = k_arr * s_arr
+                if self.pol:
+                    md = mk_arr * s_arr_md
+                if beam_error:
+                    d = OrderedDict([(k, d * b_arr[k]) for k in beam_keys])
                     if self.pol:
-                        md = mk_arr * s_arr_md
-                    else:
-                        md = None
-                    if comp == "fg":
-                        self.d_fg = np.copy(d)
+                        md = OrderedDict([(k, md * b_arr[k]) for k in beam_keys])
+                if comp == "fg":
+                    self.d_fg = copy.deepcopy(d)
+                    self.md_fg = copy.deepcopy(md)
 
-                        self.md_fg = np.copy(md)
-                else:
-                    d = OrderedDict([(k, k_arr * b_arr[k] * s_arr) for k in beam_keys])
-                    if self.pol:
-                        md = OrderedDict(
-                            [(k, mk_arr * b_arr[k] * s_arr_md) for k in beam_keys]
-                        )
-                    else:
-                        md = None
-                    if comp == "fg":
-                        self.d_fg = copy.deepcopy(d)
-                        self.md_fg = copy.deepcopy(md)
                 bin_things(comp, d, md)
+
         return cbl
 
     def get_model_spectra(
@@ -4700,68 +4679,44 @@ class XFaster(object):
                             "s1m0": "res_{}_{}".format(s1 * 2, tag1),
                             "s1m1": "res_{}_{}".format(s1 * 2, tag2),
                         }
-                        qb_fac = {"s0m0": 1, "s0m1": 1, "s1m0": 1, "s1m1": 1}
+                        qbr = {"s0m0": 1, "s0m1": 1, "s1m0": 1, "s1m1": 1}
 
                         for k, v in res_tags.items():
                             spec0 = v.split("_")[1]
                             if v not in qb:
                                 if spec0 in ["ee", "bb"]:
                                     res_tags[k] = v.replace(spec0, "eebb")
-                                    if res_tags[k] not in qb:
-                                        # if not fitting EE/BB resids
-                                        qb_fac[k] = 1
-                                    else:
-                                        qb_fac[k] = np.sqrt(1 + qb[res_tags[k]])[
-                                            :, None
-                                        ]
-                                else:
-                                    # this will happen for specs with T
-                                    # with no T resids fit
-                                    qb_fac[k] = 1
+                                    if res_tags[k] in qb:
+                                        qbr[k] = np.sqrt(1 + qb[res_tags[k]])[:, None]
                             else:
-                                qb_fac[k] = np.sqrt(1 + qb[v])[:, None]
+                                qbr[k] = np.sqrt(1 + qb[v])[:, None]
 
-                            if np.any(np.isnan(qb_fac[k])):
+                            if np.any(np.isnan(qbr[k])):
                                 self.warn(
                                     "Unphysical residuals fit, "
                                     "setting to zero {} bins {}".format(
-                                        spec, np.where(np.isnan(qb_fac[k]))
+                                        spec, np.where(np.isnan(qbr[k]))
                                     )
                                 )
-                                qb_fac[k][np.isnan(qb_fac[k])] = 1
+                                qbr[k][np.isnan(qbr[k])] = 1
 
-                        # N_s0_map0 x N_s1_map1
-                        cl1 = (
-                            (qb_fac["s0m0"] * qb_fac["s1m1"] - 1)
-                            * cbl["res0_nxn_{}".format(spec)][xname]
-                        ).sum(axis=0)
-                        # N_s1_map0 x N_s0_map1
-                        cl1 += (
-                            (qb_fac["s1m0"] * qb_fac["s0m1"] - 1)
-                            * cbl["res1_nxn_{}".format(spec)][xname]
-                        ).sum(axis=0)
+                        cl1 = np.zeros_like(cl1)
+                        for k1, k2, k3 in [
+                            ("s0m0", "s1m1", "res0_nxn_{}".format(spec)),  # N_s0m0 x N_s1m1
+                            ("s1m0", "s0m1", "res1_nxn_{}".format(spec)),  # N_s1m0 x N_s0m1
+                        ]:
+                            r = qbr[k1] * qbr[k2] - 1
+                            cl1 += (r * cbl[k3][xname]).sum(axis=0)
+
                         if self.null_run:
-                            # S_s0_map0 x N_s1_map1
-                            cl1 += (
-                                (qb_fac["s1m1"] - 1)
-                                * cbl["res0_sxn_{}".format(spec)][xname]
-                            ).sum(axis=0)
-                            # S_s1_map0 x N_s0_map1
-                            cl1 += (
-                                (qb_fac["s0m1"] - 1)
-                                * cbl["res1_sxn_{}".format(spec)][xname]
-                            ).sum(axis=0)
-
-                            # N_s0_map0 x S_s1_map1
-                            cl1 += (
-                                (qb_fac["s0m0"] - 1)
-                                * cbl["res0_nxs_{}".format(spec)][xname]
-                            ).sum(axis=0)
-                            # N_s1_map0 x S_s0_map1
-                            cl1 += (
-                                (qb_fac["s1m0"] - 1)
-                                * cbl["res1_nxs_{}".format(spec)][xname]
-                            ).sum(axis=0)
+                            for k1, k3 in [
+                                ("s1m1", "res0_sxn_{}".format(spec)),  # S_s0m0 x N_s1m1
+                                ("s0m1", "res1_sxn_{}".format(spec)),  # S_s1m0 x N_s0m1
+                                ("s0m0", "res0_nxs_{}".format(spec)),  # N_s0m0 x S_s1m1
+                                ("s1m0", "res1_nxs_{}".format(spec)),  # N_s1m0 x S_s0m1
+                            ]:
+                                r = qbr[k1] - 1
+                                cl1 += (r * cbl[k3][xname]).sum(axis=0)
 
                         # all of these were asymmetric specs, divide by 2 for mean
                         cl1 /= 2.0
