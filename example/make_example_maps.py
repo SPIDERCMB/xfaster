@@ -71,7 +71,7 @@ for tag in tags:
 
 # make data, signal, noise sims
 for i in range(nsim + 1):
-    sig = hp.synfast(cls, nside=nside, new=True)
+    sig = hp.synfast(cls, nside=nside, new=True, pixwin=True)
     noise = np.zeros_like(sig)
 
     # smooth both by filter transfer function
