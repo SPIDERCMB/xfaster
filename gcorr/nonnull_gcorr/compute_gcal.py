@@ -1,3 +1,6 @@
+'''
+A script for computing g_corr factor from ensemble_mean and simulation bandpowers.
+'''
 import os
 import glob
 import numpy as np
@@ -7,11 +10,10 @@ use('agg')
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
 import xfaster as xf
+from xfaster import parse_tools as pt
 
 specs = ['tt', 'ee', 'bb', 'te', 'eb', 'tb']
-
-# P == Plotting?
-P = False
+Plot = True
 
 def gauss(qb, amp, width, offset):
     return amp * np.exp(-width*(qb - offset)**2)
@@ -20,11 +22,11 @@ def lognorm(qb, amp, width, offset):
     return gauss(np.log(qb), amp, width, offset)
 
 def xfaster_run_ensemble(output_root=None, output_tag=None):
-    if P: 
+    if Plot:    
         plot_root = os.path.join(output_root, 'plots')
-    	if not os.path.exists(plot_root):
+        if not os.path.exists(plot_root):
             os.mkdir(plot_root)
-
+    
     if output_root is None:
         output_root = os.getcwd()
     if output_tag is not None:
@@ -49,19 +51,19 @@ def xfaster_run_ensemble(output_root=None, output_tag=None):
     inv_fishes = []
     qbs = {}
     
-    if P:
+    if Plot:
         plt.plot([0,250], [0.2, 0.2], 'k-')
-    	plt.errorbar(bp_mean['ellb']['cmb_bb'], bp_mean['cb']['cmb_bb'],
+        plt.errorbar(bp_mean['ellb']['cmb_bb'], bp_mean['cb']['cmb_bb'],
                  bp_mean['dcb']['cmb_bb'], label='ensemble_mean')
-    	plt.legend()
-    	plt.ylim(-0, 0.4)
-    	plt.title('{} GHz BB'.format(output_tag[1:]))
-    	plt.savefig(os.path.join(plot_root, 'bb_spec{}.png'.format(output_tag)))
-    	plt.close()
+        plt.legend()
+        plt.ylim(-0, 0.4)
+        plt.title('{} GHz BB'.format(output_tag[1:]))
+        plt.savefig(os.path.join(plot_root, 'bb_spec{}.png'.format(output_tag)))
+        plt.close()
 
-    qb_err = xf.arr_to_dict(np.sqrt(np.diag(bp_mean['inv_fish'])),
+    qb_err = pt.arr_to_dict(np.sqrt(np.diag(bp_mean['inv_fish'])),
                             bp_mean['bin_def'])
-    qb_err_fix = xf.arr_to_dict(
+    qb_err_fix = pt.arr_to_dict(
         1. / np.sqrt(np.diag(np.linalg.inv(bp_mean['inv_fish']))),
         bp_mean['bin_def'])
 
@@ -86,7 +88,7 @@ def xfaster_run_ensemble(output_root=None, output_tag=None):
     out['qbvar'] = OrderedDict()
     out['gcorr'] = OrderedDict()
 
-    if P:
+    if Plot:
     	for spec in specs:
             fig, ax = plt.subplots(4, 4, figsize=(15,15), sharex=False, sharey=False)
             fig.suptitle('{} {}'.format(output_tag[1:], spec.upper()))
@@ -168,17 +170,17 @@ def xfaster_run_ensemble(output_root=None, output_tag=None):
             axs[15].legend(loc='lower center')
             fig.savefig(os.path.join(plot_root, 'hists{}_{}.png'.format(output_tag, spec)))
             plt.close(fig)
-    cmb_bins = len(xf.dict_to_arr(out['qbvar'], flatten=True))
+    cmb_bins = len(pt.dict_to_arr(out['qbvar'], flatten=True))
 
-    out['gcorr_gauss'] = xf.arr_to_dict(
-        np.diag(out['inv_fish'])[:cmb_bins] / xf.dict_to_arr(out['qbvar'], flatten=True),
+    out['gcorr_gauss'] = pt.arr_to_dict(
+        np.diag(out['inv_fish'])[:cmb_bins] / pt.dict_to_arr(out['qbvar'], flatten=True),
         out['gcorr'])
     outfile = os.path.join(
         output_root, 'gcorr{}.npz'.format(output_tag)
     )
     np.savez_compressed(outfile, **out)
 
-    if P:
+    if Plot:
         fig, ax = plt.subplots(2, 3)
         ax = ax.flatten()
         for i, spec in enumerate(specs):
@@ -199,4 +201,4 @@ if __name__ == "__main__":
     P.add_argument('-r', '--root', default='xfaster_gcal_unconstr')
     args = P.parse_args()
 
-    xfaster_run_ensemble(os.path.join('/path/to/output/', args.root), args.output_tag) #Set your own output path
+    xfaster_run_ensemble(os.path.join('../../example/gcorr_run/', args.root), args.output_tag) #Set your own output path

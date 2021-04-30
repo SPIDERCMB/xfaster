@@ -18,7 +18,7 @@ specs = ['tt', 'ee', 'bb', 'te', 'eb', 'tb']
 
 run_name = 'xfaster_gcal_unconstr'
 run_name_iter = run_name + '_iter'
-ref_dir = os.path.join('/data', 'agambrel', 'spectra', run_name)
+ref_dir = os.path.join('../../example/gcorr_run', run_name)
 rundir = ref_dir + '_iter'
 
 tags = ['90', '150']
@@ -103,7 +103,7 @@ os.system('python xfaster_gcal_unconstr.py -o {} -n 1000 > /dev/null'.format(
         run_name_iter))
 
 print('Waiting for jobs to complete...')
-while os.system('squeue -u {} | grep xfast > /dev/null'.format(os.getenv('USER')) == 0:
+while os.system('squeue -u {} | grep xfast > /dev/null'.format(os.getenv('USER'))) == 0:
     os.system('squeue -u {} | wc'.format(os.getenv('USER'))
     sleep(10)
 

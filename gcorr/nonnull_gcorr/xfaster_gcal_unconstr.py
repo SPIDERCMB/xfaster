@@ -1,7 +1,6 @@
 '''
 A XFaster submission script to generate ensemble-mean and simulation runs for gcorr calculation.
 '''
-
 import os
 import xfaster as xf
 import argparse as ap
@@ -14,29 +13,34 @@ P.add_argument('-m', '--ensemble-mean', action='store_true')
 P.add_argument('--no-gcorr', dest='gcorr', default=True, action='store_false')
 P.add_argument('--no-submit', dest='submit', action='store_false')
 
+output_root = '../../example/gcorr_run/'
+
 args = P.parse_args()
 seeds = list(range(args.first, args.first + args.num))
 if args.ensemble_mean:
     seeds = [seeds[0]]
 
-tags = ['90','150']
+tags = ['95','150']
 for tag in tags:
     opts = dict(
-        data_root='/data/agambrel/XF_NonNull_Sept18',
-        output_root=os.path.join('/data/agambrel/spectra', args.output),
+        data_root='../../example/maps_example/',
+        data_subset='full/map_{}*'.format(tag),
+        output_root=os.path.join(output_root, args.output),
         output_tag=tag,
         tbeb=True,
         bin_width=25,
         lmin=8, #33
         lmax=407,
         iter_max=200,
-        mask_type="pointsource_latlon",
+
+        mask_type="rectangle", #Example mask type
         noise_type=None,
-        signal_type='flatBBDl_unconstr',
-        clean_type='raw',
-        data_subset='full/map_{}*'.format(tag),
+        signal_type='synfast', #Example signal type
+        data_type='raw', #Eample data type
+        config = '../../example/config_example.ini',
+
         likelihood=False,
-        verbose='detail',
+        verbose='debug',
         residual_fit=False,
         foreground_fit=False,
         checkpoint='bandpowers',
@@ -60,12 +64,12 @@ for tag in tags:
 
     for s in seeds:
         fname = os.path.join(
-            '/path/to/output/', args.output, tag, #Put your output path here.
+            output_root, args.output, tag,
             'bandpowers_sim{:04d}_{}.npz'.format(s, tag)
         )
         if args.ensemble_mean or not os.path.exists(fname):
             
-	    if not args.ensemble_mean:
+            if not args.ensemble_mean:
                 opts.update(sim_index=s)
             if args.submit:
                 xf.xfaster_submit(**opts)

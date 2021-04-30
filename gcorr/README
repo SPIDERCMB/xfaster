@@ -2,17 +2,28 @@ Code package for calculating gcorr factors using pre-generated simulation maps f
 
 In each folder, there are three scripts used for non-null/null gcorr runs:
 
-1. compute_gcorr.py  ---- A script that computes gcorr.npz file from all the bandpower.npz files.
-2. xfaster_gcal_unconstr.py ---- A standard xfaster sample script to generate sim/ensemble_mean bandpower runs.
+1. xfaster_gcal_unconstr.py ---- A standard xfaster sample script to generate sim/ensemble_mean bandpower runs.
+2. compute_gcorr.py  ---- A script that computes gcorr.npz file from all the bandpower.npz files.
 3. gcal_iter_unconstr.py ---- A iteration script, that calls script 1 and 2 to get a new gcorr.npz file each time.
 
 ---------------------
 Gcorr run procedure:
  
-1. For both non-null/null gcorr runs, one first need to do one simulation run to get all XFaster output files, stored to a default folder `/path/to/output/xfaster_gcal_unconstr`. Remember to have your masks changed and output_root `/path/to/output/` set. For nulls, if data bandpowers are pre-computed, a qb_file could be set to point to that bandpower file.
-Increase OMP_threads for this first run as it helps when computing the sim_xcorr file.
+1. For both non-null/null gcorr runs, one first need to do one simulation run to get all XFaster output files with NO gcorr applied, stored to a default folder `xfaster_gcal_unconstr`. Check for your mask_type option. 
+For nulls, if data bandpowers are pre-computed, a qb_file could be set to point to that bandpower file.
+Could increase OMP_threads for this first run as it helps when computing the sim_xcorr file.
 
-2. Complete the remaining simulation runs.(setting -m for ensemble_mean run for non-nulls; -f and -n for sim indices) For non-nulls, a ensemble_mean run is required to compute a gcorr factor. For nulls, only single simulation bandpowers are required.
+Example call, non-nulls
+===========
+$ python xfaster_gal_unconstr.py --no-gcorr
+===========
+
+2. Complete the remaining simulation runs.(setting -m for ensemble_mean run for non-nulls; -f and -n for sim indices) For non-nulls, a ensemble_mean run is required to compute a gcorr factor. For nulls, only simulation bandpowers are required.
+
+===========
+$ python xfaster_gcal_unconstr.py --no-gcorr -m     (ensemble_mean run)
+$ python xfaster_gcal_unconstr.py --no-gcorr -n 100 (100 sim runs)
+===========
 
 3. Make a parallel copy of this output folder and name it `xfaster_gcal_unconstr_iter`. This is the folder where transfer functions and bandpowers will be iterated in. (Make sure this happens before step 4., so there's no gcorr file in this _iter folder.)
 
