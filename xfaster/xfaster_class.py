@@ -6286,13 +6286,13 @@ class XFaster(object):
         # check all options that require rerunning fisher iterations
         opts = dict(
             converge_criteria=converge_criteria,
-            delta_beta_prior=delta_beta_prior,
             cond_noise=cond_noise,
             null_first_cmb=null_first_cmb,
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
         )
-
+        if 'delta_beta' in self.bin_def:
+            opts.update(delta_beta_prior=delta_beta_prior)
         if self.template_cleaned:
             opts.update(template_alpha=self.template_alpha)
         self.return_cls = return_cls
