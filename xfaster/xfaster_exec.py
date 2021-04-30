@@ -82,7 +82,7 @@ def xfaster_run(
     delta_beta_prior=0.5,
     noise_type_sim=None,
     signal_type_sim=None,
-    foreground_type=None,
+    foreground_type_sim=None,
     template_type=None,
     template_alpha_tags=["95", "150"],
     template_alpha=[0.015, 0.043],
@@ -278,8 +278,8 @@ def xfaster_run(
         The width of the prior on the additive change from beta_ref. If you
         don't want the code to fit for a spectral index different
         from beta_ref, set this to be a very small value (O(1e-10)).
-    foreground_type : string
-        Tag for directory (foreground_<foreground_type>) where foreground
+    foreground_type_sim : string
+        Tag for directory (foreground_<foreground_type_sim>) where foreground
         sims are that should be added to the signal and noise sims
         when running in sim_index mode. Note: the same foreground sim
         map is used for each sim_index, despite signal and noise sims
@@ -345,10 +345,10 @@ def xfaster_run(
     if noise_type == "None":
         noise_type = None
 
-    if foreground_type is not None and sim_index is None:
+    if foreground_type_sim is not None and sim_index is None:
         warnings.warn(
-            "Ignoring argument foreground_type={} for non sim index run".format(
-                foreground_type
+            "Ignoring argument foreground_type_sim={} for non sim index run".format(
+                foreground_type_sim
             ),
             xfc.XFasterWarning,
         )
@@ -397,7 +397,7 @@ def xfaster_run(
         signal_transfer_type=signal_transfer_type,
         data_root2=data_root2,
         data_subset2=data_subset2,
-        foreground_type=foreground_type,
+        foreground_type_sim=foreground_type_sim,
         template_type=template_type,
         sub_planck=sub_planck,
     )
@@ -1100,7 +1100,7 @@ def xfaster_parse(args=None, test=False):
             help="The width of the prior on the additive deviation from beta_ref",
         )
         add_arg(
-            G, "foreground_type", help="Foreground sim variant to use for sim_index"
+            G, "foreground_type_sim", help="Foreground sim variant to use for sim_index"
         )
         add_arg(
             G, "template_type", help="Template type to use for template subtraction"
