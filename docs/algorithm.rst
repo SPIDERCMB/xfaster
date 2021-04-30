@@ -83,7 +83,7 @@ For XFaster, our parameters, :math:`\theta` that will be fit to the data are the
    \mathcal{F}_{\ell \ell^{\prime}}=\frac{1}{2} \operatorname{Tr}\left[\mathbf{C}^{-1} \frac{\partial \mathbf{S}}{\partial \mathcal{C}_{\ell}} \mathbf{C}^{-1} \frac{\partial \mathbf{S}}{\partial \mathcal{C}_{\ell^{\prime}}} \right]
    :label: fisher_ell
 
-where I've left out all the math to get the first and second derivatives. **Note: I will use :math:`\mathcal{C}` for bandpowers and :math:`C` for covariance. Similarly, the Fisher matrix will be :math:`\mathcal{F}` and the transfer function will be :math:`F`.**
+where I've left out all the math to get the first and second derivatives. **Note: I will use** :math:`\mathcal{C}` **for bandpowers and** :math:`C` **for covariance. Similarly, the Fisher matrix will be** :math:`\mathcal{F}` **and the transfer function will be** :math:`F`.
 
 Now, instead of iterating on the steps toward the maximum, XFaster iterates towards the bandpowers themselves. It does this by reconfiguring the second term in the trace in Equation :math:numref:`cell`, which should iteratively get closer to zero, and instead reformats it to be the estimate of the measured signal:
 
@@ -136,30 +136,57 @@ where now instead of solving for just TT for one map, I'm generalizing to a matr
    \end{bmatrix}
    :label: dell
 
-where :math:`N` is the number of maps, and each element of the above matrix is a 3x3 subblock of :math:`\tilde{C}_\ell` s for that map cross (*note: this the the full covariance, :math:`\tilde{C}_\ell` , not only the signal part, :math:`\tilde{\mathcal{C}}_\ell` *):
+where :math:`N` is the number of maps, and each element of the above matrix is a 3x3 subblock of :math:`\tilde{C}_\ell` s for that map cross (*note: this the the full covariance,* :math:`\tilde{C}_\ell`, *not only the signal part,* :math:`\tilde{\mathcal{C}}_\ell`):
 
 .. math::
    \tilde{\mathbf{D}}_{\ell}^{1\times 1}=\left[\begin{array}{ccc}{\tilde{\mathrm{C}}_{\ell}^{T T}} & {\tilde{\mathrm{C}}_{\ell}^{T E}} & {\tilde{\mathrm{C}}_{\ell}^{T B}} \\ {\tilde{\mathrm{C}}_{\ell}^{T E}} & {\tilde{\mathrm{C}}_{\ell}^{E E}} & {\tilde{\mathrm{C}}_{\ell}^{E B}} \\ {\tilde{\mathrm{C}}_{\ell}^{T B}} & {\tilde{\mathrm{C}}_{\ell}^{E B}} & {\tilde{\mathrm{C}}_{\ell}^{B B}}\end{array}\right]_{1\times 1}
    :label: eq19
 
-We've also reduced the trace over $\ell$ in equations :math:numref:`cell` and :math:numref:`fisher_ell` to the number of modes we measure, assuming isotropy: :math:`\sum_{\ell}(2\ell+1)\mathbf{gg}^T`, where :math:`g` is a weighting factor accounting for the effective number of degrees of freedom of the map.  And the trace in equations :math:numref:`qb` and :math:numref:`fisher` is over the various map cross spectrum components.
+We've also reduced the trace over :math:`\ell` in equations :math:numref:`cell` and :math:numref:`fisher_ell` to the number of modes we measure, assuming isotropy: :math:`\sum_{\ell}(2\ell+1)\mathbf{gg}^T`, where :math:`g` is a weighting factor accounting for the effective number of degrees of freedom of the map.  And the trace in equations :math:numref:`qb` and :math:numref:`fisher` is over the various map cross spectrum components.
 
 There is some complication that arises from building the non-TT components of the signal covariance, which is that there is mixing between T :math:`\leftrightarrow` E,B and E :math:`\leftrightarrow` B caused by the masking. We account for this with the proper combination of shape operators, :math:`\tilde{\mathcal{C}}_{b\ell}`, along with their associated amplitudes, where the shape operators are defined below:
 
 .. math::
    \begin{aligned}
-   \tilde{\mathcal{C}}_{b \ell}^{T T}&=\sum_{\ell^{\prime}} K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{T T} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{TT} \chi_{b}\left(\ell^{\prime}\right) \\
-   {}_\pm \tilde{\mathcal{C}}_{b \ell}^{EE}&=\sum_{\ell^{\prime}} {}_\pm K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{EE} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{EE} \chi_{b}\left(\ell^{\prime}\right) \\
-   {}_\pm \tilde{\mathcal{C}}_{b \ell}^{BB}&=\sum_{\ell^{\prime}} {}_\pm K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{BB} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{BB} \chi_{b}\left(\ell^{\prime}\right) \\
-   \tilde{\mathcal{C}}_{b \ell}^{TE}&=\sum_{\ell^{\prime}} {}_\times K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{TE} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{TE} \chi_{b}\left(\ell^{\prime}\right) \\
-   \tilde{\mathcal{C}}_{b \ell}^{TB}&=\sum_{\ell^{\prime}} {}_\times K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{TB} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{TB} \chi_{b}\left(\ell^{\prime}\right) \\
-   \tilde{\mathcal{C}}_{b \ell}^{EB}&=\sum_{\ell^{\prime}} ({}_+ K_{\ell \ell^{\prime}}-{}_- K_{\ell \ell^{\prime}}) F_{\ell^{\prime}}^{EB} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{EB} \chi_{b}\left(\ell^{\prime}\right) \\
+   \tilde{\mathcal{C}}_{b \ell}^{T T}&=\sum_{\ell^{\prime}} K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{T T} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{TT (S)} \chi_{b}\left(\ell^{\prime}\right) \\
+   {}_\pm \tilde{\mathcal{C}}_{b \ell}^{EE}&=\sum_{\ell^{\prime}} {}_\pm K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{EE} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{EE (S)} \chi_{b}\left(\ell^{\prime}\right) \\
+   {}_\pm \tilde{\mathcal{C}}_{b \ell}^{BB}&=\sum_{\ell^{\prime}} {}_\pm K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{BB} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{BB (S)} \chi_{b}\left(\ell^{\prime}\right) \\
+   \tilde{\mathcal{C}}_{b \ell}^{TE}&=\sum_{\ell^{\prime}} {}_\times K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{TE} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{TE (S)} \chi_{b}\left(\ell^{\prime}\right) \\
+   \tilde{\mathcal{C}}_{b \ell}^{TB}&=\sum_{\ell^{\prime}} {}_\times K_{\ell \ell^{\prime}} F_{\ell^{\prime}}^{TB} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{TB (S)} \chi_{b}\left(\ell^{\prime}\right) \\
+   \tilde{\mathcal{C}}_{b \ell}^{EB}&=\sum_{\ell^{\prime}} ({}_+ K_{\ell \ell^{\prime}}-{}_- K_{\ell \ell^{\prime}}) F_{\ell^{\prime}}^{EB} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{EB (S)} \chi_{b}\left(\ell^{\prime}\right) \\
    \end{aligned}
    :label: cbl
 
-The shape operators, or "Cee-bee-ells" are simply understood to be the binned power we would expect given what we know of the coupling between our experiment and the sky. We have different shape expectations for the different signals we measure. Chiefly, the four that XFaster has currently implemented are CMB, dust, residual noise (that is, noise that is not accounted for in the noise simulation ensemble), and null signal. Each of these modifies the equation above somewhat, and we'll go into more detail about that further on in this guide.
+The shape operators, or "Cee-bee-ells" are simply understood to be the binned power we would expect given what we know of the coupling between our experiment and the sky. These are shown for a CMB shape spectrum (:math:`C_\ell^{(S)}`). More details for how these are used and how they are modified for foregrounds, noise residuals, and null tests are provided in the `XFaster paper <https://arxiv.org/abs/2104.01172>`_.
 
-The signal component of the covariance can then be written as
+The kernel terms :math:`K_{\ell \ell^{\prime}}` are given as follows:
+
+.. math::
+   \begin{aligned}
+   K^{ij}_{\ell\ell^\prime} &= \frac{2 \ell^\prime + 1}{4 \pi} \sum_L (2 L + 1) \mathcal{W}^{TT,ij}_L
+   \begin{pmatrix}
+   \ell & \ell^\prime & L \\
+   0 & 0 & 0
+   \end{pmatrix}^2 \\
+   _\pm K^{ij}_{\ell\ell^\prime} &= \frac{2 \ell^\prime + 1}{4 \pi} \sum_L \frac{1}{2}(2 L + 1) \mathcal{W}^{PP,ij}_L
+   \begin{pmatrix}
+   \ell & \ell^\prime & L \\
+   2 & -2 & 0
+   \end{pmatrix}^2 \cdot \frac{1}{2} \left(1 \pm (-1)^{\ell + \ell^\prime + L}\right) \\
+   _\times K^{ij}_{\ell\ell^\prime} &= \frac{2 \ell^\prime + 1}{4 \pi} \sum_L (2 L + 1) \mathcal{W}^{TP,ij}_L
+   \begin{pmatrix}
+   \ell & \ell^\prime & L \\
+   2 & -2 & 0
+   \end{pmatrix} \begin{pmatrix}
+   \ell & \ell^\prime & L \\
+   0 & 0 & 0
+   \end{pmatrix}
+   \end{aligned}
+   :label: kernels
+
+Here, *i* and *j* index over masks, :math:`\mathcal{W}_L` is the cross spectrum of two masks, and terms in parentheses are the Wigner-3j symbols.
+
+Next, the signal component of the covariance can be written as
 
 .. math::
    \tilde{\mathbf{S}}_\ell=
@@ -216,11 +243,22 @@ To construct equations :math:numref:`qb` and :math:numref:`fisher`, we need to t
    \end{align}
    :label: dsdqb
 
-So now everything is set up that we need, and we just need to build the ingredients. The rest of this document will be how we get each of the terms, but the main engine of XFaster, once it has all the ingredients, is to iterate on equations :math:numref:`qb` and :math:numref:`fisher`. So,
+So now everything is set up that we need, and we just need to build the ingredients.
+This is done in different functions called sequentially in the code, detailed in :ref:`the tutorial<Tutorial>`.
+Once all the ingredients are computed, we iterate on equations :math:numref:`qb` and :math:numref:`fisher`. So,
 
- 1. Start with an initial guess at the $q_b$s, which we set to be 1.
+ 1. Start with an initial guess at the :math:`q_b` s, which we set to be 1.
  2. Compute the Fisher matrix with Equation :math:numref:`fisher`.
  3. Plug that into Equation :math:numref:`qb` to get a new guess for :math:`q_b`.
  4. Repeat until some convergence criterion is met.
 
-We can use all these same tools to also fit for the transfer function-- instead of using :math:`\tilde{\mathbf{D}}_\ell^{obs}-\tilde{\mathbf{N}}_\ell` for our measured signal spectrum, we just use the ensemble average of the signal simulations, and set :math:`F_\ell` in Equation :math:numref:`cbl` to be 1. Then, the :math:`q_b` s that pop out are just the transfer function itelf, and the inverse Fisher matrix gives the error on the transfer function.
+To instead solve for parameter likelihoods, we fix the :math:`q_b` parameters to be 1, and instead parameterize the signal model, :math:`\mathcal{C}_\ell^{(S)}` with cosmological parameters.
+Then, an MCMC sampler directly evaluates the likelihood in the form
+
+.. math::
+   \mathcal{L}\equiv \ln \,L = -\frac{1}{2} \sum_{\ell,k} (2 \ell + 1) g_\ell^k \left[\widetilde{\pmb{C}}_\ell^{-1} \cdot\widehat{\pmb{C}}_\ell + \ln\,\widetilde{\pmb{C}}_\ell\right]_{kk} \,,
+   :label: logL
+
+using all the same ingredients as were used for the bandpower iteration.
+
+For more details on everything discussed in this page, see the `XFaster paper <https://arxiv.org/abs/2104.01172>`_.
