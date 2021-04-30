@@ -99,7 +99,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#example-script">Example Script</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#setting-up-your-data">Setting up your data</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#maps">Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#map-data">Map Data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#non-map-data">Non-Map Data</a></li>
 </ul>
 </li>
@@ -224,7 +224,7 @@
 </div>
 <div class="section" id="example-script">
 <h2>Example Script<a class="headerlink" href="#example-script" title="Permalink to this headline">¶</a></h2>
-<p>To get started with the code before running it on your data, you can run through the example, described in more detail in the <span class="xref std std-ref">Algorithm</span> link.
+<p>To get started with the code before running it on your data, you can run through the example, described in more detail in the <a class="reference internal" href="notebooks/XFaster_Tutorial.html#Tutorial"><span class="std std-ref">Tutorial</span></a> link.
 First, generate the small ensemble of maps by running <a class="reference external" href="https://github.com/annegambrel/xfaster/blob/main/example/make_example_maps.py">make_example_maps.py</a> in the <code class="docutils literal notranslate"><span class="pre">examples</span></code> directory.
 This should take about 15 minutes on an 8-core laptop.
 Then, run <a class="reference external" href="https://github.com/annegambrel/xfaster/blob/main/example/xfaster_example.py">xfaster_example.py</a>.
@@ -233,8 +233,8 @@ This runs XFaster on the example maps, so you can see the step-by-step process a
 </div>
 <div class="section" id="setting-up-your-data">
 <h2>Setting up your data<a class="headerlink" href="#setting-up-your-data" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="maps">
-<h3>Maps<a class="headerlink" href="#maps" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="map-data">
+<h3>Map Data<a class="headerlink" href="#map-data" title="Permalink to this headline">¶</a></h3>
 <p>The code requires a certain directory structure for your input maps:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>&lt;data_root&gt;/
 ├── data_&lt;data_type&gt;
@@ -284,7 +284,7 @@ The signal map directory must also contain a spectrum file containing the <span 
 This spectrum in used in computing the transfer function.</p>
 <p>One mask is required per map tag.
 These files begin with <code class="docutils literal notranslate"><span class="pre">mask_map_</span></code> instead of <code class="docutils literal notranslate"><span class="pre">map_</span></code>.</p>
-<p>Optional inputs are described in <span class="xref std std-ref">Algorithm</span>.</p>
+<p>Optional inputs are described in <a class="reference internal" href="notebooks/XFaster_Tutorial.html#Tutorial"><span class="std std-ref">Tutorial</span></a>.</p>
 </div>
 <div class="section" id="non-map-data">
 <h3>Non-Map Data<a class="headerlink" href="#non-map-data" title="Permalink to this headline">¶</a></h3>
@@ -356,42 +356,65 @@ The files written to disk are:</p>
 </ul>
 </li>
 </ul>
-<p>For a detailed overview of the various fields contained in each dictionary, see <span class="xref std std-ref">Algorithm</span>.</p>
+<p>For a detailed overview of the various fields contained in each dictionary, see <a class="reference internal" href="notebooks/XFaster_Tutorial.html#Tutorial"><span class="std std-ref">Tutorial</span></a>.</p>
 <p>Whenever you want to read in some data the XFaster code wrote, you’ll want to use the function <code class="docutils literal notranslate"><span class="pre">load_and_parse</span></code>.
 This includes all the files detailed in the list above.
 You can then look through keys, where the dictionaries are all structured as <code class="docutils literal notranslate"><span class="pre">main</span> <span class="pre">field</span> <span class="pre">name</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">spectrum</span> <span class="pre">type</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">map/cross</span> <span class="pre">spectrum</span></code>.</p>
 <p>In the last category, cross spectra are indicated with a colon, so if I had two maps tagged as <code class="docutils literal notranslate"><span class="pre">95</span></code> and <code class="docutils literal notranslate"><span class="pre">150</span></code> that I’m inputting the algorithm, the spectrum fields I should find are <code class="docutils literal notranslate"><span class="pre">95:95</span></code>, <code class="docutils literal notranslate"><span class="pre">150:150</span></code>, and <code class="docutils literal notranslate"><span class="pre">150:95</span></code> (crosses are in alphabetical error, as they are read as strings).
 Here, we have the two map auto-spectra first, and then the cross between them.
-If there are multiple maps with the same tag but that use different &lt;&lt;data_subsets&gt;&gt; as described in <a class="reference internal" href="#maps"><span class="std std-ref">Maps</span></a> above, these will be assigned an additional numerical tag, so you might have something like <code class="docutils literal notranslate"><span class="pre">95_0:95_1</span></code> for the cross between map 95 in data_subset1 and data_subset2.</p>
-<p>Below, we show how to load up some bandpowers, error bars, transfer function, and r-likelihood from the example script outputs.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">xfaster</span> <span class="k">as</span> <span class="nn">xf</span>
+If there are multiple maps with the same tag but that use different &lt;&lt;data_subsets&gt;&gt; as described in <a class="reference internal" href="notebooks/XFaster_Tutorial.html#Maps"><span class="std std-ref">Maps</span></a> above, these will be assigned an additional numerical tag, so you might have something like <code class="docutils literal notranslate"><span class="pre">95_0:95_1</span></code> for the cross between map 95 in data_subset1 and data_subset2.</p>
+<p>Below, we show how to load up some bandpowers, error bars, transfer function, and r-likelihood from the example script outputs.
+This script is also in the repo: <a class="reference external" href="https://github.com/annegambrel/xfaster/blob/main/example/plot_outputs.py">xfaster/example/plot_outputs.py</a></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">xfaster</span> <span class="k">as</span> <span class="nn">xf</span>
+<span class="kn">from</span> <span class="nn">xfaster</span> <span class="kn">import</span> <span class="n">xfaster_tools</span> <span class="k">as</span> <span class="n">xft</span>
+
+<span class="c1"># First, load up inputs to our sims so we can check how well they&#39;re recovered</span>
+<span class="c1"># (bearing in mind, this is a single sim, so noise fluctuations and sample</span>
+<span class="c1"># variance will cause scatter.</span>
+<span class="n">r_in</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="n">Dls_in</span> <span class="o">=</span> <span class="n">xft</span><span class="o">.</span><span class="n">get_camb_cl</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="n">r_in</span><span class="p">,</span> <span class="n">lmax</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">lfac</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">Fl_in</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s2">&quot;maps_example/transfer_example.txt&quot;</span><span class="p">)</span>
 
 <span class="c1"># load up bandpowers file, where most of the useful stuff is stored</span>
 <span class="n">bp</span> <span class="o">=</span> <span class="n">xf</span><span class="o">.</span><span class="n">load_and_parse</span><span class="p">(</span><span class="s2">&quot;outputs_example/95x150/bandpowers_95x150.npz&quot;</span><span class="p">)</span>
-<span class="n">ee_bin_centers</span> <span class="o">=</span> <span class="n">bp</span><span class="p">[</span><span class="s2">&quot;ellb&quot;</span><span class="p">][</span><span class="s2">&quot;cmb_ee&quot;</span><span class="p">]</span> <span class="c1"># weighted bin centers</span>
-<span class="n">ee_specs</span> <span class="o">=</span> <span class="n">bp</span><span class="p">[</span><span class="s2">&quot;cb&quot;</span><span class="p">][</span><span class="s2">&quot;cmb_ee&quot;</span><span class="p">]</span> <span class="c1"># estimated CMB spectra with ell*(ell+1)/(2pi) factors</span>
-<span class="n">ee_errs</span> <span class="o">=</span> <span class="n">bp</span><span class="p">[</span><span class="s2">&quot;dcb&quot;</span><span class="p">][</span><span class="s2">&quot;cmb_ee&quot;</span><span class="p">]</span> <span class="c1"># estimated CMB error bars</span>
-<span class="n">spec_cov</span> <span class="o">=</span> <span class="n">bp</span><span class="p">[</span><span class="s2">&quot;cov&quot;</span><span class="p">]</span> <span class="c1"># Nspec * Nbin square covariance matrix</span>
-<span class="n">ee_transfer_95</span> <span class="o">=</span> <span class="n">bp</span><span class="p">[</span><span class="s2">&quot;qb_transfer&quot;</span><span class="p">][</span><span class="s2">&quot;cmb_ee&quot;</span><span class="p">][</span><span class="s2">&quot;95&quot;</span><span class="p">]</span> <span class="c1"># transfer function using the same bins</span>
+<span class="n">ee_bin_centers</span> <span class="o">=</span> <span class="n">bp</span><span class="p">[</span><span class="s2">&quot;ellb&quot;</span><span class="p">][</span><span class="s2">&quot;cmb_ee&quot;</span><span class="p">]</span>  <span class="c1"># weighted bin centers</span>
+<span class="n">ee_specs</span> <span class="o">=</span> <span class="n">bp</span><span class="p">[</span><span class="s2">&quot;cb&quot;</span><span class="p">][</span><span class="s2">&quot;cmb_ee&quot;</span><span class="p">]</span>  <span class="c1"># estimated CMB spectra with ell*(ell+1)/(2pi) factors</span>
+<span class="n">ee_errs</span> <span class="o">=</span> <span class="n">bp</span><span class="p">[</span><span class="s2">&quot;dcb&quot;</span><span class="p">][</span><span class="s2">&quot;cmb_ee&quot;</span><span class="p">]</span>  <span class="c1"># estimated CMB error bars</span>
+<span class="n">spec_cov</span> <span class="o">=</span> <span class="n">bp</span><span class="p">[</span><span class="s2">&quot;cov&quot;</span><span class="p">]</span>  <span class="c1"># Nspec * Nbin square covariance matrix</span>
+<span class="n">ee_transfer_150</span> <span class="o">=</span> <span class="n">bp</span><span class="p">[</span><span class="s2">&quot;qb_transfer&quot;</span><span class="p">][</span><span class="s2">&quot;cmb_ee&quot;</span><span class="p">][</span><span class="s2">&quot;150&quot;</span><span class="p">]</span>  <span class="c1"># transfer function using the same bins</span>
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ee_bin_centers</span><span class="p">,</span> <span class="n">ee_transfer_95</span><span class="p">)</span>
-<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$F_\ell$&quot;</span><span class="p">)</span>
-<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">ee_bin_centers</span><span class="p">,</span> <span class="n">ee_specs</span><span class="p">,</span> <span class="n">ee_errs</span><span class="p">)</span>
-<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\ell(\ell+1)C_\ell/2\pi\, [\mu K_</span><span class="si">{CMB}</span><span class="s2">]$&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">Fl_in</span><span class="p">[:</span><span class="mi">500</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Input Transfer Function&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ee_bin_centers</span><span class="p">,</span> <span class="n">ee_transfer_150</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Estimated Transfer Function&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$F_\ell^</span><span class="si">{EE}</span><span class="s2">$&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\ell$&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">Dls_in</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Input CMB&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">ee_bin_centers</span><span class="p">,</span> <span class="n">ee_specs</span><span class="p">,</span> <span class="n">ee_errs</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Output CMB Estimate&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\ell(\ell+1)C_\ell^</span><span class="si">{EE}</span><span class="s2">/2\pi\, [\mu K_</span><span class="si">{CMB}</span><span class="s2">]$&quot;</span><span class="p">)</span>
 <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\ell$&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 
 <span class="c1"># Now get r-likelihood-- should be near the input r=1, but with scatter since it&#39;s</span>
 <span class="c1"># just one sim realization</span>
 <span class="n">lk</span> <span class="o">=</span> <span class="n">xf</span><span class="o">.</span><span class="n">load_and_parse</span><span class="p">(</span><span class="s2">&quot;outputs_example/95x150/like_mcmc_95x150.npz&quot;</span><span class="p">)</span>
-<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">lk</span><span class="p">[</span><span class="s2">&quot;samples&quot;</span><span class="p">])</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$r$&quot;</span><span class="p">)</span>
 
+<span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">r_in</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Input r&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">lk</span><span class="p">[</span><span class="s2">&quot;samples&quot;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;r posterior&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$r$&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;outputs_example.png&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
+<p>The results should look like what’s shown below.
+We recover our inputs pretty well within expected noise and signal variance.
+Recovery is a bit worse at high ell because we aren’t accounting for leakage from even higher up bins– you’ll want to use an <span class="math notranslate nohighlight">\(\ell_{max}\)</span> a bit above what you plan to use for analysis for this reason.</p>
+<a class="reference internal image-reference" href="_images/outputs_example.png"><img alt="_images/outputs_example.png" src="_images/outputs_example.png" style="width: 400px;" /></a>
 <p>And that covers the basics!</p>
 </div>
 </div>

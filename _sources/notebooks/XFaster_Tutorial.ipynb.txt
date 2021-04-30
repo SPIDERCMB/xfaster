@@ -11,7 +11,9 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "This tutorial is also a Jupyter notebook, which can be found in [the example notebooks directory](https://github.com/annegambrel/xfaster/tree/main/example/notebooks)."
+    "This tutorial is also a Jupyter notebook, which can be found in [the example notebooks directory](https://github.com/annegambrel/xfaster/tree/main/example/notebooks).\n",
+    "\n",
+    "The notebook reads intermediate output npz files from disk. To instead run the pieces starting from maps, first generate the example maps by running the script `xfaster/example/make_example_maps.py`, and set the checkpoint to something other than None."
    ]
   },
   {
@@ -25,14 +27,13 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "Before we get into the functions that produce each of the components that gets fed into equations \\ref{eq:qb} and \\ref{eq:fisher}, let's first talk about how XFaster is structured and what it expects as inputs.\n",
+    "Before we get into the functions that produce each of the components that gets fed into the equations for bandpower deviations, $q_b$ and the Fisher matrix (Equations 17 and 18 in the [Algorithm section](../algorithm.rst)), let's first talk about how XFaster is structured and what it expects as inputs.\n",
     "\n",
-    "There are two main python modules in XFaster: `xfaster_exec.py` and `xfaster_class.py`. `xfaster_exec` was written to mirror `unimap_exec`. It contains two main functions: `xfaster_run` and `xfaster_submit`. `xfaster_run` calls all of the functions to make XFaster happen (all located in `xfaster_class`) in the order they need to happen. `xfaster_submit` takes arguments for submitting the job to a queue. XFaster is not highly parallelized like `unimap`. The only real benefit it can get from using multiple cores is through the OMP speed up from numpy matrix operations. Therefore, unless you're drowning in more cores than you know what to do with, I would recommend only using one core for XFaster jobs, and splitting things up as best you can in other ways (ie, if running sims, have a handful of sims per job instead of running them all in series). \n",
+    "There are two main python modules in XFaster: [xfaster_exec.py](../api.rst#module-xfaster.xfaster_exec) and [xfaster_class.py](../api.rst#module-xfaster.xfaster_class). [xfaster_exec.py](../api.rst#module-xfaster.xfaster_exec) contains two main functions: [xfaster_run](../api.rst#xfaster.xfaster_exec.xfaster_run) and [xfaster_submit](../api.rst#xfaster.xfaster_exec.xfaster_submit). [xfaster_run](../api.rst#xfaster.xfaster_exec.xfaster_run) calls all of the functions to make XFaster happen (all located in [xfaster_class.py](../api.rst#module-xfaster.xfaster_class)) in the order they need to happen. [xfaster_submit](../api.rst#xfaster.xfaster_exec.xfaster_submit) takes arguments for submitting the job to a queue. XFaster is not highly parallelized. However, significant speed-up is gained from using more cores in the simulation pseudo-spectrum calculation through under-the-hood use of OMP. Therefore, if you're starting from a checkpoint after \"sims\", no significant speed-up will be gained when using more cores. \n",
     "\n",
     "There are a few other modules you might interact with: \n",
-    "* `xfaster_tools.py`: contains small functions used in xfaster_class\n",
-    "* `parse_tools.py`: contains a bunch of tools for converting between data structures, especially between dictionaries and matrices\n",
-    "* `output_class.py`: contains tools for parsing data on disk for post-processing. This will only be very useful if you're looking at XFaster outputs created prior to July 22, 2019, when things were stored as arrays instead of dictionaries. We would now recommend loading the outputs directly with `xfaster.load_and_parse('<output>.npz')` and grabbing things in the dictionaries there. This is illustrated in the last section of this document."
+    "* [parse_tools.py](../api.rst#module-xfaster.parse_tools): contains a bunch of tools for converting between data structures, especially between dictionaries and matrices\n",
+    "* [xfaster_tools.py](../api.rst#module-xfaster.xfaster_tools): contains small functions used in xfaster_class"
    ]
   },
   {
@@ -46,96 +47,109 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "So the top level thing you interact with is `xfaster_exec`, which takes your arguments, and has some reasonable defaults for any you don't provide. What does it take other than arguments? Maps! It wants a bunch of signal and noise simulations, in addition to the data maps and masks. Rather than pointing to each map individually, we have a directory structure that the code expects. I've put the ensemble on labah, and its contents look like this:"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "ls ../maps_example"
+    "The top level module you interact with is [xfaster_exec.py](../api.rst#module-xfaster.xfaster_exec), which takes your arguments, and has some reasonable defaults for any you don't provide. In addition to arguments, you must point the code to the inputs you want to run on. The first of these inputs is maps."
    ]
   },
   {
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "Each of data, signal, noise, and mask has a top level directory with a preordained, fixed prefix (`data`, `signal`, `noise`, `mask`) and then some suffix specified by the user which is appended with an underscore. So, for example, to run XFaster on this set of maps, I need to specify in my arguments: `clean_type=raw` (this is a confusing name for a variable, but just remember this designates the data type), `signal_type=flatBBDl`, `noise_type=stationary`, `mask_type=pointsource_latlon_aphalfdeg`.\n",
+    "### Maps\n",
     "\n",
-    "Masks have to be named a certain way within the directory (`mask_map_<tag>.fits`) and have to contain both an I and P mask if running XFaster in polarized mode (which you should always be doing). We have always used the same mask for I and P, but it's not required. You must have a mask file for each map tag, so if I'm doing a run with maps for 90 and 150 GHz maps, I need a mask for each of those, even if it's the same mask. You can use symlinks to save on disk space in that case.\n",
+    "The main inputs to the code are maps-- data maps, signal and noise simulations, and masks. Rather than pointing to each map individually, there is a directory structure that the code expects. Its contents look like this:"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "    <data_root>/\n",
+    "    ├── data_<data_type>\n",
+    "    │   ├── <data_subset1>\n",
+    "    │   │   ├── map_<tag1>.fits\n",
+    "    │   │   ├── ...\n",
+    "    │   │   ├── map_<tagN>.fits\n",
+    "    │   ├── <data_subset2> (same filenames as <data_subset1>)\n",
+    "    │   ├── ....\n",
+    "    │   ├── <data_subsetM>\n",
+    "    ├── signal_<signal_type>\n",
+    "    │   ├── spec_signal_<signal_type>.dat\n",
+    "    │   ├── <data_subset1>\n",
+    "    │   │   ├── map_<tag1>_0000.fits\n",
+    "    │   │   ├── ...\n",
+    "    │   │   ├── map_<tag1>_####.fits\n",
+    "    │   │   ├── ...\n",
+    "    │   │   ├── map_<tagN>_0000.fits\n",
+    "    │   │   ├── ...\n",
+    "    │   │   ├── map_<tagN>_####.fits\n",
+    "    │   ├── ....\n",
+    "    │   ├── <data_subsetM> (same filenames as <data_subset1>)\n",
+    "    ├── noise_<noise_type> (same filenames as signal_<signal_type>)\n",
+    "    ├── masks_<mask_type>\n",
+    "    │   ├── mask_map_<tag1>.fits\n",
+    "    │   ├── ...\n",
+    "    │   ├── mask_map_<tagN>.fits\n",
+    "    [[optional:]]\n",
+    "    ├── foreground_<foreground_type> (same filenames as signal_<signal_type>\n",
+    "    ├── templates_<template_type>\n",
+    "    │   ├── halfmission-1 (same filenames as data_<data_type>)\n",
+    "    │   ├── halfmission-2 (same filenames as data_<data_type>)\n",
+    "    └── reobs_planck (same filenames as templates_<template_type>, used if sub_planck=True for null tests)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Each of `data`, `signal`, `noise`, and `mask` has a top level directory with a preordained, fixed prefix (`data`, `signal`, `noise`, `mask`) and then some suffix specified by the user which is appended with an underscore. So, for example, to run XFaster on the example set of maps, I need to specify in my arguments: `data_type=raw`, `signal_type=synfast`, `noise_type=gaussian`, `mask_type=rectangle`.\n",
     "\n",
-    "To indicate which maps I want, I pass the argument `data_subset` a glob-parseable path relative to the top level data directory-- in this case, `data_raw`. [Glob](https://docs.python.org/3/library/glob.html) works just like the unix shell does for matching file paths, so it is easy to test in advance which maps you're going to get. Say I want to do a 150 GHz spectrum using the quarter chunks. I'm going to test this first!"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "ls ../maps_example/data_raw/*150* #nope"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "ls ../maps_example/data_raw/*/*150* #yep-- data_subset='*/*150*' "
+    "All maps must be HEALPIX fits files. Data maps must be named `map_<tag>.fits`; simulated signal and noise maps must be named `map_<tag>_####.fits`, where #### is any length numerical tag indicating a sim realization; and masks are labeled `mask_map_<tag>.fits`.\n",
+    "\n",
+    "If using `pol=True`, masks must be 3 x Npix I,Q,U maps. You can use a different mask for intensity and polarization, in which case your mask must be 2 x Npix, where the first row is used for T and the second for P.\n",
+    "\n",
+    "To indicate which maps you want, pass the argument `data_subset` a glob-parseable path relative to the top level data directory-- in this case, `data_raw`. [Glob](https://docs.python.org/3/library/glob.html) works just like the unix shell does for matching file paths, so it is easy to test in advance which maps you're going to get. Just do `ls <path_to_data_maps>/full/*150*` and check that all the maps you want to use are listed. Then, you should set `data_subset` to `full/*150*`, for example."
    ]
   },
   {
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "Or instead, if I want to run over all the maps, I would do"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "ls ../maps_example/data_raw/*/* # data_subset='*/*'"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "This is all implemented in `_get_files` like so:\n",
+    "This is all implemented in `_get_files()` (called by [get_files()](../api.rst#xfaster.xfaster_class.XFaster.get_files)) like so:\n",
     "```python\n",
-    "# find all map files\n",
-    "map_root = os.path.join(data_root, 'data_{}'.format(clean_type))\n",
+    "\n",
+    "\n",
+    "# find all map files                                                               \n",
+    "map_root = os.path.join(data_root, \"data_{}\".format(data_type))\n",
     "map_files = []\n",
     "data_subset = data_subset.split(\",\")\n",
     "for f in np.atleast_1d(data_subset):\n",
-    "    map_files.extend(glob.glob(os.path.join(map_root,\n",
-    "                                            '{}.fits'.format(f))))\n",
+    "    files = glob.glob(os.path.join(map_root, \"{}.fits\".format(f)))\n",
+    "    if not len(files):\n",
+    "        raise OSError(\"Missing files in data subset {}\".format(f))\n",
+    "    map_files.extend(files)\n",
+    "data_subset = \",\".join(data_subset)\n",
     "map_files = sorted(map_files)\n",
-    "map_files = [f for f in map_files if\n",
-    "             os.path.basename(f).startswith('map_')]\n",
-    "map_tags = [os.path.splitext(os.path.basename(f))[0].split('_', 1)[1]\n",
-    "            for f in map_files]\n",
+    "map_files = [f for f in map_files if os.path.basename(f).startswith(\"map_\")]\n",
+    "map_tags = [\n",
+    "    os.path.splitext(os.path.basename(f))[0].split(\"_\", 1)[1] for f in map_files\n",
+    "]\n",
+    "\n",
     "```\n",
-    "So you've specified which data maps you want to compute power spectra for. A reasonable question would be, does that globbable expression then just get applied to the signal and noise directory to get signal and noise maps? If it did, that would mean my first expression for the 150 GHz maps would also get every 150th sim. Instead, XFaster uses whatever matches it found in data, and tries to match those to maps in the sims directory, with the only difference the sim index that's appended. Here's what that looks like for signal sims, in the same function:\n",
+    "So you've specified which data maps you want to compute power spectra for. To get the corresponding sim maps, the code takes whatever data maps were found matching data_subset, and tries to match those to maps in the sims directory, with the only difference the sim index tag. Here's what that looks like for signal sims, in the same function:\n",
     "```python\n",
     "# find all corresponding signal sims\n",
-    "signal_root = os.path.join(data_root, 'signal_{}'.format(signal_type))\n",
+    "signal_root = os.path.join(data_root, \"signal_{}\".format(signal_type))\n",
     "num_signal = None\n",
     "signal_files = []\n",
     "for f in map_files:\n",
-    "    sfiles = sorted(glob.glob(\n",
-    "        f.replace(map_root, signal_root).replace(\n",
-    "            '.fits', '_{}.fits'.format(signal_subset))))\n",
+    "    sfiles = sorted(\n",
+    "        glob.glob(\n",
+    "            f.replace(map_root, signal_root).replace(\n",
+    "                \".fits\", \"_{}.fits\".format(signal_subset))))\n",
     "    nsims1 = len(sfiles)\n",
     "    if not nsims1:\n",
-    "        raise OSError('Missing signal sims for {}'.format(f))\n",
-    "    num_signal = nsims1\n",
+    "        raise OSError(\"Missing signal sims for {}\".format(f))\n",
+    "    ...\n",
     "    signal_files.append(sfiles)\n",
     "```"
    ]
@@ -144,46 +158,80 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "It's easy to get errors at the reading files step. Add log messages around here to see what's going wrong. XFaster requires that all your maps have the same number of sims, though you are allowed to have a different from of signal and noise sims. In the labah data set, I have 1000 signal and noise sims for SPIDER, but only 200 of each for Planck. So I need to tell XFaster to only use the first 200 signal and noise sims it finds. I can do that using the `signal_subset` and `noise_subset` arguments, which default to `'*'`. Now, I need to specify (in a glob-parseable manner) which tags that come after `map_90_`, eg, to use. Each sim is indexed with four digits, so `map_90_0000.fits, map_90_0001.fits`, etc. If I want the first 200 of each sim, I'm first going to test my expression (I'm piping it into a line count to reduce the output, but you don't have to):"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "ls ../maps_example/signal_synfast/full/map_95_0[0-1] | wc -l # this won't work"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "ls ../maps_example/signal_synfast/full/map_95_0[0-1]* | wc -l # yep! signal_subset='0[0-1]*';"
+    "It's easy to get errors at the reading files step. XFaster requires that all your maps have the same number of sims, though you are allowed to have a different from of signal and noise sims. If you do not want to use the full set of signal and noise maps in a directory, if you can set the `signal_subset` and `noise_subset` arguments, which default to `'*'`. This glob-parseable tag is applied to the `####` sim index tag. So, if I have a set of sims, eg, `map_95_0000.fits`-`map_95_0099.fits`, as in the example, but for some reason I only want to use the first 50, I can set `signal_subset='00[0-4]*`."
    ]
   },
   {
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "## Step by step through the functions called in xfaster_exec"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "Now we'll proceed to stepping through each function in xfaster_exec. You'll never run the code this way, you'll just call xfaster_run or xfaster_submit with the arguments that then get passed to these functions. But we'll do it this way so we can illustrate some of the intermediate data products as we go.\n",
+    "### Other inputs\n",
     "\n",
-    "I'll do a run with all six SPIDER and Planck frequencies. First, we'll import XFaster and initialize our XFaster class with some arguments."
+    "In addition to maps, the code also requires a config file. This tells the code everything else it needs to know about your data. Here's the config file for the example:\n",
+    "\n",
+    "```python\n",
+    "\n",
+    "# Band centers in GHz (needed for foreground fitting) for each map tag.                    \n",
+    "# Tags listed here should be a superset of tags that may be included in a run.             \n",
+    "[frequencies]\n",
+    "95 = 94.7\n",
+    "150 = 151.0\n",
+    "\n",
+    "# A numpy dictionary containing Bl for each map tag.                                       \n",
+    "# Keys should match those in freqs.                                                        \n",
+    "# Missing keys should have a fwhm listed below.                                            \n",
+    "# The value for each key should be a numpy array of dimensions (3, lmax + 1),              \n",
+    "# for TT, TP and PP beam windows.                                                          \n",
+    "[beam]\n",
+    "beam_product = None\n",
+    "beam_error_product = None\n",
+    "\n",
+    "# FHWM in arcmin for each map tag, if using Gaussian beam model.                           \n",
+    "# Keys should match those in freqs.                                                        \n",
+    "# Missing keys should be in the beam product file.                                         \n",
+    "[fwhm]\n",
+    "95 = 41\n",
+    "150 = 29\n",
+    "\n",
+    "# Fractional error on the FWHM for each map tag, if using a Gaussian beam model.           \n",
+    "# Keys should match those in freqs.                                                        \n",
+    "# Missing keys should be in the beam product file.                                         \n",
+    "[fwhm_err]\n",
+    "95 = 0.001\n",
+    "150 = 0.001\n",
+    "\n",
+    "# Whether to compute transfer function qb parameters for each map tag.                     \n",
+    "# Keys should match those in freqs.                                                        \n",
+    "[transfer]\n",
+    "95 = true\n",
+    "150 = true\n",
+    "```\n",
+    "\n",
+    "This is the full list of options that can be specified in the config file. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Step by step through the functions called in xfaster_exec\n",
+    "### Setup and checkpoints"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now we'll proceed to stepping through each function in [xfaster_exec](../api.rst#module-xfaster.xfaster_exec). You'll never run the code this way--you'll just call [xfaster_run](../api.rst#module-xfaster.xfaster_exec.xfaster_run) or [xfaster_submit](../api.rst#module-xfaster.xfaster_exec.xfaster_submit) with the arguments that then get passed to these functions. But we'll do it this way so we can illustrate some of the intermediate data products as we go.\n",
+    "\n",
+    "This tutorial will follow the example script in [xfaster/example](https://github.com/annegambrel/xfaster/tree/main/example). Note however that becasue maps are not stored in the repository, this notebook is instead reading from the intermediate files written to disk. \n",
+    "\n",
+    "First, we'll import XFaster and initialize our XFaster class with some arguments."
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": null,
+   "execution_count": 6,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -195,12 +243,41 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
+   "execution_count": 7,
    "metadata": {},
    "outputs": [],
    "source": [
     "X = xf.XFaster(config=\"../config_example.ini\", output_root=\"../outputs_example\", verbose=\"info\",\n",
-    "              output_tag=\"95x150\")"
+    "              output_tag=\"95x150\", checkpoint=None)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "At the start of an XFaster run, you can specify at what checkpoint to start. The checkpoints are:\n",
+    "```python\n",
+    "checkpoints = [\n",
+    "\t\"files\", # find all the map files\n",
+    "\t\"masks\", # load in masks and compute their pseudo-spectra\n",
+    "\t\"kernels\", # compute mask mode-coupling kernels\n",
+    "\t\"sims_transfer\", # compute pseudo-spectra for signal sims used for computing the transfer function\n",
+    "\t\"shape_transfer\", # load in the model spectrum for the transfer function\n",
+    "\t\"transfer\", # compute the transfer function\n",
+    "\t\"sims\", # compute pseudo-spectra for noise sims and signal sims if they're different from those used for the transfer function\n",
+    "    \"beams\", # load in the beam window functions, and apply a pixel window function if pixwin=True\n",
+    "    \"data\", # compute the pseudo-spectra of the data maps\n",
+    "    \"template_noise\", # compute the pseudo-spectra of template noise simulations, if using Planck dust templates\n",
+    "    \"shape\", # load in the model spectrum for bandpower computation\n",
+    "\t\"bandpowers\", # do the Fisher iteration to compute bandpowers\n",
+    "\t\"beam_errors\", # start the likelihood over including beam error parameterization\n",
+    "\t\"likelihood\", # compute the parameter likelihoods\n",
+    "]\n",
+    "```\n",
+    "\n",
+    "Note that there are options to use different signal simulations for computing the transfer function and for computing other signal terms. This is mainly useful for null tests, as that's the only mode in which signal sims are used for anything other than transfer functions (to compute the expected signal residual that is subtracted from the data pseudo-spectra). If the signal simulations lack sufficient power (eg., for BB), the transfer function may not converge due to lack of measurable power. This is not a problem unique to XFaster, and this option allows the user more flexibility in the choice of sims used for different parts of the algorithm.\n",
+    "\n",
+    "Most of the time, `checkpoint` can be set to None, which starts the code from the last checkpoint completed (ie, it successfully wrote its intermediate data to disk). However, if you've made changes to the code or inputs, you may wish to force the code to start from an earlier checkpoint. It will then run that checkpoint and every one after it in the checkpoint tree (given near the top of [the XFaster class](../api.rst#xfaster.xfaster_class.XFaster))."
    ]
   },
   {
