@@ -247,7 +247,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "X = xf.XFaster(config=\"../config_example.ini\", output_root=\"../outputs_example\", verbose=\"info\",\n",
+    "X = xf.XFaster(config=\"../../example/config_example.ini\", output_root=\"../../example/outputs_example\", verbose=\"info\",\n",
     "              output_tag=\"95x150\", lmax=500, checkpoint=None)"
    ]
   },
@@ -301,7 +301,7 @@
    "outputs": [],
    "source": [
     "file_opts = {\n",
-    "    \"data_root\": \"../maps_example\",\n",
+    "    \"data_root\": \"../../example/maps_example\",\n",
     "    \"data_subset\": \"full/*95,full/*150\",\n",
     "    \"data_type\": \"raw\",\n",
     "    \"noise_type\": \"gaussian\",\n",
@@ -1308,7 +1308,7 @@
    "outputs": [],
    "source": [
     "import glob\n",
-    "iters = glob.glob('../outputs_example/95x150/bandpowers_iter*')\n",
+    "iters = glob.glob('../../example/outputs_example/95x150/bandpowers_iter*')\n",
     "### Figure for seeing how convergence looks in fqb\n",
     "fig_fqb, ax_fqb = plt.subplots()\n",
     "ax_fqb.axhline(0.005, label='convergence criterion', color='C1')\n",
