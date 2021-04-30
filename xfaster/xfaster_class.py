@@ -478,7 +478,7 @@ class XFaster(object):
         signal_type_sim=None,
         signal_transfer_type=None,
         suffix="",
-        foreground_type=None,
+        foreground_type_sim=None,
         template_type=None,
         sub_planck=False,
     ):
@@ -714,9 +714,9 @@ class XFaster(object):
             signal_files_sim = signal_files
 
         # find all corresponding foreground sims for sim_index run
-        if foreground_type is not None:
+        if foreground_type_sim is not None:
             foreground_root = os.path.join(
-                data_root, "foreground_{}".format(foreground_type)
+                data_root, "foreground_{}".format(foreground_type_sim)
             )
             num_foreground_sim = None
             foreground_files = []
@@ -848,7 +848,7 @@ class XFaster(object):
         signal_transfer_type=None,
         data_root2=None,
         data_subset2=None,
-        foreground_type=None,
+        foreground_type_sim=None,
         template_type=None,
         sub_planck=False,
     ):
@@ -882,7 +882,7 @@ class XFaster(object):
                     ...
                     -> mask_map_90.fits
                     -> mask_map_150.fits
-                -> foreground_<foreground_type>
+                -> foreground_<foreground_type_sim>
                     (same filenames as signal_<signal_type>)
                 -> templates_<template_type>
                    -> halfmission-1
@@ -954,8 +954,8 @@ class XFaster(object):
             sets are treated as two halves of a null test.  In this case,
             XFaster computes the sum and difference spectra for each map
             tag in order to estimate a null spectrum.
-        foreground_type : string
-            Tag for directory (foreground_<foreground_type>) where foreground
+        foreground_type_sim : string
+            Tag for directory (foreground_<foreground_type_sim>) where foreground
             sims are that should be added to the signal and noise sims
             when running in sim_index mode. Note: the same foreground sim
             map is used for each sim_index, despite signal and noise sims
@@ -1014,7 +1014,7 @@ class XFaster(object):
             signal_transfer_type=signal_transfer_type,
             signal_subset=signal_subset,
             noise_subset=noise_subset,
-            foreground_type=foreground_type,
+            foreground_type_sim=foreground_type_sim,
         )
         ref_opts = dict(data_subset=data_subset, **opts)
         if null_run:
@@ -4702,8 +4702,16 @@ class XFaster(object):
 
                         cl1 = np.zeros_like(cl1)
                         for k1, k2, k3 in [
-                            ("s0m0", "s1m1", "res0_nxn_{}".format(spec)),  # N_s0m0 x N_s1m1
-                            ("s1m0", "s0m1", "res1_nxn_{}".format(spec)),  # N_s1m0 x N_s0m1
+                            (
+                                "s0m0",
+                                "s1m1",
+                                "res0_nxn_{}".format(spec),
+                            ),  # N_s0m0 x N_s1m1
+                            (
+                                "s1m0",
+                                "s0m1",
+                                "res1_nxn_{}".format(spec),
+                            ),  # N_s1m0 x N_s0m1
                         ]:
                             r = qbr[k1] * qbr[k2] - 1
                             cl1 += (r * cbl[k3][xname]).sum(axis=0)
