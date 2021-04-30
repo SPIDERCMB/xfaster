@@ -31,16 +31,21 @@ for p0 in [mask_path, data_path, sig_path, noise_path]:
     if not os.path.exists(p0):
         os.makedirs(p0)
 
-# spectrum for signal sims-- synfast expects Cls
-cls = xft.get_camb_cl(r=1.0, lmax=2000, lfac=False)
-
-# write to disk for transfer function
 # code expects CAMB default outputs (with ell*(ell+1)/(2pi) factor)
 # with ell vector, and only ell>=2
 ell = np.arange(2001)
 lfac = ell * (ell + 1) / (2 * np.pi)
-dls = np.vstack([ell[2:], (lfac * cls)[:, 2:]])
-np.savetxt(os.path.join(*sig_path.split("/")[:-1], "spec_signal_synfast.dat"), dls.T)
+
+# spectrum for signal sims-- synfast expects Cls
+spec_file = os.path.join(*sig_path.split("/")[:-1], "spec_signal_synfast.dat")
+if os.path.exists(spec_file):
+    dls = np.loadtxt(spec_file, unpack=True)[1:]
+    cls = np.hstack([np.zeros((len(dls), 2)), dls / lfac[2:]])
+else:
+    cls = xft.get_camb_cl(r=1.0, lmax=2000, lfac=False)
+    # write to disk for transfer function
+    dls = np.vstack([ell[2:], (lfac * cls)[:, 2:]])
+    np.savetxt(spec_file, dls.T)
 
 # load a filter transfer function to smooth by
 fl = np.loadtxt("maps_example/transfer_example.txt")
