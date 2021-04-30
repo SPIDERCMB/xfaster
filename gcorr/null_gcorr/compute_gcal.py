@@ -1,3 +1,6 @@
+'''
+A script for computing g_corr factor from simulation bandpower runs.
+'''
 import os
 import glob
 import numpy as np
@@ -37,6 +40,7 @@ def xfaster_run_ensemble(output_root=None, output_tag=None):
 
     for filename in files:
 	bp = xf.load_and_parse(filename)
+	#Null test doesn't have sample variance.
         inv_fish = bp['invfish_nosampvar']
 	inv_fishes.append(inv_fish)	
         bad = np.where(np.diag(inv_fish) < 0)[0]
@@ -69,7 +73,6 @@ def xfaster_run_ensemble(output_root=None, output_tag=None):
     print("Computed new gcorr_correction from the 500 simulations.")
     print(out['gcorr'])
 
-
 if __name__ == "__main__":
     import argparse as ap
     P = ap.ArgumentParser()
@@ -77,4 +80,4 @@ if __name__ == "__main__":
     P.add_argument('-r', '--root', default='xfaster_gcal_unconstr')
     args = P.parse_args()
 
-    xfaster_run_ensemble(os.path.join('/path/to/output/', args.root), args.output_tag) #Set your own output_root
+    xfaster_run_ensemble(os.path.join('../../example/gcorr_run/', args.root), args.output_tag) #Set your own output_root

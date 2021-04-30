@@ -13,7 +13,6 @@ from matplotlib import use
 use('agg')
 import matplotlib.pyplot as plt
 
-update = True
 specs = ['tt', 'ee', 'bb', 'te', 'eb', 'tb']
 
 run_name = 'xfaster_gcal_unconstr'
@@ -27,21 +26,23 @@ for tag in tags:
     ref_file = os.path.join(ref_dir, '{0}/gcorr_{0}_iter.npz'.format(tag))
     rundirf = os.path.join(rundir, tag)
 
+    #Remove transfer functions and bandpowers
     os.system('rm -rf {}/bandpowers*'.format(rundirf))
     os.system('rm -rf {}/transfer*'.format(rundirf))
     os.system('rm -rf {}/ERROR*'.format(rundirf))
     os.system('rm -rf {}/logs'.format(rundirf))
 
-    if not update:
-        continue
-
     first = False
+    
+    #Get gcorr from unconstr folder
     if os.path.exists(ref_file):
         gcorr = xf.load_and_parse(ref_file)
         print('loaded {}'.format(ref_file))
     elif os.path.exists(ref_file.replace('_iter.npz', '.npz')):
         gcorr = xf.load_and_parse(ref_file.replace('_iter.npz', '.npz'))
         print('loaded {}'.format(ref_file.replace('_iter.npz', '.npz')))
+
+    #Get gcorr_correction from iter folder
     try:
         gcorr_new = xf.load_and_parse(os.path.join(rundirf, 'gcorr_{}.npz'.format(tag)))
         print('got new gcorr {}'.format(os.path.join(rundirf, 'gcorr_{}.npz'.format(tag))))
@@ -52,7 +53,7 @@ for tag in tags:
             gcorr['gcorr'],
             )
         first = True
-        print('didnt get new gcorr, this must be first')
+        print('Didnt get gfac_correction file in iter folder. Starting from ones.')
 
     np.savez_compressed(ref_file.replace('_iter.npz', '_prev.npz'), **gcorr)
     
@@ -61,6 +62,7 @@ for tag in tags:
         * xf.dict_to_arr(gcorr_new['gcorr'], flatten=True),
         gcorr['gcorr']
     )
+
     fig, ax = plt.subplots(2, 3)
     ax = ax.flatten()
     for i, (k, v) in enumerate(gcorr['gcorr'].items()):

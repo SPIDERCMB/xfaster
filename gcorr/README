@@ -29,6 +29,10 @@ $ python xfaster_gcal_unconstr.py --no-gcorr -n 100 (100 sim runs)
 
 4. Run compute_gcorr.py once. This will generate a file `gcorr_<freq_tag>.npz` in the `xfaster_gcal_unconstr` folder. This is the initial/reference gcorr factor computed, and will NOT get updated in the iteration process.
 
+===========
+$ python compute_gcal.py 95
+===========
+
 5. Make a symlink in the mask folder called `mask_map_<freq_tag>_gcorr.npz` --> pointing to `gcorr_<freq>_iter.npz` in the `xfaster_gcal_unconstr` folder(reference folder.) It doesn't exist yet at this moment but will be generated in Step 6.
 
 6. Run gcal_iter_unconstr.py. Every time you run it, the script will:
@@ -38,7 +42,7 @@ $ python xfaster_gcal_unconstr.py --no-gcorr -n 100 (100 sim runs)
     2) Submit ensemble_mean run(non_nulls) or simulation jobs for the `_iter` folder using the updated `gcorr_iter` in the reference folder as you've sim_linked it.
     3) Once the bandpower jobs are done, compute a new gcorr_correction `gcorr_<freq>.npz` in `_iter` folder.
 
-7. Repeat running (null_)gcal_iter_unconstr.py until the printed gcorr_correction(in folder2) converged closer enough to 1.
+7. Repeat running (null_)gcal_iter_unconstr.py until the printed gcorr_correction(in folder `_iter`) converged closer enough to 1.
 
 8. Once bb/ee gcorrs are closer enough to 1, you can stop, and copy `gcal_iter.npz` in the `xfaster_gcal_unconstr` folder(reference folder) to the mask folder with proper names. (Eg: `mask_map_90_gcorr.npz`)
 

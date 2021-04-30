@@ -1,22 +1,22 @@
+'''
+A iteration script used to solve null g_corr factors.
+'''
+
 import os
 import numpy as np
 import xfaster as xf
 from time import sleep
 import copy
 from collections import OrderedDict
-from matplotlib import use
-use('agg')
-import matplotlib.pyplot as plt
 
-update = True
 specs = ['tt', 'ee', 'bb', 'te', 'eb', 'tb']
 
 run_name = 'xfaster_gcal_unconstr'
 run_name_iter = run_name + '_iter'
-ref_dir = os.path.join('/mnt/spider2', 'xsong', 'null_tests/202103_gcorrfull', run_name)
+ref_dir = os.path.join('../../example/gcorr_run', run_name)
 rundir = ref_dir + '_iter'
 
-tags = ['90', '150a']
+tags = ['90', '150']
 
 for tag in tags:
     ref_file = os.path.join(ref_dir, '{0}/gcorr_{0}_iter.npz'.format(tag))
@@ -27,9 +27,6 @@ for tag in tags:
     os.system('rm -rf {}/transfer*'.format(rundirf))
     os.system('rm -rf {}/ERROR*'.format(rundirf))
     os.system('rm -rf {}/logs'.format(rundirf))
-
-    if not update:
-        continue
 
     first = False
     

@@ -13,7 +13,7 @@ P.add_argument('-m', '--ensemble-mean', action='store_true')
 P.add_argument('--no-gcorr', dest='gcorr', default=True, action='store_false')
 P.add_argument('--no-submit', dest='submit', action='store_false')
 
-output_root = '../../example/gcorr_run/'
+output_root = '../../example/gcorr_run/' #Set your own output root.
 
 args = P.parse_args()
 seeds = list(range(args.first, args.first + args.num))

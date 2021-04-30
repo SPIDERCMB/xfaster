@@ -1,3 +1,7 @@
+'''
+A XFaster submission script to generate simulation null runs for gcorr calculation.
+'''
+
 import os
 import xfaster as xf
 import argparse as ap
@@ -8,10 +12,10 @@ P.add_argument('-o', '--output', default='xfaster_gcal_unconstr')
 P.add_argument('--no-gcorr', dest='gcorr', default=True, action='store_false')
 P.add_argument('--no-submit', dest='submit', action='store_false')
 
-args = P.parse_args()
+output_root = '../../example/gcorr_run/' #Set your own output_root.
 
+args = P.parse_args()
 seeds = list(range(args.first, args.first + args.num))
-output_root = os.path.join('/path/to/output/', args.output) #Set your own output_root.
 
 if len(seeds) == 1:
     reload_g = True
@@ -21,23 +25,26 @@ else:
 
 for tag in ['90','150a']:
     opts = dict(
-        data_root='/mnt/spider2/XF_Nulls_Sept18/port', #Example nullmap roots
-        data_root2='/mnt/spider2/XF_Nulls_Sept18/starboard',
-        output_root=output_root,
+        data_root='../../example/nullmap_example/half1', #Example nullmap roots
+        data_root2='../../example/nullmap_example/half2',
+        data_subset='full/map_{}*'.format(tag),
+	output_root = os.path.join(output_root, args.output)
         output_tag=tag,
         tbeb=True,
         bin_width=25,
         lmin=8,#33,
         lmax=407,
         iter_max=200,
+
 	weighted_bins = True,
-        mask_type="pointsource_latlon", #Change your mask_type accordingly 
-        noise_type="stationary",
-        signal_type='flatBBDl',
-        clean_type='raw',
-        data_subset='full/map_{}*'.format(tag),
+        mask_type="rectangle", #Change your mask_type accordingly 
+        noise_type=None,
+        signal_type='synfast', #Example signal type
+        data_type='raw',
+	config = '../../example/config_example.ini'
+	
         likelihood=False,
-        verbose='detail',
+        verbose='debug',
         residual_fit=True,
         qb_file = None, #Set qb_file if there is one.
         foreground_fit=False,
@@ -48,7 +55,6 @@ for tag in ['90','150a']:
     )
 
     submit_opts = dict(
-	queue = 'spider',
         ppn=1,
         mem=6,
         omp_threads=1, #increase for the first single sim index run.
