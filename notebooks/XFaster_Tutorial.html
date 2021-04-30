@@ -910,7 +910,7 @@ Text(0.5, 0, &#39;$\\ell$&#39;)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7fd164145880&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7f61f318d940&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1150,7 +1150,7 @@ odict_keys([&#39;cmb_tt&#39;, &#39;cmb_ee&#39;, &#39;cmb_bb&#39;, &#39;cmb_te&#3
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7fd14dcf3ca0&gt;
+&lt;matplotlib.legend.Legend at 0x7f61dcd31430&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1610,28 +1610,28 @@ scaled by the appropriate <span class="math notranslate nohighlight">\(q_b\)</sp
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-/github/workspace/xfaster/xfaster_class.py:1758: XFasterWarning: Error loading ../../example/outputs_example/95x150/bandpowers_95x150.npz: Field delta_beta_prior has value 0.5, expected None
+/github/workspace/xfaster/xfaster_class.py:1758: XFasterWarning: Error loading ../../example/outputs_example/95x150/bandpowers_95x150.npz: Field cond_noise has value 1e-05, expected 0.03
   self.warn(
-[ 2021-04-30 23:00:51UTC ] INFO: Doing Fisher step 1/200...
-[ 2021-04-30 23:00:52UTC ] INFO: Max fractional change in qb: 34792.4653369641
-[ 2021-04-30 23:00:52UTC ] INFO: Doing Fisher step 2/200...
-[ 2021-04-30 23:00:52UTC ] INFO: Max fractional change in qb: 4.0017474656494905
-[ 2021-04-30 23:00:53UTC ] INFO: Doing Fisher step 3/200...
-[ 2021-04-30 23:00:53UTC ] INFO: Max fractional change in qb: 0.39435293400192506
-[ 2021-04-30 23:00:53UTC ] INFO: Doing Fisher step 4/200...
-[ 2021-04-30 23:00:54UTC ] INFO: Max fractional change in qb: 0.1452303750353991
-[ 2021-04-30 23:00:54UTC ] INFO: Doing Fisher step 5/200...
-[ 2021-04-30 23:00:55UTC ] INFO: Max fractional change in qb: 0.0651140552339517
-[ 2021-04-30 23:00:55UTC ] INFO: Doing Fisher step 6/200...
-[ 2021-04-30 23:00:56UTC ] INFO: Max fractional change in qb: 0.031194814787130244
-[ 2021-04-30 23:00:56UTC ] INFO: Doing Fisher step 7/200...
-[ 2021-04-30 23:00:57UTC ] INFO: Max fractional change in qb: 0.015354280885424483
-[ 2021-04-30 23:00:57UTC ] INFO: Doing Fisher step 8/200...
-[ 2021-04-30 23:00:57UTC ] INFO: Max fractional change in qb: 0.007647896166179742
-[ 2021-04-30 23:00:58UTC ] INFO: Doing Fisher step 9/200...
-[ 2021-04-30 23:00:58UTC ] INFO: Max fractional change in qb: 0.003829977531696647
-[ 2021-04-30 23:00:58UTC ] INFO: Calculating final Fisher matrix.
-[ 2021-04-30 23:00:59UTC ] INFO: Calculating final Fisher matrix without sample variance.
+[ 2021-04-30 23:46:12UTC ] INFO: Doing Fisher step 1/200...
+[ 2021-04-30 23:46:13UTC ] INFO: Max fractional change in qb: 34792.46533696417
+[ 2021-04-30 23:46:13UTC ] INFO: Doing Fisher step 2/200...
+[ 2021-04-30 23:46:13UTC ] INFO: Max fractional change in qb: 4.001747465650029
+[ 2021-04-30 23:46:13UTC ] INFO: Doing Fisher step 3/200...
+[ 2021-04-30 23:46:14UTC ] INFO: Max fractional change in qb: 0.39435293400196486
+[ 2021-04-30 23:46:14UTC ] INFO: Doing Fisher step 4/200...
+[ 2021-04-30 23:46:15UTC ] INFO: Max fractional change in qb: 0.14523037503541208
+[ 2021-04-30 23:46:15UTC ] INFO: Doing Fisher step 5/200...
+[ 2021-04-30 23:46:16UTC ] INFO: Max fractional change in qb: 0.065114055233929
+[ 2021-04-30 23:46:16UTC ] INFO: Doing Fisher step 6/200...
+[ 2021-04-30 23:46:17UTC ] INFO: Max fractional change in qb: 0.031194814787052695
+[ 2021-04-30 23:46:17UTC ] INFO: Doing Fisher step 7/200...
+[ 2021-04-30 23:46:17UTC ] INFO: Max fractional change in qb: 0.015354280885449342
+[ 2021-04-30 23:46:18UTC ] INFO: Doing Fisher step 8/200...
+[ 2021-04-30 23:46:18UTC ] INFO: Max fractional change in qb: 0.00764789616619951
+[ 2021-04-30 23:46:18UTC ] INFO: Doing Fisher step 9/200...
+[ 2021-04-30 23:46:19UTC ] INFO: Max fractional change in qb: 0.0038299775316740256
+[ 2021-04-30 23:46:19UTC ] INFO: Calculating final Fisher matrix.
+[ 2021-04-30 23:46:20UTC ] INFO: Calculating final Fisher matrix without sample variance.
 </pre></div></div>
 </div>
 <p>In the plot below, we’ll plot up the maximum fractional change in <span class="math notranslate nohighlight">\(q_b\)</span> with iteration. This information is printed in the logs, but it’s helpful to visualize on a plot. You can see it bounce around early on before settling down and ultimately stopping once it gets to the desginated criterion.</p>
@@ -1796,7 +1796,7 @@ Text(0.5, 0.98, &#39;90$\\times$150 GHz total power fit&#39;)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7fd14aae3340&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7f61d9b167c0&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
