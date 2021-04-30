@@ -642,7 +642,7 @@
         <span class="n">signal_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">signal_transfer_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-        <span class="n">foreground_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">foreground_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">template_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">sub_planck</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
@@ -878,9 +878,9 @@
             <span class="n">signal_files_sim</span> <span class="o">=</span> <span class="n">signal_files</span>
 
         <span class="c1"># find all corresponding foreground sims for sim_index run</span>
-        <span class="k">if</span> <span class="n">foreground_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">foreground_type_sim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">foreground_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-                <span class="n">data_root</span><span class="p">,</span> <span class="s2">&quot;foreground_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">foreground_type</span><span class="p">)</span>
+                <span class="n">data_root</span><span class="p">,</span> <span class="s2">&quot;foreground_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">foreground_type_sim</span><span class="p">)</span>
             <span class="p">)</span>
             <span class="n">num_foreground_sim</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">foreground_files</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1012,7 +1012,7 @@
         <span class="n">signal_transfer_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">data_root2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">data_subset2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">foreground_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">foreground_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">template_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">sub_planck</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
@@ -1046,7 +1046,7 @@
 <span class="sd">                    ...</span>
 <span class="sd">                    -&gt; mask_map_90.fits</span>
 <span class="sd">                    -&gt; mask_map_150.fits</span>
-<span class="sd">                -&gt; foreground_&lt;foreground_type&gt;</span>
+<span class="sd">                -&gt; foreground_&lt;foreground_type_sim&gt;</span>
 <span class="sd">                    (same filenames as signal_&lt;signal_type&gt;)</span>
 <span class="sd">                -&gt; templates_&lt;template_type&gt;</span>
 <span class="sd">                   -&gt; halfmission-1</span>
@@ -1118,8 +1118,8 @@
 <span class="sd">            sets are treated as two halves of a null test.  In this case,</span>
 <span class="sd">            XFaster computes the sum and difference spectra for each map</span>
 <span class="sd">            tag in order to estimate a null spectrum.</span>
-<span class="sd">        foreground_type : string</span>
-<span class="sd">            Tag for directory (foreground_&lt;foreground_type&gt;) where foreground</span>
+<span class="sd">        foreground_type_sim : string</span>
+<span class="sd">            Tag for directory (foreground_&lt;foreground_type_sim&gt;) where foreground</span>
 <span class="sd">            sims are that should be added to the signal and noise sims</span>
 <span class="sd">            when running in sim_index mode. Note: the same foreground sim</span>
 <span class="sd">            map is used for each sim_index, despite signal and noise sims</span>
@@ -1178,7 +1178,7 @@
             <span class="n">signal_transfer_type</span><span class="o">=</span><span class="n">signal_transfer_type</span><span class="p">,</span>
             <span class="n">signal_subset</span><span class="o">=</span><span class="n">signal_subset</span><span class="p">,</span>
             <span class="n">noise_subset</span><span class="o">=</span><span class="n">noise_subset</span><span class="p">,</span>
-            <span class="n">foreground_type</span><span class="o">=</span><span class="n">foreground_type</span><span class="p">,</span>
+            <span class="n">foreground_type_sim</span><span class="o">=</span><span class="n">foreground_type_sim</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">ref_opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">data_subset</span><span class="o">=</span><span class="n">data_subset</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">null_run</span><span class="p">:</span>
@@ -4866,8 +4866,16 @@
 
                         <span class="n">cl1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">cl1</span><span class="p">)</span>
                         <span class="k">for</span> <span class="n">k1</span><span class="p">,</span> <span class="n">k2</span><span class="p">,</span> <span class="n">k3</span> <span class="ow">in</span> <span class="p">[</span>
-                            <span class="p">(</span><span class="s2">&quot;s0m0&quot;</span><span class="p">,</span> <span class="s2">&quot;s1m1&quot;</span><span class="p">,</span> <span class="s2">&quot;res0_nxn_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">)),</span>  <span class="c1"># N_s0m0 x N_s1m1</span>
-                            <span class="p">(</span><span class="s2">&quot;s1m0&quot;</span><span class="p">,</span> <span class="s2">&quot;s0m1&quot;</span><span class="p">,</span> <span class="s2">&quot;res1_nxn_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">)),</span>  <span class="c1"># N_s1m0 x N_s0m1</span>
+                            <span class="p">(</span>
+                                <span class="s2">&quot;s0m0&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;s1m1&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;res0_nxn_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">),</span>
+                            <span class="p">),</span>  <span class="c1"># N_s0m0 x N_s1m1</span>
+                            <span class="p">(</span>
+                                <span class="s2">&quot;s1m0&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;s0m1&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;res1_nxn_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">),</span>
+                            <span class="p">),</span>  <span class="c1"># N_s1m0 x N_s0m1</span>
                         <span class="p">]:</span>
                             <span class="n">r</span> <span class="o">=</span> <span class="n">qbr</span><span class="p">[</span><span class="n">k1</span><span class="p">]</span> <span class="o">*</span> <span class="n">qbr</span><span class="p">[</span><span class="n">k2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
                             <span class="n">cl1</span> <span class="o">+=</span> <span class="p">(</span><span class="n">r</span> <span class="o">*</span> <span class="n">cbl</span><span class="p">[</span><span class="n">k3</span><span class="p">][</span><span class="n">xname</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>

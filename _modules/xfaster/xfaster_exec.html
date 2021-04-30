@@ -246,7 +246,7 @@
     <span class="n">delta_beta_prior</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
     <span class="n">noise_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">signal_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">foreground_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">foreground_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">template_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">template_alpha_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;95&quot;</span><span class="p">,</span> <span class="s2">&quot;150&quot;</span><span class="p">],</span>
     <span class="n">template_alpha</span><span class="o">=</span><span class="p">[</span><span class="mf">0.015</span><span class="p">,</span> <span class="mf">0.043</span><span class="p">],</span>
@@ -442,8 +442,8 @@
 <span class="sd">        The width of the prior on the additive change from beta_ref. If you</span>
 <span class="sd">        don&#39;t want the code to fit for a spectral index different</span>
 <span class="sd">        from beta_ref, set this to be a very small value (O(1e-10)).</span>
-<span class="sd">    foreground_type : string</span>
-<span class="sd">        Tag for directory (foreground_&lt;foreground_type&gt;) where foreground</span>
+<span class="sd">    foreground_type_sim : string</span>
+<span class="sd">        Tag for directory (foreground_&lt;foreground_type_sim&gt;) where foreground</span>
 <span class="sd">        sims are that should be added to the signal and noise sims</span>
 <span class="sd">        when running in sim_index mode. Note: the same foreground sim</span>
 <span class="sd">        map is used for each sim_index, despite signal and noise sims</span>
@@ -509,10 +509,10 @@
     <span class="k">if</span> <span class="n">noise_type</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
         <span class="n">noise_type</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">if</span> <span class="n">foreground_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">sim_index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">foreground_type_sim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">sim_index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-            <span class="s2">&quot;Ignoring argument foreground_type=</span><span class="si">{}</span><span class="s2"> for non sim index run&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="n">foreground_type</span>
+            <span class="s2">&quot;Ignoring argument foreground_type_sim=</span><span class="si">{}</span><span class="s2"> for non sim index run&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">foreground_type_sim</span>
             <span class="p">),</span>
             <span class="n">xfc</span><span class="o">.</span><span class="n">XFasterWarning</span><span class="p">,</span>
         <span class="p">)</span>
@@ -561,7 +561,7 @@
         <span class="n">signal_transfer_type</span><span class="o">=</span><span class="n">signal_transfer_type</span><span class="p">,</span>
         <span class="n">data_root2</span><span class="o">=</span><span class="n">data_root2</span><span class="p">,</span>
         <span class="n">data_subset2</span><span class="o">=</span><span class="n">data_subset2</span><span class="p">,</span>
-        <span class="n">foreground_type</span><span class="o">=</span><span class="n">foreground_type</span><span class="p">,</span>
+        <span class="n">foreground_type_sim</span><span class="o">=</span><span class="n">foreground_type_sim</span><span class="p">,</span>
         <span class="n">template_type</span><span class="o">=</span><span class="n">template_type</span><span class="p">,</span>
         <span class="n">sub_planck</span><span class="o">=</span><span class="n">sub_planck</span><span class="p">,</span>
     <span class="p">)</span>
@@ -1264,7 +1264,7 @@
             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The width of the prior on the additive deviation from beta_ref&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span>
-            <span class="n">G</span><span class="p">,</span> <span class="s2">&quot;foreground_type&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Foreground sim variant to use for sim_index&quot;</span>
+            <span class="n">G</span><span class="p">,</span> <span class="s2">&quot;foreground_type_sim&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Foreground sim variant to use for sim_index&quot;</span>
         <span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span>
             <span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_type&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Template type to use for template subtraction&quot;</span>
