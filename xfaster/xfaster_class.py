@@ -3179,7 +3179,7 @@ class XFaster(object):
         foregrounds.
         Signal maps are signal_scalar + fake_data_r * signal_tensor
         where scalar maps are assumed to be in signal_r0 directory
-        and tensor maps are assumed to be in signal_r0tens directory.
+        and tensor maps are assumed to be in signal_r1tens directory.
         sim_index is used to determine which sims. Noise maps taken
         from usual noise directory. Templates read read from
         templates_fake_data_template/halfmission-1.
