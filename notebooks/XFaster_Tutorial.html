@@ -917,7 +917,7 @@ dict_keys([&#39;kern&#39;, &#39;pkern&#39;, &#39;mkern&#39;, &#39;xkern&#39;, &#
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7f5d03df4a30&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7f47cc7c5a30&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1155,7 +1155,7 @@ odict_keys([&#39;cmb_tt&#39;, &#39;cmb_ee&#39;, &#39;cmb_bb&#39;, &#39;cmb_te&#3
 <p>We now have everything we need to compute the transfer function, which is computed per map per spectrum per CMB bin in <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_transfer"><span class="std std-ref">get_transfer()</span></a>. As a refresher, we’re trying to get <span class="math notranslate nohighlight">\(q_b^{transfer}\)</span>, which is the same as our original expression for <span class="math notranslate nohighlight">\(q_b\)</span> in <a class="reference external" href="https://annegambrel.github.io/xfaster/algorithm.html#equation-qb">Equation 17 of the Algorithm page</a>, except now we set noise=0, transfer function=1, and instead of using data
 for our observed signal, we use the ensemble average of our signal sims:</p>
 <p><span class="math">\begin{equation}
-q_{b}^{transfer}=\frac{1}{2} \sum_{b^{\prime}} \mathcal{F}_{b b^{\prime}}^{-1} \sum_{\ell} (2 \ell+1) \operatorname{Tr}\left[ \left(\tilde{\mathbf{D}}_{\ell}^{-1} \frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b^{\prime}}} \tilde{\mathbf{D}}_{\ell}^{-1}\right)\mathbf{g}\tilde{\mathbf{D}}_{\ell}^{signal}\mathbf{g}^T\right]
+q_{b}^{transfer}=\frac{1}{2} \sum_{b^{\prime}} \mathcal{F}_{b b^{\prime}}^{-1} \sum_{\ell} (2 \ell+1) g_\ell^k\left[ \left(\tilde{\mathbf{C}}_{\ell}^{-1} \frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b^{\prime}}} \tilde{\mathbf{C}}_{\ell}^{-1}\right)\tilde{\mathbf{C}}_{\ell}^{signal}\right]_{kk}
 \label{eq:qb_transfer}
 \end{equation}</span></p>
 <p>The expression for the Fisher matrix does not change, other than the fact that its constituents are the same as detailed above for the transfer function.</p>
@@ -1416,12 +1416,8 @@ amplitude. This is due to the shape of the <span class="math notranslate nohighl
 </div>
 </div>
 <p>Next we add our actual noise simulations to the model. The residual noise terms discussed above are designed to account for inaccuracies in this model. For both the fiducial noise model and the noise residuals, we assume 0 average noise in cross-spectra, and so only add them to the auto-terms of the model.</p>
-<p>We often find that the Fisher iterations have trouble converging due to numerical errors that cause the covariance to become singular. To prevent this from happening, we also include a term we call “conditioning noise” along the TT/EE/BB diagonals as well. The conditioning noise is modeled as:</p>
-<p><span class="math">\begin{equation}
-\tilde{\mathbf{S}}_\ell^{cond,ij,XY} = \delta_{ij} c_{XY} \frac{\ell + 1}{\ell^2}
-\end{equation}</span></p>
-<p>where <span class="math notranslate nohighlight">\(c_{EE} = c_{BB}\)</span> is parameterized by the <code class="docutils literal notranslate"><span class="pre">cond_noise</span></code> option, typically a small number O(0.01) or less, <span class="math notranslate nohighlight">\(c_{TT} = 100 c_{EE}\)</span> and all others are 0.</p>
-<p>In the final Fisher iteration, the conditioning noise is dropped.</p>
+<p>We often find that the Fisher iterations have trouble converging due to numerical errors that cause the covariance to become singular. To prevent this from happening, we also include a term we call “conditioning noise” along the TT/EE/BB diagonals as well. The conditioning noise is modeled as constant in <span class="math notranslate nohighlight">\(\ell\)</span>, where the EE and BB diagonals are set to be <code class="docutils literal notranslate"><span class="pre">cond_noise</span></code> and TT is set to be 10*<code class="docutils literal notranslate"><span class="pre">cond_noise</span></code>. The typical conditioning noise is very small (1e-5 or so), and it is
+automatically adjusted to be the lowest level possible while still having the algorithm converge. In the final Fisher iteration, the conditioning noise is dropped.</p>
 <p>To plot up both of these model components, along with all of the terms discussed above, let’s call an internal function that computes the model spectrum for us, given the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span> terms and some model parameters <span class="math notranslate nohighlight">\(q_b\)</span>: <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_model_spectra"><span class="std std-ref">get_model_spectra()</span></a>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
@@ -1507,10 +1503,10 @@ amplitude. This is due to the shape of the <span class="math notranslate nohighl
 <h4>Computing the Fisher matrix<a class="headerlink" href="#Computing-the-Fisher-matrix" title="Permalink to this headline">¶</a></h4>
 <p>Ok! Now that we have all the pieces in place, all that’s left is to do some matrix math and iterate over the equations for <a class="reference external" href="https://annegambrel.github.io/xfaster/algorithm.html#equation-qb">q_b</a> and the [Fisher matrix](<a class="reference external" href="https://annegambrel.github.io/xfaster/algorithm.html#equation-qb">qb</a> until the results converge. The two equations are constructed in the function <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.fisher_calc"><span class="std std-ref">fisher_calc()</span></a>, which is called iteratively by
 <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.fisher_iterate"><span class="std std-ref">fisher_iterate()</span></a> until convergence is reached.</p>
-<p>In order to make all the quantities we’ve computed look like matrices, we have two utility functions, <a class="reference internal" href="../api.html#xfaster.parse_tools.dict_to_dmat"><span class="std std-ref">dict_to_dmat()</span></a> and <a class="reference internal" href="../api.html#xfaster.parse_tools.dict_to_dsdqb_mat"><span class="std std-ref">dict_to_dsdqb_mat()</span></a>, that convert the dictionaries <code class="docutils literal notranslate"><span class="pre">Dmat1</span></code> (corresponding to <span class="math notranslate nohighlight">\(\mathbf{D}_\ell\)</span> in the equations) and <code class="docutils literal notranslate"><span class="pre">dSdqb_mat1_freq</span></code> (<span class="math notranslate nohighlight">\(\partial \mathbf{S}_\ell / \partial q_b\)</span>) into matrices.</p>
+<p>In order to make all the quantities we’ve computed look like matrices, we have two utility functions, <a class="reference internal" href="../api.html#xfaster.parse_tools.dict_to_dmat"><span class="std std-ref">dict_to_dmat()</span></a> and <a class="reference internal" href="../api.html#xfaster.parse_tools.dict_to_dsdqb_mat"><span class="std std-ref">dict_to_dsdqb_mat()</span></a>, that convert the dictionaries <code class="docutils literal notranslate"><span class="pre">Dmat1</span></code> (corresponding to <span class="math notranslate nohighlight">\(\mathbf{\tilde{C}}_\ell\)</span> in the equations) and <code class="docutils literal notranslate"><span class="pre">dSdqb_mat1_freq</span></code> (<span class="math notranslate nohighlight">\(\partial \mathbf{\tilde{S}}_\ell / \partial q_b\)</span>) into matrices.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">Dmat1</span></code> matrix has shape <code class="docutils literal notranslate"><span class="pre">(3</span> <span class="pre">*</span> <span class="pre">num_maps,</span> <span class="pre">3</span> <span class="pre">*</span> <span class="pre">num_maps,</span> <span class="pre">lmax</span> <span class="pre">+</span> <span class="pre">1)</span></code> and contains the <code class="docutils literal notranslate"><span class="pre">total</span></code> model terms for each map cross spectrum, ordered as <a class="reference external" href="https://annegambrel.github.io/xfaster/algorithm.html#equation-dell">shown here</a>. The <code class="docutils literal notranslate"><span class="pre">dSdqb_mat1_freq</span></code> matrix has shape <code class="docutils literal notranslate"><span class="pre">(3</span> <span class="pre">*</span> <span class="pre">num_maps,</span> <span class="pre">3</span> <span class="pre">*</span> <span class="pre">num_maps,</span> <span class="pre">nbins,</span> <span class="pre">lmax</span> <span class="pre">+</span> <span class="pre">1)</span></code> and includes the CMB, residuals and frequency-corrected foreground components for all the crosses. We then compute the quantity</p>
 <p><span class="math">\begin{equation}
-\mathbf{D}^{-1} \frac{\partial \mathbf{S}}{\partial q_b} \mathbf{D}^{-1}
+\mathbf{\tilde{C}}^{-1} \frac{\partial \mathbf{\tilde{S}}}{\partial q_b} \mathbf{\tilde{C}}^{-1}
 \end{equation}</span></p>
 <p>using the following code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Dinv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">Dmat1</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
@@ -1734,7 +1730,7 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7f5cee928610&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7f47b32d8430&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1832,7 +1828,7 @@ just vary <span class="math notranslate nohighlight">\(r\)</span>. For this exam
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[ 2021-05-04 22:04:20UTC ] INFO: Computing brute-force r profile likelihood
+[ 2021-05-04 23:24:45UTC ] INFO: Computing brute-force r profile likelihood
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
