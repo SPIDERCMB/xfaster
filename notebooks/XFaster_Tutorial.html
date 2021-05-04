@@ -113,21 +113,19 @@
 <li class="toctree-l3"><a class="reference internal" href="#get_beams">get_beams</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#get_signal_shape">get_signal_shape</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#get_transfer">get_transfer</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#get_bin_def-(round-2)">get_bin_def (round 2)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#get_masked_xcorr">get_masked_xcorr</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#get_masked_sims-(round-2)">get_masked_sims (round 2)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#get_beams-(round-2)">get_beams (round 2)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get_masked_data">get_masked_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get_masked_sims-(for-replacing-data)">get_masked_sims (for replacing data)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get_masked_fake_data">get_masked_fake_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#get_bandpowers">get_bandpowers</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#Constructing-the-model-spectrum">Constructing the model spectrum</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Computing-the-Fisher-matrix">Computing the Fisher matrix</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Inverting-the-Fisher-matrix">Inverting the Fisher matrix</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Constructing-final-bandpowers">Constructing final bandpowers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Looking-at-results">Looking at results</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#Looking-at-results">Looking at results</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Other-useful-things">Other useful things</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#get_likelihood">get_likelihood</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
@@ -470,7 +468,7 @@ div.rendered_html tbody tr:hover {
 </style>
 <div class="section" id="Tutorial">
 <h1>Tutorial<a class="headerlink" href="#Tutorial" title="Permalink to this headline">¶</a></h1>
-<p>This tutorial is also a Jupyter notebook, which can be found in <a class="reference external" href="https://github.com/annegambrel/xfaster/tree/main/example/notebooks">the example notebooks directory</a>.</p>
+<p>This tutorial is also a Jupyter notebook, which can be found in <a class="reference external" href="https://github.com/annegambrel/xfaster/tree/main/example/notebooks">the example notebooks directory</a>. If you’re running the notebook, rather than looking at the documentation produced from it, the links will not work. <a class="reference external" href="https://annegambrel.github.io/xfaster/notebooks/XFaster_Tutorial.html">Look at the docs for working links</a>.</p>
 <p>The notebook reads intermediate output npz files from disk. To instead run the pieces starting from maps, first generate the example maps by running the script <code class="docutils literal notranslate"><span class="pre">xfaster/example/make_example_maps.py</span></code>, and set the checkpoint to something other than None.</p>
 <div class="section" id="The-main-ingredients-of-the-XFaster-code">
 <h2>The main ingredients of the XFaster code<a class="headerlink" href="#The-main-ingredients-of-the-XFaster-code" title="Permalink to this headline">¶</a></h2>
@@ -872,15 +870,24 @@ Text(0.5, 0, &#39;$\\ell$&#39;)
 <p>The next step is to compute the kernels for each mask auto and cross spectrum using the function <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_kernels"><span class="std std-ref">get_kernels()</span></a>. In the MASTER formalism, the kernel couples modes to each other on the sky due to the finite dimensions of the mask that is applied to each map that goes into computing a cross spectrum. That is to say, the measured power at a particular <span class="math notranslate nohighlight">\(\ell\)</span> is a weighted average over several other neighboring modes
 <span class="math notranslate nohighlight">\(\ell^\prime\)</span>, and <span class="math notranslate nohighlight">\(K_{\ell\ell^\prime}\)</span> is the matrix that applies this weighting.</p>
 <p>The kernels are computed from the power spectrum of the mask, computed in the previous step.</p>
-<p>Let’s plot some of these up. Because we are using the same mask for all maps, the kernels for each <span class="math notranslate nohighlight">\(ij\)</span> pair will look identical.</p>
-<div class="nbinput nblast docutils container">
+<p>Let’s plot some of these up. Because we are using the same mask for all maps, the kernels for each map pair will look identical.</p>
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">k</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_kernels</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+dict_keys([&#39;kern&#39;, &#39;pkern&#39;, &#39;mkern&#39;, &#39;xkern&#39;, &#39;window_lmax&#39;, &#39;output_file&#39;])
+</pre></div></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
@@ -910,7 +917,7 @@ Text(0.5, 0, &#39;$\\ell$&#39;)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7fdaba36c940&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7fe083e349a0&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -924,35 +931,50 @@ Text(0.5, 0, &#39;$\\ell$&#39;)
 </div>
 <div class="section" id="get_masked_sims">
 <h3>get_masked_sims<a class="headerlink" href="#get_masked_sims" title="Permalink to this headline">¶</a></h3>
-<p>Now we want to get the ensemble average of all of our signal simulations, which we’re going to use to calculate the filter transfer function and also to build the CMB signal model we are comparing our data to. The same function, <code class="docutils literal notranslate"><span class="pre">get_masked_sims</span></code> computes the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span>s for signal and noise. To start with, we just want the signal ensemble, so get_masked_sims is called as such:</p>
-<div class="nbinput nblast docutils container">
+<p>Now we want to get the ensemble average of all of our signal and noise simulations, which we’re going to use to calculate the filter transfer function and the noise shape, respectively. This is done with <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_masked_sims"><span class="std std-ref">get_masked_sims()</span></a>. The method will also compute the signal cross noise terms, which are used for null tests, where they can contribute significantly to the expected residuals that are subtracted from the data.</p>
+<p>This function is doing a very simple thing. For each pair of maps of a given sim index, it 1. Applies the mask. 2. Transforms the maps into <span class="math notranslate nohighlight">\(a_{\ell m}\)</span>s using the healpy routine <code class="docutils literal notranslate"><span class="pre">map2alm</span></code>. 3. Transforms those into <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span>s for that pair using the healpy routine <code class="docutils literal notranslate"><span class="pre">alm2cl</span></code>. 4. Adds the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span>s to a running average for that particular map cross and spectrum.</p>
+<p>It only does <code class="docutils literal notranslate"><span class="pre">map2alm</span></code> once per map and caches the result for use in other cross spectra since this is the slowest step in the function.</p>
+<p>Below, we call the function with <code class="docutils literal notranslate"><span class="pre">transfer=True</span></code>– this tells the code to use the sims specified in <code class="docutils literal notranslate"><span class="pre">signal_type_transfer</span></code>, which defaults to being <code class="docutils literal notranslate"><span class="pre">signal_type</span></code> if the former is not specified.</p>
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">s</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_masked_sims</span><span class="p">(</span><span class="n">transfer</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">do_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span></span><span class="n">sims</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_masked_sims</span><span class="p">(</span><span class="n">transfer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">sims</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 </pre></div>
 </div>
 </div>
-<p>This function is doing a very simple thing. For each pair of maps of a given sim index, it 1. Applies the mask. 2. Transforms the maps into <span class="math notranslate nohighlight">\(a_{\ell m}\)</span>s using the healpy routine <code class="docutils literal notranslate"><span class="pre">map2alm</span></code>. 3. Transforms those into <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span>s for that pair using the healpy routine <code class="docutils literal notranslate"><span class="pre">alm2cl</span></code>. 4. Adds the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span>s to a running average for that particular map cross and spectrum.</p>
-<p>It only does <code class="docutils literal notranslate"><span class="pre">map2alm</span></code> once per map and caches the result for use in other cross spectra since this is the slowest step in the function.</p>
-<p>These spectra have all the effects of the masking, filtering, and beam included. Let’s compare a couple of them to get a sense for what they look like.</p>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+dict_keys([&#39;cls_signal&#39;, &#39;cls_noise&#39;, &#39;cls_sim&#39;, &#39;cls_med&#39;, &#39;cls_noise0&#39;, &#39;cls_noise1&#39;, &#39;cls_sxn0&#39;, &#39;cls_sxn1&#39;, &#39;cls_nxs0&#39;, &#39;cls_nxs1&#39;, &#39;output_file&#39;])
+</pre></div></div>
+</div>
+<p>The resulting outputs are: * <code class="docutils literal notranslate"><span class="pre">cls_signal</span></code>: the average of the signal-only cross spectra, used to compute the transfer function * <code class="docutils literal notranslate"><span class="pre">cls_noise</span></code>: the average of the noise-only cross spectra, used as the noise model, <span class="math notranslate nohighlight">\(N_\ell\)</span> * <code class="docutils literal notranslate"><span class="pre">cls_sim</span></code>: the average of the signal+noise spectra, where signal and noise maps are added in <span class="math notranslate nohighlight">\(a_{\ell m}\)</span>s and thus the spectra include SxN terms. * <code class="docutils literal notranslate"><span class="pre">cls_med</span></code>: the median of the signal+noise spectra– this is mainly used for debugging potential biases
+seen in the pipeline</p>
+<p>The rest of the spectra are not symmetrized. For all previously listed spectra, the result is the average of map i x map j and map j x map i, which matters for off-diagonal spectra: TE, TB, EB. Below, we preserve the individual cross spectra as they are needed for the null test model. In this model, at each Fisher iteration, the noise residual fit (per map and per residual spectrum type) is then used to adjust the expectation spectrum subtracted from the data. The expectation spectrum subtracted
+from, eg, map 1 T x map 2 E is <span class="math notranslate nohighlight">\(S_1^T\times S_2^E + S_1^T \times N_2^E + N_1^T \times S_2^E + N_1^T \times N_2^E\)</span>. Each of the last three terms is subject to misestimation of <span class="math notranslate nohighlight">\(N\)</span>, so we account for that by scaling the following terms by the appropriate noise residual fit. * <code class="docutils literal notranslate"><span class="pre">cls_noise0</span></code>: the average spectrum for noise i x noise j * <code class="docutils literal notranslate"><span class="pre">cls_noise1</span></code>: the average spectrum for noise j x noise i * <code class="docutils literal notranslate"><span class="pre">cls_sxn0</span></code>: the average spectrum of signal i x noise j * <code class="docutils literal notranslate"><span class="pre">cls_sxn1</span></code>: the average
+spectrum of noise j x signal i * <code class="docutils literal notranslate"><span class="pre">cls_nxs0</span></code>: the average spectrum of noise i x signal j * <code class="docutils literal notranslate"><span class="pre">cls_nxs1</span></code>: the average spectrum of signal j x noise i</p>
+<p>These spectra have all the effects of the masking, filtering, and beam (for signal sims) included. Let’s compare a couple of them to get a sense for what they look like.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;cls_signal&#39;</span><span class="p">][</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="s1">&#39;95:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 auto&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;cls_signal&#39;</span><span class="p">][</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="s1">&#39;150:150&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;150 auto&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;cls_signal&#39;</span><span class="p">][</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="s1">&#39;150:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 x 150&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">sims</span><span class="p">[</span><span class="s1">&#39;cls_signal&#39;</span><span class="p">][</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="s1">&#39;95:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 auto&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">sims</span><span class="p">[</span><span class="s1">&#39;cls_signal&#39;</span><span class="p">][</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="s1">&#39;150:150&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;150 auto&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">sims</span><span class="p">[</span><span class="s1">&#39;cls_signal&#39;</span><span class="p">][</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="s1">&#39;150:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 x 150&#39;</span><span class="p">)</span>
 <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$D_\ell [\mu \mathrm</span><span class="si">{K}</span><span class="s1">^2]$&#39;</span><span class="p">)</span>
 <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\ell$&#39;</span><span class="p">)</span>
 <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;TT&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;cls_signal&#39;</span><span class="p">][</span><span class="s1">&#39;ee&#39;</span><span class="p">][</span><span class="s1">&#39;95:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 auto&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;cls_signal&#39;</span><span class="p">][</span><span class="s1">&#39;ee&#39;</span><span class="p">][</span><span class="s1">&#39;150:150&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;150 auto&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">s</span><span class="p">[</span><span class="s1">&#39;cls_signal&#39;</span><span class="p">][</span><span class="s1">&#39;ee&#39;</span><span class="p">][</span><span class="s1">&#39;150:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 x 150&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">sims</span><span class="p">[</span><span class="s1">&#39;cls_signal&#39;</span><span class="p">][</span><span class="s1">&#39;ee&#39;</span><span class="p">][</span><span class="s1">&#39;95:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 auto&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">sims</span><span class="p">[</span><span class="s1">&#39;cls_signal&#39;</span><span class="p">][</span><span class="s1">&#39;ee&#39;</span><span class="p">][</span><span class="s1">&#39;150:150&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;150 auto&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">sims</span><span class="p">[</span><span class="s1">&#39;cls_signal&#39;</span><span class="p">][</span><span class="s1">&#39;ee&#39;</span><span class="p">][</span><span class="s1">&#39;150:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 x 150&#39;</span><span class="p">)</span>
 <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\ell$&#39;</span><span class="p">)</span>
 <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;EE&#39;</span><span class="p">)</span>
@@ -973,319 +995,13 @@ Text(0.5, 0.98, &#39;cls_signal&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_47_1.png" src="../_images/notebooks_XFaster_Tutorial_47_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_48_1.png" src="../_images/notebooks_XFaster_Tutorial_48_1.png" />
 </div>
 </div>
-<p>This set of maps uses regular unimap reobserved constrained synfast sims for SPIDER. The Planck signal sims are not reobserved, but are smoothed to a uniform Gaussian with FWHM=15’. <strong>Note:</strong> XFaster is hardcoded to only expect Planck maps in this form. It does not solve for their transfer function (though that might change) and assumes if it is a Planck map, it has had its original beam deconvolved and smoothed with a common 15 arcmin Gaussian. So it’s clear in these plots that the Planck maps
-have more power, since they both haven’t had the heavy SPIDER filtering at low ell and the larger SPIDER beams applied at high ell.</p>
-<p>The result of <code class="docutils literal notranslate"><span class="pre">get_masked_sims</span></code> is a spectrum per map cross per spectrum type (TT, EE, etc), which will ultimately be used to make up the <span class="math notranslate nohighlight">\(\tilde{\mathbf{D}}_\ell^{sig}\)</span> matrix that we’ll use for computing the transfer function in <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code> below.</p>
-</div>
-<div class="section" id="get_beams">
-<h3>get_beams<a class="headerlink" href="#get_beams" title="Permalink to this headline">¶</a></h3>
-<p>The next component we need for our equations is the beam window function, <span class="math notranslate nohighlight">\(B_\ell\)</span>. XFaster does not solve for this– you have to tell it what it is. For SPIDER, we use the <code class="docutils literal notranslate"><span class="pre">beam20</span></code> product, and for Planck, we’ve smoothed each map to a common 15 arcmin Gaussian (which included deconvolving the original Planck beam for each map).</p>
-<p>In <code class="docutils literal notranslate"><span class="pre">xfaster_exec</span></code>, there are optional arguments for this function if you have one ensemble of sims from which to compute the transfer function, and one from which to get the final shape spectrum expected. We used that in the past since transfer function calculation would go haywire at high ell since the beam had cut off so much power. Now, we just look at low ells, so we don’t bother with this extra set of sims.</p>
-<div class="nbinput nblast docutils container">
+<p>In this example, we use the same idealized transfer function to make both 95 and 150 GHz maps, so their low-<span class="math notranslate nohighlight">\(\ell\)</span> signal is similar. However, for 150 GHz we use a 29 arcmin beam, and for 95 GHz, we use a broader 41 arcmin beam. The difference is evident at high <span class="math notranslate nohighlight">\(\ell\)</span>, where the 150 GHz signal spectra recover more power.</p>
+<p>Similarly, we can plot up the noise averages:</p>
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">beams</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_beams</span><span class="p">(</span><span class="n">pixwin</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<p>We could have a different beam for intensity and polarization. In practice, we don’t, so each of the spectrum fields for beam is the same. Let’s plot them for each map.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">for</span> <span class="n">freq</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">map_tags</span><span class="p">:</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">beams</span><span class="p">[</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="n">freq</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$B_\ell$&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\ell$&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-Text(0.5, 0, &#39;$\\ell$&#39;)
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_53_1.png" src="../_images/notebooks_XFaster_Tutorial_53_1.png" />
-</div>
-</div>
-</div>
-<div class="section" id="get_signal_shape">
-<h3>get_signal_shape<a class="headerlink" href="#get_signal_shape" title="Permalink to this headline">¶</a></h3>
-<p>Let’s check in on our progress of components we’ve computed. We’re trying to build everything to make up our <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}^{XY}_{b\ell}\)</span>s, which as a reminder are the following quantity.</p>
-<p><span class="math">\begin{equation}
-\tilde{\mathcal{C}}^{XY}_{b\ell} = \sum_{\ell^{\prime}} K_{\ell \ell^{\prime}}^{X Y} F_{\ell^{\prime}}^{X Y} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{X Y} \chi_{b}\left(\ell^{\prime}\right)
-\end{equation}</span></p>
-<p>We have <span class="math notranslate nohighlight">\(K_{\ell, \ell'}\)</span> and <span class="math notranslate nohighlight">\(B_{\ell}\)</span>. For the transfer function calculation, we’re going to set <span class="math notranslate nohighlight">\(F_\ell\)</span> to 1 so that we measure <span class="math notranslate nohighlight">\(q_b\)</span>s as the deviation from a uniform transfer function for our simulations. Binning, <span class="math notranslate nohighlight">\(\chi_b\)</span> has been chosen. All that’s left is the full sky signal shape, <span class="math notranslate nohighlight">\(\mathcal{C}_{\ell'}^{XY}\)</span>. For calculating the transfer function, this is just the shape spectrum that went into making our simulations. The script we use to make the
-XFaster ensembles, <code class="docutils literal notranslate"><span class="pre">spider_tools/analysis/maps/xfaster_maps.py</span></code>, copies the spectrum it used to make the signal sim maps for reobservation into the top level of the signal sim directory. XFaster looks here for that spectrum, or you can explicitly feed the file in as an argument (the file must be an output file of CAMB– XFaster expects that formatting and those units.)</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">signal_shape</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<p>These will look familiar to you. Note that they are as long as the long dimension of the <span class="math notranslate nohighlight">\(K_{\ell\ell'}\)</span>, which is 2*lmax + 1.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ell2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1001</span><span class="p">)</span>
-<span class="n">lfac2</span> <span class="o">=</span> <span class="n">ell2</span> <span class="o">*</span> <span class="p">(</span><span class="n">ell2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
-<span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">signal_shape</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
-    <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac2</span> <span class="o">*</span> <span class="n">spec</span><span class="p">)</span>
-    <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">]:</span>
-        <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$D_\ell [\mu\mathrm</span><span class="si">{K}</span><span class="s1">^2]$&#39;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">]:</span>
-        <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\ell$&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_58_0.png" src="../_images/notebooks_XFaster_Tutorial_58_0.png" />
-</div>
-</div>
-</div>
-<div class="section" id="get_transfer">
-<h3>get_transfer<a class="headerlink" href="#get_transfer" title="Permalink to this headline">¶</a></h3>
-<p>We now have everything we need to compute the transfer function, which is computed per map per spectrum per CMB bin. As a refresher, we’re trying to get <span class="math notranslate nohighlight">\(q_b^{transfer}\)</span>, which is the same as our original expression for <span class="math notranslate nohighlight">\(q_b\)</span> in Equation <span class="math">\ref{eq:qb}</span>, except now we set noise=0, transfer function=1, and instead of using data for our observed signal, we use the ensemble average of our signal sims:</p>
-<p><span class="math">\begin{equation}
-q_{b}^{transfer}=\frac{1}{2} \sum_{b^{\prime}} \mathcal{F}_{b b^{\prime}}^{-1} \sum_{\ell} (2 \ell+1) \operatorname{Tr}\left[ \left(\tilde{\mathbf{D}}_{\ell}^{-1} \frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b^{\prime}}} \tilde{\mathbf{D}}_{\ell}^{-1}\right)\mathbf{g}\tilde{\mathbf{D}}_{\ell}^{signal}\mathbf{g}^T\right]
-\label{eq:qb_transfer}
-\end{equation}</span></p>
-<p>The expression for the Fisher matrix does not change, other than the fact that its constituents are the same as detailed above for the transfer function.</p>
-<p><span class="math notranslate nohighlight">\(\frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b^{\prime}}}\)</span> is what’s detailed in Equation <span class="math notranslate nohighlight">\(\ref{eq:dsdqb}\)</span>. For the transfer function, since we set noise to be zero, <span class="math notranslate nohighlight">\(\tilde{\mathbf{D}}_\ell\)</span> is equivalent to <span class="math notranslate nohighlight">\(\tilde{\mathbf{S}}_\ell\)</span> in Equation <span class="math">\ref{eq:qb_transfer}</span>.</p>
-<p>Within the code, <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code> basically has two steps within the function itself, which it performs per map. 1. Load up the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cbl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">cls_shape_trf</span><span class="p">,</span> <span class="n">m0</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-</div>
-<p><code class="docutils literal notranslate"><span class="pre">cls_shape_trf</span></code> is signal_shape that we calculated earlier, <code class="docutils literal notranslate"><span class="pre">m0</span></code> is the map, which is used to select the beam and kernel, and <code class="docutils literal notranslate"><span class="pre">transfer_run=True</span></code> sets the <span class="math notranslate nohighlight">\(F_\ell\)</span> term to 1. 2. Run <code class="docutils literal notranslate"><span class="pre">fisher_iterate</span></code>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_iterate</span><span class="p">(</span><span class="n">cbl</span><span class="p">,</span> <span class="n">cls_shape_trf</span><span class="p">,</span> <span class="n">m0</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                          <span class="n">iter_max</span><span class="o">=</span><span class="n">iter_max</span><span class="p">,</span> <span class="n">converge_criteria</span><span class="o">=</span><span class="n">converge_criteria</span><span class="p">,</span>
-                          <span class="n">save_iters</span><span class="o">=</span><span class="n">save_iters</span><span class="p">,</span> <span class="n">cond_noise</span><span class="o">=</span><span class="n">cond_noise</span><span class="p">,</span>
-                          <span class="n">tophat_bins</span><span class="o">=</span><span class="n">tophat_bins</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>We’ll talk more in the <code class="docutils literal notranslate"><span class="pre">get_bandpowers</span></code> section about the details that happen from here, but broadly, XFaster takes all the inputs we’ve calculated and a starting <span class="math notranslate nohighlight">\(q_b\)</span> guess (1 for all bins), computes the Fisher matrix, plugs that into the <span class="math notranslate nohighlight">\(q_b\)</span> equation to get a new <span class="math notranslate nohighlight">\(q_b\)</span>, and repeats. Once the maximum of |(qb_new-qb)/qb| &lt; converge_criteria, it stops iterating and saves the result.</p>
-<p>One additional check that <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code> does is to look for transfer function values that are negative. If it finds any, it changes that bin value to the average of the orignal value and the next bin’s value. This typically happens due to poor choices of binning or too small a number of signal simulations.</p>
-<p>Also, Only TT, EE, BB, and TE transfer functions are calculated. EB and TB are computed as</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">qb</span><span class="p">[</span><span class="s1">&#39;cmb_eb&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">qb</span><span class="p">[</span><span class="s1">&#39;cmb_ee&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">qb</span><span class="p">[</span><span class="s1">&#39;cmb_bb&#39;</span><span class="p">]))</span>
-<span class="n">qb</span><span class="p">[</span><span class="s1">&#39;cmb_tb&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">qb</span><span class="p">[</span><span class="s1">&#39;cmb_tt&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">qb</span><span class="p">[</span><span class="s1">&#39;cmb_bb&#39;</span><span class="p">]))</span>
-</pre></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="nb">print</span><span class="p">(</span><span class="n">signal_shape</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-odict_keys([&#39;cmb_tt&#39;, &#39;cmb_ee&#39;, &#39;cmb_bb&#39;, &#39;cmb_te&#39;, &#39;cmb_eb&#39;, &#39;cmb_tb&#39;])
-</pre></div></div>
-</div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">transfer</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_transfer</span><span class="p">(</span><span class="n">signal_shape</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<p>Let’s look at a couple transfer functions.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
-<span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-<span class="n">plot_inds</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;95&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;150&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
-<span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">transfer</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-    <span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">fl</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">ax</span><span class="p">[</span><span class="n">plot_inds</span><span class="p">[</span><span class="n">m</span><span class="p">]]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fl</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-        <span class="k">if</span> <span class="s1">&#39;tt&#39;</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
-            <span class="n">ax</span><span class="p">[</span><span class="n">plot_inds</span><span class="p">[</span><span class="n">m</span><span class="p">]]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
-    <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;bin&#39;</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-    <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$F_\ell$&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7fdaa3f1e0a0&gt;
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_64_1.png" src="../_images/notebooks_XFaster_Tutorial_64_1.png" />
-</div>
-</div>
-</div>
-<div class="section" id="get_bin_def-(round-2)">
-<h3>get_bin_def (round 2)<a class="headerlink" href="#get_bin_def-(round-2)" title="Permalink to this headline">¶</a></h3>
-<p>Up to this point, we’ve been working towards getting the transfer function. Now, we want to set things up for solving for CMB bandpowers, and optionally foreground and/or noise residual bandpowers. We start by adding information about the binning we want for those terms to the <code class="docutils literal notranslate"><span class="pre">bin_def</span></code> dictionary.</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">bin_def</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_bin_def</span><span class="p">(</span><span class="n">bin_width</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">lmin</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">tbeb</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                        <span class="n">foreground_fit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                        <span class="n">residual_fit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">res_specs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;eebb&#39;</span><span class="p">],</span>
-                        <span class="n">bin_width_res</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">bin_def</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-odict_keys([&#39;cmb_tt&#39;, &#39;cmb_ee&#39;, &#39;cmb_bb&#39;, &#39;cmb_te&#39;, &#39;cmb_eb&#39;, &#39;cmb_tb&#39;, &#39;res_eebb_150&#39;, &#39;res_eebb_95&#39;])
-</pre></div></div>
-</div>
-<p>So now we’ve set up everything we’re going to solve for. Note that the residuals have a couple of unique features. Since we set <code class="docutils literal notranslate"><span class="pre">res_specs=['eebb']</span></code>, XFaster wills solve for a single amplitude for the EE and BB noise residuals. We could have instead set it to <code class="docutils literal notranslate"><span class="pre">['ee',</span> <span class="pre">'bb']</span></code> or <code class="docutils literal notranslate"><span class="pre">['tt',</span> <span class="pre">'ee',</span> <span class="pre">'bb']</span></code>. The default at the moment is to solve for EE and BB together. Also note that noise residuals are fit per map, and that is to that map’s auto-spectrum. We’ll look more at that in the
-<code class="docutils literal notranslate"><span class="pre">get_bandpowers</span></code> section.</p>
-<p>It’s straightforward here to see how many parameters (<span class="math notranslate nohighlight">\(q_b\)</span>s) XFaster will be solving for– just the total number of bins in bin_def: 120 for CMB, and 10 for noise residuals = 130.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">xfaster</span> <span class="kn">import</span> <span class="n">parse_tools</span> <span class="k">as</span> <span class="n">pt</span>
-<span class="n">pt</span><span class="o">.</span><span class="n">dict_to_arr</span><span class="p">(</span><span class="n">bin_def</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-(130, 2)
-</pre></div></div>
-</div>
-</div>
-<div class="section" id="get_masked_xcorr">
-<h3>get_masked_xcorr<a class="headerlink" href="#get_masked_xcorr" title="Permalink to this headline">¶</a></h3>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">cls_data</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_masked_data</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<p>This is straightforward. It’s using the healpy routines <code class="docutils literal notranslate"><span class="pre">map2alm</span></code> and <code class="docutils literal notranslate"><span class="pre">alm2cls</span></code> to get all the auto and cross spectra of the data maps. These are all built into the matrix <span class="math notranslate nohighlight">\(\tilde{\mathbf{D}}_\ell^{obs}\)</span> in Equation <span class="math">\ref{eq:qb}</span>. Let’s look at a couple!</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">cls_data</span><span class="p">[</span><span class="s1">&#39;cls_data&#39;</span><span class="p">][</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="s1">&#39;95:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 auto&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">cls_data</span><span class="p">[</span><span class="s1">&#39;cls_data&#39;</span><span class="p">][</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="s1">&#39;150:150&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;150 auto&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">cls_data</span><span class="p">[</span><span class="s1">&#39;cls_data&#39;</span><span class="p">][</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="s1">&#39;150:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 x 150&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$D_\ell [\mu \mathrm</span><span class="si">{K}</span><span class="s1">^2]$&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\ell$&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;TT&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">cls_data</span><span class="p">[</span><span class="s1">&#39;cls_data&#39;</span><span class="p">][</span><span class="s1">&#39;ee&#39;</span><span class="p">][</span><span class="s1">&#39;95:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 auto&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">cls_data</span><span class="p">[</span><span class="s1">&#39;cls_data&#39;</span><span class="p">][</span><span class="s1">&#39;ee&#39;</span><span class="p">][</span><span class="s1">&#39;150:150&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;150 auto&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">cls_data</span><span class="p">[</span><span class="s1">&#39;cls_data&#39;</span><span class="p">][</span><span class="s1">&#39;ee&#39;</span><span class="p">][</span><span class="s1">&#39;150:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 x 150&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\ell$&#39;</span><span class="p">)</span>
-<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;EE&#39;</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">&#39;cls_data&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-Text(0.5, 0.98, &#39;cls_data&#39;)
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_74_1.png" src="../_images/notebooks_XFaster_Tutorial_74_1.png" />
-</div>
-</div>
-</div>
-<div class="section" id="get_masked_sims-(round-2)">
-<h3>get_masked_sims (round 2)<a class="headerlink" href="#get_masked_sims-(round-2)" title="Permalink to this headline">¶</a></h3>
-<p>Now we do the same thing for all the sims. We’ve already done the signal sims since those were used for the transfer function, so the code sees that they’re on disk and doesn’t recompute them. It doesn’t find the noise sims, so it computes those for each sim index for each auto and cross.</p>
-<p>There are a few options you can use here. These options do not affect the ensemble average for signal and noise sims that are used to build the equations for <span class="math notranslate nohighlight">\(q_b\)</span> and the Fisher matrix. Instead, they are for use when you don’t want XFaster to compute bandpowers for data, but for simulations instead. If <code class="docutils literal notranslate"><span class="pre">ensemble_mean=True</span></code>, XFaster will replace the observed data matrix, <span class="math notranslate nohighlight">\(\tilde{\mathbf{D}}_\ell^{obs}\)</span>, with the ensemble average of signal plus the ensemble average of the noise
-sims. If <code class="docutils literal notranslate"><span class="pre">sim_index</span></code> is not None, it will replace the data matrix with the signal + noise spectra from the sim specified. If <code class="docutils literal notranslate"><span class="pre">sims_add_alms=True</span></code>, it will do that addition in <span class="math notranslate nohighlight">\(a_{\ell m}\)</span>s. If it is False, it will do the addition in <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span>s. The latter would not include signal cross noise; the former would.</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">sims</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_masked_sims</span><span class="p">(</span><span class="n">ensemble_mean</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sim_index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sims_add_alms</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<p>Now we have signal and noise in our sims dictionary. We’ve looked some signal spectra. Let’s look at the same in noise.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1308,7 +1024,7 @@ sims. If <code class="docutils literal notranslate"><span class="pre">sim_index<
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -1320,31 +1036,290 @@ Text(0.5, 0.98, &#39;cls_noise&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_79_1.png" src="../_images/notebooks_XFaster_Tutorial_79_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_50_1.png" src="../_images/notebooks_XFaster_Tutorial_50_1.png" />
 </div>
 </div>
+<p>In making the example maps, we have set the noise amplitude to be a bit higher for 95 GHz, which is evident in the noise auto-spectra. As expected, the cross-spectra is uncorrelated and mean-zero.</p>
 </div>
-<div class="section" id="get_beams-(round-2)">
-<h3>get_beams (round 2)<a class="headerlink" href="#get_beams-(round-2)" title="Permalink to this headline">¶</a></h3>
-<p>There’s now another call to get_beams, which is totally superfluous if you’re using the same signal sims for transfer functions that you are for your signal ensemble average. But, if you wanted to use a narrower beam for the former and a more realistic wider beam for the latter, this is where you’d load up the latter. For our case, we’ll do it just so you can see the log message.</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+<div class="section" id="get_beams">
+<h3>get_beams<a class="headerlink" href="#get_beams" title="Permalink to this headline">¶</a></h3>
+<p>The next component we need for our equations is the beam window function, <span class="math notranslate nohighlight">\(B_\ell\)</span>, done with <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_beams"><span class="std std-ref">get_beams()</span></a>. XFaster does not solve for this– you have to tell it what it is. You do this in your config.ini file. You can either specify Gaussian FWHM values (in arcmin) for each map tag, or specify a <code class="docutils literal notranslate"><span class="pre">.npz</span></code> file that contains a dictionary of <span class="math notranslate nohighlight">\(B_\ell\)</span> vectors per map tag. You can mix and match these as well– the code will first look
+for the tags in the dictionary file, and if it doesn’t find the tag there, it will look for a FWHM field for that tag.</p>
+<p>The only additional option available is <code class="docutils literal notranslate"><span class="pre">pixwin</span></code>, which is default True. This applies an additional pixel window function to your beam window function, corresponding to the <span class="math notranslate nohighlight">\(N_{side}\)</span> of the input maps.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">b</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_beams</span><span class="p">(</span><span class="n">pixwin</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span></span><span class="n">beams</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_beams</span><span class="p">(</span><span class="n">pixwin</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">beams</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 </pre></div>
 </div>
 </div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+odict_keys([&#39;tt&#39;, &#39;ee&#39;, &#39;bb&#39;, &#39;te&#39;, &#39;eb&#39;, &#39;tb&#39;])
+</pre></div></div>
+</div>
+<p>We could have a different beam for intensity and polarization. For this example, we don’t, so each of the spectrum fields for beam is the same. Let’s plot them for each map.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">for</span> <span class="n">freq</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">map_tags</span><span class="p">:</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">beams</span><span class="p">[</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="n">freq</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$B_\ell$&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\ell$&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 0, &#39;$\\ell$&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_XFaster_Tutorial_56_1.png" src="../_images/notebooks_XFaster_Tutorial_56_1.png" />
+</div>
+</div>
+</div>
+<div class="section" id="get_signal_shape">
+<h3>get_signal_shape<a class="headerlink" href="#get_signal_shape" title="Permalink to this headline">¶</a></h3>
+<p>Let’s check in on our progress of components we’ve computed. We’re trying to build everything to make up our <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}^{XY}_{b\ell}\)</span>s, which as a reminder are the following quantity (for TT):</p>
+<p><span class="math">\begin{equation}
+\tilde{\mathcal{C}}^{XY}_{b\ell} = \sum_{\ell^{\prime}} K_{\ell \ell^{\prime}}^{X Y} F_{\ell^{\prime}}^{X Y} B_{\ell^{\prime}}^{2} \mathcal{C}_{\ell^{\prime}}^{X Y (S)} \chi_{b}\left(\ell^{\prime}\right)
+\end{equation}</span></p>
+<p>We have <span class="math notranslate nohighlight">\(K_{\ell, \ell'}\)</span> and <span class="math notranslate nohighlight">\(B_{\ell}\)</span>. For the transfer function calculation, we’re going to set <span class="math notranslate nohighlight">\(F_\ell\)</span> to 1 so that we measure <span class="math notranslate nohighlight">\(q_b\)</span>s as the deviation from a uniform transfer function for our simulations. Binning, <span class="math notranslate nohighlight">\(\chi_b\)</span> has been chosen. All that’s left is the full sky signal shape, <span class="math notranslate nohighlight">\(\mathcal{C}_{\ell'}^{XY (S)}\)</span>, loaded with <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_signal_shape"><span class="std std-ref">get_signal_shape()</span></a>.</p>
+<p>For calculating the transfer function, this is just the shape spectrum that went into making our simulations. This spectrum can be specified by setting the argument <code class="docutils literal notranslate"><span class="pre">signal_transfer_spec</span></code> to a file containing the spectrum. If not provided, the code will look in the maps directory for the signal sims for a file labeled <code class="docutils literal notranslate"><span class="pre">spec_signal_&lt;signal_type&gt;.dat</span></code>. The file is expected to look like a CAMB output file, as demonstrated in <code class="docutils literal notranslate"><span class="pre">make_example_maps.py</span></code>, which writes such a file to the proper
+location in the signal sims directory.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">signal_shape</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">signal_shape</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+odict_keys([&#39;cmb_tt&#39;, &#39;cmb_ee&#39;, &#39;cmb_bb&#39;, &#39;cmb_te&#39;, &#39;cmb_eb&#39;, &#39;cmb_tb&#39;])
+</pre></div></div>
+</div>
+<p>These will look familiar to you. Note that they are as long as the long dimension of the <span class="math notranslate nohighlight">\(K_{\ell\ell'}\)</span>, which is 2<span class="math notranslate nohighlight">\(\ell_{max}\)</span> + 1. Also note that EB and TB, expected to be zero, are set to a small flat value.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ell2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1001</span><span class="p">)</span>
+<span class="n">lfac2</span> <span class="o">=</span> <span class="n">ell2</span> <span class="o">*</span> <span class="p">(</span><span class="n">ell2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">signal_shape</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+    <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac2</span> <span class="o">*</span> <span class="n">spec</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">]:</span>
+        <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$D_\ell [\mu\mathrm</span><span class="si">{K}</span><span class="s1">^2]$&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">]:</span>
+        <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\ell$&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_XFaster_Tutorial_61_0.png" src="../_images/notebooks_XFaster_Tutorial_61_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="get_transfer">
+<h3>get_transfer<a class="headerlink" href="#get_transfer" title="Permalink to this headline">¶</a></h3>
+<p>We now have everything we need to compute the transfer function, which is computed per map per spectrum per CMB bin in <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_transfer"><span class="std std-ref">get_transfer()</span></a>. As a refresher, we’re trying to get <span class="math notranslate nohighlight">\(q_b^{transfer}\)</span>, which is the same as our original expression for <span class="math notranslate nohighlight">\(q_b\)</span> in <a class="reference external" href="https://annegambrel.github.io/xfaster/algorithm.html#equation-qb">Equation 17 of the Algorithm page</a>, except now we set noise=0, transfer function=1, and instead of using data
+for our observed signal, we use the ensemble average of our signal sims:</p>
+<p><span class="math">\begin{equation}
+q_{b}^{transfer}=\frac{1}{2} \sum_{b^{\prime}} \mathcal{F}_{b b^{\prime}}^{-1} \sum_{\ell} (2 \ell+1) \operatorname{Tr}\left[ \left(\tilde{\mathbf{D}}_{\ell}^{-1} \frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b^{\prime}}} \tilde{\mathbf{D}}_{\ell}^{-1}\right)\mathbf{g}\tilde{\mathbf{D}}_{\ell}^{signal}\mathbf{g}^T\right]
+\label{eq:qb_transfer}
+\end{equation}</span></p>
+<p>The expression for the Fisher matrix does not change, other than the fact that its constituents are the same as detailed above for the transfer function.</p>
+<p>Within the code, <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code> basically has two steps within the function itself, which it performs per map. 1. Load up the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cbl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">cls_shape</span><span class="p">,</span> <span class="n">m0</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">cls_shape</span></code> is signal_shape that we calculated earlier, <code class="docutils literal notranslate"><span class="pre">m0</span></code> is the map, which is used to select the beam and kernel, and <code class="docutils literal notranslate"><span class="pre">transfer_run=True</span></code> sets the <span class="math notranslate nohighlight">\(F_\ell\)</span> term to 1. 2. Run <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.fisher_iterate"><span class="std std-ref">fisher_iterate()</span></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_iterate</span><span class="p">(</span><span class="n">cbl</span><span class="p">,</span> <span class="n">cls_shape</span><span class="p">,</span> <span class="n">m0</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                          <span class="n">iter_max</span><span class="o">=</span><span class="n">iter_max</span><span class="p">,</span> <span class="n">converge_criteria</span><span class="o">=</span><span class="n">converge_criteria</span><span class="p">,</span>
+                          <span class="n">save_iters</span><span class="o">=</span><span class="n">save_iters</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We’ll talk more in the <code class="docutils literal notranslate"><span class="pre">get_bandpowers</span></code> section about the details that happen from here, but broadly, XFaster takes all the inputs we’ve calculated and a starting <span class="math notranslate nohighlight">\(q_b\)</span> guess (1 for all bins), computes the Fisher matrix, plugs that into the <span class="math notranslate nohighlight">\(q_b\)</span> equation to get a new <span class="math notranslate nohighlight">\(q_b\)</span>, and repeats. Once the maximum of |(qb_new-qb)/qb| &lt; converge_criteria, it stops iterating and saves the result.</p>
+<p>One additional check that <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code> does is to look for transfer function values that are negative. If it finds any, it changes that bin value to the average of the orignal value and the next bin’s value. This typically happens due to poor choices of binning or too small a number of signal simulations.</p>
+<p>Also, Only TT, EE, BB, and TE transfer functions are calculated. EB and TB are computed as</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">qb</span><span class="p">[</span><span class="s1">&#39;cmb_eb&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">qb</span><span class="p">[</span><span class="s1">&#39;cmb_ee&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">qb</span><span class="p">[</span><span class="s1">&#39;cmb_bb&#39;</span><span class="p">]))</span>
+<span class="n">qb</span><span class="p">[</span><span class="s1">&#39;cmb_tb&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">qb</span><span class="p">[</span><span class="s1">&#39;cmb_tt&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">qb</span><span class="p">[</span><span class="s1">&#39;cmb_bb&#39;</span><span class="p">]))</span>
+</pre></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">transfer</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_transfer</span><span class="p">(</span><span class="n">signal_shape</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">transfer</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+odict_keys([&#39;cmb_tt&#39;, &#39;cmb_ee&#39;, &#39;cmb_bb&#39;, &#39;cmb_te&#39;, &#39;cmb_eb&#39;, &#39;cmb_tb&#39;])
+</pre></div></div>
+</div>
+<p>Let’s look at a couple transfer functions.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">7</span><span class="p">),</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+<span class="n">plot_inds</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;95&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;150&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+<span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">transfer</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">fl</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">ax</span><span class="p">[</span><span class="n">plot_inds</span><span class="p">[</span><span class="n">m</span><span class="p">]]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fl</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;tt&#39;</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
+            <span class="n">ax</span><span class="p">[</span><span class="n">plot_inds</span><span class="p">[</span><span class="n">m</span><span class="p">]]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+    <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;bin&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+    <span class="n">ax</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$F_\ell$&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">1.2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+(0.0, 1.2)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_XFaster_Tutorial_66_1.png" src="../_images/notebooks_XFaster_Tutorial_66_1.png" />
+</div>
+</div>
+<p>Note that the BB transfer function (and the EB/TB terms computed from it) start to diverge at high multipole. This is due to the lack of signal power in our input spectrum combined with the reduction in power of the beam. For this reason, you might choose to use a model spectrum with more BB power in computing your BB transfer functions.</p>
+</div>
+<div class="section" id="get_masked_data">
+<h3>get_masked_data<a class="headerlink" href="#get_masked_data" title="Permalink to this headline">¶</a></h3>
+<p>Now comes the step where we compute the data term using <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_masked_data"><span class="std std-ref">get_masked_data()</span></a>. This is once again done just by taking all the pseudo-cross-spectra of all the data maps, using <code class="docutils literal notranslate"><span class="pre">healpy.map2alm</span></code> and <code class="docutils literal notranslate"><span class="pre">healpy.alm2cls</span></code>. This is also the step where the cross spectra of foreground templates is performed, if <code class="docutils literal notranslate"><span class="pre">template_type</span></code> is specified.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cls_data</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_masked_data</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cls_data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+dict_keys([&#39;cls_data&#39;, &#39;nside&#39;, &#39;output_file&#39;])
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">cls_data</span><span class="p">[</span><span class="s1">&#39;cls_data&#39;</span><span class="p">][</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="s1">&#39;95:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 auto&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">cls_data</span><span class="p">[</span><span class="s1">&#39;cls_data&#39;</span><span class="p">][</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="s1">&#39;150:150&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;150 auto&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">cls_data</span><span class="p">[</span><span class="s1">&#39;cls_data&#39;</span><span class="p">][</span><span class="s1">&#39;tt&#39;</span><span class="p">][</span><span class="s1">&#39;150:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 x 150&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$D_\ell [\mu \mathrm</span><span class="si">{K}</span><span class="s1">^2]$&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\ell$&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;TT&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">cls_data</span><span class="p">[</span><span class="s1">&#39;cls_data&#39;</span><span class="p">][</span><span class="s1">&#39;ee&#39;</span><span class="p">][</span><span class="s1">&#39;95:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 auto&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">cls_data</span><span class="p">[</span><span class="s1">&#39;cls_data&#39;</span><span class="p">][</span><span class="s1">&#39;ee&#39;</span><span class="p">][</span><span class="s1">&#39;150:150&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;150 auto&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lfac</span> <span class="o">*</span> <span class="n">cls_data</span><span class="p">[</span><span class="s1">&#39;cls_data&#39;</span><span class="p">][</span><span class="s1">&#39;ee&#39;</span><span class="p">][</span><span class="s1">&#39;150:95&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;95 x 150&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\ell$&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;EE&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">&#39;cls_data&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 0.98, &#39;cls_data&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_XFaster_Tutorial_71_1.png" src="../_images/notebooks_XFaster_Tutorial_71_1.png" />
+</div>
+</div>
+<p>Now, computing things for data is typically the final thing you’ll be wanting to do. The first way you’ll probably run the code is on simulations to make sure things make sense. There are two ways you can do this that will replace whatever <code class="docutils literal notranslate"><span class="pre">get_masked_data</span></code> computes with your new simulated data. They are: 1. a second round of <code class="docutils literal notranslate"><span class="pre">get_masked_sims</span></code>, or, 2. <code class="docutils literal notranslate"><span class="pre">get_masked_fake_data</span></code>. Both are explained below.</p>
+</div>
+<div class="section" id="get_masked_sims-(for-replacing-data)">
+<h3>get_masked_sims (for replacing data)<a class="headerlink" href="#get_masked_sims-(for-replacing-data)" title="Permalink to this headline">¶</a></h3>
+<p>There are several options that dictate what the data is replaced by here. We’ll go through them: * <code class="docutils literal notranslate"><span class="pre">ensemble_mean</span></code>: use <code class="docutils literal notranslate"><span class="pre">cls_sim</span></code> in place of the data spectra. This quantity, computed in <a class="reference external" href="#get_masked_sims">the previous sims step</a> is the average of the signal+noise sims. * <code class="docutils literal notranslate"><span class="pre">ensemble_median</span></code>: use <code class="docutils literal notranslate"><span class="pre">cls_med</span></code>, the median of the signal+noise sims, in place of the data. * <code class="docutils literal notranslate"><span class="pre">sim_index</span></code>: use the signal and noise sim maps with this index in place of the data * <code class="docutils literal notranslate"><span class="pre">sims_add_alms</span></code>: add the
+signal and noise maps corresponding to sim index in alms. Otherwise, compute their spectra first, and then add them (which would not include signal and noise correlations). * <code class="docutils literal notranslate"><span class="pre">qb_file</span></code>: a bandpowers.npz file where noise residuals have been fit. Use these noise residuals to scale the noise map specified by sim_index before adding it to the signal map. * Note also that using the <code class="docutils literal notranslate"><span class="pre">sim_index</span></code> option allows you to specify different signal or noise sims from what you used in your original
+<code class="docutils literal notranslate"><span class="pre">get_masked_sims</span></code> call (for constructing the transfer function and noise model). This is done by setting <code class="docutils literal notranslate"><span class="pre">signal_type_sim</span></code> and <code class="docutils literal notranslate"><span class="pre">noise_type_sim</span></code>, and, optionally, <code class="docutils literal notranslate"><span class="pre">foreground_type_sim</span></code>.</p>
+<p>For the example case, we won’t use any of these options. They can be super useful for forming expectations for your data outputs, though!</p>
+</div>
+<div class="section" id="get_masked_fake_data">
+<h3>get_masked_fake_data<a class="headerlink" href="#get_masked_fake_data" title="Permalink to this headline">¶</a></h3>
+<p>Using <code class="docutils literal notranslate"><span class="pre">get_masked_sims</span></code> and its various options for replacing data is going to be the main way you’ll want to run sims. We implemented an additional option, <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_masked_fake_data"><span class="std std-ref">get_masked_fake_data()</span></a>, for the special case where you want to construct your sim maps from a very specific ensemble: scalar-only signal sim maps, <span class="math notranslate nohighlight">\(r\)</span>=1 tensor-only signal sim maps, noise maps, and an <span class="math notranslate nohighlight">\(\alpha\)</span>-scaled foreground template map. This is used for
+SPIDER to run the ensemble of simulations needed for the Feldman-Cousins analysis, and was written to allow for constructing many different <span class="math notranslate nohighlight">\(r\)</span>-input maps in memory. However, it might be useful for a more generic case of simply wanting to run many simulations that include template-based foregrounds. Scalar maps must be in the directory <code class="docutils literal notranslate"><span class="pre">signal_r0</span></code>, and tensor must be in <code class="docutils literal notranslate"><span class="pre">signal_r1tens</span></code> in your data root. Here are the options available: * <code class="docutils literal notranslate"><span class="pre">fake_data_r</span></code>: the r value (total signal map
+= scalar + sqrt(r) * tensor(r=1)) * <code class="docutils literal notranslate"><span class="pre">fake_data_template</span></code>: the tag for the templates directory. The “fake foreground” is taken as the halfmission-1 template and added to the simulated data scaled by the given alpha. * <code class="docutils literal notranslate"><span class="pre">sim_index</span></code>: which sim index to use for the signal and noise sims * <code class="docutils literal notranslate"><span class="pre">template_alpha</span></code>: the values by which to scale the template to make it the “fake foreground” * <code class="docutils literal notranslate"><span class="pre">noise_type</span></code>: tag for noise subdirectory * <code class="docutils literal notranslate"><span class="pre">do_fake_signal</span></code>: if True, use sim_index for picking which
+signal map to use. Else, use 0 sim index (there is still signal in the fake data map). This is useful for running a bunch of sims where only the noise seed varies, eg, to determine the relative contribution of noise to the error bars. * <code class="docutils literal notranslate"><span class="pre">do_fake_noise</span></code>: same as above, but for noise * <code class="docutils literal notranslate"><span class="pre">save_fake_data</span></code>: if true, save the data_xcorr.npz file to disk. If running a lot of sims, can save on disk space by just doing this all in memory and not saving to disk. * <code class="docutils literal notranslate"><span class="pre">sub_hm_noise</span></code>: if true, subtract
+the average of the HM1xHM2 FFP10 noise sims from the cleaned spectra computed from the fake data map.</p>
 </div>
 <div class="section" id="get_bandpowers">
 <h3>get_bandpowers<a class="headerlink" href="#get_bandpowers" title="Permalink to this headline">¶</a></h3>
-<p>Now we put it all together! The function <code class="docutils literal notranslate"><span class="pre">get_bandpowers</span></code> works just like <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>, with the transfer function terms no longer set to unity, and instead constructed from the <span class="math notranslate nohighlight">\(q_b\)</span>’s computed by <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>.</p>
+<p>Now we put it all together! The function <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_bandpowers"><span class="std std-ref">get_bandpowers()</span></a> works just like <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>, with the transfer function terms no longer set to unity, and instead constructed from the <span class="math notranslate nohighlight">\(q_b\)</span>s computed by <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>.</p>
 <div class="section" id="Constructing-the-model-spectrum">
 <h4>Constructing the model spectrum<a class="headerlink" href="#Constructing-the-model-spectrum" title="Permalink to this headline">¶</a></h4>
-<p>The first step is to construct the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span>’s including all of the additional components in the model. There are now two new pieces here: a foreground component that varies with frequency, and includes a linearized component for its spectral index, and so-called “noise residuals” that account for the inaccuracy of our noise model in the auto-spectra.</p>
+<p>The first step is to construct the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span>’s including all of the additional components in the model. This is done with <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.bin_cl_template"><span class="std std-ref">bin_cl_template()</span></a>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1352,10 +1327,10 @@ Text(0.5, 0.98, &#39;cls_noise&#39;)
 </pre></div>
 </div>
 </div>
-<p>Let’s plot up each set of components individually. First, the CMB component, which should look familiar. Each color represents the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span> for a single bin. The black lines show the total shape of each component in <span class="math notranslate nohighlight">\(\ell\)</span>, assuming the <span class="math notranslate nohighlight">\(q_b\)</span> applied to each bin is set to 1. This is what we call the <em>model spectrum</em> that we are fitting to. Notice that the EE and BB mixing terms have very broad bins and are very low amplitude. This is due to the shape of the
-<span class="math notranslate nohighlight">\(_{-}K_{\ell\ell^\prime}\)</span> kernel as a function of <span class="math notranslate nohighlight">\(\ell\)</span>. These shapes will look different for each map cross, due to differences in each transfer function and beam.</p>
+<p>Let’s plot up each set of components individually. First, the CMB component, which should look familiar. Each color represents the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span> for a single bin. The black lines show the total shape of each component in <span class="math notranslate nohighlight">\(\ell\)</span> if the <span class="math notranslate nohighlight">\(q_b\)</span> applied to each bin is set to 1 (ie, our signal model is perfectly correct). This is what we call the <em>model spectrum</em> that we are fitting to. Notice that the EE and BB mixing terms have very broad bins and are very low
+amplitude. This is due to the shape of the <span class="math notranslate nohighlight">\(_{-}K_{\ell\ell^\prime}\)</span> kernel as a function of <span class="math notranslate nohighlight">\(\ell\)</span>. These shapes will look different for each map cross, due to differences in each transfer function and beam.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1383,11 +1358,11 @@ Text(0.5, 0.98, &#39;cls_noise&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_87_0.png" src="../_images/notebooks_XFaster_Tutorial_87_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_81_0.png" src="../_images/notebooks_XFaster_Tutorial_81_0.png" />
 </div>
 </div>
-<p>The next model component that we include accounts for residual noise in the auto-spectra. These <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span> terms do not include any transfer functions, beams or mode mixing kernels. They are derived from the <em>simulated</em> noise spectra <span class="math notranslate nohighlight">\(\tilde{N}_\ell\)</span> that are subtracted from the <em>measured</em> data as in equation <span class="math">\ref{eq:qb}</span>. These terms act as corrections to the noise model by adjusting the auto-spectrum noise components to agree with the cross terms.</p>
-<p>We fit only for the EE and BB components, and we do so in a simultaneous way. That is, each <span class="math notranslate nohighlight">\(q_b^{res,EEBB}\)</span> applies to both <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}^{EE}\)</span> and <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}^{BB}\)</span> here. The TT spectrum is very much signal dominated, so we don’t bother correcting TT auto spectra this way.</p>
+<p>The next model component that we include accounts for residual noise in the auto-spectra. These <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span> terms do not include any transfer functions, beams or mode mixing kernels. They are derived from the <em>simulated</em> noise spectra <span class="math notranslate nohighlight">\(\tilde{N}_\ell\)</span>. These terms act as corrections to the noise model by adjusting the auto-spectrum noise components to agree with the cross terms.</p>
+<p>For the example, we fit only for the EE and BB components, and we require them to be the same. That is, each <span class="math notranslate nohighlight">\(q_b^{res,EEBB}\)</span> applies to both <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}^{EE}\)</span> and <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}^{BB}\)</span> here.</p>
 <p>The residual signal model is thus:</p>
 <p><span class="math">\begin{equation}
 \tilde{\mathbf{S}}_\ell^{res,ij} = \delta_{ij}\,
@@ -1409,7 +1384,7 @@ Text(0.5, 0.98, &#39;cls_noise&#39;)
 \label{eq:signal_res_deriv}
 \end{equation}</span></p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1437,25 +1412,26 @@ Text(0.5, 0.98, &#39;cls_noise&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_89_0.png" src="../_images/notebooks_XFaster_Tutorial_89_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_83_0.png" src="../_images/notebooks_XFaster_Tutorial_83_0.png" />
 </div>
 </div>
-<p>Next we add our actual noise simulations to the model. The residual noise terms discussed above are designed to account for inaccuracies in this model. We assume that the cross terms are accurate, and only correct the auto spectra for EE and BB in this way.</p>
-<p>We often find that the fisher iterations have trouble converging due to degeneracies in the lower bins, so we also include a term we call “conditioning noise” along the TT/EE/BB diagonals as well. The conditioning noise is modeled as:</p>
+<p>Next we add our actual noise simulations to the model. The residual noise terms discussed above are designed to account for inaccuracies in this model. For both the fiducial noise model and the noise residuals, we assume 0 average noise in cross-spectra, and so only add them to the auto-terms of the model.</p>
+<p>We often find that the Fisher iterations have trouble converging due to numerical errors that cause the covariance to become singular. To prevent this from happening, we also include a term we call “conditioning noise” along the TT/EE/BB diagonals as well. The conditioning noise is modeled as:</p>
 <p><span class="math">\begin{equation}
 \tilde{\mathbf{S}}_\ell^{cond,ij,XY} = \delta_{ij} c_{XY} \frac{\ell + 1}{\ell^2}
 \end{equation}</span></p>
 <p>where <span class="math notranslate nohighlight">\(c_{EE} = c_{BB}\)</span> is parameterized by the <code class="docutils literal notranslate"><span class="pre">cond_noise</span></code> option, typically a small number O(0.01) or less, <span class="math notranslate nohighlight">\(c_{TT} = 100 c_{EE}\)</span> and all others are 0.</p>
-<p>To plot up both of these model components, along with all of the terms discussed above, let’s call an internal function that computes the model spectrum for us, given the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span> terms and some model parameters <span class="math notranslate nohighlight">\(q_b\)</span>.</p>
+<p>In the final Fisher iteration, the conditioning noise is dropped.</p>
+<p>To plot up both of these model components, along with all of the terms discussed above, let’s call an internal function that computes the model spectrum for us, given the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span> terms and some model parameters <span class="math notranslate nohighlight">\(q_b\)</span>: <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_model_spectra"><span class="std std-ref">get_model_spectra()</span></a>.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="c1"># construct a dummy qb array to compute input model</span>
 <span class="n">qb</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="n">k</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">bin_def</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
-<span class="n">cls_model</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_model_spectra</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">cbl</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cls_noise</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">cls_noise</span><span class="p">,</span> <span class="n">cond_noise</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+<span class="n">cls_model</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_model_spectra</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">cbl</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cls_noise</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">cls_noise</span><span class="p">,</span> <span class="n">cond_noise</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
 
 <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
 <span class="n">axs</span> <span class="o">=</span> <span class="n">axs</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
@@ -1488,11 +1464,11 @@ Text(0.5, 0.98, &#39;cls_noise&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_91_0.png" src="../_images/notebooks_XFaster_Tutorial_91_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_85_0.png" src="../_images/notebooks_XFaster_Tutorial_85_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1508,7 +1484,7 @@ Text(0.5, 0.98, &#39;cls_noise&#39;)
             <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">comp</span><span class="p">)</span>
             <span class="k">continue</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ellfac</span> <span class="o">*</span> <span class="n">cls_model</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">xname</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">comp</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;150 x 90 </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">))</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;150 x 95 </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">))</span>
 <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">]:</span>
     <span class="n">axs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;$D_\ell$&#39;</span><span class="p">)</span>
@@ -1522,58 +1498,49 @@ Text(0.5, 0.98, &#39;cls_noise&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_92_0.png" src="../_images/notebooks_XFaster_Tutorial_92_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_86_0.png" src="../_images/notebooks_XFaster_Tutorial_86_0.png" />
 </div>
 </div>
-<p>Note that neither conditioning noise nor residual terms are present in the 150x90 spectra.</p>
-<p>Note also that the shape of the conditioning noise is counter-intuitive. It should be largest at low ell to improve convergence, but it is not. This seems like a bug.</p>
+<p>Note that neither conditioning noise nor residual terms are present in the cross-spectra.</p>
 </div>
 <div class="section" id="Computing-the-Fisher-matrix">
 <h4>Computing the Fisher matrix<a class="headerlink" href="#Computing-the-Fisher-matrix" title="Permalink to this headline">¶</a></h4>
-<p>Ok! Now that we have all the pieces in place, all that’s left is to do some matrix math and iterate over equations <span class="math">\ref{eq:qb}</span> and <span class="math">\ref{eq:fisher}</span> until the results converge. The two equations are constructed in the function <code class="docutils literal notranslate"><span class="pre">fisher_calc</span></code>, which is called iteratively by <code class="docutils literal notranslate"><span class="pre">fisher_iterate</span></code> until convergence is reached.</p>
-<p>In order to make all the quantities we’ve computed look like matrices, we have two utility functions, <code class="docutils literal notranslate"><span class="pre">dict_to_dmat</span></code> and <code class="docutils literal notranslate"><span class="pre">dict_to_dsdqb_mat</span></code>, that convert the dictionaries <code class="docutils literal notranslate"><span class="pre">Dmat1</span></code> (corresponding to <span class="math notranslate nohighlight">\(\mathbf{D}_\ell\)</span> in the equations) and <code class="docutils literal notranslate"><span class="pre">dSdqb_mat1_freq</span></code> (<span class="math notranslate nohighlight">\(\partial \mathbf{S}_\ell / \partial q_b\)</span>) into matrices.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">Dmat1</span></code> matrix has shape <code class="docutils literal notranslate"><span class="pre">(3</span> <span class="pre">*</span> <span class="pre">num_maps,</span> <span class="pre">3</span> <span class="pre">*</span> <span class="pre">num_maps,</span> <span class="pre">lmax</span> <span class="pre">+</span> <span class="pre">1)</span></code> and contains the <code class="docutils literal notranslate"><span class="pre">total</span></code> model terms for each map cross spectrum, ordered as in equation <span class="math">\ref{eq:dell}</span>. The <code class="docutils literal notranslate"><span class="pre">dSdqb_mat1_freq</span></code> matrix has shape <code class="docutils literal notranslate"><span class="pre">(3</span> <span class="pre">*</span> <span class="pre">num_maps,</span> <span class="pre">3</span> <span class="pre">*</span> <span class="pre">num_maps,</span> <span class="pre">nbins,</span> <span class="pre">lmax</span> <span class="pre">+</span> <span class="pre">1)</span></code> and includes the CMB, residuals and frequency-corrected foreground components for all the crosses. We then compute the quantity</p>
+<p>Ok! Now that we have all the pieces in place, all that’s left is to do some matrix math and iterate over the equations for <a class="reference external" href="https://annegambrel.github.io/xfaster/algorithm.html#equation-qb">q_b</a> and the [Fisher matrix](<a class="reference external" href="https://annegambrel.github.io/xfaster/algorithm.html#equation-qb">qb</a> until the results converge. The two equations are constructed in the function <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.fisher_calc"><span class="std std-ref">fisher_calc()</span></a>, which is called iteratively by
+<a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.fisher_iterate"><span class="std std-ref">fisher_iterate()</span></a> until convergence is reached.</p>
+<p>In order to make all the quantities we’ve computed look like matrices, we have two utility functions, <a class="reference internal" href="../api.html#xfaster.parse_tools.dict_to_dmat"><span class="std std-ref">dict_to_dmat()</span></a> and <a class="reference internal" href="../api.html#xfaster.parse_tools.dict_to_dsdqb_mat"><span class="std std-ref">dict_to_dsdqb_mat()</span></a>, that convert the dictionaries <code class="docutils literal notranslate"><span class="pre">Dmat1</span></code> (corresponding to <span class="math notranslate nohighlight">\(\mathbf{D}_\ell\)</span> in the equations) and <code class="docutils literal notranslate"><span class="pre">dSdqb_mat1_freq</span></code> (<span class="math notranslate nohighlight">\(\partial \mathbf{S}_\ell / \partial q_b\)</span>) into matrices.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Dmat1</span></code> matrix has shape <code class="docutils literal notranslate"><span class="pre">(3</span> <span class="pre">*</span> <span class="pre">num_maps,</span> <span class="pre">3</span> <span class="pre">*</span> <span class="pre">num_maps,</span> <span class="pre">lmax</span> <span class="pre">+</span> <span class="pre">1)</span></code> and contains the <code class="docutils literal notranslate"><span class="pre">total</span></code> model terms for each map cross spectrum, ordered as <a class="reference external" href="https://annegambrel.github.io/xfaster/algorithm.html#equation-dell">shown here</a>. The <code class="docutils literal notranslate"><span class="pre">dSdqb_mat1_freq</span></code> matrix has shape <code class="docutils literal notranslate"><span class="pre">(3</span> <span class="pre">*</span> <span class="pre">num_maps,</span> <span class="pre">3</span> <span class="pre">*</span> <span class="pre">num_maps,</span> <span class="pre">nbins,</span> <span class="pre">lmax</span> <span class="pre">+</span> <span class="pre">1)</span></code> and includes the CMB, residuals and frequency-corrected foreground components for all the crosses. We then compute the quantity</p>
 <p><span class="math">\begin{equation}
 \mathbf{D}^{-1} \frac{\partial \mathbf{S}}{\partial q_b} \mathbf{D}^{-1}
 \end{equation}</span></p>
 <p>using the following code:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Dmat1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">Dmat1</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Dinv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">Dmat1</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">eye</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gmat</span><span class="p">))</span>
-<span class="n">mat1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;ij...,jk...-&gt;ik...&#39;</span><span class="p">,</span> <span class="n">eye</span><span class="p">,</span> <span class="n">Dmat1</span><span class="p">)</span>
-<span class="n">mat2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;klm...,ln...-&gt;knm...&#39;</span><span class="p">,</span> <span class="n">dSdqb_mat1_freq</span><span class="p">,</span> <span class="n">Dmat1</span><span class="p">)</span>
+<span class="n">mat1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;ij...,jk...-&gt;ik...&#39;</span><span class="p">,</span> <span class="n">eye</span><span class="p">,</span> <span class="n">Dinv</span><span class="p">)</span>
+<span class="n">mat2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;klm...,ln...-&gt;knm...&#39;</span><span class="p">,</span> <span class="n">dSdqb_mat1_freq</span><span class="p">,</span> <span class="n">Dinv</span><span class="p">)</span>
 <span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;ik...,knm...-&gt;inm...&#39;</span><span class="p">,</span> <span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The first line computes the inverse of <span class="math notranslate nohighlight">\(D\)</span>, ell-by-ell along the first two dimensions. The next two lines are necessary due to some quirk of memory access in python; this is just multiplying the first two dimensions of <code class="docutils literal notranslate"><span class="pre">Dmat1</span></code> by the identity matrix. The last two lines do the matrix multiplication along the first two dimensions of each of the matrices.</p>
-<p>Now, we apply the <span class="math notranslate nohighlight">\(\mathbf{g}\)</span> correction factor as in equations <span class="math">\ref{eq:qb}</span> and <span class="math">\ref{eq:fisher}</span>. The following two lines multiply <span class="math notranslate nohighlight">\(\mathbf{gg}^T\)</span> element-by-element along the first two dimensions of <code class="docutils literal notranslate"><span class="pre">Dmat_obs</span></code> and <code class="docutils literal notranslate"><span class="pre">dSdqb_mat1_freq</span></code>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Dmat_obs_g</span> <span class="o">=</span> <span class="n">gmat</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">Dmat_obs</span>
-<span class="n">dSdqb_mat1_g</span> <span class="o">=</span> <span class="n">gmat</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">dSdqb_mat1_freq</span>
+<p>Now, we apply the <span class="math notranslate nohighlight">\(\mathbf{g}_\ell\)</span> mode-counting factor, and at the same time take the trace and sum over ell, computing everything needed for <span class="math notranslate nohighlight">\(q_b\)</span> except <span class="math notranslate nohighlight">\(\Sigma_b \mathcal{F}_{b b^{\prime}}\)</span>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">qb_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;iil,ijkl,jil-&gt;k&quot;</span><span class="p">,</span> <span class="n">gmat</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">Dmat_obs</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
 </pre></div>
 </div>
-<p>Next we compute the big matrices in equations <span class="math">\ref{eq:qb}</span> and <span class="math">\ref{eq:fisher}</span> and compute their traces in a single step:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">matd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;ijk...,ji...-&gt;k...&#39;</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">Dmat_obs_g</span><span class="p">)</span>
-<span class="n">mats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;ijk...,jil...-&gt;kl...&#39;</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">dSdqb_mat1_g</span><span class="p">)</span>
+<p>The Fisher matrix is:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fisher</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;iil,ijkl,jiml-&gt;km&quot;</span><span class="p">,</span> <span class="n">gmat</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">dSdqb_mat1_freq</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
 </pre></div>
 </div>
-<p>And finally, we sum over <span class="math notranslate nohighlight">\(\ell\)</span> to compute <span class="math notranslate nohighlight">\(v_b = \sum_b' \mathcal{F}_{bb^\prime}q_{b'}\)</span> and <span class="math notranslate nohighlight">\(\mathcal{F}_{bb^\prime}\)</span>. <span class="math notranslate nohighlight">\(v_b\)</span> now just needs the inverse Fisher matrix applied to it to get <span class="math notranslate nohighlight">\(q_b\)</span>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">qb_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">matd</span><span class="p">,</span> <span class="n">ellfac</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
-<span class="n">fisher</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">mats</span><span class="p">,</span> <span class="n">ellfac</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="Inverting-the-Fisher-matrix">
-<h4>Inverting the Fisher matrix<a class="headerlink" href="#Inverting-the-Fisher-matrix" title="Permalink to this headline">¶</a></h4>
-<p>Now we take the inverse. The <code class="docutils literal notranslate"><span class="pre">solve</span></code> function in the <code class="docutils literal notranslate"><span class="pre">numpy.linalg</span></code> library does so efficiently:</p>
+<p>Finally, we get our updated estimate of <span class="math notranslate nohighlight">\(q_b\)</span> and its covaraince, the inverse Fisher matrix, and then convert the former array into a readable dictionary:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">qb_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">fisher</span><span class="p">,</span> <span class="n">qb_vec</span><span class="p">)</span>
 <span class="n">inv_fish</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">fisher</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">qb_vec</span><span class="p">)))</span>
+<span class="n">qb_vec</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">arr_to_dict</span><span class="p">(</span><span class="n">qb_vec</span><span class="p">,</span> <span class="n">qb</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>With each iteration, we compare the new <code class="docutils literal notranslate"><span class="pre">qb_vec</span></code> quantity to the previous one, until the maximum fractional change in any element of the array is less than the convergence criterion (0.005 is typical).</p>
 </div>
 <div class="section" id="Constructing-final-bandpowers">
 <h4>Constructing final bandpowers<a class="headerlink" href="#Constructing-final-bandpowers" title="Permalink to this headline">¶</a></h4>
-<p>To construct bandpowers, we need to apply the <span class="math notranslate nohighlight">\(q_b\)</span> parameters to the input shape spectra. This is done by integrating over each bin using a weighting scheme. The quantity we want in the end should be in units of <span class="math notranslate nohighlight">\(\mathcal{D}_\ell = \ell (\ell + 1) C_\ell / 2\pi\)</span>, where <span class="math notranslate nohighlight">\(C_\ell\)</span> is the appropriate input shape spectrum. Assuming some weighted integral <span class="math notranslate nohighlight">\(\mathcal{I}_b\)</span> for a given bin, we compute each bandpower as a weighted integral of <span class="math notranslate nohighlight">\(\ell (\ell + 1) C_\ell / 2\pi\)</span>,
-scaled by the appropriate <span class="math notranslate nohighlight">\(q_b\)</span>, and normalized by the integral of the weights:</p>
+<p>To construct bandpowers, we need to apply the <span class="math notranslate nohighlight">\(q_b\)</span> parameters to the input shape spectra. The function that handles this is <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.do_qb2cb"><span class="std std-ref">do_qb2cb()</span></a> This is done by integrating over each bin using a weighting scheme. For this example, the quantity we want in the end should be in units of <span class="math notranslate nohighlight">\(\mathcal{D}_\ell = \ell (\ell + 1) C_\ell / 2\pi\)</span>, where <span class="math notranslate nohighlight">\(C_\ell\)</span> is the appropriate input shape spectrum. You can also return <span class="math notranslate nohighlight">\(C_\ell\)</span>s
+using <code class="docutils literal notranslate"><span class="pre">return_cls=True</span></code>, which will change this weighting scheme. Assuming some weighted integral <span class="math notranslate nohighlight">\(\mathcal{I}_b\)</span> for a given bin, we compute each bandpower as a weighted integral of <span class="math notranslate nohighlight">\(\ell (\ell + 1) C_\ell / 2\pi\)</span>, scaled by the appropriate <span class="math notranslate nohighlight">\(q_b\)</span>, and normalized by the integral of the weights:</p>
 <p><span class="math">\begin{equation}
 \mathcal{D}_b = q_b \frac{ \mathcal{I}_b\left[\frac{\ell (\ell + 1)}{2\pi} C_\ell \right] }{ \mathcal{I}_b\left[ 1 \right] }
 \end{equation}</span></p>
@@ -1589,54 +1556,24 @@ scaled by the appropriate <span class="math notranslate nohighlight">\(q_b\)</sp
 <p><span class="math">\begin{equation}
 \ell_b = \frac{ \mathcal{I}_b\left[\frac{\ell (\ell + 1)}{2\pi} C_\ell \, \ell \right] }{ \mathcal{I}_b\left[ \frac{\ell (\ell + 1)}{2\pi} C_\ell \right] }
 \end{equation}</span></p>
-<p>While this definition of the integral is sufficient, the more accurate calculation constructs <span class="math notranslate nohighlight">\(\chi_b(\ell)\)</span> as a window function that includes beam, transfer function and kernel effects that distribute power as a function of <span class="math notranslate nohighlight">\(\ell\)</span>. This has yet to be implemented.</p>
-</div>
-</div>
+<p>While this definition of the integral is sufficient, the more accurate calculation constructs <span class="math notranslate nohighlight">\(\chi_b(\ell)\)</span> as a window function that includes beam, transfer function and kernel effects that distribute power as a function of <span class="math notranslate nohighlight">\(\ell\)</span>. These bandpower window functions are also stored in the bandpowers output file.</p>
 </div>
 <div class="section" id="Looking-at-results">
-<h2>Looking at results<a class="headerlink" href="#Looking-at-results" title="Permalink to this headline">¶</a></h2>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+<h4>Looking at results<a class="headerlink" href="#Looking-at-results" title="Permalink to this headline">¶</a></h4>
+<p>Now we’ll just run the function that wraps up all these internal functions, <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_bandpowers"><span class="std std-ref">get_bandpowers()</span></a>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">bp</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_bandpowers</span><span class="p">(</span><span class="n">signal_shape</span><span class="p">,</span> <span class="n">converge_criteria</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span> <span class="n">iter_max</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">save_iters</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                      <span class="n">cond_noise</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+                      <span class="n">cond_noise</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-/github/workspace/xfaster/xfaster_class.py:1758: XFasterWarning: Error loading ../../example/outputs_example/95x150/bandpowers_95x150.npz: Field cond_noise has value 1e-05, expected 0.03
-  self.warn(
-[ 2021-04-30 23:54:42UTC ] INFO: Doing Fisher step 1/200...
-[ 2021-04-30 23:54:42UTC ] INFO: Max fractional change in qb: 34792.4653369641
-[ 2021-04-30 23:54:42UTC ] INFO: Doing Fisher step 2/200...
-[ 2021-04-30 23:54:43UTC ] INFO: Max fractional change in qb: 4.0017474656494905
-[ 2021-04-30 23:54:43UTC ] INFO: Doing Fisher step 3/200...
-[ 2021-04-30 23:54:44UTC ] INFO: Max fractional change in qb: 0.39435293400192506
-[ 2021-04-30 23:54:44UTC ] INFO: Doing Fisher step 4/200...
-[ 2021-04-30 23:54:45UTC ] INFO: Max fractional change in qb: 0.1452303750353991
-[ 2021-04-30 23:54:45UTC ] INFO: Doing Fisher step 5/200...
-[ 2021-04-30 23:54:46UTC ] INFO: Max fractional change in qb: 0.0651140552339517
-[ 2021-04-30 23:54:46UTC ] INFO: Doing Fisher step 6/200...
-[ 2021-04-30 23:54:47UTC ] INFO: Max fractional change in qb: 0.031194814787130244
-[ 2021-04-30 23:54:47UTC ] INFO: Doing Fisher step 7/200...
-[ 2021-04-30 23:54:48UTC ] INFO: Max fractional change in qb: 0.015354280885424483
-[ 2021-04-30 23:54:48UTC ] INFO: Doing Fisher step 8/200...
-[ 2021-04-30 23:54:49UTC ] INFO: Max fractional change in qb: 0.007647896166179742
-[ 2021-04-30 23:54:49UTC ] INFO: Doing Fisher step 9/200...
-[ 2021-04-30 23:54:50UTC ] INFO: Max fractional change in qb: 0.003829977531696647
-[ 2021-04-30 23:54:50UTC ] INFO: Calculating final Fisher matrix.
-[ 2021-04-30 23:54:51UTC ] INFO: Calculating final Fisher matrix without sample variance.
-</pre></div></div>
-</div>
 <p>In the plot below, we’ll plot up the maximum fractional change in <span class="math notranslate nohighlight">\(q_b\)</span> with iteration. This information is printed in the logs, but it’s helpful to visualize on a plot. You can see it bounce around early on before settling down and ultimately stopping once it gets to the desginated criterion.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1662,12 +1599,12 @@ scaled by the appropriate <span class="math notranslate nohighlight">\(q_b\)</sp
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_100_0.png" src="../_images/notebooks_XFaster_Tutorial_100_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_94_0.png" src="../_images/notebooks_XFaster_Tutorial_94_0.png" />
 </div>
 </div>
 <p>Now let’s see how the total model (summing up the <span class="math notranslate nohighlight">\(q_b\mathcal{C}_{b\ell}\)</span> terms for every component) to see how it converges to fit the data. Within a few iterations, it’s quite close.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1696,29 +1633,37 @@ scaled by the appropriate <span class="math notranslate nohighlight">\(q_b\)</sp
 <span class="n">fig_dat</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">tmpplot</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Iteration&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax_dat</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
                  <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;horizontal&#39;</span><span class="p">,</span> <span class="n">shrink</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 
-<span class="n">fig_dat</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;90$\times$150 GHz total power fit&#39;</span><span class="p">)</span>
+<span class="n">fig_dat</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;95$\times$150 GHz total power fit&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+No handles with labels found to put in legend.
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Text(0.5, 0.98, &#39;90$\\times$150 GHz total power fit&#39;)
+Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_102_1.png" src="../_images/notebooks_XFaster_Tutorial_102_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_96_2.png" src="../_images/notebooks_XFaster_Tutorial_96_2.png" />
 </div>
 </div>
 <p>Now let’s look at just the <span class="math notranslate nohighlight">\(q_b\)</span> values for each of the different component and see how they converge as a function of iteration and bin. The lowest bins tend to have the biggest moves, but for all components, everything gets close to its final value within a handful of iterations.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1757,11 +1702,12 @@ Text(0.5, 0.98, &#39;90$\\times$150 GHz total power fit&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_104_0.png" src="../_images/notebooks_XFaster_Tutorial_104_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_98_0.png" src="../_images/notebooks_XFaster_Tutorial_98_0.png" />
 </div>
 </div>
+<p>Now we’ll look at the noise residuals that were fit. In the script where we make the example maps, we made the “data” maps have 15% less noise in them than the those used for the noise model. So, we should expect the total noise, <span class="math notranslate nohighlight">\((1+n_b)\left&lt;N\right&gt;\)</span>, to be <span class="math notranslate nohighlight">\(0.85^2\left&lt;N\right&gt;\)</span>, where the square comes because we’re fitting in the power spectrum. So, <span class="math notranslate nohighlight">\(n_b\)</span>s should converge to about -0.28.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1769,7 +1715,7 @@ Text(0.5, 0.98, &#39;90$\\times$150 GHz total power fit&#39;)
 <span class="n">fig_dat</span><span class="p">,</span> <span class="n">ax_dat</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
 <span class="n">fig_dat</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;res $q_b$ vs. iteration&#39;</span><span class="p">)</span>
 <span class="n">ax_dat</span> <span class="o">=</span> <span class="n">ax_dat</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-<span class="n">maps</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">b</span><span class="p">[</span><span class="s1">&#39;qb&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;res&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+<span class="n">maps</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">bp</span><span class="p">[</span><span class="s1">&#39;qb&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;res&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
 <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">m0</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">maps</span><span class="p">):</span>
     <span class="n">ax_dat</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">m0</span><span class="p">)</span>
     <span class="n">ax_dat</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
@@ -1791,30 +1737,29 @@ Text(0.5, 0.98, &#39;90$\\times$150 GHz total power fit&#39;)
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7fdaa0ccec10&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7fe06ebc6370&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_105_1.png" src="../_images/notebooks_XFaster_Tutorial_105_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_100_1.png" src="../_images/notebooks_XFaster_Tutorial_100_1.png" />
 </div>
 </div>
-<p>Now that everything has converged, let’s plot up what the final bandpowers and error bars look like. XFaster saves the binned bandpowers as <span class="math notranslate nohighlight">\(D_\ell\)</span>s, though they are labeled <code class="docutils literal notranslate"><span class="pre">cb</span></code>. The error bars are in <code class="docutils literal notranslate"><span class="pre">dcb</span></code>, and those are also computed without sample variance in <code class="docutils literal notranslate"><span class="pre">dcb_nosampvar</span></code>. Covariance is in <code class="docutils literal notranslate"><span class="pre">cov</span></code>, and it also has a no sample variance version, <code class="docutils literal notranslate"><span class="pre">cov_nosampvar</span></code>. I’ll plot up the starting models as well to see how far XFaster had to adjust to match the data.</p>
+<p>Now that everything has converged, let’s plot up what the final bandpowers and error bars look like. XFaster saves the binned bandpowers as <span class="math notranslate nohighlight">\(D_\ell\)</span>s by default, though they are labeled <code class="docutils literal notranslate"><span class="pre">cb</span></code>. The error bars are in <code class="docutils literal notranslate"><span class="pre">dcb</span></code>, and those are also computed without sample variance in <code class="docutils literal notranslate"><span class="pre">dcb_nosampvar</span></code>. Covariance is in <code class="docutils literal notranslate"><span class="pre">cov</span></code>, and it also has a no sample variance version, <code class="docutils literal notranslate"><span class="pre">cov_nosampvar</span></code>.</p>
 <p>To calculate error bars and covariances without sample variance, XFaster just does one final calculation of the Fisher matrix (after everything has converged), with all the <span class="math notranslate nohighlight">\(q_b\)</span>s set to a very small number, thereby nulling out the signal. The error bars and covariance without sample variance come from that Fisher matrix.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1">#bp = xf.load_and_parse(&#39;/mnt/scratch1/spectra_spider_planck/sp_pl/bandpowers_sp_pl.npz&#39;)</span>
-<span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;cmb&#39;</span><span class="p">]:</span>
+<span></span><span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;cmb&#39;</span><span class="p">]:</span>
     <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">15</span><span class="p">))</span>
     <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
     <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> final estimated bandpowers&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="p">))</span>
@@ -1836,12 +1781,12 @@ Text(0.5, 0.98, &#39;90$\\times$150 GHz total power fit&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_107_0.png" src="../_images/notebooks_XFaster_Tutorial_107_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_102_0.png" src="../_images/notebooks_XFaster_Tutorial_102_0.png" />
 </div>
 </div>
-<p>The error bars are just the diagonal of the covariance matrix. Is this a good approximation for our real error? Let’s look at the covariance matrix with and without sample variance.</p>
+<p>The error bars are just the diagonal of the covariance matrix. Let’s look at the covariance matrix with and without sample variance.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1859,7 +1804,7 @@ Text(0.5, 0.98, &#39;90$\\times$150 GHz total power fit&#39;)
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -1871,23 +1816,66 @@ Text(0.5, 1.0, &#39;Without sample variance&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
+<img alt="../_images/notebooks_XFaster_Tutorial_104_1.png" src="../_images/notebooks_XFaster_Tutorial_104_1.png" />
+</div>
+</div>
+<p>This is a 120 x 120 bin matrix, with each of the 20 CMB bins for each spectrum in order (TT, EE, BB, TE, EB, TB).</p>
+</div>
+</div>
+</div>
+<div class="section" id="get_likelihood">
+<h2>get_likelihood<a class="headerlink" href="#get_likelihood" title="Permalink to this headline">¶</a></h2>
+<p>Now we can compute parameter likelihoods with <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_likelihood"><span class="std std-ref">get_likelihood()</span></a>. All of the things we’ve constructed so far are used, except instead of parameterizing the model with <span class="math notranslate nohighlight">\(q_b\)</span> bandpower deviations, we set those to 1, and then make the model a function of cosmological parameters. For the example, we will just use <span class="math notranslate nohighlight">\(r\)</span> as our parameter. We then compute the likelihood for the data for each step in a Monte Carlo sampler, where we
+just vary <span class="math notranslate nohighlight">\(r\)</span>. For this example, since we’re only varying one paramter, we’ll do a brute force search:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">like</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_likelihood</span><span class="p">(</span><span class="n">qb</span><span class="o">=</span><span class="n">bp</span><span class="p">[</span><span class="s1">&#39;qb&#39;</span><span class="p">],</span> <span class="n">inv_fish</span><span class="o">=</span><span class="n">bp</span><span class="p">[</span><span class="s1">&#39;inv_fish&#39;</span><span class="p">],</span> <span class="n">mcmc</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+[ 2021-05-04 21:41:28UTC ] INFO: Computing brute-force r profile likelihood
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">like</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">like</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;log L&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$r$&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 0, &#39;$r$&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
 <img alt="../_images/notebooks_XFaster_Tutorial_109_1.png" src="../_images/notebooks_XFaster_Tutorial_109_1.png" />
 </div>
 </div>
-<p>This is a 120 x 120 bin matrix, with each of the 20 bins for each spectrum in order (TT, EE, BB, TE, EB, TB).</p>
-</div>
-<div class="section" id="Other-useful-things">
-<h2>Other useful things<a class="headerlink" href="#Other-useful-things" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
-<li><p><strong>Null tests</strong></p></li>
-<li><p>To run a null test, you just provide two data roots (<code class="docutils literal notranslate"><span class="pre">data_root</span></code> and <code class="docutils literal notranslate"><span class="pre">data_root2</span></code>) corresponding to the map directories of the two halves of the null.</p></li>
-<li><p>When XFaster is computing <span class="math notranslate nohighlight">\(\mathcal{C}_\ell\)</span>s from signal sims, noise sims, and data, it loads up both maps, and then computes the spectrum both of (map1+map2)/2 and (map1-map2)/2. It uses the former to compute transfer functions, and the latter for bandpowers.</p></li>
-<li><p>The model spectrum fit for is flat in <span class="math notranslate nohighlight">\(D_\ell\)</span> with an amplitude of 1e-5 (0 causes singular matrix problems in the Fisher computation).</p></li>
-<li><p><strong>Foreground sims</strong></p></li>
-<li><p>If you have some foreground sims, say from PySM sitting on disk, and you want XFaster to add them to a CMB signal sim, then in addition to setting <code class="docutils literal notranslate"><span class="pre">sim_index</span></code> to your desired CMB signal sim index, set <code class="docutils literal notranslate"><span class="pre">foreground_type</span></code>. This argument works the same way as <code class="docutils literal notranslate"><span class="pre">clean_type</span></code>– it looks for maps in the directory in your data root in the folder <code class="docutils literal notranslate"><span class="pre">foreground_&lt;foreground_type&gt;</span></code> that match the map tags you asked for in <code class="docutils literal notranslate"><span class="pre">data_subset</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">noise_type_sim</span></code></p></li>
-<li><p>SPIDER’s noise sims aren’t a super good estimate of our actual noise. That’s why we fit for noise residuals! If you want to run a sim that tests how well this works, you can use a different noise sim than one from your ensemble used to calculate <span class="math notranslate nohighlight">\(&lt;N_\ell&gt;\)</span> when doing a <code class="docutils literal notranslate"><span class="pre">sim_index</span></code> run. Feed the tag for the other noise sim directory to <code class="docutils literal notranslate"><span class="pre">noise_type_sim</span></code> (works just like <code class="docutils literal notranslate"><span class="pre">noise_type</span></code>) to use a sim with the same sim index from that directory instead.</p></li>
-</ul>
+<p>We can see that we recover something pretty close to 1, our input <span class="math notranslate nohighlight">\(r\)</span> value for the example. If we ran this for many signal+noise sims, we should get precisely 1 in the average.</p>
+<p>If you instead are using mcmc=True, the likelihoods file written to disk will have a field called “samples”. Histogramming that up, or using a program like <code class="docutils literal notranslate"><span class="pre">getdist</span></code>, especially helpful for multiple parameters, will give you the posteriors for your various parameters.</p>
+<p>The likelihoods function sets the CMB qb values to 1 and all others (esp., residuals) to their maximum likelihood values. To instead include these parameters in your fit, you set the <code class="docutils literal notranslate"><span class="pre">prior</span></code> arguments. So: * <code class="docutils literal notranslate"><span class="pre">r_prior</span></code>: set to [0, ‘inf’] to inclue <span class="math notranslate nohighlight">\(r\)</span> in the fit (or [‘-inf’, ‘inf’] to impose no physical prior) * <code class="docutils literal notranslate"><span class="pre">alpha_prior</span></code>: same as <code class="docutils literal notranslate"><span class="pre">r_prior</span></code>– set to None to not fit for alpha template scalings. * <code class="docutils literal notranslate"><span class="pre">res_prior</span></code>: same as previous– will vary all <span class="math notranslate nohighlight">\(n_b\)</span> parameters as part of
+the model * <code class="docutils literal notranslate"><span class="pre">beam_prior</span></code>: this is different! To account for beam uncertainty, set this to [0, 1], where the first parameter is the Gaussian mean, and the second is the number of standard deviations to use as the width. Here, you must have set the <code class="docutils literal notranslate"><span class="pre">beam_error_product</span></code> in your config file to a dictionary containing the one-sigma error on the beam shape per ell, and then that envelope is varied according to a Gaussian with each step to marginalize over the beam uncertainty.</p>
+<p>That wraps up the example!</p>
 </div>
 </div>
 
