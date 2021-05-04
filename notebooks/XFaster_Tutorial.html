@@ -123,9 +123,9 @@
 <li class="toctree-l4"><a class="reference internal" href="#Looking-at-results">Looking at results</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#get_likelihood">get_likelihood</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#get_likelihood">get_likelihood</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
@@ -917,7 +917,7 @@ dict_keys([&#39;kern&#39;, &#39;pkern&#39;, &#39;mkern&#39;, &#39;xkern&#39;, &#
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7fe083e349a0&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7f1dc54399a0&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1638,14 +1638,6 @@ using <code class="docutils literal notranslate"><span class="pre">return_cls=Tr
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-No handles with labels found to put in legend.
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
 </pre></div>
 </div>
@@ -1658,7 +1650,7 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_96_2.png" src="../_images/notebooks_XFaster_Tutorial_96_2.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_96_1.png" src="../_images/notebooks_XFaster_Tutorial_96_1.png" />
 </div>
 </div>
 <p>Now let’s look at just the <span class="math notranslate nohighlight">\(q_b\)</span> values for each of the different component and see how they converge as a function of iteration and bin. The lowest bins tend to have the biggest moves, but for all components, everything gets close to its final value within a handful of iterations.</p>
@@ -1742,7 +1734,7 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7fe06ebc6370&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7f1dabf22670&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1822,9 +1814,8 @@ Text(0.5, 1.0, &#39;Without sample variance&#39;)
 <p>This is a 120 x 120 bin matrix, with each of the 20 CMB bins for each spectrum in order (TT, EE, BB, TE, EB, TB).</p>
 </div>
 </div>
-</div>
 <div class="section" id="get_likelihood">
-<h2>get_likelihood<a class="headerlink" href="#get_likelihood" title="Permalink to this headline">¶</a></h2>
+<h3>get_likelihood<a class="headerlink" href="#get_likelihood" title="Permalink to this headline">¶</a></h3>
 <p>Now we can compute parameter likelihoods with <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_likelihood"><span class="std std-ref">get_likelihood()</span></a>. All of the things we’ve constructed so far are used, except instead of parameterizing the model with <span class="math notranslate nohighlight">\(q_b\)</span> bandpower deviations, we set those to 1, and then make the model a function of cosmological parameters. For the example, we will just use <span class="math notranslate nohighlight">\(r\)</span> as our parameter. We then compute the likelihood for the data for each step in a Monte Carlo sampler, where we
 just vary <span class="math notranslate nohighlight">\(r\)</span>. For this example, since we’re only varying one paramter, we’ll do a brute force search:</p>
 <div class="nbinput docutils container">
@@ -1841,7 +1832,7 @@ just vary <span class="math notranslate nohighlight">\(r\)</span>. For this exam
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[ 2021-05-04 21:41:28UTC ] INFO: Computing brute-force r profile likelihood
+[ 2021-05-04 21:52:11UTC ] INFO: Computing brute-force r profile likelihood
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -1876,6 +1867,7 @@ Text(0.5, 0, &#39;$r$&#39;)
 <p>The likelihoods function sets the CMB qb values to 1 and all others (esp., residuals) to their maximum likelihood values. To instead include these parameters in your fit, you set the <code class="docutils literal notranslate"><span class="pre">prior</span></code> arguments. So: * <code class="docutils literal notranslate"><span class="pre">r_prior</span></code>: set to [0, ‘inf’] to inclue <span class="math notranslate nohighlight">\(r\)</span> in the fit (or [‘-inf’, ‘inf’] to impose no physical prior) * <code class="docutils literal notranslate"><span class="pre">alpha_prior</span></code>: same as <code class="docutils literal notranslate"><span class="pre">r_prior</span></code>– set to None to not fit for alpha template scalings. * <code class="docutils literal notranslate"><span class="pre">res_prior</span></code>: same as previous– will vary all <span class="math notranslate nohighlight">\(n_b\)</span> parameters as part of
 the model * <code class="docutils literal notranslate"><span class="pre">beam_prior</span></code>: this is different! To account for beam uncertainty, set this to [0, 1], where the first parameter is the Gaussian mean, and the second is the number of standard deviations to use as the width. Here, you must have set the <code class="docutils literal notranslate"><span class="pre">beam_error_product</span></code> in your config file to a dictionary containing the one-sigma error on the beam shape per ell, and then that envelope is varied according to a Gaussian with each step to marginalize over the beam uncertainty.</p>
 <p>That wraps up the example!</p>
+</div>
 </div>
 </div>
 
