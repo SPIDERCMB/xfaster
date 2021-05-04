@@ -3179,7 +3179,7 @@ class XFaster(object):
         foregrounds.
         Signal maps are signal_scalar + fake_data_r * signal_tensor
         where scalar maps are assumed to be in signal_r0 directory
-        and tensor maps are assumed to be in signal_r0tens directory.
+        and tensor maps are assumed to be in signal_r1tens directory.
         sim_index is used to determine which sims. Noise maps taken
         from usual noise directory. Templates read read from
         templates_fake_data_template/halfmission-1.
@@ -6934,7 +6934,7 @@ class XFaster(object):
             likefile = self.get_filename(
                 save_name, ext=".txt", map_tag=map_tag, extra_tag=file_tag, bp_opts=True
             )
-            rs = np.linspace(0, 2, 500)
+            rs = np.linspace(0, 3, 500)
             likes = np.zeros_like(rs)
             for idx, r in enumerate(rs):
                 like = log_like(r=r)
@@ -6947,7 +6947,7 @@ class XFaster(object):
             np.savetxt(likefile, np.column_stack((rs, likes)), header=header)
 
         if not mcmc:
-            return
+            return [rs, likes]
 
         # run chains!
         import emcee
