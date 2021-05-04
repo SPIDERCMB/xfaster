@@ -917,7 +917,7 @@ dict_keys([&#39;kern&#39;, &#39;pkern&#39;, &#39;mkern&#39;, &#39;xkern&#39;, &#
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7f1dc54399a0&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7f5d03df4a30&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1578,7 +1578,7 @@ using <code class="docutils literal notranslate"><span class="pre">return_cls=Tr
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">glob</span>
-<span class="n">iters</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;../../example/outputs_example/95x150/bandpowers_iter*&#39;</span><span class="p">)</span>
+<span class="n">iters</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;../../example/outputs_example/95x150/bandpowers_iter*&#39;</span><span class="p">))</span>
 <span class="c1">### Figure for seeing how convergence looks in fqb</span>
 <span class="n">fig_fqb</span><span class="p">,</span> <span class="n">ax_fqb</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
 <span class="n">ax_fqb</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mf">0.005</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;convergence criterion&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;C1&#39;</span><span class="p">)</span>
@@ -1734,7 +1734,7 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7f1dabf22670&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7f5cee928610&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1832,7 +1832,7 @@ just vary <span class="math notranslate nohighlight">\(r\)</span>. For this exam
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[ 2021-05-04 21:52:11UTC ] INFO: Computing brute-force r profile likelihood
+[ 2021-05-04 22:04:20UTC ] INFO: Computing brute-force r profile likelihood
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">

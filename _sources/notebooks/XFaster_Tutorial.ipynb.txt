@@ -1273,7 +1273,7 @@
    "outputs": [],
    "source": [
     "import glob\n",
-    "iters = glob.glob('../../example/outputs_example/95x150/bandpowers_iter*')\n",
+    "iters = sorted(glob.glob('../../example/outputs_example/95x150/bandpowers_iter*'))\n",
     "### Figure for seeing how convergence looks in fqb\n",
     "fig_fqb, ax_fqb = plt.subplots()\n",
     "ax_fqb.axhline(0.005, label='convergence criterion', color='C1')\n",
