@@ -116,11 +116,11 @@ This is written on an :math:`\ell` by :math:`\ell` basis, but in practice we'll 
 where I've now added in a coefficient, :math:`q_b`, which accounts for any deviation of our measured bandpowers from the signal we expect our instrument to have measured. In practice, :math:`q_b` is actually what XFaster solves for. So now, instead of using :math:`\mathcal{C}_\ell` as the parameter we are optimizing, we instead solve for the maximum likelihood with respect to the bandpower deviations, :math:`q_b`:
 
 .. math::
-   q_{b}=\frac{1}{2} \sum_{b^{\prime}} \mathcal{F}_{b b^{\prime}}^{-1} \sum_{\ell} (2 \ell+1)g_\ell^k \left[ \left(\tilde{\mathbf{C}}_{\ell}^{-1} \frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b^{\prime}}} \tilde{\mathbf{C}}_{\ell}^{-1}\right)\left(\mathbf{\hat{C}}_{\ell}-\tilde{\mathbf{N}}_{\ell}\right)\right]_{kk}
+   q_{b}=\frac{1}{2} \sum_{b^{\prime}} \mathcal{F}_{b b^{\prime}}^{-1} \sum_{\ell} \sum_{k} (2 \ell+1)g_\ell^k \left[ \left(\tilde{\mathbf{C}}_{\ell}^{-1} \frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b^{\prime}}} \tilde{\mathbf{C}}_{\ell}^{-1}\right)\left(\mathbf{\hat{C}}_{\ell}-\tilde{\mathbf{N}}_{\ell}\right)\right]_{kk}
    :label: qb
 
 .. math::
-   \mathcal{F}_{b b^{\prime}}=\frac{1}{2} \sum_{\ell} (2 \ell+1) g_\ell^k \left[\tilde{\mathbf{C}}_{\ell}^{-1} \frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b}} \tilde{\mathbf{C}}_{\ell}^{-1} \frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b^{\prime}}}\right]_{kk}
+   \mathcal{F}_{b b^{\prime}}=\frac{1}{2} \sum_{\ell} \sum_{k} (2 \ell+1) g_\ell^k \left[\tilde{\mathbf{C}}_{\ell}^{-1} \frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b}} \tilde{\mathbf{C}}_{\ell}^{-1} \frac{\partial \tilde{\mathbf{S}}_{\ell}}{\partial q_{b^{\prime}}}\right]_{kk}
    :label: fisher
 
 where now instead of solving for just TT for one map, I'm generalizing to a matrix form where

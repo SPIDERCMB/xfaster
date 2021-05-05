@@ -32,6 +32,7 @@
     "There are two main python modules in XFaster: [xfaster_exec.py](../api.rst#module-xfaster.xfaster_exec) and [xfaster_class.py](../api.rst#module-xfaster.xfaster_class). [xfaster_exec.py](../api.rst#module-xfaster.xfaster_exec) contains two main functions: [xfaster_run](../api.rst#xfaster.xfaster_exec.xfaster_run) and [xfaster_submit](../api.rst#xfaster.xfaster_exec.xfaster_submit). [xfaster_run](../api.rst#xfaster.xfaster_exec.xfaster_run) calls all of the functions to make XFaster happen (all located in [xfaster_class.py](../api.rst#module-xfaster.xfaster_class)) in the order they need to happen. [xfaster_submit](../api.rst#xfaster.xfaster_exec.xfaster_submit) takes arguments for submitting the job to a queue. XFaster is not highly parallelized. However, significant speed-up is gained from using more cores in the simulation pseudo-spectrum calculation through under-the-hood use of OMP. Therefore, if you're starting from a checkpoint after \"sims\", no significant speed-up will be gained when using more cores. \n",
     "\n",
     "There are a few other modules you might interact with: \n",
+    "\n",
     "* [parse_tools.py](../api.rst#module-xfaster.parse_tools): contains a bunch of tools for converting between data structures, especially between dictionaries and matrices\n",
     "* [xfaster_tools.py](../api.rst#module-xfaster.xfaster_tools): contains small functions used in xfaster_class"
    ]
@@ -349,6 +350,7 @@
    "metadata": {},
    "source": [
     "Other options you might use here are \n",
+    "\n",
     "* `template_type`, which points to files stored in `template_<template_type>` for foreground template subtraction\n",
     "* `data_root2`, which is used for null tests. This points to a second full map directory (data, signal and noise sims) for a set of data to be subtracted from the maps in data_root1.\n",
     "* `signal_type_sim`/`noise_type_sim`/`foreground_type_sim`-- these are tags corresponding to directories `signal_<signal_type_sim>`, `noise_<noise_type_sim>`, and `foreground_<foreground_type_sim>` that are used when the `sim_index` argument is set in the `bandpowers` checkpoint. This mode uses sim maps in place of data maps. It adds the signal, noise, and/or foreground sims in alm-space if `sims_add_alms=True`, which is the default, or in Cls, if it is False. These options are not needed to run in `sim_index` mode-- if they are not set, they default to `signal_type_sim=signal_type`, `noise_type_sim=noise_type`, and `foreground_type_sim=None`."
@@ -549,6 +551,7 @@
    "metadata": {},
    "source": [
     "This function is doing a very simple thing. For each pair of maps of a given sim index, it \n",
+    "\n",
     "1. Applies the mask.\n",
     "2. Transforms the maps into $a_{\\ell m}$s using the healpy routine `map2alm`.\n",
     "3. Transforms those into $\\tilde{\\mathcal{C}}_\\ell$s for that pair using the healpy routine `alm2cl`.\n",
@@ -574,12 +577,14 @@
    "metadata": {},
    "source": [
     "The resulting outputs are:\n",
+    "\n",
     "* `cls_signal`: the average of the signal-only cross spectra, used to compute the transfer function\n",
     "* `cls_noise`: the average of the noise-only cross spectra, used as the noise model, $N_\\ell$\n",
     "* `cls_sim`: the average of the signal+noise spectra, where signal and noise maps are added in $a_{\\ell m}$s and thus the spectra include SxN terms.\n",
     "* `cls_med`: the median of the signal+noise spectra-- this is mainly used for debugging potential biases seen in the pipeline\n",
     "\n",
     "The rest of the spectra are not symmetrized. For all previously listed spectra, the result is the average of map i x map j and map j x map i, which matters for off-diagonal spectra: TE, TB, EB. Below, we preserve the individual cross spectra as they are needed for the null test model. In this model, at each Fisher iteration, the noise residual fit (per map and per residual spectrum type) is then used to adjust the expectation spectrum subtracted from the data. The expectation spectrum subtracted from, eg, map 1 T x map 2 E is $S_1^T\\times S_2^E + S_1^T \\times N_2^E + N_1^T \\times S_2^E + N_1^T \\times N_2^E$. Each of the last three terms is subject to misestimation of $N$, so we account for that by scaling the following terms by the appropriate noise residual fit.\n",
+    "\n",
     "* `cls_noise0`: the average spectrum for noise i x noise j\n",
     "* `cls_noise1`: the average spectrum for noise j x noise i\n",
     "* `cls_sxn0`: the average spectrum of signal i x noise j\n",
@@ -779,11 +784,13 @@
     "\n",
     "\n",
     "Within the code, `get_transfer` basically has two steps within the function itself, which it performs per map. \n",
+    "\n",
     "1. Load up the $\\tilde{\\mathcal{C}}_{b\\ell}$: \n",
     "```python \n",
     "cbl = self.bin_cl_template(cls_shape, m0, transfer_run=True)\n",
     "```\n",
     "`cls_shape` is signal_shape that we calculated earlier, `m0` is the map, which is used to select the beam and kernel, and `transfer_run=True` sets the $F_\\ell$ term to 1.\n",
+    "\n",
     "2. Run [fisher_iterate()](../api.rst#xfaster.xfaster_class.XFaster.fisher_iterate).\n",
     "```python\n",
     "ret = self.fisher_iterate(cbl, cls_shape, m0, transfer_run=True,\n",
@@ -914,12 +921,13 @@
    "metadata": {},
    "source": [
     "There are several options that dictate what the data is replaced by here. We'll go through them:\n",
+    "\n",
     "* `ensemble_mean`: use `cls_sim` in place of the data spectra. This quantity, computed in [the previous sims step](#get_masked_sims) is the average of the signal+noise sims.\n",
     "* `ensemble_median`: use `cls_med`, the median of the signal+noise sims, in place of the data.\n",
     "* `sim_index`: use the signal and noise sim maps with this index in place of the data\n",
-    " * `sims_add_alms`: add the signal and noise maps corresponding to sim index in alms. Otherwise, compute their spectra first, and then add them (which would not include signal and noise correlations).\n",
-    " * `qb_file`: a bandpowers.npz file where noise residuals have been fit. Use these noise residuals to scale the noise map specified by sim_index before adding it to the signal map.\n",
-    " * Note also that using the `sim_index` option allows you to specify different signal or noise sims from what you used in your original `get_masked_sims` call (for constructing the transfer function and noise model). This is done by setting `signal_type_sim` and `noise_type_sim`, and, optionally, `foreground_type_sim`. \n",
+    "  * `sims_add_alms`: add the signal and noise maps corresponding to sim index in alms. Otherwise, compute their spectra first, and then add them (which would not include signal and noise correlations).\n",
+    "  * `qb_file`: a bandpowers.npz file where noise residuals have been fit. Use these noise residuals to scale the noise map specified by sim_index before adding it to the signal map.\n",
+    "  * Note also that using the `sim_index` option allows you to specify different signal or noise sims from what you used in your original `get_masked_sims` call (for constructing the transfer function and noise model). This is done by setting `signal_type_sim` and `noise_type_sim`, and, optionally, `foreground_type_sim`. \n",
     " \n",
     "For the example case, we won't use any of these options. They can be super useful for forming expectations for your data outputs, though!"
    ]
@@ -936,6 +944,7 @@
    "metadata": {},
    "source": [
     "Using `get_masked_sims` and its various options for replacing data is going to be the main way you'll want to run sims. We implemented an additional option, [get_masked_fake_data()](../api.rst#xfaster.xfaster_class.XFaster.get_masked_fake_data), for the special case where you want to construct your sim maps from a very specific ensemble: scalar-only signal sim maps, $r$=1 tensor-only signal sim maps, noise maps, and an $\\alpha$-scaled foreground template map. This is used for SPIDER to run the ensemble of simulations needed for the Feldman-Cousins analysis, and was written to allow for constructing many different $r$-input maps in memory. However, it might be useful for a more generic case of simply wanting to run many simulations that include template-based foregrounds. Scalar maps must be in the directory `signal_r0`, and tensor must be in `signal_r1tens` in your data root. Here are the options available:\n",
+    "\n",
     "* `fake_data_r`: the r value (total signal map = scalar + sqrt(r) * tensor(r=1))\n",
     "* `fake_data_template`: the tag for the templates directory. The \"fake foreground\" is taken as the halfmission-1 template and added to the simulated data scaled by the given alpha.\n",
     "* `sim_index`: which sim index to use for the signal and noise sims\n",
@@ -1485,7 +1494,7 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "like = X.get_likelihood(qb=bp['qb'], inv_fish=bp['inv_fish'], mcmc=False)"
+    "loglike = X.get_likelihood(qb=bp['qb'], inv_fish=bp['inv_fish'], mcmc=False)"
    ]
   },
   {
@@ -1494,8 +1503,8 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "plt.plot(like[0], like[1])\n",
-    "plt.ylabel('log L')\n",
+    "plt.plot(loglike[0], np.exp(loglike[1]-loglike[1].max()))\n",
+    "plt.ylabel('Likelihood')\n",
     "plt.xlabel(r'$r$')"
    ]
   },
@@ -1508,6 +1517,7 @@
     "If you instead are using mcmc=True, the likelihoods file written to disk will have a field called \"samples\". Histogramming that up, or using a program like `getdist`, especially helpful for multiple parameters, will give you the posteriors for your various parameters.\n",
     "\n",
     "The likelihoods function sets the CMB qb values to 1 and all others (esp., residuals) to their maximum likelihood values. To instead include these parameters in your fit, you set the `prior` arguments. So:\n",
+    "\n",
     "* `r_prior`: set to [0, 'inf'] to inclue $r$ in the fit (or ['-inf', 'inf'] to impose no physical prior)\n",
     "* `alpha_prior`: same as `r_prior`-- set to None to not fit for alpha template scalings.\n",
     "* `res_prior`: same as previous-- will vary all $n_b$ parameters as part of the model\n",

@@ -476,7 +476,11 @@ div.rendered_html tbody tr:hover {
 <p>There are two main python modules in XFaster: <a class="reference internal" href="../api.html#module-xfaster.xfaster_exec"><span class="std std-ref">xfaster_exec.py</span></a> and <a class="reference internal" href="../api.html#module-xfaster.xfaster_class"><span class="std std-ref">xfaster_class.py</span></a>. <a class="reference internal" href="../api.html#module-xfaster.xfaster_exec"><span class="std std-ref">xfaster_exec.py</span></a> contains two main functions: <a class="reference internal" href="../api.html#xfaster.xfaster_exec.xfaster_run"><span class="std std-ref">xfaster_run</span></a> and <a class="reference internal" href="../api.html#xfaster.xfaster_exec.xfaster_submit"><span class="std std-ref">xfaster_submit</span></a>. <a class="reference internal" href="../api.html#xfaster.xfaster_exec.xfaster_run"><span class="std std-ref">xfaster_run</span></a> calls all of the functions to make
 XFaster happen (all located in <a class="reference internal" href="../api.html#module-xfaster.xfaster_class"><span class="std std-ref">xfaster_class.py</span></a>) in the order they need to happen. <a class="reference internal" href="../api.html#xfaster.xfaster_exec.xfaster_submit"><span class="std std-ref">xfaster_submit</span></a> takes arguments for submitting the job to a queue. XFaster is not highly parallelized. However, significant speed-up is gained from using more cores in the simulation pseudo-spectrum calculation through under-the-hood use of OMP. Therefore, if you’re starting from a checkpoint after “sims”, no
 significant speed-up will be gained when using more cores.</p>
-<p>There are a few other modules you might interact with: * <a class="reference internal" href="../api.html#module-xfaster.parse_tools"><span class="std std-ref">parse_tools.py</span></a>: contains a bunch of tools for converting between data structures, especially between dictionaries and matrices * <a class="reference internal" href="../api.html#module-xfaster.xfaster_tools"><span class="std std-ref">xfaster_tools.py</span></a>: contains small functions used in xfaster_class</p>
+<p>There are a few other modules you might interact with:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../api.html#module-xfaster.parse_tools"><span class="std std-ref">parse_tools.py</span></a>: contains a bunch of tools for converting between data structures, especially between dictionaries and matrices</p></li>
+<li><p><a class="reference internal" href="../api.html#module-xfaster.xfaster_tools"><span class="std std-ref">xfaster_tools.py</span></a>: contains small functions used in xfaster_class</p></li>
+</ul>
 </div>
 <div class="section" id="Specifying-what-data-to-use">
 <h2>Specifying what data to use<a class="headerlink" href="#Specifying-what-data-to-use" title="Permalink to this headline">¶</a></h2>
@@ -724,9 +728,13 @@ array([&#39;../../example/maps_example/data_raw/full/map_150.fits&#39;,
       dtype=&#39;&lt;U53&#39;)
 </pre></div></div>
 </div>
-<p>Other options you might use here are * <code class="docutils literal notranslate"><span class="pre">template_type</span></code>, which points to files stored in <code class="docutils literal notranslate"><span class="pre">template_&lt;template_type&gt;</span></code> for foreground template subtraction * <code class="docutils literal notranslate"><span class="pre">data_root2</span></code>, which is used for null tests. This points to a second full map directory (data, signal and noise sims) for a set of data to be subtracted from the maps in data_root1. * <code class="docutils literal notranslate"><span class="pre">signal_type_sim</span></code>/<code class="docutils literal notranslate"><span class="pre">noise_type_sim</span></code>/<code class="docutils literal notranslate"><span class="pre">foreground_type_sim</span></code>– these are tags corresponding to directories <code class="docutils literal notranslate"><span class="pre">signal_&lt;signal_type_sim&gt;</span></code>,
-<code class="docutils literal notranslate"><span class="pre">noise_&lt;noise_type_sim&gt;</span></code>, and <code class="docutils literal notranslate"><span class="pre">foreground_&lt;foreground_type_sim&gt;</span></code> that are used when the <code class="docutils literal notranslate"><span class="pre">sim_index</span></code> argument is set in the <code class="docutils literal notranslate"><span class="pre">bandpowers</span></code> checkpoint. This mode uses sim maps in place of data maps. It adds the signal, noise, and/or foreground sims in alm-space if <code class="docutils literal notranslate"><span class="pre">sims_add_alms=True</span></code>, which is the default, or in Cls, if it is False. These options are not needed to run in <code class="docutils literal notranslate"><span class="pre">sim_index</span></code> mode– if they are not set, they default to <code class="docutils literal notranslate"><span class="pre">signal_type_sim=signal_type</span></code>,
-<code class="docutils literal notranslate"><span class="pre">noise_type_sim=noise_type</span></code>, and <code class="docutils literal notranslate"><span class="pre">foreground_type_sim=None</span></code>.</p>
+<p>Other options you might use here are</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">template_type</span></code>, which points to files stored in <code class="docutils literal notranslate"><span class="pre">template_&lt;template_type&gt;</span></code> for foreground template subtraction</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data_root2</span></code>, which is used for null tests. This points to a second full map directory (data, signal and noise sims) for a set of data to be subtracted from the maps in data_root1.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">signal_type_sim</span></code>/<code class="docutils literal notranslate"><span class="pre">noise_type_sim</span></code>/<code class="docutils literal notranslate"><span class="pre">foreground_type_sim</span></code>– these are tags corresponding to directories <code class="docutils literal notranslate"><span class="pre">signal_&lt;signal_type_sim&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">noise_&lt;noise_type_sim&gt;</span></code>, and <code class="docutils literal notranslate"><span class="pre">foreground_&lt;foreground_type_sim&gt;</span></code> that are used when the <code class="docutils literal notranslate"><span class="pre">sim_index</span></code> argument is set in the <code class="docutils literal notranslate"><span class="pre">bandpowers</span></code> checkpoint. This mode uses sim maps in place of data maps. It adds the signal, noise, and/or foreground sims in alm-space if <code class="docutils literal notranslate"><span class="pre">sims_add_alms=True</span></code>, which is the default, or in Cls, if it is False. These options are
+not needed to run in <code class="docutils literal notranslate"><span class="pre">sim_index</span></code> mode– if they are not set, they default to <code class="docutils literal notranslate"><span class="pre">signal_type_sim=signal_type</span></code>, <code class="docutils literal notranslate"><span class="pre">noise_type_sim=noise_type</span></code>, and <code class="docutils literal notranslate"><span class="pre">foreground_type_sim=None</span></code>.</p></li>
+</ul>
 </div>
 <div class="section" id="get_bin_def">
 <h3>get_bin_def<a class="headerlink" href="#get_bin_def" title="Permalink to this headline">¶</a></h3>
@@ -917,7 +925,7 @@ dict_keys([&#39;kern&#39;, &#39;pkern&#39;, &#39;mkern&#39;, &#39;xkern&#39;, &#
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7f47cc7c5a30&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7efd115a9940&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -932,7 +940,13 @@ dict_keys([&#39;kern&#39;, &#39;pkern&#39;, &#39;mkern&#39;, &#39;xkern&#39;, &#
 <div class="section" id="get_masked_sims">
 <h3>get_masked_sims<a class="headerlink" href="#get_masked_sims" title="Permalink to this headline">¶</a></h3>
 <p>Now we want to get the ensemble average of all of our signal and noise simulations, which we’re going to use to calculate the filter transfer function and the noise shape, respectively. This is done with <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_masked_sims"><span class="std std-ref">get_masked_sims()</span></a>. The method will also compute the signal cross noise terms, which are used for null tests, where they can contribute significantly to the expected residuals that are subtracted from the data.</p>
-<p>This function is doing a very simple thing. For each pair of maps of a given sim index, it 1. Applies the mask. 2. Transforms the maps into <span class="math notranslate nohighlight">\(a_{\ell m}\)</span>s using the healpy routine <code class="docutils literal notranslate"><span class="pre">map2alm</span></code>. 3. Transforms those into <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span>s for that pair using the healpy routine <code class="docutils literal notranslate"><span class="pre">alm2cl</span></code>. 4. Adds the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span>s to a running average for that particular map cross and spectrum.</p>
+<p>This function is doing a very simple thing. For each pair of maps of a given sim index, it</p>
+<ol class="arabic simple">
+<li><p>Applies the mask.</p></li>
+<li><p>Transforms the maps into <span class="math notranslate nohighlight">\(a_{\ell m}\)</span>s using the healpy routine <code class="docutils literal notranslate"><span class="pre">map2alm</span></code>.</p></li>
+<li><p>Transforms those into <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span>s for that pair using the healpy routine <code class="docutils literal notranslate"><span class="pre">alm2cl</span></code>.</p></li>
+<li><p>Adds the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span>s to a running average for that particular map cross and spectrum.</p></li>
+</ol>
 <p>It only does <code class="docutils literal notranslate"><span class="pre">map2alm</span></code> once per map and caches the result for use in other cross spectra since this is the slowest step in the function.</p>
 <p>Below, we call the function with <code class="docutils literal notranslate"><span class="pre">transfer=True</span></code>– this tells the code to use the sims specified in <code class="docutils literal notranslate"><span class="pre">signal_type_transfer</span></code>, which defaults to being <code class="docutils literal notranslate"><span class="pre">signal_type</span></code> if the former is not specified.</p>
 <div class="nbinput docutils container">
@@ -953,11 +967,23 @@ dict_keys([&#39;kern&#39;, &#39;pkern&#39;, &#39;mkern&#39;, &#39;xkern&#39;, &#
 dict_keys([&#39;cls_signal&#39;, &#39;cls_noise&#39;, &#39;cls_sim&#39;, &#39;cls_med&#39;, &#39;cls_noise0&#39;, &#39;cls_noise1&#39;, &#39;cls_sxn0&#39;, &#39;cls_sxn1&#39;, &#39;cls_nxs0&#39;, &#39;cls_nxs1&#39;, &#39;output_file&#39;])
 </pre></div></div>
 </div>
-<p>The resulting outputs are: * <code class="docutils literal notranslate"><span class="pre">cls_signal</span></code>: the average of the signal-only cross spectra, used to compute the transfer function * <code class="docutils literal notranslate"><span class="pre">cls_noise</span></code>: the average of the noise-only cross spectra, used as the noise model, <span class="math notranslate nohighlight">\(N_\ell\)</span> * <code class="docutils literal notranslate"><span class="pre">cls_sim</span></code>: the average of the signal+noise spectra, where signal and noise maps are added in <span class="math notranslate nohighlight">\(a_{\ell m}\)</span>s and thus the spectra include SxN terms. * <code class="docutils literal notranslate"><span class="pre">cls_med</span></code>: the median of the signal+noise spectra– this is mainly used for debugging potential biases
-seen in the pipeline</p>
+<p>The resulting outputs are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cls_signal</span></code>: the average of the signal-only cross spectra, used to compute the transfer function</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cls_noise</span></code>: the average of the noise-only cross spectra, used as the noise model, <span class="math notranslate nohighlight">\(N_\ell\)</span></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cls_sim</span></code>: the average of the signal+noise spectra, where signal and noise maps are added in <span class="math notranslate nohighlight">\(a_{\ell m}\)</span>s and thus the spectra include SxN terms.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cls_med</span></code>: the median of the signal+noise spectra– this is mainly used for debugging potential biases seen in the pipeline</p></li>
+</ul>
 <p>The rest of the spectra are not symmetrized. For all previously listed spectra, the result is the average of map i x map j and map j x map i, which matters for off-diagonal spectra: TE, TB, EB. Below, we preserve the individual cross spectra as they are needed for the null test model. In this model, at each Fisher iteration, the noise residual fit (per map and per residual spectrum type) is then used to adjust the expectation spectrum subtracted from the data. The expectation spectrum subtracted
-from, eg, map 1 T x map 2 E is <span class="math notranslate nohighlight">\(S_1^T\times S_2^E + S_1^T \times N_2^E + N_1^T \times S_2^E + N_1^T \times N_2^E\)</span>. Each of the last three terms is subject to misestimation of <span class="math notranslate nohighlight">\(N\)</span>, so we account for that by scaling the following terms by the appropriate noise residual fit. * <code class="docutils literal notranslate"><span class="pre">cls_noise0</span></code>: the average spectrum for noise i x noise j * <code class="docutils literal notranslate"><span class="pre">cls_noise1</span></code>: the average spectrum for noise j x noise i * <code class="docutils literal notranslate"><span class="pre">cls_sxn0</span></code>: the average spectrum of signal i x noise j * <code class="docutils literal notranslate"><span class="pre">cls_sxn1</span></code>: the average
-spectrum of noise j x signal i * <code class="docutils literal notranslate"><span class="pre">cls_nxs0</span></code>: the average spectrum of noise i x signal j * <code class="docutils literal notranslate"><span class="pre">cls_nxs1</span></code>: the average spectrum of signal j x noise i</p>
+from, eg, map 1 T x map 2 E is <span class="math notranslate nohighlight">\(S_1^T\times S_2^E + S_1^T \times N_2^E + N_1^T \times S_2^E + N_1^T \times N_2^E\)</span>. Each of the last three terms is subject to misestimation of <span class="math notranslate nohighlight">\(N\)</span>, so we account for that by scaling the following terms by the appropriate noise residual fit.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cls_noise0</span></code>: the average spectrum for noise i x noise j</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cls_noise1</span></code>: the average spectrum for noise j x noise i</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cls_sxn0</span></code>: the average spectrum of signal i x noise j</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cls_sxn1</span></code>: the average spectrum of noise j x signal i</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cls_nxs0</span></code>: the average spectrum of noise i x signal j</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cls_nxs1</span></code>: the average spectrum of signal j x noise i</p></li>
+</ul>
 <p>These spectra have all the effects of the masking, filtering, and beam (for signal sims) included. Let’s compare a couple of them to get a sense for what they look like.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
@@ -1159,11 +1185,17 @@ q_{b}^{transfer}=\frac{1}{2} \sum_{b^{\prime}} \mathcal{F}_{b b^{\prime}}^{-1} \
 \label{eq:qb_transfer}
 \end{equation}</span></p>
 <p>The expression for the Fisher matrix does not change, other than the fact that its constituents are the same as detailed above for the transfer function.</p>
-<p>Within the code, <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code> basically has two steps within the function itself, which it performs per map. 1. Load up the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span>:</p>
+<p>Within the code, <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code> basically has two steps within the function itself, which it performs per map.</p>
+<ol class="arabic simple">
+<li><p>Load up the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span>:</p></li>
+</ol>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cbl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">cls_shape</span><span class="p">,</span> <span class="n">m0</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">cls_shape</span></code> is signal_shape that we calculated earlier, <code class="docutils literal notranslate"><span class="pre">m0</span></code> is the map, which is used to select the beam and kernel, and <code class="docutils literal notranslate"><span class="pre">transfer_run=True</span></code> sets the <span class="math notranslate nohighlight">\(F_\ell\)</span> term to 1. 2. Run <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.fisher_iterate"><span class="std std-ref">fisher_iterate()</span></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cls_shape</span></code> is signal_shape that we calculated earlier, <code class="docutils literal notranslate"><span class="pre">m0</span></code> is the map, which is used to select the beam and kernel, and <code class="docutils literal notranslate"><span class="pre">transfer_run=True</span></code> sets the <span class="math notranslate nohighlight">\(F_\ell\)</span> term to 1.</p>
+<ol class="arabic simple" start="2">
+<li><p>Run <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.fisher_iterate"><span class="std std-ref">fisher_iterate()</span></a>.</p></li>
+</ol>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_iterate</span><span class="p">(</span><span class="n">cbl</span><span class="p">,</span> <span class="n">cls_shape</span><span class="p">,</span> <span class="n">m0</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                           <span class="n">iter_max</span><span class="o">=</span><span class="n">iter_max</span><span class="p">,</span> <span class="n">converge_criteria</span><span class="o">=</span><span class="n">converge_criteria</span><span class="p">,</span>
                           <span class="n">save_iters</span><span class="o">=</span><span class="n">save_iters</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
@@ -1299,18 +1331,35 @@ Text(0.5, 0.98, &#39;cls_data&#39;)
 </div>
 <div class="section" id="get_masked_sims-(for-replacing-data)">
 <h3>get_masked_sims (for replacing data)<a class="headerlink" href="#get_masked_sims-(for-replacing-data)" title="Permalink to this headline">¶</a></h3>
-<p>There are several options that dictate what the data is replaced by here. We’ll go through them: * <code class="docutils literal notranslate"><span class="pre">ensemble_mean</span></code>: use <code class="docutils literal notranslate"><span class="pre">cls_sim</span></code> in place of the data spectra. This quantity, computed in <a class="reference external" href="#get_masked_sims">the previous sims step</a> is the average of the signal+noise sims. * <code class="docutils literal notranslate"><span class="pre">ensemble_median</span></code>: use <code class="docutils literal notranslate"><span class="pre">cls_med</span></code>, the median of the signal+noise sims, in place of the data. * <code class="docutils literal notranslate"><span class="pre">sim_index</span></code>: use the signal and noise sim maps with this index in place of the data * <code class="docutils literal notranslate"><span class="pre">sims_add_alms</span></code>: add the
-signal and noise maps corresponding to sim index in alms. Otherwise, compute their spectra first, and then add them (which would not include signal and noise correlations). * <code class="docutils literal notranslate"><span class="pre">qb_file</span></code>: a bandpowers.npz file where noise residuals have been fit. Use these noise residuals to scale the noise map specified by sim_index before adding it to the signal map. * Note also that using the <code class="docutils literal notranslate"><span class="pre">sim_index</span></code> option allows you to specify different signal or noise sims from what you used in your original
-<code class="docutils literal notranslate"><span class="pre">get_masked_sims</span></code> call (for constructing the transfer function and noise model). This is done by setting <code class="docutils literal notranslate"><span class="pre">signal_type_sim</span></code> and <code class="docutils literal notranslate"><span class="pre">noise_type_sim</span></code>, and, optionally, <code class="docutils literal notranslate"><span class="pre">foreground_type_sim</span></code>.</p>
+<p>There are several options that dictate what the data is replaced by here. We’ll go through them:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ensemble_mean</span></code>: use <code class="docutils literal notranslate"><span class="pre">cls_sim</span></code> in place of the data spectra. This quantity, computed in <a class="reference external" href="#get_masked_sims">the previous sims step</a> is the average of the signal+noise sims.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ensemble_median</span></code>: use <code class="docutils literal notranslate"><span class="pre">cls_med</span></code>, the median of the signal+noise sims, in place of the data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sim_index</span></code>: use the signal and noise sim maps with this index in place of the data</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">sims_add_alms</span></code>: add the signal and noise maps corresponding to sim index in alms. Otherwise, compute their spectra first, and then add them (which would not include signal and noise correlations).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">qb_file</span></code>: a bandpowers.npz file where noise residuals have been fit. Use these noise residuals to scale the noise map specified by sim_index before adding it to the signal map.</p></li>
+<li><p>Note also that using the <code class="docutils literal notranslate"><span class="pre">sim_index</span></code> option allows you to specify different signal or noise sims from what you used in your original <code class="docutils literal notranslate"><span class="pre">get_masked_sims</span></code> call (for constructing the transfer function and noise model). This is done by setting <code class="docutils literal notranslate"><span class="pre">signal_type_sim</span></code> and <code class="docutils literal notranslate"><span class="pre">noise_type_sim</span></code>, and, optionally, <code class="docutils literal notranslate"><span class="pre">foreground_type_sim</span></code>.</p></li>
+</ul>
+</li>
+</ul>
 <p>For the example case, we won’t use any of these options. They can be super useful for forming expectations for your data outputs, though!</p>
 </div>
 <div class="section" id="get_masked_fake_data">
 <h3>get_masked_fake_data<a class="headerlink" href="#get_masked_fake_data" title="Permalink to this headline">¶</a></h3>
 <p>Using <code class="docutils literal notranslate"><span class="pre">get_masked_sims</span></code> and its various options for replacing data is going to be the main way you’ll want to run sims. We implemented an additional option, <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_masked_fake_data"><span class="std std-ref">get_masked_fake_data()</span></a>, for the special case where you want to construct your sim maps from a very specific ensemble: scalar-only signal sim maps, <span class="math notranslate nohighlight">\(r\)</span>=1 tensor-only signal sim maps, noise maps, and an <span class="math notranslate nohighlight">\(\alpha\)</span>-scaled foreground template map. This is used for
-SPIDER to run the ensemble of simulations needed for the Feldman-Cousins analysis, and was written to allow for constructing many different <span class="math notranslate nohighlight">\(r\)</span>-input maps in memory. However, it might be useful for a more generic case of simply wanting to run many simulations that include template-based foregrounds. Scalar maps must be in the directory <code class="docutils literal notranslate"><span class="pre">signal_r0</span></code>, and tensor must be in <code class="docutils literal notranslate"><span class="pre">signal_r1tens</span></code> in your data root. Here are the options available: * <code class="docutils literal notranslate"><span class="pre">fake_data_r</span></code>: the r value (total signal map
-= scalar + sqrt(r) * tensor(r=1)) * <code class="docutils literal notranslate"><span class="pre">fake_data_template</span></code>: the tag for the templates directory. The “fake foreground” is taken as the halfmission-1 template and added to the simulated data scaled by the given alpha. * <code class="docutils literal notranslate"><span class="pre">sim_index</span></code>: which sim index to use for the signal and noise sims * <code class="docutils literal notranslate"><span class="pre">template_alpha</span></code>: the values by which to scale the template to make it the “fake foreground” * <code class="docutils literal notranslate"><span class="pre">noise_type</span></code>: tag for noise subdirectory * <code class="docutils literal notranslate"><span class="pre">do_fake_signal</span></code>: if True, use sim_index for picking which
-signal map to use. Else, use 0 sim index (there is still signal in the fake data map). This is useful for running a bunch of sims where only the noise seed varies, eg, to determine the relative contribution of noise to the error bars. * <code class="docutils literal notranslate"><span class="pre">do_fake_noise</span></code>: same as above, but for noise * <code class="docutils literal notranslate"><span class="pre">save_fake_data</span></code>: if true, save the data_xcorr.npz file to disk. If running a lot of sims, can save on disk space by just doing this all in memory and not saving to disk. * <code class="docutils literal notranslate"><span class="pre">sub_hm_noise</span></code>: if true, subtract
-the average of the HM1xHM2 FFP10 noise sims from the cleaned spectra computed from the fake data map.</p>
+SPIDER to run the ensemble of simulations needed for the Feldman-Cousins analysis, and was written to allow for constructing many different <span class="math notranslate nohighlight">\(r\)</span>-input maps in memory. However, it might be useful for a more generic case of simply wanting to run many simulations that include template-based foregrounds. Scalar maps must be in the directory <code class="docutils literal notranslate"><span class="pre">signal_r0</span></code>, and tensor must be in <code class="docutils literal notranslate"><span class="pre">signal_r1tens</span></code> in your data root. Here are the options available:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fake_data_r</span></code>: the r value (total signal map = scalar + sqrt(r) * tensor(r=1))</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fake_data_template</span></code>: the tag for the templates directory. The “fake foreground” is taken as the halfmission-1 template and added to the simulated data scaled by the given alpha.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sim_index</span></code>: which sim index to use for the signal and noise sims</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">template_alpha</span></code>: the values by which to scale the template to make it the “fake foreground”</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">noise_type</span></code>: tag for noise subdirectory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">do_fake_signal</span></code>: if True, use sim_index for picking which signal map to use. Else, use 0 sim index (there is still signal in the fake data map). This is useful for running a bunch of sims where only the noise seed varies, eg, to determine the relative contribution of noise to the error bars.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">do_fake_noise</span></code>: same as above, but for noise</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">save_fake_data</span></code>: if true, save the data_xcorr.npz file to disk. If running a lot of sims, can save on disk space by just doing this all in memory and not saving to disk.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sub_hm_noise</span></code>: if true, subtract the average of the HM1xHM2 FFP10 noise sims from the cleaned spectra computed from the fake data map.</p></li>
+</ul>
 </div>
 <div class="section" id="get_bandpowers">
 <h3>get_bandpowers<a class="headerlink" href="#get_bandpowers" title="Permalink to this headline">¶</a></h3>
@@ -1730,7 +1779,7 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7f47b32d8430&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7efcf8070760&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1819,7 +1868,7 @@ just vary <span class="math notranslate nohighlight">\(r\)</span>. For this exam
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">like</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_likelihood</span><span class="p">(</span><span class="n">qb</span><span class="o">=</span><span class="n">bp</span><span class="p">[</span><span class="s1">&#39;qb&#39;</span><span class="p">],</span> <span class="n">inv_fish</span><span class="o">=</span><span class="n">bp</span><span class="p">[</span><span class="s1">&#39;inv_fish&#39;</span><span class="p">],</span> <span class="n">mcmc</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span></span><span class="n">loglike</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_likelihood</span><span class="p">(</span><span class="n">qb</span><span class="o">=</span><span class="n">bp</span><span class="p">[</span><span class="s1">&#39;qb&#39;</span><span class="p">],</span> <span class="n">inv_fish</span><span class="o">=</span><span class="n">bp</span><span class="p">[</span><span class="s1">&#39;inv_fish&#39;</span><span class="p">],</span> <span class="n">mcmc</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1828,7 +1877,7 @@ just vary <span class="math notranslate nohighlight">\(r\)</span>. For this exam
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[ 2021-05-04 23:24:45UTC ] INFO: Computing brute-force r profile likelihood
+[ 2021-05-05 20:23:29UTC ] INFO: Computing brute-force r profile likelihood
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -1836,8 +1885,8 @@ just vary <span class="math notranslate nohighlight">\(r\)</span>. For this exam
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">like</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">like</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;log L&#39;</span><span class="p">)</span>
+<span></span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">loglike</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">loglike</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">loglike</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Likelihood&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$r$&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1860,8 +1909,13 @@ Text(0.5, 0, &#39;$r$&#39;)
 </div>
 <p>We can see that we recover something pretty close to 1, our input <span class="math notranslate nohighlight">\(r\)</span> value for the example. If we ran this for many signal+noise sims, we should get precisely 1 in the average.</p>
 <p>If you instead are using mcmc=True, the likelihoods file written to disk will have a field called “samples”. Histogramming that up, or using a program like <code class="docutils literal notranslate"><span class="pre">getdist</span></code>, especially helpful for multiple parameters, will give you the posteriors for your various parameters.</p>
-<p>The likelihoods function sets the CMB qb values to 1 and all others (esp., residuals) to their maximum likelihood values. To instead include these parameters in your fit, you set the <code class="docutils literal notranslate"><span class="pre">prior</span></code> arguments. So: * <code class="docutils literal notranslate"><span class="pre">r_prior</span></code>: set to [0, ‘inf’] to inclue <span class="math notranslate nohighlight">\(r\)</span> in the fit (or [‘-inf’, ‘inf’] to impose no physical prior) * <code class="docutils literal notranslate"><span class="pre">alpha_prior</span></code>: same as <code class="docutils literal notranslate"><span class="pre">r_prior</span></code>– set to None to not fit for alpha template scalings. * <code class="docutils literal notranslate"><span class="pre">res_prior</span></code>: same as previous– will vary all <span class="math notranslate nohighlight">\(n_b\)</span> parameters as part of
-the model * <code class="docutils literal notranslate"><span class="pre">beam_prior</span></code>: this is different! To account for beam uncertainty, set this to [0, 1], where the first parameter is the Gaussian mean, and the second is the number of standard deviations to use as the width. Here, you must have set the <code class="docutils literal notranslate"><span class="pre">beam_error_product</span></code> in your config file to a dictionary containing the one-sigma error on the beam shape per ell, and then that envelope is varied according to a Gaussian with each step to marginalize over the beam uncertainty.</p>
+<p>The likelihoods function sets the CMB qb values to 1 and all others (esp., residuals) to their maximum likelihood values. To instead include these parameters in your fit, you set the <code class="docutils literal notranslate"><span class="pre">prior</span></code> arguments. So:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">r_prior</span></code>: set to [0, ‘inf’] to inclue <span class="math notranslate nohighlight">\(r\)</span> in the fit (or [‘-inf’, ‘inf’] to impose no physical prior)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">alpha_prior</span></code>: same as <code class="docutils literal notranslate"><span class="pre">r_prior</span></code>– set to None to not fit for alpha template scalings.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">res_prior</span></code>: same as previous– will vary all <span class="math notranslate nohighlight">\(n_b\)</span> parameters as part of the model</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">beam_prior</span></code>: this is different! To account for beam uncertainty, set this to [0, 1], where the first parameter is the Gaussian mean, and the second is the number of standard deviations to use as the width. Here, you must have set the <code class="docutils literal notranslate"><span class="pre">beam_error_product</span></code> in your config file to a dictionary containing the one-sigma error on the beam shape per ell, and then that envelope is varied according to a Gaussian with each step to marginalize over the beam uncertainty.</p></li>
+</ul>
 <p>That wraps up the example!</p>
 </div>
 </div>
