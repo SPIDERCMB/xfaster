@@ -5,7 +5,6 @@ from warnings import warn
 from collections import OrderedDict
 
 __all__ = [
-    "parse_data",
     "dict_to_arr",
     "arr_to_dict",
     "unique_tags",
@@ -261,47 +260,110 @@ def load_pickle_compat(filename):
             return pickle.load(f)
 
 
-def parse_data(data, field):
+def load_and_parse(filename, check_version=True):
     """
-    Look for a field in some data, return as a dictionary with
-    descriptive keys.
+    Load a .npz data file from disk and parse all the fields it contains.
+    Includes handling of backward compatibility to older file versions
+    on disk.
+
+    Returns a dictionary of parsed fields.
 
     Arguments
     ---------
-    data : str or dict
-        Either the path to an npz file on disk or a loaded npz dict.
-    field : str
-        Which key in data to return as a dictionary.
+    filename : str
+        Path to numpy data file on disk.
+    check_version : bool
+        If True, check the data file version and apply any necessary
+        updates to the latest version.
 
     Returns
     -------
-    data[field] : arb
-        The value in the ```data`` dictionary for key ``field``.
+    data : dict
+        Data dictionary loaded from disk.
     """
-    if isinstance(data, str):
-        data = load_compat(data)
+    data = load_compat(filename)
 
-    version = data.get("data_version", -1)
+    if not check_version:
+        return data
+
     from .xfaster_class import XFaster
 
     dv = XFaster.data_version
+    version = data.get("data_version", -1)
+    if version == dv:
+        return data
 
+    # backward compatibility
     if version == 1:
         if "foreground_type" in data:
             data["foreground_type_sim"] = data.pop("foreground_type")
+
         if "clean_type" in data:
             data["data_type"] = data.pop("clean_type")
 
-        return data[field]
+        if "planck_root1_hm1" in data:
+            planck_root = {
+                "hm1a": data.pop("planck_root1_hm1"),
+                "hm1b": data.pop("planck_root2_hm1"),
+                "hm2a": data.pop("planck_root1_hm2"),
+                "hm2b": data.pop("planck_root2_hm2"),
+            }
+            if all([x is None for x in planck_root.values()]):
+                planck_root = None
 
-    # add backward-compatibile parsing here if necessary
+            planck_files = {
+                "hm1a": data.pop("planck_files1_hm1"),
+                "hm1b": data.pop("planck_files2_hm1"),
+                "hm2a": data.pop("planck_files1_hm2"),
+                "hm2b": data.pop("planck_files2_hm2"),
+            }
+            if all([x is None for x in planck_files.values()]):
+                planck_files = None
+
+            data["planck_root"] = planck_root
+            data["planck_files"] = planck_files
+
+        if "cls_noise0" in data:
+            cls_res = OrderedDict()
+            cls_res_null = None
+
+            for k in ["nxn0", "nxn1", "nxs0", "nxs1", "sxn0", "sxn1"]:
+                kold = "cls_{}".format(k.replace("nxn", "noise"))
+                if data.get(kold, None) is not None:
+                    cls_res[k] = data.pop(kold)
+
+                knull = "{}_null".format(kold)
+                if data.get(knull, None) is not None:
+                    if cls_res_null is None:
+                        cls_res_null = OrderedDict()
+                    cls_res_null[k] = data.pop(knull)
+
+            data["cls_res"] = cls_res
+            data["cls_res_null"] = cls_res_null
+
+        if "cbl" in data:
+            cbl = data["cbl"]
+            for k in list(cbl):
+                if k.startswith("res0") or k.startswith("res1"):
+                    knew = "res_{}".format(k.split("_")[1], k[3])
+                    cbl[knew] = cbl.pop(k)
+
+        if "cls_tnoise_hm1" in data:
+            cls_template_noise = OrderedDict()
+            cls_template_noise["hm1:hm1"] = data.pop("cls_tnoise_hm1")
+            cls_template_noise["hm2:hm2"] = data.pop("cls_tnoise_hm2")
+            cls_template_noise["hm1:hm2"] = data.pop("cls_tnoise_hm1xhm2")
+            data["cls_template_noise"] = cls_template_noise
+
+        # update data version in memory
+        data["data_version"] = version = dv
+
     if version != dv:
         raise ValueError(
             "Incompatible data file version.  Found {}, expected {}".format(version, dv)
         )
 
-    # if versions match, then data is already stored in the proper format
-    return data[field]
+    return data
 
 
 def dict_to_arr(d, out=None, flatten=False):
@@ -623,27 +685,6 @@ def dict_to_dsdqb_mat(dsdqb_dict, bin_def):
         dsdqb_mat = dsdqb_mat[:, :, :nbins_seen, :]
 
     return dsdqb_mat
-
-
-def load_and_parse(filename):
-    """
-    Load a .npz data file from disk and parse all the fields it contains.
-
-    Arguments
-    ---------
-    filename : str
-        Path to file to parse.
-
-    Returns
-    -------
-    ret : dict
-        Dictionary of parsed fields.
-    """
-    data = load_compat(filename)
-    ret = dict()
-    for k in data:
-        ret[k] = parse_data(data, k)
-    return ret
 
 
 def expand_qb(qb, bin_def, lmax=None):

@@ -63,7 +63,7 @@ def xfaster_run(
     converge_criteria=0.005,
     iter_max=200,
     tbeb=False,
-    fix_bb_xfer=False,
+    fix_bb_transfer=False,
     window_lmax=None,
     like_lmin=33,
     like_lmax=250,
@@ -231,9 +231,9 @@ def xfaster_run(
         The maximum number of iterations
     tbeb : bool
         If True, compute TB/EB spectra.
-    fix_bb_xfer : bool
-        If True, after transfer functions have been calculated, impose
-        the BB xfer is exactly equal to the EE transfer.
+    fix_bb_transfer : bool
+        If True, after transfer functions have been calculated, impose that the
+        BB transfer function is exactly equal to the EE transfer function.
     window_lmax : int
         The size of the window used in computing the mask kernels
     like_lmin : int
@@ -464,7 +464,7 @@ def xfaster_run(
         lmin=lmin,
         bin_width=bin_width,
         tbeb=tbeb,
-        fix_bb_xfer=fix_bb_xfer,
+        fix_bb_transfer=fix_bb_transfer,
         window_lmax=window_lmax,
         ensemble_mean=ensemble_mean,
         ensemble_median=ensemble_median,
@@ -513,7 +513,7 @@ def xfaster_run(
     spec_opts.pop("bin_width_res")
     spec_opts.pop("weighted_bins")
     spec_opts.pop("tbeb")
-    spec_opts.pop("fix_bb_xfer")
+    spec_opts.pop("fix_bb_transfer")
     spec_opts.pop("signal_spec")
     spec_opts.pop("signal_transfer_spec")
     spec_opts.pop("model_r")
@@ -608,7 +608,7 @@ def xfaster_run(
     X.get_signal_shape(filename=signal_transfer_spec, transfer=True)
 
     X.log("Computing transfer functions...", "notice")
-    X.get_transfer(fix_bb_xfer=fix_bb_xfer, **fisher_opts)
+    X.get_transfer(fix_bb_transfer=fix_bb_transfer, **fisher_opts)
 
     # Rerun to add bins for foreground and residuals, if requested
     X.log("Setting up bin definitions with foregrounds and residuals...", "notice")
@@ -626,7 +626,7 @@ def xfaster_run(
 
     if template_type is not None and sub_hm_noise:
         X.log("Computing template noise ensemble averages...", "notice")
-        X.get_masked_template_noise(template_type)
+        X.get_masked_template_noise()
 
     X.log("Computing masked data cross-spectra...", "notice")
     X.get_masked_data(
@@ -1088,7 +1088,7 @@ def xfaster_parse(args=None, test=False):
             help="Maximum number of iterations to compute the Fisher matrix",
         )
         add_arg(G, "tbeb", help="Include TB/EB spectra in the estimator")
-        add_arg(G, "fix_bb_xfer", help="Fix BB xfer to equal EE xfer")
+        add_arg(G, "fix_bb_transfer", help="Fix BB transfer function to equal EE")
         add_arg(G, "window_lmax", argtype=int, help="Kernel window size")
         add_arg(
             G,

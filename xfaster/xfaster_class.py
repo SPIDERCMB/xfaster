@@ -131,9 +131,9 @@ class XFaster(object):
 
     # if starting from KEY, force rerun all steps in VALUES
     checkpoint_tree = {
-        "files": ["masks", "sims", "data"],
-        "masks": ["kernels", "sims_transfer", "sims", "data"],
-        "kernels": ["transfer", "bandpowers"],
+        "files": ["masks"],
+        "masks": ["kernels", "sims_transfer", "sims", "data", "template_noise"],
+        "kernels": ["transfer"],
         "sims_transfer": ["transfer"],
         "shape_transfer": ["transfer"],
         "transfer": ["bandpowers"],
@@ -146,7 +146,7 @@ class XFaster(object):
         "beam_errors": ["likelihood"],
     }
 
-    data_version = 1
+    data_version = 2
 
     def __init__(
         self,
@@ -1193,23 +1193,20 @@ class XFaster(object):
                 If true, get Planck map files to be subtracted from data
             """
             if not sub_planck:
-                fs["planck_root1_hm1"] = None
-                fs["planck_root2_hm1"] = None
-                fs["planck_root1_hm2"] = None
-                fs["planck_root2_hm2"] = None
-                fs["planck_files1_hm1"] = None
-                fs["planck_files2_hm1"] = None
-                fs["planck_files1_hm2"] = None
-                fs["planck_files2_hm2"] = None
+                fs["planck_root"] = None
+                fs["planck_files"] = None
                 fs["num_planck"] = 0
             else:
-                for null_split in [1, 2]:
-                    if null_split == 1:
+                fs["planck_root"] = {}
+                fs["planck_files"] = {}
+                fs["num_planck"] = 0
+                for null_split in ["a", "b"]:
+                    if null_split == "a":
                         suff = ""
                     else:
                         suff = 2
                     for hm in ["1", "2"]:
-                        fs["num_planck"] = 0
+                        pgrp = "hm{}{}".format(hm, null_split)
                         proot = os.path.join(
                             fs["data_root{}".format(suff)],
                             "reobs_planck",
@@ -1221,32 +1218,28 @@ class XFaster(object):
                             if not os.path.exists(nfile):
                                 raise OSError("Missing hm-{} map for {}".format(hm, f))
                             pfiles.append(nfile)
-                            fs["num_planck"] += 1
+                        if fs["num_planck"] == 0:
+                            fs["num_planck"] = len(pfiles)
+                        elif len(pfiles) != fs["num_planck"]:
+                            raise OSError(
+                                "Found {} files for planck group {}, expected {}".format(
+                                    len(pfiles), pgrp, fs["num_planck"]
+                                )
+                            )
                         pfiles = np.asarray(pfiles)
-                        fs["planck_root{}_hm{}".format(null_split, hm)] = proot
-                        fs["planck_files{}_hm{}".format(null_split, hm)] = pfiles
+                        fs["planck_root"][pgrp] = proot
+                        fs["planck_files"][pgrp] = pfiles
 
                         self.log(
                             "Found {} planck maps in {}".format(
                                 fs["num_planck"],
-                                fs["planck_root{}_hm{}".format(null_split, hm)],
+                                fs["planck_root"][pgrp],
                             ),
                             "info",
                         )
                         self.log("Planck files: {}".format(pfiles), "debug")
 
-            fields = [
-                "planck_root1_hm1",
-                "planck_root2_hm1",
-                "planck_root1_hm2",
-                "planck_root2_hm2",
-                "planck_files1_hm1",
-                "planck_files2_hm1",
-                "planck_files1_hm2",
-                "planck_files2_hm2",
-                "num_planck",
-            ]
-            for k in fields:
+            for k in ["planck_root", "planck_files", "num_planck"]:
                 setattr(self, k, fs[k])
 
         save_name = "files"
@@ -1279,7 +1272,7 @@ class XFaster(object):
                 if template_type != ret.get("template_type", None):
                     get_template_files(ret, template_type)
                     self.save_data(save_name, **ret)
-                if sub_planck and ret.get("planck_root1", None) is None:
+                if sub_planck and ret.get("planck_root", None) is None:
                     get_planck_files(ret, sub_planck)
                     self.save_data(save_name, **ret)
                 return ret
@@ -1308,7 +1301,7 @@ class XFaster(object):
                 get_template_files(ret, template_type)
                 self.save_data(save_name, **ret)
 
-            if sub_planck and ret.get("planck_root1", None) is None:
+            if sub_planck and ret.get("planck_root", None) is None:
                 get_planck_files(ret, sub_planck)
                 self.save_data(save_name, **ret)
             return ret
@@ -2382,7 +2375,7 @@ class XFaster(object):
                             d += alphas[0] * alphas[1] * t3
                             # subtract average template noise spectrum to debias
                             if sub_hm_noise:
-                                n = self.cls_tnoise_hm1xhm2[spec][xname]
+                                n = self.cls_template_noise["hm1:hm2"][spec][xname]
                                 d -= alphas[0] * alphas[1] * n
 
             self.cls_data_clean = cls_clean
@@ -2468,12 +2461,7 @@ class XFaster(object):
             cls_planck = OrderedDict()
             cls_planck_null = OrderedDict() if null_run else None
             planck_files_split = list(
-                zip(
-                    self.planck_files1_hm1,
-                    self.planck_files1_hm2,
-                    self.planck_files2_hm1,
-                    self.planck_files2_hm2,
-                )
+                zip(self.planck_files[x] for x in ["hm1a", "hm2a", "hm1b", "hm2b"])
             )
         planck_subtracted = False
 
@@ -2683,47 +2671,42 @@ class XFaster(object):
         num_maps = self.num_maps
         num_corr = self.num_corr
         data_shape = self.data_shape
-
-        sims_attr = {}
+        null_run = self.null_run
 
         if transfer:
-            sims_attr["signal_files"] = self.signal_transfer_files
-            sims_attr["num_signal"] = self.num_signal_transfer
+            signal_files = self.signal_transfer_files
+            signal_files2 = self.signal_transfer_files2 if null_run else None
+            num_signal = self.num_signal_transfer
         else:
-            sims_attr["signal_files"] = self.signal_files
-            sims_attr["num_signal"] = self.num_signal
+            signal_files = self.signal_files
+            signal_files2 = self.signal_files2 if null_run else None
+            num_signal = self.num_signal
 
-        sims_attr["noise_files"] = self.noise_files
-        sims_attr["num_noise"] = self.num_noise
-        sims_attr["noise_files_sim"] = self.noise_files_sim
-        sims_attr["signal_files_sim"] = self.signal_files_sim
-        sims_attr["num_noise_sim"] = self.num_noise_sim
-        sims_attr["num_signal_sim"] = self.num_signal_sim
-        sims_attr["foreground_files"] = self.foreground_files
-        sims_attr["num_foreground"] = self.num_foreground
-
-        foreground_sims = sims_attr["foreground_files"] is not None
+        noise_files = self.noise_files
+        noise_files2 = self.noise_files2 if null_run else None
+        num_noise = self.num_noise
 
         if do_noise:
-            do_noise = sims_attr["noise_files"] is not None
+            do_noise = noise_files is not None
             # if qb file is not none, modify cls by residual in file
             if qb_file is not None:
                 if not os.path.exists(qb_file):
                     qb_file = os.path.join(self.output_root, qb_file)
                 qb_file = pt.load_and_parse(qb_file)
 
-        null_run = self.null_run
-        if transfer:
-            sims_attr["signal_files2"] = (
-                self.signal_transfer_files2 if null_run else None
-            )
-        else:
-            sims_attr["signal_files2"] = self.signal_files2 if null_run else None
+        # for sim_index runs
+        signal_files_sim = self.signal_files_sim
+        signal_files_sim2 = self.signal_files_sim2 if null_run else None
+        num_signal_sim = self.num_signal_sim
 
-        sims_attr["noise_files2"] = self.noise_files2 if null_run else None
-        sims_attr["noise_files_sim2"] = self.noise_files_sim2 if null_run else None
-        sims_attr["signal_files_sim2"] = self.signal_files_sim2 if null_run else None
-        sims_attr["foreground_files2"] = self.foreground_files2 if null_run else None
+        noise_files_sim = self.noise_files_sim
+        noise_files_sim2 = self.noise_files_sim2 if null_run else None
+        num_noise_sim = self.num_noise_sim
+
+        foreground_files = self.foreground_files
+        foreground_files2 = self.foreground_files2 if null_run else None
+        num_foreground = self.num_foreground
+        foreground_sims = foreground_files is not None
 
         def process_index(files, files2, idx, idx2=None, cache=None, qbf=None):
             """
@@ -2796,41 +2779,6 @@ class XFaster(object):
             """
             Function to compute cross spectra for ensemble of files and then save in place.
             """
-            sig_field = "cls_signal"
-            sig_null_field = "cls_signal_null"
-            noise_field = "cls_noise"
-            noise_null_field = "cls_noise_null"
-            tot_field = "cls_sim"
-            tot_null_field = "cls_sim_null"
-            med_field = "cls_med"
-            med_null_field = "cls_med_null"
-
-            ### These fields are needed to iteratate on noise from res fits
-            noise0_field = "cls_noise0"
-            noise0_null_field = "cls_noise0_null"
-            noise1_field = "cls_noise1"
-            noise1_null_field = "cls_noise1_null"
-            sxn0_field = "cls_sxn0"
-            sxn0_null_field = "cls_sxn0_null"
-            nxs0_field = "cls_nxs0"
-            nxs0_null_field = "cls_nxs0_null"
-            sxn1_field = "cls_sxn1"
-            sxn1_null_field = "cls_sxn1_null"
-            nxs1_field = "cls_nxs1"
-            nxs1_null_field = "cls_nxs1_null"
-            ###
-
-            sig_files = sims_attr["signal_files"]
-            sig_files2 = None
-            noise_files = sims_attr["noise_files"]
-            noise_files2 = None
-            if null_run:
-                sig_files2 = sims_attr["signal_files2"]
-                noise_files2 = sims_attr["noise_files2"]
-
-            nsim_sig = sims_attr["num_signal"]
-            nsim_noise = sims_attr["num_noise"]
-
             cls_sig = OrderedDict()
             cls_null_sig = OrderedDict() if null_run else None
             cls_noise = OrderedDict() if do_noise else None
@@ -2841,26 +2789,20 @@ class XFaster(object):
             cls_null_med = OrderedDict() if null_run else None
 
             ### Noise iteration from res fit fields
-            cls_noise0 = OrderedDict() if do_noise else None
-            cls_null_noise0 = OrderedDict() if null_run and do_noise else None
-            cls_noise1 = OrderedDict() if do_noise else None
-            cls_null_noise1 = OrderedDict() if null_run and do_noise else None
-            cls_sxn0 = OrderedDict()
-            cls_null_sxn0 = OrderedDict() if null_run else None
-            cls_nxs0 = OrderedDict()
-            cls_null_nxs0 = OrderedDict() if null_run else None
-            cls_sxn1 = OrderedDict()
-            cls_null_sxn1 = OrderedDict() if null_run else None
-            cls_nxs1 = OrderedDict()
-            cls_null_nxs1 = OrderedDict() if null_run else None
+            cls_res = OrderedDict() if do_noise else None
+            cls_null_res = OrderedDict() if null_run and do_noise else None
+            for k in ["nxn0", "nxn1", "sxn0", "sxn1", "nxs0", "nxs1"]:
+                cls_res[k] = OrderedDict()
+                if null_run:
+                    cls_null_res[k] = OrderedDict()
 
             sig_cache = dict()
             noise_cache = dict()
-            if nsim_noise != 0:
-                nsim_min = min([nsim_sig, nsim_noise])
+            if num_noise != 0:
+                nsim_min = min([num_signal, num_noise])
             else:
-                nsim_min = nsim_sig
-            nsim_max = max([nsim_sig, nsim_noise])
+                nsim_min = num_signal
+            nsim_max = max([num_signal, num_noise])
             cls_all = np.zeros(
                 [nsim_max, len(map_pairs.items()), len(self.specs), self.lmax + 1]
             )
@@ -2879,19 +2821,27 @@ class XFaster(object):
                         ),
                         "debug",
                     )
-                    if isim < nsim_sig:
+                    if isim < num_signal:
                         simap_alms, sinull_alms = process_index(
-                            sig_files, sig_files2, idx, isim, sig_cache
+                            signal_files, signal_files2, idx, isim, sig_cache
                         )
                         sjmap_alms, sjnull_alms = process_index(
-                            sig_files, sig_files2, jdx, isim, sig_cache
+                            signal_files, signal_files2, jdx, isim, sig_cache
                         )
 
                         cls1_sig = self.alm2cl(simap_alms, sjmap_alms)
                         if null_run:
                             cls_null1_sig = self.alm2cl(sinull_alms, sjnull_alms)
 
-                    if do_noise and isim < nsim_noise:
+                        cls1t = np.copy(cls1_sig)
+                        if null_run:
+                            cls_null1t = np.copy(cls_null1_sig)
+
+                    if do_noise and isim < num_noise:
+                        cls1_res = OrderedDict()
+                        if null_run:
+                            cls_null1_res = OrderedDict()
+
                         nimap_alms, ninull_alms = process_index(
                             noise_files,
                             noise_files2,
@@ -2911,96 +2861,65 @@ class XFaster(object):
 
                         # need non-symmetric since will potentially modify these
                         # with different residuals for T, E, B
-                        cls1_noise0 = self.alm2cl(
-                            nimap_alms, njmap_alms, symmetric=False
-                        )
-                        cls1_noise1 = self.alm2cl(
-                            njmap_alms, nimap_alms, symmetric=False
-                        )
-                        cls1_noise = (cls1_noise0 + cls1_noise1) / 2
-                        cls1_sxn0 = self.alm2cl(simap_alms, njmap_alms, symmetric=False)
-                        cls1_nxs0 = self.alm2cl(nimap_alms, sjmap_alms, symmetric=False)
-                        cls1_sxn1 = self.alm2cl(njmap_alms, simap_alms, symmetric=False)
-                        cls1_nxs1 = self.alm2cl(sjmap_alms, nimap_alms, symmetric=False)
-                        cls1_sxn = (cls1_sxn0 + cls1_sxn1) / 2
-                        cls1_nxs = (cls1_nxs0 + cls1_nxs1) / 2
-                        if null_run:
-                            cls_null1_noise0 = self.alm2cl(
-                                ninull_alms, njnull_alms, symmetric=False
-                            )
-                            cls_null1_noise1 = self.alm2cl(
-                                njnull_alms, ninull_alms, symmetric=False
-                            )
-                            cls_null1_noise = (cls_null1_noise0 + cls_null1_noise1) / 2
-
-                            cls_null1_sxn0 = self.alm2cl(
-                                sinull_alms, njnull_alms, symmetric=False
-                            )
-                            cls_null1_nxs0 = self.alm2cl(
-                                ninull_alms, sjnull_alms, symmetric=False
-                            )
-                            cls_null1_sxn1 = self.alm2cl(
-                                njnull_alms, sinull_alms, symmetric=False
-                            )
-                            cls_null1_nxs1 = self.alm2cl(
-                                sjnull_alms, ninull_alms, symmetric=False
-                            )
-                            cls_null1_sxn = (cls_null1_sxn0 + cls_null1_sxn1) / 2
-                            cls_null1_nxs = (cls_null1_nxs0 + cls_null1_nxs1) / 2
-
-                        if isim < nsim_min:
-                            cls1t = cls1_sig + cls1_sxn + cls1_nxs + cls1_noise
+                        for k, cx, cy, cnx, cny in [
+                            ("nxn", nimap_alms, njmap_alms, ninull_alms, njnull_alms),
+                            ("sxn", simap_alms, njmap_alms, sinull_alms, njnull_alms),
+                            ("nxs", nimap_alms, sjmap_alms, ninull_alms, sjnull_alms),
+                        ]:
+                            k0, k1 = ["{}{}".format(k, i) for i in range(2)]
+                            cls1_res[k0] = self.alm2cl(cx, cy, symmetric=False)
+                            cls1_res[k1] = self.alm2cl(cy, cx, symmetric=False)
                             if null_run:
-                                cls_null1t = (
-                                    cls_null1_sig
-                                    + cls_null1_sxn
-                                    + cls_null1_nxs
-                                    + cls_null1_noise
+                                cls_null1_res[k0] = self.alm2cl(
+                                    cnx, cny, symmetric=False
                                 )
-                    else:
-                        cls1t = np.copy(cls1_sig)
+                                cls_null1_res[k1] = self.alm2cl(
+                                    cny, cnx, symmetric=False
+                                )
+
+                        # construct noise model
+                        cls1_noise = (cls1_res["nxn0"] + cls1_res["nxn1"]) / 2.0
                         if null_run:
-                            cls_null1t = np.copy(cls_null1_sig)
+                            cls_null1_noise = (
+                                cls_null1_res["nxn0"] + cls_null1_res["nxn1"]
+                            ) / 2.0
+
+                        # construct total model
+                        if isim < nsim_min:
+                            for k in cls1_res:
+                                cls1t += cls1_res[k] / 2.0
+                                if null_run:
+                                    cls_null1t += cls_null1_res[k] / 2.0
 
                     for s, spec in enumerate(self.specs):
                         quants = []
-                        if isim < nsim_sig:
+                        if isim < num_signal:
                             quants += [[cls_sig, cls1_sig]]
                             if null_run:
                                 quants += [[cls_null_sig, cls_null1_sig]]
 
-                        if do_noise and isim < nsim_noise:
-                            quants += [
-                                [cls_noise, cls1_noise],
-                                [cls_noise0, cls1_noise0],
-                                [cls_noise1, cls1_noise1],
-                                [cls_sxn0, cls1_sxn0],
-                                [cls_sxn1, cls1_sxn1],
-                                [cls_nxs0, cls1_nxs0],
-                                [cls_nxs1, cls1_nxs1],
-                            ]
+                        if do_noise and isim < num_noise:
+                            quants += [[cls_noise, cls1_noise]]
+                            quants += [[cls_res[k], cls1_res[k]] for k in cls_res]
                             if null_run:
+                                quants += [[cls_null_noise, cls_null1_noise]]
                                 quants += [
-                                    [cls_null_noise, cls_null1_noise],
-                                    [cls_null_noise0, cls_null1_noise0],
-                                    [cls_null_noise1, cls_null1_noise1],
-                                    [cls_null_sxn0, cls_null1_sxn0],
-                                    [cls_null_sxn1, cls_null1_sxn1],
-                                    [cls_null_nxs0, cls_null1_nxs0],
-                                    [cls_null_nxs1, cls_null1_nxs1],
+                                    [cls_null_res[k], cls_null1_res[k]]
+                                    for k in cls_null_res
                                 ]
                         if isim < nsim_min:
                             quants += [[cls_tot, cls1t]]
                             if null_run:
                                 quants += [[cls_null_tot, cls_null1t]]
 
-                        if len(quants):
-                            # running average
-                            for quant0, quant1 in quants:
-                                d = quant0.setdefault(spec, OrderedDict()).setdefault(
-                                    xname, np.zeros_like(quant1[s])
-                                )
-                                d[:] += (quant1[s] - d) / float(isim + 1)  # in-place
+                        # running average
+                        for quant0, quant1 in quants:
+                            d = quant0.setdefault(spec, OrderedDict()).setdefault(
+                                xname, np.zeros_like(quant1[s])
+                            )
+                            d[:] += (quant1[s] - d) / float(isim + 1)  # in-place
+
+                        # matrix form for efficient median
                         cls_all[isim][xind][s] = cls_tot[spec][xname]
                         if null_run:
                             cls_all_null[isim][xind][s] = cls_null_tot[spec][xname]
@@ -3010,6 +2929,7 @@ class XFaster(object):
                 cls_med[spec] = OrderedDict()
                 for xind, xname in enumerate(map_pairs):
                     cls_med[spec][xname] = cls_med_arr[xind][s]
+
             if null_run:
                 cls_null_med_arr = np.median(cls_all_null, axis=0)
                 for s, spec in enumerate(self.specs):
@@ -3017,27 +2937,16 @@ class XFaster(object):
                     for xind, xname in enumerate(map_pairs):
                         cls_null_med[spec][xname] = cls_null_med_arr[xind][s]
 
-            setattr(self, sig_field, cls_sig)
-            setattr(self, sig_null_field, cls_null_sig)
-            setattr(self, noise_field, cls_noise)
-            setattr(self, noise_null_field, cls_null_noise)
-            setattr(self, tot_field, cls_tot)
-            setattr(self, tot_null_field, cls_null_tot)
-            setattr(self, med_field, cls_med)
-            setattr(self, med_null_field, cls_null_med)
-
-            setattr(self, noise0_field, cls_noise0)
-            setattr(self, noise0_null_field, cls_null_noise0)
-            setattr(self, noise1_field, cls_noise1)
-            setattr(self, noise1_null_field, cls_null_noise1)
-            setattr(self, sxn0_field, cls_sxn0)
-            setattr(self, sxn0_null_field, cls_null_sxn0)
-            setattr(self, sxn1_field, cls_sxn1)
-            setattr(self, sxn1_null_field, cls_null_sxn1)
-            setattr(self, nxs0_field, cls_nxs0)
-            setattr(self, nxs0_null_field, cls_null_nxs0)
-            setattr(self, nxs1_field, cls_nxs1)
-            setattr(self, nxs1_null_field, cls_null_nxs1)
+            self.cls_signal = cls_sig
+            self.cls_signal_null = cls_null_sig
+            self.cls_noise = cls_noise
+            self.cls_noise_null = cls_null_noise
+            self.cls_sim = cls_tot
+            self.cls_sim_null = cls_null_tot
+            self.cls_med = cls_med
+            self.cls_med_null = cls_null_med
+            self.cls_res = cls_res
+            self.cls_res_null = cls_null_res
 
         def check_options():
             """
@@ -3081,8 +2990,7 @@ class XFaster(object):
                 # *_<sim_index>.fits, and will raise an error
                 # if this is not the case, or if the index is not found
                 file_indices = [
-                    int(os.path.splitext(x.rsplit("_")[-1])[0])
-                    for x in sims_attr["signal_files"][0]
+                    int(os.path.splitext(x.rsplit("_")[-1])[0]) for x in signal_files[0]
                 ]
                 file_index = file_indices.index(sim_index)
                 scache = {}
@@ -3091,8 +2999,8 @@ class XFaster(object):
 
                 for xname, (idx, jdx) in map_pairs.items():
                     simap_alms, sinull_alms = process_index(
-                        sims_attr["signal_files_sim"],
-                        sims_attr["signal_files_sim2"],
+                        signal_files_sim,
+                        signal_files_sim2,
                         idx,
                         file_index,
                         scache,
@@ -3102,8 +3010,8 @@ class XFaster(object):
                         sinull_alms = np.copy(sinull_alms)
                     if do_noise:
                         nimap_alms, ninull_alms = process_index(
-                            sims_attr["noise_files_sim"],
-                            sims_attr["noise_files_sim2"],
+                            noise_files_sim,
+                            noise_files_sim2,
                             idx,
                             file_index,
                             ncache,
@@ -3115,8 +3023,8 @@ class XFaster(object):
                                 sinull_alms += ninull_alms
                     if foreground_sims:
                         fimap_alms, finull_alms = process_index(
-                            sims_attr["foreground_files"],
-                            sims_attr["foreground_files2"],
+                            foreground_files,
+                            foreground_files2,
                             idx,
                             file_index,
                             fgcache,
@@ -3127,8 +3035,8 @@ class XFaster(object):
                                 sinull_alms += finull_alms
 
                     sjmap_alms, sjnull_alms = process_index(
-                        sims_attr["signal_files_sim"],
-                        sims_attr["signal_files_sim2"],
+                        signal_files_sim,
+                        signal_files_sim2,
                         jdx,
                         file_index,
                         scache,
@@ -3138,8 +3046,8 @@ class XFaster(object):
                         sjnull_alms = np.copy(sjnull_alms)
                     if do_noise:
                         njmap_alms, njnull_alms = process_index(
-                            sims_attr["noise_files_sim"],
-                            sims_attr["noise_files_sim2"],
+                            noise_files_sim,
+                            noise_files_sim2,
                             jdx,
                             file_index,
                             ncache,
@@ -3151,8 +3059,8 @@ class XFaster(object):
                                 sjnull_alms += njnull_alms
                     if foreground_sims:
                         fjmap_alms, fjnull_alms = process_index(
-                            sims_attr["foreground_files"],
-                            sims_attr["foreground_files2"],
+                            foreground_files,
+                            foreground_files2,
                             jdx,
                             file_index,
                             fgcache,
@@ -3191,12 +3099,7 @@ class XFaster(object):
             "cls_noise",
             "cls_sim",
             "cls_med",
-            "cls_noise0",
-            "cls_noise1",
-            "cls_sxn0",
-            "cls_sxn1",
-            "cls_nxs0",
-            "cls_nxs1",
+            "cls_res",
         ]
         if null_run:
             save_attrs += [
@@ -3204,12 +3107,7 @@ class XFaster(object):
                 "cls_noise_null",
                 "cls_sim_null",
                 "cls_med_null",
-                "cls_noise0_null",
-                "cls_noise1_null",
-                "cls_sxn0_null",
-                "cls_sxn1_null",
-                "cls_nxs0_null",
-                "cls_nxs1_null",
+                "cls_res_null",
             ]
 
         if transfer:
@@ -3575,7 +3473,7 @@ class XFaster(object):
                             d += alphas[0] * alphas[1] * t3
                             # subtract average template noise spectrum to debias
                             if sub_hm_noise:
-                                n = self.cls_tnoise_hm1xhm2[spec][xname]
+                                n = self.cls_template_noise["hm1:hm2"][spec][xname]
                                 d -= alphas[0] * alphas[1] * n
 
             self.cls_data_clean = cls_clean
@@ -3603,7 +3501,7 @@ class XFaster(object):
             save_name = "{}_xcorr".format(data_name)
             self.save_data(save_name, from_attrs=save_attrs)
 
-    def get_masked_template_noise(self, template_type):
+    def get_masked_template_noise(self):
         """
         Compute hm1, hm2, and hm1xhm2 template noise spectra from
         sim ensemble.
@@ -3613,28 +3511,17 @@ class XFaster(object):
         This method is called at the 'template_noise' checkpoint,
         and loads or saves a data dictionary with the following entries:
 
-            cls_tnoise_hm1 : <same shape as cls_data>
-            cls_tnoise_hm2 : <same shape as cls_data>
-            cls_tnoise_hm1xhm2 : <same shape as cls_data>
-
-        Arguments
-        ---------
-        template_type : str
-            Tag of the template maps directory (noise files in
-            template_noise_<template_type>).
+            cls_template_noise["hm1:hm1"] : <same shape as cls_data>
+            cls_template_noise["hm2:hm2"] : <same shape as cls_data>
+            cls_template_noise["hm1:hm2"] : <same shape as cls_data>
         """
+        template_type = self.template_type
         mask_files = self.mask_files
         map_tags = self.map_tags
         map_pairs = pt.tag_pairs(map_tags, index=True)
         num_maps = self.num_maps
         num_corr = self.num_corr
-        data_shape = self.data_shape
-
-        sims_attr = {}
-
-        sims_attr["template_noise_files"] = self.template_noise_files
-        sims_attr["template_noise_files2"] = self.template_noise_files2
-        sims_attr["num_template_noise"] = self.num_template_noise
+        data_shape = (3 * self.data_shape[0], self.data_shape[1])
 
         # convenience functions
         def process_index(files, idx, idx2=None, cache=None):
@@ -3673,22 +3560,13 @@ class XFaster(object):
             """
             Compute cross spectra.
             """
-            hm1_field = "cls_tnoise_hm1"
-            hm2_field = "cls_tnoise_hm2"
-            hm1xhm2_field = "cls_tnoise_hm1xhm2"
-
-            hm1_files = sims_attr["template_noise_files"]
-            hm2_files = sims_attr["template_noise_files2"]
-
-            nsim_tnoise = sims_attr["num_template_noise"]
-
-            cls_hm1 = OrderedDict()
-            cls_hm2 = OrderedDict()
-            cls_hm1xhm2 = OrderedDict()
+            cls_template_noise = OrderedDict()
+            for k in ["hm1:hm1", "hm2:hm2", "hm1:hm2"]:
+                cls_template_noise[k] = OrderedDict()
 
             hm1_cache = dict()
             hm2_cache = dict()
-            for isim in range(nsim_tnoise):
+            for isim in range(self.num_template_noise):
                 hm1_cache.clear()
                 hm2_cache.clear()
                 for xind, (xname, (idx, jdx)) in enumerate(map_pairs.items()):
@@ -3698,36 +3576,36 @@ class XFaster(object):
                         ),
                         "debug",
                     )
-                    hm1imap_alms = process_index(hm1_files, idx, isim, hm1_cache)
-                    hm1jmap_alms = process_index(hm1_files, jdx, isim, hm1_cache)
-                    hm2imap_alms = process_index(hm2_files, idx, isim, hm2_cache)
-                    hm2jmap_alms = process_index(hm2_files, jdx, isim, hm2_cache)
+                    hm1i = process_index(
+                        self.template_noise_files, idx, isim, hm1_cache
+                    )
+                    hm1j = process_index(
+                        self.template_noise_files, jdx, isim, hm1_cache
+                    )
+                    hm2i = process_index(
+                        self.template_noise_files2, idx, isim, hm2_cache
+                    )
+                    hm2j = process_index(
+                        self.template_noise_files2, jdx, isim, hm2_cache
+                    )
 
-                    cls1_hm1 = self.alm2cl(hm1imap_alms, hm1jmap_alms)
-                    cls1_hm2 = self.alm2cl(hm2imap_alms, hm2jmap_alms)
-                    cls1_hm1xhm2 = 0.5 * (
-                        self.alm2cl(hm1imap_alms, hm2jmap_alms)
-                        + self.alm2cl(hm2imap_alms, hm1jmap_alms)
+                    cls1 = OrderedDict()
+                    cls1["hm1:hm1"] = self.alm2cl(hm1i, hm1j)
+                    cls1["hm2:hm2"] = self.alm2cl(hm2i, hm2j)
+                    cls1["hm1:hm2"] = 0.5 * (
+                        self.alm2cl(hm1i, hm2j) + self.alm2cl(hm2i, hm1j)
                     )
 
                     for s, spec in enumerate(self.specs):
-                        quants = [
-                            [cls_hm1, cls1_hm1],
-                            [cls_hm2, cls1_hm2],
-                            [cls_hm1xhm2, cls1_hm1xhm2],
-                        ]
-                        # running average
-                        for quant0, quant1 in quants:
-                            d = quant0.setdefault(spec, OrderedDict()).setdefault(
-                                xname, np.zeros_like(quant1[s])
+                        for q0, q1 in [(cls_template_noise[k], cls1[k]) for k in cls1]:
+                            d = q0.setdefault(spec, OrderedDict()).setdefault(
+                                xname, np.zeros_like(q1[s])
                             )
-                            d[:] += (quant1[s] - d) / float(isim + 1)  # in-place
+                            d[:] += (q1[s] - d) / float(isim + 1)  # in-place
 
-            setattr(self, hm1_field, cls_hm1)
-            setattr(self, hm2_field, cls_hm2)
-            setattr(self, hm1xhm2_field, cls_hm1xhm2)
+            self.cls_template_noise = cls_template_noise
 
-        save_attrs = ["cls_tnoise_hm1", "cls_tnoise_hm2", "cls_tnoise_hm1xhm2"]
+        save_attrs = ["cls_template_noise"]
 
         ### this block is so sims with template type like
         # 353_100_gauss_003 can use ensemble in 353_100_gauss
@@ -3745,7 +3623,7 @@ class XFaster(object):
             fields=save_attrs,
             to_attrs=True,
             shape=data_shape,
-            shape_ref="cls_tnoise_hm1",
+            shape_ref="cls_template_noise",
         )
         if ret is not None:
             return ret
@@ -4423,15 +4301,12 @@ class XFaster(object):
         lmax = self.lmax  # 2 * lmax
 
         if not transfer_run:
-            # expand transfer function terms
+            # collect transfer function terms
             transfer = OrderedDict()
             for spec in specs:
                 transfer[spec] = OrderedDict()
-                stag = "cmb_{}".format(spec)
                 for tag in map_tags:
-                    transfer[spec][tag] = pt.expand_qb(
-                        self.qb_transfer[stag][tag], self.bin_def[stag], lmax + 1
-                    )
+                    transfer[spec][tag] = self.transfer[spec][tag]
 
         lk = slice(0, lmax + 1)
         mll = OrderedDict()
@@ -4565,12 +4440,7 @@ class XFaster(object):
         if self.nbins_res > 0 and not transfer_run:
             comps += ["res"]
             cls_noise = self.cls_noise_null if self.null_run else self.cls_noise
-            cls_noise0 = self.cls_noise0_null if self.null_run else self.cls_noise0
-            cls_noise1 = self.cls_noise1_null if self.null_run else self.cls_noise1
-            cls_sxn0 = self.cls_sxn0_null if self.null_run else self.cls_sxn0
-            cls_sxn1 = self.cls_sxn1_null if self.null_run else self.cls_sxn1
-            cls_nxs0 = self.cls_nxs0_null if self.null_run else self.cls_nxs0
-            cls_nxs1 = self.cls_nxs1_null if self.null_run else self.cls_nxs1
+            cls_res = self.cls_res_null if self.null_run else self.cls_res
 
         ell = np.arange(lmax_kern + 1)
 
@@ -4671,34 +4541,31 @@ class XFaster(object):
                     for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
                         if "res" in comp:
                             s0, s1 = spec
-                            res_tags = {
-                                "s0m0": "res_{}_{}".format(s0 * 2, tag1),
-                                "s0m1": "res_{}_{}".format(s0 * 2, tag2),
-                                "s1m0": "res_{}_{}".format(s1 * 2, tag1),
-                                "s1m1": "res_{}_{}".format(s1 * 2, tag2),
-                            }
                             bd = [[0, lmax + 1]]
                             # if any component of XY spec is in residual bin
                             # def, use that bin def
-                            for k, v in res_tags.items():
-                                spec0 = v.split("_")[1]
-                                if v not in self.bin_def:
-                                    if spec0 in ["ee", "bb"]:
-                                        v = v.replace(spec0, "eebb")
-                                        if v in self.bin_def:
-                                            bd = self.bin_def[v]
-                                else:
-                                    bd = self.bin_def[v]
-                            for comp, cls in [
-                                ("res0_nxn", cls_noise0),
-                                ("res1_nxn", cls_noise1),
-                                ("res0_sxn", cls_sxn0),
-                                ("res1_sxn", cls_sxn1),
-                                ("res0_nxs", cls_nxs0),
-                                ("res1_nxs", cls_nxs1),
-                                ("res", cls_noise),
+                            for v in [
+                                "res_{}_{}".format(s0 * 2, tag1),
+                                "res_{}_{}".format(s0 * 2, tag2),
+                                "res_{}_{}".format(s1 * 2, tag1),
+                                "res_{}_{}".format(s1 * 2, tag2),
                             ]:
-                                stag = "{}_{}".format(comp, spec)
+                                if v in self.bin_def:
+                                    bd = self.bin_def[v]
+                                    break
+                                spec0 = v.split("_")[1]
+                                if spec0 in ["ee", "bb"]:
+                                    v = v.replace(spec0, "eebb")
+                                    if v in self.bin_def:
+                                        bd = self.bin_def[v]
+                                        break
+
+                            comp_list = [("res", cls_noise)] + [
+                                ("res_{}".format(k), cls_res[k]) for k in cls_res
+                            ]
+
+                            for res_comp, cls in comp_list:
+                                stag = "{}_{}".format(res_comp, spec)
                                 cbl.setdefault(stag, OrderedDict())
                                 cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
                                 cl1 = cls[spec][xname]
@@ -4882,14 +4749,14 @@ class XFaster(object):
                         qbr = {"s0m0": 1, "s0m1": 1, "s1m0": 1, "s1m1": 1}
 
                         for k, v in res_tags.items():
-                            spec0 = v.split("_")[1]
-                            if v not in qb:
+                            if v in qb:
+                                qbr[k] = np.sqrt(1 + qb[v])[:, None]
+                            else:
+                                spec0 = v.split("_")[1]
                                 if spec0 in ["ee", "bb"]:
                                     res_tags[k] = v.replace(spec0, "eebb")
                                     if res_tags[k] in qb:
                                         qbr[k] = np.sqrt(1 + qb[res_tags[k]])[:, None]
-                            else:
-                                qbr[k] = np.sqrt(1 + qb[v])[:, None]
 
                             if np.any(np.isnan(qbr[k])):
                                 self.warn(
@@ -4900,31 +4767,24 @@ class XFaster(object):
                                 )
                                 qbr[k][np.isnan(qbr[k])] = 1
 
-                        cl1 = np.zeros_like(cl1)
-                        for k1, k2, k3 in [
-                            (
-                                "s0m0",
-                                "s1m1",
-                                "res0_nxn_{}".format(spec),
-                            ),  # N_s0m0 x N_s1m1
-                            (
-                                "s1m0",
-                                "s0m1",
-                                "res1_nxn_{}".format(spec),
-                            ),  # N_s1m0 x N_s0m1
-                        ]:
-                            r = qbr[k1] * qbr[k2] - 1
-                            cl1 += (r * cbl[k3][xname]).sum(axis=0)
-
+                        res_list = [
+                            ("s0m0", "s1m1", "nxn0"),  # N_s0m0 x N_s1m1
+                            ("s1m0", "s0m1", "nxn1"),  # N_s1m0 x N_s0m1
+                        ]
                         if self.null_run:
-                            for k1, k3 in [
-                                ("s1m1", "res0_sxn_{}".format(spec)),  # S_s0m0 x N_s1m1
-                                ("s0m1", "res1_sxn_{}".format(spec)),  # S_s1m0 x N_s0m1
-                                ("s0m0", "res0_nxs_{}".format(spec)),  # N_s0m0 x S_s1m1
-                                ("s1m0", "res1_nxs_{}".format(spec)),  # N_s1m0 x S_s0m1
-                            ]:
-                                r = qbr[k1] - 1
-                                cl1 += (r * cbl[k3][xname]).sum(axis=0)
+                            res_list += [
+                                (None, "s1m1", "sxn0"),  # S_s0m0 x N_s1m1
+                                (None, "s0m1", "sxn1"),  # S_s1m0 x N_s0m1
+                                ("s0m0", None, "nxs0"),  # N_s0m0 x S_s1m1
+                                ("s1m0", None, "nxs1"),  # N_s1m0 x S_s0m1
+                            ]
+
+                        cl1 = np.zeros_like(cl1)
+                        for k1, k2, k3 in res_list:
+                            q1 = qbr[k1] if k1 else 1.0
+                            q2 = qbr[k2] if k2 else 1.0
+                            rtag = "res_{}_{}".format(k3, spec)
+                            cl1 += ((q1 * q2 - 1.0) * cbl[rtag][xname]).sum(axis=0)
 
                         # all of these were asymmetric specs, divide by 2 for mean
                         cl1 /= 2.0
@@ -5859,6 +5719,7 @@ class XFaster(object):
             If ``transfer_run`` is False, this dictionary also contains::
 
                 qb_transfer : transfer function amplitudes
+                transfer : ell-by-ell transfer function
                 nbins_res : number of residual bins
 
 
@@ -6126,7 +5987,10 @@ class XFaster(object):
             )
 
         if not transfer_run:
-            out.update(qb_transfer=self.qb_transfer)
+            out.update(
+                qb_transfer=self.qb_transfer,
+                transfer=self.transfer,
+            )
             if self.template_cleaned:
                 out.update(template_alpha=self.template_alpha)
 
@@ -6278,7 +6142,7 @@ class XFaster(object):
         converge_criteria=0.005,
         iter_max=200,
         save_iters=False,
-        fix_bb_xfer=False,
+        fix_bb_transfer=False,
     ):
         """
         Compute the transfer function from signal simulations created using
@@ -6298,14 +6162,14 @@ class XFaster(object):
         save_iters : bool
             If True, the output data from each Fisher iteration are stored
             in an individual npz file.
-        fix_bb_xfer : bool
+        fix_bb_transfer : bool
             If True, after transfer functions have been calculated, impose
             the BB xfer is exactly equal to the EE transfer.
 
         Returns
         -------
-        qb_transfer : OrderedDict
-            Binned transfer function for each map
+        transfer : OrderedDict
+            Ell-by-ell transfer function for each map
 
         Notes
         -----
@@ -6318,6 +6182,8 @@ class XFaster(object):
                 bin definition array (see ``get_bin_def``)
             qb_transfer : (num_maps, nbins)
                 binned transfer function for each map
+            transfer : (num_maps, nbins, lmax + 1)
+                ell-by-ell transfer function for each map
 
         Additionally the final output of ``fisher_iterate`` is stored
         in a dictionary called ``transfer_map<idx>`` for each map.
@@ -6329,7 +6195,7 @@ class XFaster(object):
 
         opts = dict(
             converge_criteria=converge_criteria,
-            fix_bb_xfer=fix_bb_xfer,
+            fix_bb_transfer=fix_bb_transfer,
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
         )
@@ -6347,15 +6213,39 @@ class XFaster(object):
             value_ref=opts,
         )
 
+        # function for converting qb's to ell-by-ell transfer function
+        def expand_transfer(qb_transfer, bin_def):
+            transfer = OrderedDict()
+            for spec in self.specs:
+                stag = "cmb_{}".format(spec)
+                transfer[spec] = OrderedDict()
+                qbs = qb_transfer[stag]
+                bd = bin_def[stag]
+                for m0, qb in qbs.items():
+                    if spec == "bb" and fix_bb_transfer:
+                        transfer[spec][m0] = transfer["ee"][m0]
+                    elif spec in ["tb", "eb"]:
+                        speca, specb = [s + s for s in spec]
+                        transfer[spec][m0] = np.sqrt(
+                            np.abs(transfer[speca][m0] * transfer[specb][m0])
+                        )
+                    else:
+                        transfer[spec][m0] = pt.expand_qb(qb, bd, self.lmax + 1)
+            return transfer
+
         if ret is not None:
             self.qb_transfer = ret["qb_transfer"]
-            return ret["qb_transfer"]
+            if "transfer" in ret:
+                self.transfer = ret["transfer"]
+            else:
+                self.transfer = expand_transfer(ret["qb_transfer"], ret["bin_def"])
+            return self.transfer
 
         self.qb_transfer = OrderedDict()
         for spec in self.specs:
             self.qb_transfer["cmb_" + spec] = OrderedDict()
 
-        success = False
+        success = True
         msg = ""
 
         for im0, m0 in enumerate(self.map_tags):
@@ -6365,7 +6255,6 @@ class XFaster(object):
                         self.nbins_cmb // len(self.specs)
                     )
                 self.log("Setting map {} transfer to unity".format(m0), "info")
-                success = True
                 continue
 
             self.log(
@@ -6386,8 +6275,8 @@ class XFaster(object):
             )
             qb = ret["qb"]
 
-            success = ret["success"]
-            if not success:
+            success = success and ret["success"]
+            if not ret["success"]:
                 msg = "Error in fisher_iterate for map {}".format(m0)
 
             # fix negative amplitude bins
@@ -6414,8 +6303,8 @@ class XFaster(object):
                         )
                         success = False
 
-            # fix the BB transfer to EE, if desired
-            if fix_bb_xfer:
+            # fix the BB transfer function to EE, if desired
+            if fix_bb_transfer:
                 qb["cmb_bb"] = qb["cmb_ee"]
 
             # fix TB/EB transfer functions
@@ -6426,9 +6315,14 @@ class XFaster(object):
             for stag, qbdat in qb.items():
                 self.qb_transfer[stag][m0] = qbdat
 
+        if success:
+            self.transfer = expand_transfer(self.qb_transfer, self.bin_def)
+        else:
+            self.transfer = None
+
         self.save_data(
             "{}{}".format("" if success else "ERROR_", save_name),
-            from_attrs=["nbins", "bin_def", "qb_transfer", "map_tags"],
+            from_attrs=["nbins", "bin_def", "qb_transfer", "map_tags", "transfer"],
             cls_shape=self.cls_shape,
             success=success,
             **opts
@@ -6437,7 +6331,7 @@ class XFaster(object):
         if not success:
             raise RuntimeError("Error computing transfer function: {}".format(msg))
 
-        return self.qb_transfer
+        return self.transfer
 
     def get_bandpowers(
         self,
