@@ -478,7 +478,7 @@ class XFaster(object):
         signal_type_sim=None,
         signal_transfer_type=None,
         suffix="",
-        foreground_type=None,
+        foreground_type_sim=None,
         template_type=None,
         sub_planck=False,
     ):
@@ -714,9 +714,9 @@ class XFaster(object):
             signal_files_sim = signal_files
 
         # find all corresponding foreground sims for sim_index run
-        if foreground_type is not None:
+        if foreground_type_sim is not None:
             foreground_root = os.path.join(
-                data_root, "foreground_{}".format(foreground_type)
+                data_root, "foreground_{}".format(foreground_type_sim)
             )
             num_foreground_sim = None
             foreground_files = []
@@ -848,7 +848,7 @@ class XFaster(object):
         signal_transfer_type=None,
         data_root2=None,
         data_subset2=None,
-        foreground_type=None,
+        foreground_type_sim=None,
         template_type=None,
         sub_planck=False,
     ):
@@ -882,7 +882,7 @@ class XFaster(object):
                     ...
                     -> mask_map_90.fits
                     -> mask_map_150.fits
-                -> foreground_<foreground_type>
+                -> foreground_<foreground_type_sim>
                     (same filenames as signal_<signal_type>)
                 -> templates_<template_type>
                    -> halfmission-1
@@ -954,8 +954,8 @@ class XFaster(object):
             sets are treated as two halves of a null test.  In this case,
             XFaster computes the sum and difference spectra for each map
             tag in order to estimate a null spectrum.
-        foreground_type : string
-            Tag for directory (foreground_<foreground_type>) where foreground
+        foreground_type_sim : string
+            Tag for directory (foreground_<foreground_type_sim>) where foreground
             sims are that should be added to the signal and noise sims
             when running in sim_index mode. Note: the same foreground sim
             map is used for each sim_index, despite signal and noise sims
@@ -1014,7 +1014,7 @@ class XFaster(object):
             signal_transfer_type=signal_transfer_type,
             signal_subset=signal_subset,
             noise_subset=noise_subset,
-            foreground_type=foreground_type,
+            foreground_type_sim=foreground_type_sim,
         )
         ref_opts = dict(data_subset=data_subset, **opts)
         if null_run:
@@ -3179,7 +3179,7 @@ class XFaster(object):
         foregrounds.
         Signal maps are signal_scalar + fake_data_r * signal_tensor
         where scalar maps are assumed to be in signal_r0 directory
-        and tensor maps are assumed to be in signal_r0tens directory.
+        and tensor maps are assumed to be in signal_r1tens directory.
         sim_index is used to determine which sims. Noise maps taken
         from usual noise directory. Templates read read from
         templates_fake_data_template/halfmission-1.
@@ -4489,32 +4489,19 @@ class XFaster(object):
                                             bd = self.bin_def[v]
                                 else:
                                     bd = self.bin_def[v]
-                            for comp in [
-                                "res0_nxn",
-                                "res1_nxn",
-                                "res0_sxn",
-                                "res1_sxn",
-                                "res0_nxs",
-                                "res1_nxs",
-                                "res",
+                            for comp, cls in [
+                                ("res0_nxn", cls_noise0),
+                                ("res1_nxn", cls_noise1),
+                                ("res0_sxn", cls_sxn0),
+                                ("res1_sxn", cls_sxn1),
+                                ("res0_nxs", cls_nxs0),
+                                ("res1_nxs", cls_nxs1),
+                                ("res", cls_noise),
                             ]:
                                 stag = "{}_{}".format(comp, spec)
                                 cbl.setdefault(stag, OrderedDict())
                                 cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
-                                if comp == "res0_nxn":
-                                    cl1 = cls_noise0[spec][xname]
-                                elif comp == "res1_nxn":
-                                    cl1 = cls_noise1[spec][xname]
-                                elif comp == "res0_sxn":
-                                    cl1 = cls_sxn0[spec][xname]
-                                elif comp == "res1_sxn":
-                                    cl1 = cls_sxn1[spec][xname]
-                                elif comp == "res0_nxs":
-                                    cl1 = cls_nxs0[spec][xname]
-                                elif comp == "res1_nxs":
-                                    cl1 = cls_sxn1[spec][xname]
-                                elif comp == "res":
-                                    cl1 = cls_noise[spec][xname]
+                                cl1 = cls[spec][xname]
                                 for idx, (left, right) in enumerate(bd):
                                     lls = slice(left, right)
                                     cbl[stag][xname][idx, lls] = np.copy(cl1[lls])
@@ -4542,32 +4529,24 @@ class XFaster(object):
                             mspec = spec + "_mix"
                             mk_arr[si - 1, xi] = mll[mspec][xname][ls, lk]
 
+                md = None
                 if s_arr.ndim == 1:
                     s_arr_md = s_arr
                 else:
                     s_arr_md = s_arr[1:3]
-                if not beam_error:
-                    d = k_arr * s_arr
+                d = k_arr * s_arr
+                if self.pol:
+                    md = mk_arr * s_arr_md
+                if beam_error:
+                    d = OrderedDict([(k, d * b_arr[k]) for k in beam_keys])
                     if self.pol:
-                        md = mk_arr * s_arr_md
-                    else:
-                        md = None
-                    if comp == "fg":
-                        self.d_fg = np.copy(d)
+                        md = OrderedDict([(k, md * b_arr[k]) for k in beam_keys])
+                if comp == "fg":
+                    self.d_fg = copy.deepcopy(d)
+                    self.md_fg = copy.deepcopy(md)
 
-                        self.md_fg = np.copy(md)
-                else:
-                    d = OrderedDict([(k, k_arr * b_arr[k] * s_arr) for k in beam_keys])
-                    if self.pol:
-                        md = OrderedDict(
-                            [(k, mk_arr * b_arr[k] * s_arr_md) for k in beam_keys]
-                        )
-                    else:
-                        md = None
-                    if comp == "fg":
-                        self.d_fg = copy.deepcopy(d)
-                        self.md_fg = copy.deepcopy(md)
                 bin_things(comp, d, md)
+
         return cbl
 
     def get_model_spectra(
@@ -4700,68 +4679,52 @@ class XFaster(object):
                             "s1m0": "res_{}_{}".format(s1 * 2, tag1),
                             "s1m1": "res_{}_{}".format(s1 * 2, tag2),
                         }
-                        qb_fac = {"s0m0": 1, "s0m1": 1, "s1m0": 1, "s1m1": 1}
+                        qbr = {"s0m0": 1, "s0m1": 1, "s1m0": 1, "s1m1": 1}
 
                         for k, v in res_tags.items():
                             spec0 = v.split("_")[1]
                             if v not in qb:
                                 if spec0 in ["ee", "bb"]:
                                     res_tags[k] = v.replace(spec0, "eebb")
-                                    if res_tags[k] not in qb:
-                                        # if not fitting EE/BB resids
-                                        qb_fac[k] = 1
-                                    else:
-                                        qb_fac[k] = np.sqrt(1 + qb[res_tags[k]])[
-                                            :, None
-                                        ]
-                                else:
-                                    # this will happen for specs with T
-                                    # with no T resids fit
-                                    qb_fac[k] = 1
+                                    if res_tags[k] in qb:
+                                        qbr[k] = np.sqrt(1 + qb[res_tags[k]])[:, None]
                             else:
-                                qb_fac[k] = np.sqrt(1 + qb[v])[:, None]
+                                qbr[k] = np.sqrt(1 + qb[v])[:, None]
 
-                            if np.any(np.isnan(qb_fac[k])):
+                            if np.any(np.isnan(qbr[k])):
                                 self.warn(
                                     "Unphysical residuals fit, "
                                     "setting to zero {} bins {}".format(
-                                        spec, np.where(np.isnan(qb_fac[k]))
+                                        spec, np.where(np.isnan(qbr[k]))
                                     )
                                 )
-                                qb_fac[k][np.isnan(qb_fac[k])] = 1
+                                qbr[k][np.isnan(qbr[k])] = 1
 
-                        # N_s0_map0 x N_s1_map1
-                        cl1 = (
-                            (qb_fac["s0m0"] * qb_fac["s1m1"] - 1)
-                            * cbl["res0_nxn_{}".format(spec)][xname]
-                        ).sum(axis=0)
-                        # N_s1_map0 x N_s0_map1
-                        cl1 += (
-                            (qb_fac["s1m0"] * qb_fac["s0m1"] - 1)
-                            * cbl["res1_nxn_{}".format(spec)][xname]
-                        ).sum(axis=0)
+                        cl1 = np.zeros_like(cl1)
+                        for k1, k2, k3 in [
+                            (
+                                "s0m0",
+                                "s1m1",
+                                "res0_nxn_{}".format(spec),
+                            ),  # N_s0m0 x N_s1m1
+                            (
+                                "s1m0",
+                                "s0m1",
+                                "res1_nxn_{}".format(spec),
+                            ),  # N_s1m0 x N_s0m1
+                        ]:
+                            r = qbr[k1] * qbr[k2] - 1
+                            cl1 += (r * cbl[k3][xname]).sum(axis=0)
+
                         if self.null_run:
-                            # S_s0_map0 x N_s1_map1
-                            cl1 += (
-                                (qb_fac["s1m1"] - 1)
-                                * cbl["res0_sxn_{}".format(spec)][xname]
-                            ).sum(axis=0)
-                            # S_s1_map0 x N_s0_map1
-                            cl1 += (
-                                (qb_fac["s0m1"] - 1)
-                                * cbl["res1_sxn_{}".format(spec)][xname]
-                            ).sum(axis=0)
-
-                            # N_s0_map0 x S_s1_map1
-                            cl1 += (
-                                (qb_fac["s0m0"] - 1)
-                                * cbl["res0_nxs_{}".format(spec)][xname]
-                            ).sum(axis=0)
-                            # N_s1_map0 x S_s0_map1
-                            cl1 += (
-                                (qb_fac["s1m0"] - 1)
-                                * cbl["res1_nxs_{}".format(spec)][xname]
-                            ).sum(axis=0)
+                            for k1, k3 in [
+                                ("s1m1", "res0_sxn_{}".format(spec)),  # S_s0m0 x N_s1m1
+                                ("s0m1", "res1_sxn_{}".format(spec)),  # S_s1m0 x N_s0m1
+                                ("s0m0", "res0_nxs_{}".format(spec)),  # N_s0m0 x S_s1m1
+                                ("s1m0", "res1_nxs_{}".format(spec)),  # N_s1m0 x S_s0m1
+                            ]:
+                                r = qbr[k1] - 1
+                                cl1 += (r * cbl[k3][xname]).sum(axis=0)
 
                         # all of these were asymmetric specs, divide by 2 for mean
                         cl1 /= 2.0
@@ -5459,7 +5422,7 @@ class XFaster(object):
 
             # compute prefactors
             ells = np.arange(0, self.lmax + 1)
-            lfac = 2.0 * np.pi / (2.0 * ells + 1.0)
+            lfac = ells * (ells + 1.0) / (2.0 * ells + 1.0)
 
             # compute binning term
             arg = np.einsum("ij,kljm->klim", inv_fish, mat)
@@ -5492,7 +5455,8 @@ class XFaster(object):
                 wbl1 = np.einsum("iil,ijkl,jilm->km", gmat, sarg, smat) * lfac * chi_bl
 
                 # check normalization
-                norm = (2.0 * ells + 1.0) / 4.0 / np.pi
+                norm = np.zeros_like(lfac)
+                norm[1:] = 1.0 / (2.0 * lfac[1:])
                 cls_shape = self.cls_shape[k][: len(norm)]
                 self.log(
                     "{} window function normalization: {}".format(
@@ -5502,8 +5466,7 @@ class XFaster(object):
                 )
 
                 # normalization for Cb and Db, for CosmoMC and friends
-                wnorm = np.sum(wbl1 * norm, axis=-1)
-                wbl1 *= ells * (ells + 1.0) / 2.0 / np.pi / wnorm[:, None]
+                wbl1 /= np.sum(wbl1 * norm, axis=-1)[:, None]
                 wbl[k] = wbl1
 
             return wbl
@@ -6323,13 +6286,13 @@ class XFaster(object):
         # check all options that require rerunning fisher iterations
         opts = dict(
             converge_criteria=converge_criteria,
-            delta_beta_prior=delta_beta_prior,
             cond_noise=cond_noise,
             null_first_cmb=null_first_cmb,
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
         )
-
+        if 'delta_beta' in self.bin_def:
+            opts.update(delta_beta_prior=delta_beta_prior)
         if self.template_cleaned:
             opts.update(template_alpha=self.template_alpha)
         self.return_cls = return_cls
@@ -6971,7 +6934,7 @@ class XFaster(object):
             likefile = self.get_filename(
                 save_name, ext=".txt", map_tag=map_tag, extra_tag=file_tag, bp_opts=True
             )
-            rs = np.linspace(0, 2, 500)
+            rs = np.linspace(0, 3, 500)
             likes = np.zeros_like(rs)
             for idx, r in enumerate(rs):
                 like = log_like(r=r)
@@ -6984,7 +6947,7 @@ class XFaster(object):
             np.savetxt(likefile, np.column_stack((rs, likes)), header=header)
 
         if not mcmc:
-            return
+            return [rs, likes]
 
         # run chains!
         import emcee
