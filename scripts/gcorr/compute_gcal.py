@@ -1,6 +1,6 @@
-'''
+"""
 A script for computing g_corr factor from simulation bandpowers.
-'''
+"""
 import os
 import glob
 import numpy as np
@@ -13,199 +13,114 @@ from xfaster import parse_tools as pt
 
 P = ap.ArgumentParser()
 P.add_argument("--gcorr-config", help="The config file for gcorr computation")
+P.add_argument("output_tag", help="Which map tag")
+P.add_argument("-r", "--root", default="xfaster_gcal", help="XFaster outputs directory")
+args = P.parse_args()
+
+output_tag = args.output_tag
+output_root = args.root
 
 assert os.path.exists(args.gcorr_config), "Missing config file {}".format(
     args.gcorr_config
 )
 g_cfg = ConfigParser()
 g_cfg.read(args.gcorr_config)
+null = g_cfg.getboolean("gcorr_opts", "null")
+if null:
+    # no sample variance used for null tests
+    fish_name = "invfish_nosampvar"
+else:
+    fish_name = "invfish"
 
-specs = ['tt', 'ee', 'bb', 'te']
-if g_cfg.getboolean("xfaster_opts", "tbeb"):
-    specs += ['eb', 'tb']
+specs = ["tt", "ee", "bb", "te", "eb", "tb"]
+
+nsim = g_cfg.getint("gcorr_opts", "nsim")
 
 # use gauss model for null bandpowers
 def gauss(qb, amp, width, offset):
-    return amp * np.exp(-width*(qb - offset)**2)
+    return amp * np.exp(-width * (qb - offset) ** 2)
+
 
 # use lognormal model for signal bandpowers
 def lognorm(qb, amp, width, offset):
     return gauss(np.log(qb), amp, width, offset)
 
-def xfaster_run_ensemble(output_root=None, output_tag=None):
 
-    if output_root is None:
-        output_root = os.getcwd()
-    if output_tag is not None:
-        output_root = os.path.join(output_root, output_tag)
-        output_tag = '_{}'.format(output_tag)
+# Compute the correction factor
+if output_root is None:
+    output_root = os.getcwd()
+if output_tag is not None:
+    output_root = os.path.join(output_root, output_tag)
+    output_tag = "_{}".format(output_tag)
+else:
+    output_tag = ""
+
+file_glob = os.path.join(output_root, "bandpowers_sim*{}.npz".format(output_tag))
+files = sorted(glob.glob(file_glob))
+if not len(files):
+    raise OSError("No bandpowers files found in {}".format(output_root))
+
+out = {}
+inv_fishes = None
+qbs = {}
+
+for spec in specs:
+    qbs[spec] = None
+
+for filename in files:
+    bp = xf.load_and_parse(filename)
+    inv_fish = bp[fish_name]
+    bad = np.where(np.diag(inv_fish) < 0)[0]
+    if len(bad):
+        # this happens rarely and we won't use those sims
+        print("Found negative fisher values in {}: {}".format(filename, bad))
+        continue
+
+    if inv_fishes is None:
+        inv_fishes = np.diag(inv_fish)
     else:
-        output_tag = ''
-
-    mean_file = os.path.join(
-        output_root, 'bandpowers_mean{}.npz'.format(output_tag))
-    bp_mean = xf.load_and_parse(mean_file)
-    file_glob = os.path.join(
-        output_root, 'bandpowers_sim[0-9][0-9][0-9][0-9]{}.npz'.format(output_tag)
-    )
-    files = sorted(glob.glob(file_glob))
-    if not len(files):
-        raise OSError("No bandpowers files found in {}".format(output_root))
-
-    out = {'data_version': 1, 'bin_def': bp_mean['bin_def'],
-           'inv_fish': bp_mean['inv_fish'], 'qb_like': bp_mean['qb_like']}
-    count = 0
-    inv_fishes = []
-    qbs = {}
-
-    if Plot:
-        plt.plot([0,250], [0.2, 0.2], 'k-')
-        plt.errorbar(bp_mean['ellb']['cmb_bb'], bp_mean['cb']['cmb_bb'],
-                 bp_mean['dcb']['cmb_bb'], label='ensemble_mean')
-        plt.legend()
-        plt.ylim(-0, 0.4)
-        plt.title('{} GHz BB'.format(output_tag[1:]))
-        plt.savefig(os.path.join(plot_root, 'bb_spec{}.png'.format(output_tag)))
-        plt.close()
-
-    qb_err = pt.arr_to_dict(np.sqrt(np.diag(bp_mean['inv_fish'])),
-                            bp_mean['bin_def'])
-    qb_err_fix = pt.arr_to_dict(
-        1. / np.sqrt(np.diag(np.linalg.inv(bp_mean['inv_fish']))),
-        bp_mean['bin_def'])
+        inv_fishes = np.vstack(inv_fishes, np.diag(inv_fish))
 
     for spec in specs:
-        qbs[spec] = []
-    for filename in files:
-        bp = xf.load_and_parse(filename)
-        inv_fish = bp['inv_fish']
+        if qbs[spec] is None:
+            qbs[spec] = bp["qb"]["cmb_{}".format(spec)]
+        else:
+            qbs[spec] = np.vstack(qbs[spec], bp["qb"]["cmb_{}".format(spec)])
 
-        bad = np.where(np.diag(inv_fish) < 0)[0]
-        if len(bad):
-            print("Found negative fisher values in {}: {}".format(filename, bad))
-            continue
+# Get average XF-estimated variance
+xf_var_mean = np.mean(inv_fishes, axis=0)
+xf_var = pt.arr_to_dict(xf_var_mean, bp["qb"])
 
-        for spec in specs:
-            qbs[spec].append(bp['qb']['cmb_{}'.format(spec)])
+out["bin_def"] = bp["bin_def"]
+nbins = len(out["bin_def"])
+out["gcorr"] = OrderedDict()
 
-        count += 1
-        del bp
+for spec in specs:
+    stag = "cmb_{}".format(spec)
+    out["gcorr"][stag] = np.ones(nbins)
+    for b0 in np.arange(nbins):
+        hist, bins = np.histogram(
+            np.asarray(qbs[spec])[:, b0], density=True, bins=int(nsims / 10.0)
+        )
+        bc = (bins[:-1] + bins[1:]) / 2.0
+        sig0 = np.std(qbs[stag][b0])
+        A0 = np.max(hist)
+        mu0 = np.mean(qbs[stag][b0])
+        # Initial parameter guesses
+        p0 = [A0, 1.0 / sig0 ** 2 / 2.0, mu0]
 
-    out['qb'] = OrderedDict()
-    out['qbvar'] = OrderedDict()
-    out['gcorr'] = OrderedDict()
+        if spec in ["eb", "tb"] or null:
+            func = gauss
+        else:
+            func = lognorm
+        try:
+            popth, pcovh = opt.curve_fit(func, bc, hist, p0=p0, maxfev=int(1e9))
+            # gcorr is XF vairance over fit variance
+            var_fit = 2.0 / popth[1]
+            out["gcorr"][stag][b0] = xf_var[stag][b0] / var_fit
+        except RuntimeError:
+            print("No hist fits found")
 
-    if Plot:
-    	for spec in specs:
-            fig, ax = plt.subplots(4, 4, figsize=(15,15), sharex=False, sharey=False)
-            fig.suptitle('{} {}'.format(output_tag[1:], spec.upper()))
-            axs = ax.flatten()
-            # old gauss method
-            stag = 'cmb_{}'.format(spec)
-            out['qb'][stag] = np.median(np.asarray(qbs[spec]), axis=0)
-            out['qbvar'][stag] = np.var(np.asarray(qbs[spec]), axis=0)
-
-            # lognormal fits
-            like = bp_mean['qb_like'][stag]
-            out['gcorr'][spec] = np.ones(like.shape[0])
-            for b0, likeli in enumerate(like):
-                if b0 == 0:
-                # doesn't work with null_first_cmb
-                    continue
-                nanmask = ~np.isnan(likeli[1])
-                if np.any(np.isnan(likeli[1])):
-                    print('nans in {} {} {}'.format(
-                        spec, b0, np.where(np.isnan(likeli[1]))))
-                likeli = [likeli[0][nanmask], likeli[1][nanmask]]
-                likeli[1] = np.exp(likeli[1]-np.max(likeli[1]))
-                L = likeli[1] / np.trapz(likeli[1], likeli[0])
-
-                hbins = np.arange(likeli[0][0], likeli[0][-1],
-                              (likeli[0][-1] - likeli[0][0]) / 30.)
-                hist, bins = np.histogram(np.asarray(qbs[spec])[:, b0],
-                                      density=True, bins=hbins)
-                bc = (bins[:-1] + bins[1:]) / 2.
-
-                axs[b0-1].set_title(b0)
-                axs[b0-1].hist(np.asarray(qbs[spec])[:,b0], bins=hbins,
-                           density=True, facecolor='0.7', edgecolor='0.7')
-                axs[b0-1].plot(likeli[0][L > 1e-4 * L.max()], L[L > 1e-4 * L.max()], 'k-',
-                           label='Likelihood')
-                axs[b0-1].set_yscale('log')
-                if spec in ['eb', 'tb']:
-                    width = qb_err[stag][b0]
-                    width_nomarg = qb_err_fix[stag][b0]
-                    qb0 = bp_mean['qb'][stag][b0]
-                    func = gauss
-                    func_name = 'gauss'
-                    bc0 = np.min(bc)
-                else:
-                    width = qb_err[stag][b0] / bp_mean['qb'][stag][b0]
-                    width_nomarg = qb_err_fix[stag][b0] / bp_mean['qb'][stag][b0]
-                    qb0 = np.log(bp_mean['qb'][stag][b0])
-                    func = lognorm
-                    func_name = 'lognorm'
-                    bc0 = 0.5
-
-                p0 = [np.nanmax(L), 1. / width**2 / 2., qb0]
-                try:
-                    popth, pcovh = opt.curve_fit(func, bc[bc>bc0], hist[bc>bc0],
-                                             p0=p0, maxfev=int(1e9))
-                    p0fm = [popth[0], 1. / width**2 / 2., popth[2]]
-                    like_marg = func(bc, *p0fm)
-                    axs[b0-1].plot(bc[bc>bc0], func(bc[bc>bc0], *popth), label='hist fit')
-                    axs[b0-1].plot(bc[bc>bc0], like_marg[bc>bc0], linestyle='dashed',
-                               label='Fisher-derived {} (marg)'.format(func_name))
-                    out['gcorr'][spec][b0] = popth[1] / p0fm[1]
-                except RuntimeError:
-                    print('No hist fits found')
-                try:
-                    poptl, pcovl = opt.curve_fit(func, likeli[0][likeli[0]>bc0],
-                                             L[likeli[0]>bc0], p0=p0,
-                                             maxfev=int(1e9))
-                    p0_nomarg = [poptl[0], 1. / width_nomarg**2 / 2., poptl[2]]
-                    like_nomarg = func(likeli[0], *p0_nomarg)
-                    axs[b0-1].plot(likeli[0][likeli[0]>bc0],
-                               func(likeli[0][likeli[0]>bc0], *poptl),
-                               label='Lognorm fit to likelihood')
-                    axs[b0-1].plot(likeli[0][likeli[0]>bc0], like_nomarg[likeli[0]>bc0],
-                               linestyle='dashed',
-                               label='Fisher-derived {} (no marg)'.format(func_name))
-                except RuntimeError:
-                    print('No likeli fits found')
-
-            axs[15].legend(loc='lower center')
-            fig.savefig(os.path.join(plot_root, 'hists{}_{}.png'.format(output_tag, spec)))
-            plt.close(fig)
-    cmb_bins = len(pt.dict_to_arr(out['qbvar'], flatten=True))
-
-    out['gcorr_gauss'] = pt.arr_to_dict(
-        np.diag(out['inv_fish'])[:cmb_bins] / pt.dict_to_arr(out['qbvar'], flatten=True),
-        out['gcorr'])
-    outfile = os.path.join(
-        output_root, 'gcorr{}.npz'.format(output_tag)
-    )
-    np.savez_compressed(outfile, **out)
-
-    if Plot:
-        fig, ax = plt.subplots(2, 3)
-        ax = ax.flatten()
-        for i, spec in enumerate(specs):
-            ellb = bp_mean['ellb']['cmb_{}'.format(spec)]
-            ax[i].plot(ellb[1:], out['gcorr_gauss'][spec][1:], label='gauss')
-            ax[i].plot(ellb[1:], out['gcorr'][spec][1:], label='log-normal')
-            ax[i].set_title(spec)
-        ax[5].legend(loc='lower right', prop={'size': 8})
-        plt.savefig(os.path.join(plot_root, 'g{}.png'.format(output_tag)))
-        plt.close()
-    print(out['gcorr'])
-
-if __name__ == "__main__":
-
-    import argparse as ap
-    P = ap.ArgumentParser()
-    P.add_argument('output_tag')
-    P.add_argument('-r', '--root', default='xfaster_gcal_unconstr')
-    args = P.parse_args()
-
-    xfaster_run_ensemble(os.path.join('../../example/gcorr_run/', args.root), args.output_tag) #Set your own output path
+outfile = os.path.join(output_root, "gcorr{}.npz".format(output_tag))
+np.savez_compressed(outfile, **out)
+print("New gcorr correction computed (should converge to 1): ", out["gcorr"])

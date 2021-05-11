@@ -1941,7 +1941,7 @@ class XFaster(object):
             cls[..., :lmin] = 0
         return np.atleast_2d(cls)
 
-    def get_mask_weights(self, apply_gcorr=False, reload_gcorr=False):
+    def get_mask_weights(self, apply_gcorr=False, reload_gcorr=False, gcorr_file=None):
         """
         Compute cross spectra of the masks for each data map.
 
@@ -1956,6 +1956,10 @@ class XFaster(object):
         reload_gcorr : bool
             If True, reload the gcorr file from the masks directory. Useful when
             iteratively solving for the correction terms.
+        gcorr_file : str
+            If not None, path to gcorr file. Otherwise, use file labeled
+            mask_map_<tag>_gcorr.npy in mask directory for signal, or
+            mask_map_<tag>_gcorr_null.npy for nulls.
 
         Notes
         -----
@@ -1994,7 +1998,7 @@ class XFaster(object):
             alt_name="data_xcorr",
         )
 
-        def process_gcorr():
+        def process_gcorr(gcorr_file):
             if not hasattr(self, "gcorr"):
                 self.gcorr = None
             if apply_gcorr and self.gcorr is None:
@@ -2007,7 +2011,11 @@ class XFaster(object):
                 if not reload_gcorr and tag in self.gcorr:
                     continue
 
-                gcorr_file = mfile.replace(".fits", "_gcorr.npz")
+                if gcorr_file is None:
+                    if self.null_run:
+                        gcorr_file = mfile.replace(".fits", "_gcorr_null.npz")
+                    else:
+                        gcorr_file = mfile.replace(".fits", "_gcorr.npz")
                 if not os.path.exists(gcorr_file):
                     self.warn("G correction file {} not found".format(gcorr_file))
                     continue
@@ -2056,7 +2064,7 @@ class XFaster(object):
             self.gmat_ell = gmat_ell
 
         if ret is not None:
-            process_gcorr()
+            process_gcorr(gcorr_file)
             if apply_gcorr and (reload_gcorr or ret.get("gcorr", None) is None):
                 return self.save_data(save_name, from_attrs=save_attrs)
             ret["gcorr"] = self.gcorr
@@ -2154,7 +2162,7 @@ class XFaster(object):
         self.w4 = w4
         self.gmat = gmat
 
-        process_gcorr()
+        process_gcorr(gcorr_file)
 
         self.log("Fsky: {}".format(self.fsky), "debug")
         self.log("Effective fsky: {}".format(fsky_eff), "debug")
@@ -6291,7 +6299,7 @@ class XFaster(object):
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
         )
-        if 'delta_beta' in self.bin_def:
+        if "delta_beta" in self.bin_def:
             opts.update(delta_beta_prior=delta_beta_prior)
         if self.template_cleaned:
             opts.update(template_alpha=self.template_alpha)
