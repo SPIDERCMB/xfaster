@@ -43,15 +43,15 @@ ref_dir = os.path.join(g_cfg["gcorr_opts"]["output_root"], run_name)
 # run dir will be where all the iteration happens to update the reference
 rundir = ref_dir + "_iter"
 
-# If we've just started iterating, create the iterating directory
-if os.getenv("GCORR_ITER") in [None, "0"] or args.force_restart:
+# if rundir doesn't exist or force_restsart, we start from scratch
+if not os.path.exists(rundir) or args.force_restart:
+    iternum = 0
     if os.path.exists(rundir):
         shutil.rmtree(rundir)
     for gfile in glob.glob(os.path.join("ref_dir", "*", "gcorr*.npz")):
         os.remove(gfile)
 
     shutil.copytree(ref_dir, rundir)
-    os.environ["GCORR_ITER"] = "0"
 
     # make plots directory
     os.mkdir(os.path.join(rundir, "plots"))
@@ -70,8 +70,12 @@ if os.getenv("GCORR_ITER") in [None, "0"] or args.force_restart:
         )
 
 else:
-    os.environ["GCORR_ITER"] = str(int(os.environ["GCORR_ITER"]) + 1)
-print("Starting iteration {}".format(os.environ["GCORR_ITER"]))
+    # check plots directory to find what iteration we're at
+    plots = sorted(glob.glob(os.path.join(rundir, "plots", "*.png")))
+    print(plots[-1])
+    last_iter = plots[-1].split("iter")[-1].split(".")[0]
+    iternum = int(last_iter) + 1
+print("Starting iteration {}".format(iternum))
 
 
 for tag in tags:
@@ -147,40 +151,32 @@ for tag in tags:
         os.path.join(
             rundir,
             "plots",
-            "gcorr_tot_{}_iter{}.png".format(tag, os.getenv("GCORR_ITER")),
+            "gcorr_tot_{}_iter{}.png".format(tag, iternum),
         )
     )
     fig_corr.savefig(
         os.path.join(
             rundir,
             "plots",
-            "gcorr_corr_{}_iter{}.png".format(tag, os.getenv("GCORR_ITER")),
+            "gcorr_corr_{}_iter{}.png".format(tag, iternum),
         )
     )
 
     np.savez_compressed(ref_file, **gcorr)
 
+# Submit a first job that reloads gcorr and computes the transfer function
+# that will be used by all the other seeds
 print("Sumitting first job")
-print(
-    "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point transfer --reload-gcorr -o {o} > /dev/null".format(
-        g=args.gcorr_config, o=run_name_iter
-    )
+cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point transfer --reload-gcorr -o {o} > /dev/null".format(
+    g=args.gcorr_config, o=run_name_iter
 )
-os.system(
-    "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point transfer --reload-gcorr -o {o} > /dev/null".format(
-        g=args.gcorr_config, o=run_name_iter
-    )
-)
+print(cmd)
+os.system(cmd)
 
 transfer_exists = {}
 for tag in tags:
     transfer_exists[tag] = False
-print(transfer_exists)
-for v in transfer_exists.values():
-    print("transfer", v)
-print("all", np.all(list(transfer_exists.values())))
 while not np.all(list(transfer_exists.values())):
-    print("waiting for transfer to exists")
     # wait until transfer functions are done to submit rest of jobs
     for tag in tags:
         rundirf = os.path.join(rundir, tag)
@@ -191,33 +187,31 @@ while not np.all(list(transfer_exists.values())):
 
     print("transfer exists: ", transfer_exists)
     time.sleep(15)
-print("Submitting jobs for all seeds")
-print(
-    "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers -o {o} -f 1 -n {n} > /dev/null".format(
-        g=args.gcorr_config, o=run_name_iter, n=g_cfg["gcorr_opts"]["nsim"]
-    )
-)
 
-os.system(
-    "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers -o {o} -f 1 -n {n} > /dev/null".format(
-        g=args.gcorr_config, o=run_name_iter, n=g_cfg["gcorr_opts"]["nsim"]
-    )
+# Once transfer function is done, all other seeds can run
+print("Submitting jobs for all seeds")
+cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers -o {o} -f 1 -n {n} > /dev/null".format(
+    g=args.gcorr_config, o=run_name_iter, n=g_cfg["gcorr_opts"]["nsim"]
 )
+print(cmd)
+os.system(cmd)
 
 print("Waiting for jobs to complete...")
 while os.system("squeue -u {} | grep xfast > /dev/null".format(os.getenv("USER"))) == 0:
-    os.system("squeue -u {} | wc".format(os.getenv("USER")))
+    print("Number of jobs left +1:")
+    os.system("squeue -u {} | wc -l".format(os.getenv("USER")))
     time.sleep(10)
 
+print("Computing new gcorr factors")
 for tag in tags:
-    os.system(
-        "python compute_gcal.py --gcorr-config {g} -r {r} {t}".format(
-            g=args.gcorr_config, r=run_name_iter, t=tag
-        )
+    cmd = "python compute_gcal.py --gcorr-config {g} -r {r} --output-tag {t}".format(
+        g=args.gcorr_config, r=run_name_iter, t=tag
     )
+    print(cmd)
+    os.system(cmd)
 
 for tag in tags:
-    print("{} completed".format(tag))
-    os.system("ls {}/{}/bandpowers* | wc -l".format(rundir, tag))
-    print("{} error".format(tag))
-    os.system("ls {}/{}/ERROR* | wc -l".format(rundir, tag))
+    bp_files = glob.glob("{}/{}/bandpowers*".format(rundir, tag))
+    error_files = glob.glob("{}/{}/ERROR*".format(rundir, tag))
+    print("{} completed: {}".format(tag, len(bp_files)))
+    print("{} error: {}".format(tag, len(error_files)))
