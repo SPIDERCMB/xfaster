@@ -81,11 +81,13 @@ seeds = list(range(args.first, args.first + args.num))
 
 for tag in tags:
     opts["output_tag"] = tag
-    opts["gcorr_file"] = os.path.join(
-        g_cfg["gcorr_opts"]["output_root"],
-        "xfaster_gcal",
-        tag,
-        "gcorr_{}_iter.npz".format(tag),
+    opts["gcorr_file"] = os.path.abspath(
+        os.path.join(
+            g_cfg["gcorr_opts"]["output_root"],
+            "xfaster_gcal",
+            tag,
+            "gcorr_{}_total.npz".format(tag),
+        )
     )
     opts["data_subset"] = os.path.join(
         g_cfg["gcorr_opts"]["data_subset"], "*{}".format(tag)

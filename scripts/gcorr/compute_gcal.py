@@ -4,7 +4,6 @@ A script for computing g_corr factor from simulation bandpowers.
 import os
 import glob
 import numpy as np
-from collections import OrderedDict
 import scipy.optimize as opt
 import argparse as ap
 from configparser import ConfigParser
@@ -60,7 +59,7 @@ files = sorted(glob.glob(file_glob))
 if not len(files):
     raise OSError("No bandpowers files found in {}".format(output_root))
 
-out = {}
+out = {"data_version": 1}
 inv_fishes = None
 qbs = {}
 
@@ -93,19 +92,18 @@ xf_var = pt.arr_to_dict(xf_var_mean, bp["qb"])
 
 out["bin_def"] = bp["bin_def"]
 nbins = len(out["bin_def"])
-out["gcorr"] = OrderedDict()
+out["gcorr"] = {}
 
 for spec in specs:
-    stag = "cmb_{}".format(spec)
-    out["gcorr"][stag] = np.ones(nbins)
+    out["gcorr"][spec] = np.ones(nbins)
     for b0 in np.arange(nbins):
         hist, bins = np.histogram(
             np.asarray(qbs[spec])[:, b0], density=True, bins=int(nsims / 10.0)
         )
         bc = (bins[:-1] + bins[1:]) / 2.0
-        sig0 = np.std(qbs[stag][b0])
+        sig0 = np.std(qbs[spec][b0])
         A0 = np.max(hist)
-        mu0 = np.mean(qbs[stag][b0])
+        mu0 = np.mean(qbs[spec][b0])
         # Initial parameter guesses
         p0 = [A0, 1.0 / sig0 ** 2 / 2.0, mu0]
 
@@ -117,7 +115,7 @@ for spec in specs:
             popth, pcovh = opt.curve_fit(func, bc, hist, p0=p0, maxfev=int(1e9))
             # gcorr is XF vairance over fit variance
             var_fit = 2.0 / popth[1]
-            out["gcorr"][stag][b0] = xf_var[stag][b0] / var_fit
+            out["gcorr"][spec][b0] = xf_var[spec][b0] / var_fit
         except RuntimeError:
             print("No hist fits found")
 
