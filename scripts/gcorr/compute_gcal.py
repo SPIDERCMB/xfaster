@@ -16,8 +16,6 @@ P.add_argument("output_tag", help="Which map tag")
 P.add_argument("-r", "--root", default="xfaster_gcal", help="XFaster outputs directory")
 args = P.parse_args()
 
-output_tag = args.output_tag
-output_root = args.root
 
 assert os.path.exists(args.gcorr_config), "Missing config file {}".format(
     args.gcorr_config
@@ -27,9 +25,12 @@ g_cfg.read(args.gcorr_config)
 null = g_cfg.getboolean("gcorr_opts", "null")
 if null:
     # no sample variance used for null tests
-    fish_name = "invfish_nosampvar"
+    fish_name = "inv_fish_nosampvar"
 else:
-    fish_name = "invfish"
+    fish_name = "inv_fish"
+
+output_tag = args.output_tag
+output_root = os.path.join(g_cfg["gcorr_opts"]["output_root"], args.root)
 
 specs = ["tt", "ee", "bb", "te", "eb", "tb"]
 
@@ -78,13 +79,13 @@ for filename in files:
     if inv_fishes is None:
         inv_fishes = np.diag(inv_fish)
     else:
-        inv_fishes = np.vstack(inv_fishes, np.diag(inv_fish))
+        inv_fishes = np.vstack([inv_fishes, np.diag(inv_fish)])
 
     for spec in specs:
         if qbs[spec] is None:
             qbs[spec] = bp["qb"]["cmb_{}".format(spec)]
         else:
-            qbs[spec] = np.vstack(qbs[spec], bp["qb"]["cmb_{}".format(spec)])
+            qbs[spec] = np.vstack([qbs[spec], bp["qb"]["cmb_{}".format(spec)]])
 
 # Get average XF-estimated variance
 xf_var_mean = np.mean(inv_fishes, axis=0)
@@ -95,10 +96,11 @@ nbins = len(out["bin_def"])
 out["gcorr"] = {}
 
 for spec in specs:
+    stag = 'cmb_{}'.format(spec)
     out["gcorr"][spec] = np.ones(nbins)
     for b0 in np.arange(nbins):
         hist, bins = np.histogram(
-            np.asarray(qbs[spec])[:, b0], density=True, bins=int(nsims / 10.0)
+            np.asarray(qbs[spec])[:, b0], density=True, bins=int(nsim / 10.0)
         )
         bc = (bins[:-1] + bins[1:]) / 2.0
         sig0 = np.std(qbs[spec][b0])
@@ -115,10 +117,10 @@ for spec in specs:
             popth, pcovh = opt.curve_fit(func, bc, hist, p0=p0, maxfev=int(1e9))
             # gcorr is XF vairance over fit variance
             var_fit = 2.0 / popth[1]
-            out["gcorr"][spec][b0] = xf_var[spec][b0] / var_fit
+            out["gcorr"][spec][b0] = xf_var[stag][b0] / var_fit
         except RuntimeError:
             print("No hist fits found")
 
-outfile = os.path.join(output_root, "gcorr{}.npz".format(output_tag))
+outfile = os.path.join(output_root, "gcorr_corr{}.npz".format(output_tag))
 np.savez_compressed(outfile, **out)
 print("New gcorr correction computed (should converge to 1): ", out["gcorr"])
