@@ -46,11 +46,11 @@ rundir = ref_dir + "_iter"
 # if rundir doesn't exist or force_restsart, we start from scratch
 if not os.path.exists(rundir) or args.force_restart:
     iternum = 0
+
     if os.path.exists(rundir):
         shutil.rmtree(rundir)
-    for gfile in glob.glob(os.path.join("ref_dir", "*", "gcorr*.npz")):
+    for gfile in glob.glob(os.path.join(ref_dir, "*", "gcorr*.npz")):
         os.remove(gfile)
-
     shutil.copytree(ref_dir, rundir)
 
     # make plots directory

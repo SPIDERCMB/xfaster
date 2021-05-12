@@ -92,7 +92,7 @@ xf_var_mean = np.mean(inv_fishes, axis=0)
 xf_var = pt.arr_to_dict(xf_var_mean, bp["qb"])
 
 out["bin_def"] = bp["bin_def"]
-nbins = len(out["bin_def"])
+nbins = len(out["bin_def"]["cmb_tt"])
 out["gcorr"] = {}
 
 for spec in specs:
