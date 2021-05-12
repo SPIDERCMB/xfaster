@@ -38,6 +38,8 @@ nsim = g_cfg.getint("gcorr_opts", "nsim")
 
 # use gauss model for null bandpowers
 def gauss(qb, amp, width, offset):
+    # width = 0.5*1/sig**2
+    # offset = mean
     return amp * np.exp(-width * (qb - offset) ** 2)
 
 
@@ -103,21 +105,26 @@ for spec in specs:
             np.asarray(qbs[spec])[:, b0], density=True, bins=int(nsim / 10.0)
         )
         bc = (bins[:-1] + bins[1:]) / 2.0
-        sig0 = np.std(qbs[spec][b0])
+
+        # Gauss Fisher-based params
         A0 = np.max(hist)
+        sig0 = np.sqrt(xf_var[stag][b0])
         mu0 = np.mean(qbs[spec][b0])
-        # Initial parameter guesses
-        p0 = [A0, 1.0 / sig0 ** 2 / 2.0, mu0]
 
         if spec in ["eb", "tb"] or null:
             func = gauss
         else:
             func = lognorm
+            sig0 /= mu0
+            mu0 = np.log(mu0)
+
+        # Initial parameter guesses
+        p0 = [A0, 1. / sig0**2 / 2., mu0]
+
         try:
             popth, pcovh = opt.curve_fit(func, bc, hist, p0=p0, maxfev=int(1e9))
-            # gcorr is XF vairance over fit variance
-            var_fit = 2.0 / popth[1]
-            out["gcorr"][spec][b0] = xf_var[stag][b0] / var_fit
+            # gcorr is XF Fisher variance over fit variance
+            out["gcorr"][spec][b0] = popth[1] / p0[1]
         except RuntimeError:
             print("No hist fits found")
 
