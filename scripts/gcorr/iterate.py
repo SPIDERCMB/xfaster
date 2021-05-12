@@ -98,14 +98,9 @@ for tag in tags:
     # Get gcorr_correction from iter folder -- this is the multiplicative
     # change to gcorr-- should converge to 1s
     try:
-        gcorr_corr = xf.load_and_parse(
-            os.path.join(rundirf, "gcorr_corr_{}.npz".format(tag))
-        )
-        print(
-            "got correction to gcorr {}".format(
-                os.path.join(rundirf, "gcorr_gcorr_{}.npz".format(tag))
-            )
-        )
+        fp = os.path.join(rundirf, "gcorr_corr_{}.npz".format(tag))
+        gcorr_corr = xf.load_and_parse(fp)
+        print("got correction to gcorr {}".format(fp))
     except IOError:
         gcorr_corr = copy.deepcopy(gcorr)
         gcorr_corr["gcorr"] = pt.arr_to_dict(
