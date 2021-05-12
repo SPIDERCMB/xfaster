@@ -12,7 +12,7 @@ from xfaster import parse_tools as pt
 
 P = ap.ArgumentParser()
 P.add_argument("--gcorr-config", help="The config file for gcorr computation")
-P.add_argument("output_tag", help="Which map tag")
+P.add_argument("--output-tag", help="Which map tag")
 P.add_argument("-r", "--root", default="xfaster_gcal", help="XFaster outputs directory")
 args = P.parse_args()
 
