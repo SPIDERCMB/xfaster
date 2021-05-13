@@ -4951,7 +4951,7 @@ class XFaster(object):
         # normalization shape spectrum
         shape = 1
         if not self.return_cls:
-            shape = np.zeros_like(ell)
+            shape = np.zeros_like(ell, dtype=float)
             shape[1:] = 2.0 * np.pi / ell[1:] / (ell[1:] + 1)
 
         for stag, wbl1 in wbl.items():
