@@ -205,10 +205,11 @@ def expand_qb(qb, bin_def, lmax=None):
     return cl
 
 
-def bin_spec(qb, cls_shape, bin_def, bin_weights, wbl, inv_fish=None, lfac=True):
+def bin_spec(qb, cls_shape, bin_def, inv_fish=None, tophat=False, lfac=True):
     """
-    Compute binned output spectra and covariances by applying the qb window
-    functions for each spectrum component.
+    Compute binned output spectra and covariances by averaging the shape
+    spectrum over each bin, and applying the appropriate ``qb`` bandpower
+    amplitude.
 
     Arguments
     ---------
@@ -218,13 +219,12 @@ def bin_spec(qb, cls_shape, bin_def, bin_weights, wbl, inv_fish=None, lfac=True)
         Shape spectrum
     bin_def : dict
         Bin definition dictionary
-    bin_weights : dict
-        Bin weights (chi_bl)
-    wbl : dict
-        Window functions for each qb
     inv_fish : array_like, (nbins, nbins)
         Inverse fisher matrix for computing the bin errors and covariance.  If
         not supplied, these are not computed.
+    tophat : bool
+        If True, compute binned bandpowers using a tophat weight.  Otherwise a
+        logarithmic ell-space weighting is applied.
     lfac : bool
         If False, return binned C_l spectrum rather than the default D_l
 
@@ -239,67 +239,67 @@ def bin_spec(qb, cls_shape, bin_def, bin_weights, wbl, inv_fish=None, lfac=True)
     cov : array_like, (nbins, nbins)
         Binned spectrum covariance, if ``inv_fish`` is not None
     qb2cb : dict
-        The conversion matrix from ``qb`` to ``cb`` for each spectrum
-        component, computed from the qb window functions
-    wbl_cb : dict
-        Window functions for each cb
+        The conversion factor from ``qb`` to ``cb``, computed by averaging over the
+        input shape spectrum.
     """
 
     from . import parse_tools as pt
 
+    lmax = pt.dict_to_arr(bin_def).max()
+
     qb2cb = OrderedDict()
     ellb = OrderedDict()
     cb = OrderedDict()
-    wbl_cb = OrderedDict()
+
+    ell = np.arange(lmax + 1)
+    fac1 = (2 * ell + 1) / 4.0 / np.pi
+    fac2 = ell * (ell + 1) / 2.0 / np.pi
+
+    if tophat:
+        fac = fac2 if lfac else 1
+    else:
+        fac3 = fac1.copy()
+        fac3[ell > 0] /= fac2[ell > 0]
+        fac = fac1 if lfac else fac3
+
+    ecls_shape = {k: fac * v[: lmax + 1] for k, v in cls_shape.items()}
 
     bin_index = pt.dict_to_index(bin_def)
-    nbins = max([bin_index[stag][1] for stag in wbl])
+    nbins = 0
+
+    for stag, qb1 in qb.items():
+        comp, spec = stag.split("_", 1)
+
+        if comp not in ["cmb", "fg"]:
+            continue
+
+        shape = ecls_shape["fg" if comp == "fg" else stag]
+        ellb[stag] = np.zeros_like(qb1)
+        qb2cb[stag] = np.zeros_like(qb1)
+
+        nbins = max([nbins, bin_index[stag][1]])
+
+        for idx, (left, right) in enumerate(bin_def[stag]):
+            il = slice(left, right)
+            if tophat:
+                qb2cb[stag][idx] = np.mean(shape[il])
+                ellb[stag][idx] = np.mean(ell[il])
+            else:
+                v = np.sum(shape[il])
+                qb2cb[stag][idx] = v / np.sum(fac3[il])
+                av = np.abs(shape[il])
+                ellb[stag][idx] = np.sum(av * ell[il]) / np.sum(av)
+
+        cb[stag] = qb1 * qb2cb[stag]
 
     if inv_fish is not None:
         inv_fish = inv_fish[:nbins, :nbins]
-        qb2cb_mat = np.zeros_like(inv_fish)
-
-    # window function normalization
-    lmax = pt.dict_to_arr(bin_def).max()
-    ell = np.arange(lmax + 1)
-    norm = (2 * ell + 1) / 4.0 / np.pi
-
-    # normalization shape spectrum
-    if lfac:
-        shape = np.zeros_like(ell)
-        shape[1:] = 2.0 * np.pi / ell[1:] / (ell[1:] + 1)
-    else:
-        shape = 1
-
-    for stag, wbl1 in wbl.items():
-        bd = bin_def[stag]
-        bw = bin_weights[stag]
-
-        # compute conversion factors
-        qb2cb[stag] = np.zeros((len(bd), len(bd)))
-        wnorm = np.sum(norm * wbl1 * shape, axis=-1)
-        v = norm * wbl1 * cls_shape["fg" if comp == "fg" else stag]
-        for idx, ((l, r), w) in enumerate(zip(bd, bw)):
-            qb2cb[stag][:, idx] = np.sum(v[..., l:r] * w, axis=-1) / wnorm
-
-        # construct conversion matrix for covariance
-        if inv_fish is not None:
-            left, right = bin_index[stag]
-            qb2cb_mat[left:right, left:right] = qb2cb[stag]
-
-        # compute wbls for cb's
-        wbl_cb[stag] = np.einsum("ik,kj->ij", qb2cb[stag], wbl1)
-
-        # compute bin centers
-        ellb[stag] = np.sum(norm * wbl_cb[stag] * shape * ell, axis=-1)
-
-        # compute cb's
-        cb[stag] = np.einsum("ij,j->i", qb2cb[stag], qb[stag])
-
-    # compute covariance and errors
-    if inv_fish is not None:
-        cov = np.einsum("ik,jl,kl->ij", qb2cb_mat, qb2cb_mat, inv_fish)
-        dcb_arr = np.sqrt(np.diag(cov))
+        qb2cb_arr = pt.dict_to_arr(qb2cb, flatten=True)
+        dcb_arr = np.sqrt(qb2cb_arr * np.abs(np.diag(inv_fish)) * qb2cb_arr)
         dcb = pt.arr_to_dict(dcb_arr, qb2cb)
+        cov = np.outer(qb2cb_arr, qb2cb_arr) * inv_fish
+    else:
+        dcb = None
+        cov = None
 
-    return cb, dcb, ellb, cov, qb2cb, wbl_cb
+    return cb, dcb, ellb, cov, qb2cb

@@ -4898,7 +4898,7 @@ class XFaster(object):
 
         return obs, nell, debias
 
-    def do_qb2cb(self, qb, wbl, inv_fish=None):
+    def do_qb2cb(self, qb, inv_fish, wbl):
         """
         Compute binned output spectra and covariances by averaging
         the shape spectrum over each bin, and applying the appropriate
@@ -4912,37 +4912,88 @@ class XFaster(object):
         ---------
         qb : dict
             Bandpower amplitudes for each spectrum bin.
+        inv_fish : array_like, (nbins, nbins)
+            Inverse fisher matrix for computing the bin errors and covariance.
         wbl : dict
             Window functions for each qb
-        inv_fish : array_like, (nbins, nbins)
-            Inverse fisher matrix for computing the bin errors
-            and covariance.  If not supplied, these are not computed.
 
         Returns
         -------
         cb : dict of arrays
             Binned spectrum
         dcb : dict of arrays
-            Binned spectrum error, if ``inv_fish`` is not None
+            Binned spectrum error
         ellb : dict of arrays
             Average bin center
         cov : array_like, (nbins, nbins)
-            Binned spectrum covariance, if ``inv_fish`` is not None
+            Binned spectrum covariance
         qb2cb : dict
             The conversion matrix from ``qb`` to ``cb`` for each spectrum
             component, computed from the qb window functions
         wbl_cb : dict
             Window functions for each cb
         """
-        return xft.bin_spec(
-            qb,
-            cls_shape=self.cls_shape,
-            bin_def=self.bin_def,
-            bin_weights=self.bin_weights,
-            wbl=wbl,
-            inv_fish=inv_fish,
-            lfac=not self.return_cls,
-        )
+        qb2cb = OrderedDict()
+        ellb = OrderedDict()
+        cb = OrderedDict()
+        wbl_cb = OrderedDict()
+
+        # truncate to only bins for which there are window functions
+        bin_index = pt.dict_to_index(self.bin_def)
+        nbins = max([bin_index[stag][1] for stag in wbl])
+        inv_fish = inv_fish[:nbins, :nbins]
+        qb2cb_mat = np.zeros_like(inv_fish)
+
+        # window function normalization
+        ell = np.arange(self.lmax + 1)
+        norm = (2.0 * ell + 1.0) / 4.0 / np.pi
+
+        # normalization shape spectrum
+        shape = 1
+        if not self.return_cls:
+            shape = np.zeros_like(ell)
+            shape[1:] = 2.0 * np.pi / ell[1:] / (ell[1:] + 1)
+
+        for stag, wbl1 in wbl.items():
+            # compute conversion factors
+            qb2cb[stag] = np.zeros((len(wbl1), len(wbl1)))
+            cls_shape = self.cls_shape["fg" if "fg" in stag else stag][:len(ell)]
+            v = norm * wbl1 * cls_shape
+            bd = self.bin_def[stag]
+            bw = self.bin_weights[stag]
+            for idx, ((l, r), w) in enumerate(zip(bd, bw)):
+                qb2cb[stag][:, idx] = np.sum(v[..., l:r] * w, axis=-1)
+
+            # normalize for cb's or db's
+            qb2cb[stag] /= np.sum(norm * wbl1 * shape, axis=-1)
+
+            # construct conversion matrix for covariance
+            left, right = bin_index[stag]
+            qb2cb_mat[left:right, left:right] = qb2cb[stag]
+
+            # compute wbls for cb's
+            wbl_cb[stag] = np.einsum("ij,jl->il", qb2cb[stag], wbl1)
+
+            # check normalization
+            self.log(
+                "{} cb window function normalization: {}".format(
+                    stag, np.sum(wbl_cb[stag] * norm * shape, axis=-1)
+                ),
+                "debug",
+            )
+
+            # compute bin centers
+            ellb[stag] = np.sum(norm * wbl_cb[stag] * shape * ell, axis=-1)
+
+            # compute cb's
+            cb[stag] = np.einsum("ij,j->i", qb2cb[stag], qb[stag])
+
+        # compute covariance and errors
+        cov = np.einsum("ik,jl,kl->ij", qb2cb_mat, qb2cb_mat, inv_fish)
+        dcb_arr = np.sqrt(np.diag(cov))
+        dcb = pt.arr_to_dict(dcb_arr, qb2cb)
+
+        return cb, dcb, ellb, cov, qb2cb, wbl_cb
 
     def fisher_precalc(
         self,
@@ -5425,7 +5476,7 @@ class XFaster(object):
 
             # compute prefactors
             ells = np.arange(0, self.lmax + 1)
-            lfac = ells * (ells + 1.0) / (2.0 * ells + 1.0)
+            norm = (2.0 * ells + 1.0) / 4.0 / np.pi
 
             # compute binning term
             arg = np.einsum("ij,kljm->klim", inv_fish, mat)
@@ -5450,16 +5501,15 @@ class XFaster(object):
                     smat += spec_mask[mspec][:, :, None, None] * Mmat_mix
 
                 # bin weighting, allowing for overlapping bin edges
-                chi_bl = np.zeros_like(lfac)
+                chi_bl = np.zeros_like(norm)
                 for (l, r), w in zip(self.bin_def[k], self.bin_weights[k]):
                     chi_bl[l:r] += w
 
                 # qb window function
-                wbl1 = np.einsum("iil,ijkl,jilm->km", gmat, sarg, smat) * lfac * chi_bl
+                wbl1 = np.einsum("iil,ijkl,jilm->km", gmat, sarg, smat) * chi_bl
+                wbl1 /= 2.0 * norm
 
                 # check normalization
-                norm = np.zeros_like(lfac)
-                norm[1:] = 1.0 / (2.0 * lfac[1:])
                 cls_shape = self.cls_shape["fg" if comp == "fg" else k][: len(norm)]
                 self.log(
                     "{} qb window function normalization: {}".format(
@@ -5903,13 +5953,8 @@ class XFaster(object):
             out.update(wbl_qb=wbl_qb)
 
             # comute bandpowers and covariances
-            cb, dcb, ellb, cov, qb2cb, wbl_cb = self.do_qb2cb(
-                qb, wbl_qb, inv_fish=inv_fish
-            )
-
-            _, dcb_ns, _, cov_ns, _, _ = self.do_qb2cb(
-                qb, wbl_qb, inv_fish=inv_fish_ns
-            )
+            cb, dcb, ellb, cov, qb2cb, wbl_cb = self.do_qb2cb(qb, inv_fish, wbl_qb)
+            _, dcb_ns, _, cov_ns, _, _ = self.do_qb2cb(qb, inv_fish_ns, wbl_qb)
 
             out.update(
                 cb=cb,
