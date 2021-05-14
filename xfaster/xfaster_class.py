@@ -5746,9 +5746,7 @@ class XFaster(object):
 
             if save_iters:
                 # save only the quantities that change with each iteration
-                self.save_data(
-                    save_name,
-                    bp_opts=not transfer_run,
+                out = dict(
                     map_tag=map_tag,
                     map_tags=self.map_tags,
                     iter_index=iter_idx,
@@ -5761,10 +5759,6 @@ class XFaster(object):
                     inv_fish=inv_fish,
                     cls_model=cls_model,
                     cbl=cbl,
-                    beta_fit=beta_fit,
-                    beta_err=beta_err,
-                    ref_freq=self.ref_freq,
-                    beta_ref=self.beta_ref,
                     map_freqs=self.map_freqs,
                     cls_signal=self.cls_signal,
                     cls_noise=self.cls_noise,
@@ -5772,6 +5766,16 @@ class XFaster(object):
                     gmat_ell=self.gmat_ell,
                     extra_tag=file_tag,
                 )
+
+                if 'fg_tt' in self.bin_def:
+                    out.update(
+                        beta_fit=beta_fit,
+                        beta_err=beta_err,
+                        ref_freq=self.ref_freq,
+                        beta_ref=self.beta_ref,
+                    )
+
+                self.save_data(save_name, bp_opts=not transfer_run, **out)
 
             (nans,) = np.where(np.isnan(qb_new_arr))
             if len(nans):
@@ -5870,20 +5874,24 @@ class XFaster(object):
             bin_weights=self.bin_weights,
             iters=iter_idx,
             success=success,
-            beta_fit=beta_fit,
-            beta_err=beta_err,
             map_tags=self.map_tags,
-            ref_freq=self.ref_freq,
-            beta_ref=self.beta_ref,
             map_freqs=self.map_freqs,
             converge_criteria=converge_criteria,
-            delta_beta_prior=delta_beta_prior,
             cond_noise=cond_noise,
             cond_criteria=cond_criteria,
             null_first_cmb=null_first_cmb,
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
         )
+
+        if 'fg_tt' in self.bin_def:
+            out.update(
+                delta_beta_prior=delta_beta_prior,
+                beta_fit=beta_fit,
+                beta_err=beta_err,
+                ref_freq=self.ref_freq,
+                beta_ref=self.beta_ref,
+            )
 
         if self.debug:
             out.update(
@@ -6281,12 +6289,17 @@ class XFaster(object):
         opts = dict(
             converge_criteria=converge_criteria,
             cond_noise=cond_noise,
+            cond_criteria=cond_criteria,
             null_first_cmb=null_first_cmb,
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
         )
-        if 'delta_beta' in self.bin_def:
-            opts.update(delta_beta_prior=delta_beta_prior)
+        if 'fg_tt' in self.bin_def:
+            opts.update(
+                delta_beta_prior=delta_beta_prior,
+                ref_freq=self.ref_freq,
+                beta_ref=self.beta_ref,
+            )
         if self.template_cleaned:
             opts.update(template_alpha=self.template_alpha)
         self.return_cls = return_cls
