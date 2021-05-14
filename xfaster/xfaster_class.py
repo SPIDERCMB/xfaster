@@ -5500,20 +5500,19 @@ class XFaster(object):
                     mspec = "bb" if spec == "ee" else "ee"
                     smat += spec_mask[mspec][:, :, None, None] * Mmat_mix
 
+                # qb window function
+                wbl1 = np.einsum("iil,ijkl,jilm->km", gmat, sarg, smat) / 2.0 / norm
+
                 # bin weighting, allowing for overlapping bin edges
                 chi_bl = np.zeros_like(norm)
                 for (l, r), w in zip(self.bin_def[k], self.bin_weights[k]):
                     chi_bl[l:r] += w
 
-                # qb window function
-                wbl1 = np.einsum("iil,ijkl,jilm->km", gmat, sarg, smat) * chi_bl
-                wbl1 /= 2.0 * norm
-
                 # check normalization
                 cls_shape = self.cls_shape["fg" if comp == "fg" else k][: len(norm)]
                 self.log(
                     "{} qb window function normalization: {}".format(
-                        k, np.sum(wbl1 * norm * cls_shape, axis=-1)
+                        k, np.sum(wbl1 * norm * chi_bl * cls_shape, axis=-1)
                     ),
                     "debug",
                 )
