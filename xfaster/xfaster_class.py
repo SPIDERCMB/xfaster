@@ -4949,10 +4949,10 @@ class XFaster(object):
         norm = (2.0 * ell + 1.0) / 4.0 / np.pi
 
         # normalization shape spectrum
-        shape = 1
+        model = 1
         if not self.return_cls:
-            shape = np.zeros_like(ell, dtype=float)
-            shape[1:] = 2.0 * np.pi / ell[1:] / (ell[1:] + 1)
+            model = np.ones_like(ell, dtype=float)
+            model[1:] = 2.0 * np.pi / ell[1:] / (ell[1:] + 1)
 
         for stag, wbl1 in wbl.items():
             # compute conversion factors
@@ -4965,7 +4965,7 @@ class XFaster(object):
                 qb2cb[stag][:, idx] = np.sum(v[..., l:r] * w, axis=-1)
 
             # normalize for cb's or db's
-            qb2cb[stag] /= np.sum(norm * wbl1 * shape, axis=-1)
+            qb2cb[stag] /= np.sum(norm * wbl1 * model, axis=-1)
 
             # construct conversion matrix for covariance
             left, right = bin_index[stag]
@@ -4977,13 +4977,13 @@ class XFaster(object):
             # check normalization
             self.log(
                 "{} cb window function normalization: {}".format(
-                    stag, np.sum(wbl_cb[stag] * norm * shape, axis=-1)
+                    stag, np.sum(norm * wbl_cb[stag] * model, axis=-1)
                 ),
                 "debug",
             )
 
             # compute bin centers
-            ellb[stag] = np.sum(norm * wbl_cb[stag] * shape * ell, axis=-1)
+            ellb[stag] = np.sum(norm * wbl_cb[stag] * model * ell, axis=-1)
 
             # compute cb's
             cb[stag] = np.einsum("ij,j->i", qb2cb[stag], qb[stag])
