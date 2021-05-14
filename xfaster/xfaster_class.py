@@ -4957,7 +4957,7 @@ class XFaster(object):
         for stag, wbl1 in wbl.items():
             # compute conversion factors
             qb2cb[stag] = np.zeros((len(wbl1), len(wbl1)))
-            cls_shape = self.cls_shape["fg" if "fg" in stag else stag][:len(ell)]
+            cls_shape = self.cls_shape["fg" if "fg" in stag else stag][: len(ell)]
             v = norm * wbl1 * cls_shape
             bd = self.bin_def[stag]
             bw = self.bin_weights[stag]
@@ -5767,7 +5767,7 @@ class XFaster(object):
                     extra_tag=file_tag,
                 )
 
-                if 'fg_tt' in self.bin_def:
+                if "fg_tt" in self.bin_def:
                     out.update(
                         beta_fit=beta_fit,
                         beta_err=beta_err,
@@ -5884,7 +5884,7 @@ class XFaster(object):
             weighted_bins=self.weighted_bins,
         )
 
-        if 'fg_tt' in self.bin_def:
+        if "fg_tt" in self.bin_def:
             out.update(
                 delta_beta_prior=delta_beta_prior,
                 beta_fit=beta_fit,
@@ -6294,7 +6294,7 @@ class XFaster(object):
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
         )
-        if 'fg_tt' in self.bin_def:
+        if "fg_tt" in self.bin_def:
             opts.update(
                 delta_beta_prior=delta_beta_prior,
                 ref_freq=self.ref_freq,
