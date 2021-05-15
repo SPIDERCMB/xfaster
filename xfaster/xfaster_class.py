@@ -4990,8 +4990,7 @@ class XFaster(object):
 
         # compute covariance and errors
         cov = np.einsum("ik,jl,kl->ij", qb2cb_mat, qb2cb_mat, inv_fish)
-        dcb_arr = np.sqrt(np.diag(cov))
-        dcb = pt.arr_to_dict(dcb_arr, qb2cb)
+        dcb = pt.arr_to_dict(np.sqrt(np.diag(cov)), qb2cb)
 
         return cb, dcb, ellb, cov, qb2cb, wbl_cb
 
@@ -5959,7 +5958,7 @@ class XFaster(object):
             )
             out.update(wbl_qb=wbl_qb)
 
-            # comute bandpowers and covariances
+            # compute bandpowers and covariances
             cb, dcb, ellb, cov, qb2cb, wbl_cb = self.do_qb2cb(qb, inv_fish, wbl_qb)
             _, dcb_ns, _, cov_ns, _, _ = self.do_qb2cb(qb, inv_fish_ns, wbl_qb)
 
