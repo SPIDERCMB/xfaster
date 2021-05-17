@@ -226,7 +226,6 @@
     <span class="n">tbeb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">fix_bb_xfer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">window_lmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">windows</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">like_lmin</span><span class="o">=</span><span class="mi">33</span><span class="p">,</span>
     <span class="n">like_lmax</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span>
     <span class="n">like_profiles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -251,7 +250,6 @@
     <span class="n">template_alpha_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;95&quot;</span><span class="p">,</span> <span class="s2">&quot;150&quot;</span><span class="p">],</span>
     <span class="n">template_alpha</span><span class="o">=</span><span class="p">[</span><span class="mf">0.015</span><span class="p">,</span> <span class="mf">0.043</span><span class="p">],</span>
     <span class="n">sub_hm_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">tophat_bins</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">return_cls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">apply_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">reload_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -386,8 +384,6 @@
 <span class="sd">        the BB xfer is exactly equal to the EE transfer.</span>
 <span class="sd">    window_lmax : int</span>
 <span class="sd">        The size of the window used in computing the mask kernels</span>
-<span class="sd">    windows : bool</span>
-<span class="sd">        If True compute window functions for each CMB bin in the output</span>
 <span class="sd">    like_lmin : int</span>
 <span class="sd">        The minimum ell value to be included in the likelihood calculation</span>
 <span class="sd">    like_lmax : int</span>
@@ -464,9 +460,6 @@
 <span class="sd">    sub_hm_noise : bool</span>
 <span class="sd">        If True, subtract average of Planck ffp10 noise crosses to debias</span>
 <span class="sd">        template-cleaned spectra</span>
-<span class="sd">    tophat_bins : bool</span>
-<span class="sd">        If True, use uniform weights within each bin rather than any</span>
-<span class="sd">        ell-based weighting.</span>
 <span class="sd">    return_cls : bool</span>
 <span class="sd">        If True, return C_l spectrum rather than the D_l spectrum</span>
 <span class="sd">    apply_gcorr : bool</span>
@@ -600,11 +593,9 @@
         <span class="n">cond_noise</span><span class="o">=</span><span class="n">cond_noise</span><span class="p">,</span>
         <span class="n">cond_criteria</span><span class="o">=</span><span class="n">cond_criteria</span><span class="p">,</span>
         <span class="n">null_first_cmb</span><span class="o">=</span><span class="n">null_first_cmb</span><span class="p">,</span>
-        <span class="n">tophat_bins</span><span class="o">=</span><span class="n">tophat_bins</span><span class="p">,</span>
         <span class="n">return_cls</span><span class="o">=</span><span class="n">return_cls</span><span class="p">,</span>
         <span class="n">apply_gcorr</span><span class="o">=</span><span class="n">apply_gcorr</span><span class="p">,</span>
         <span class="n">reload_gcorr</span><span class="o">=</span><span class="n">reload_gcorr</span><span class="p">,</span>
-        <span class="n">windows</span><span class="o">=</span><span class="n">windows</span><span class="p">,</span>
         <span class="n">like_profiles</span><span class="o">=</span><span class="n">like_profiles</span><span class="p">,</span>
         <span class="n">like_profile_sigma</span><span class="o">=</span><span class="n">like_profile_sigma</span><span class="p">,</span>
         <span class="n">like_profile_points</span><span class="o">=</span><span class="n">like_profile_points</span><span class="p">,</span>
@@ -648,7 +639,7 @@
     <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;cond_criteria&quot;</span><span class="p">)</span>
     <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;delta_beta_prior&quot;</span><span class="p">)</span>
     <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;null_first_cmb&quot;</span><span class="p">)</span>
-    <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;windows&quot;</span><span class="p">)</span>
+    <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;return_cls&quot;</span><span class="p">)</span>
     <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;like_profiles&quot;</span><span class="p">)</span>
     <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;like_profile_sigma&quot;</span><span class="p">)</span>
     <span class="n">fisher_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;like_profile_points&quot;</span><span class="p">)</span>
@@ -715,10 +706,10 @@
     <span class="n">X</span><span class="o">.</span><span class="n">get_beams</span><span class="p">(</span><span class="o">**</span><span class="n">beam_opts</span><span class="p">)</span>
 
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Loading spectrum shape for transfer function...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-    <span class="n">cls_shape</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">signal_transfer_spec</span><span class="p">,</span> <span class="n">transfer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">signal_transfer_spec</span><span class="p">,</span> <span class="n">transfer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing transfer functions...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-    <span class="n">X</span><span class="o">.</span><span class="n">get_transfer</span><span class="p">(</span><span class="n">cls_shape</span><span class="p">,</span> <span class="n">fix_bb_xfer</span><span class="o">=</span><span class="n">fix_bb_xfer</span><span class="p">,</span> <span class="o">**</span><span class="n">fisher_opts</span><span class="p">)</span>
+    <span class="n">X</span><span class="o">.</span><span class="n">get_transfer</span><span class="p">(</span><span class="n">fix_bb_xfer</span><span class="o">=</span><span class="n">fix_bb_xfer</span><span class="p">,</span> <span class="o">**</span><span class="n">fisher_opts</span><span class="p">)</span>
 
     <span class="c1"># Rerun to add bins for foreground and residuals, if requested</span>
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Setting up bin definitions with foregrounds and residuals...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
@@ -776,18 +767,18 @@
 
     <span class="k">if</span> <span class="n">X</span><span class="o">.</span><span class="n">null_run</span><span class="p">:</span>
         <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Loading flat spectrum for null test...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-        <span class="n">cls_shape</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Loading spectrum shape for bandpowers...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-        <span class="n">cls_shape</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">signal_spec</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="n">model_r</span><span class="p">)</span>
+        <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">signal_spec</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="n">model_r</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">multi_map</span><span class="p">:</span>
         <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing multi-map bandpowers...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-        <span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_bandpowers</span><span class="p">(</span><span class="n">cls_shape</span><span class="p">,</span> <span class="n">return_qb</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">bandpwr_opts</span><span class="p">)</span>
+        <span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_bandpowers</span><span class="p">(</span><span class="n">return_qb</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">bandpwr_opts</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">likelihood</span><span class="p">:</span>
             <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing multi-map likelihood...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-            <span class="n">X</span><span class="o">.</span><span class="n">get_likelihood</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="n">cls_shape</span><span class="o">=</span><span class="n">cls_shape</span><span class="p">,</span> <span class="o">**</span><span class="n">like_opts</span><span class="p">)</span>
+            <span class="n">X</span><span class="o">.</span><span class="n">get_likelihood</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="o">**</span><span class="n">like_opts</span><span class="p">)</span>
 
     <span class="k">else</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">map_tag</span><span class="p">,</span> <span class="n">map_file</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">map_tags</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">map_files</span><span class="p">):</span>
@@ -795,14 +786,12 @@
 
             <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing bandpowers for map </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">map_tag</span><span class="p">),</span> <span class="s2">&quot;info&quot;</span><span class="p">)</span>
             <span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_bandpowers</span><span class="p">(</span>
-                <span class="n">cls_shape</span><span class="p">,</span> <span class="n">map_tag</span><span class="o">=</span><span class="n">map_tag</span><span class="p">,</span> <span class="n">return_qb</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">bandpwr_opts</span>
+                <span class="n">map_tag</span><span class="o">=</span><span class="n">map_tag</span><span class="p">,</span> <span class="n">return_qb</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">bandpwr_opts</span>
             <span class="p">)</span>
 
             <span class="k">if</span> <span class="n">likelihood</span><span class="p">:</span>
                 <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing likelihoods for map </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">map_tag</span><span class="p">),</span> <span class="s2">&quot;info&quot;</span><span class="p">)</span>
-                <span class="n">X</span><span class="o">.</span><span class="n">get_likelihood</span><span class="p">(</span>
-                    <span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="n">map_tag</span><span class="o">=</span><span class="n">map_tag</span><span class="p">,</span> <span class="n">cls_shape</span><span class="o">=</span><span class="n">cls_shape</span><span class="p">,</span> <span class="o">**</span><span class="n">like_opts</span>
-                <span class="p">)</span>
+                <span class="n">X</span><span class="o">.</span><span class="n">get_likelihood</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="n">map_tag</span><span class="o">=</span><span class="n">map_tag</span><span class="p">,</span> <span class="o">**</span><span class="n">like_opts</span><span class="p">)</span>
 
     <span class="n">cpu_elapsed</span> <span class="o">=</span> <span class="n">cpu_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">cpu_start</span>
     <span class="n">time_elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">time_start</span>
@@ -1294,7 +1283,6 @@
             <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Convergence criteria for likelihood MCMC chains&quot;</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;tophat_bins&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Use uniform weights in each bin.&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;return_cls&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Return C_ls rather than the default D_ls.&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span>
             <span class="n">G</span><span class="p">,</span>

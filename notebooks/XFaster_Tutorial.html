@@ -925,7 +925,7 @@ dict_keys([&#39;kern&#39;, &#39;pkern&#39;, &#39;mkern&#39;, &#39;xkern&#39;, &#
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7efd115a9940&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7f760c19b940&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1189,14 +1189,14 @@ q_{b}^{transfer}=\frac{1}{2} \sum_{b^{\prime}} \mathcal{F}_{b b^{\prime}}^{-1} \
 <ol class="arabic simple">
 <li><p>Load up the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span>:</p></li>
 </ol>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cbl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">cls_shape</span><span class="p">,</span> <span class="n">m0</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cbl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">map_tag</span><span class="o">=</span><span class="n">m0</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">cls_shape</span></code> is signal_shape that we calculated earlier, <code class="docutils literal notranslate"><span class="pre">m0</span></code> is the map, which is used to select the beam and kernel, and <code class="docutils literal notranslate"><span class="pre">transfer_run=True</span></code> sets the <span class="math notranslate nohighlight">\(F_\ell\)</span> term to 1.</p>
+<p>This uses the signal_shape internally that we calculated earlier, <code class="docutils literal notranslate"><span class="pre">m0</span></code> is the map, which is used to select the beam and kernel, and <code class="docutils literal notranslate"><span class="pre">transfer_run=True</span></code> sets the <span class="math notranslate nohighlight">\(F_\ell\)</span> term to 1.</p>
 <ol class="arabic simple" start="2">
 <li><p>Run <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.fisher_iterate"><span class="std std-ref">fisher_iterate()</span></a>.</p></li>
 </ol>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_iterate</span><span class="p">(</span><span class="n">cbl</span><span class="p">,</span> <span class="n">cls_shape</span><span class="p">,</span> <span class="n">m0</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_iterate</span><span class="p">(</span><span class="n">cbl</span><span class="p">,</span> <span class="n">m0</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                           <span class="n">iter_max</span><span class="o">=</span><span class="n">iter_max</span><span class="p">,</span> <span class="n">converge_criteria</span><span class="o">=</span><span class="n">converge_criteria</span><span class="p">,</span>
                           <span class="n">save_iters</span><span class="o">=</span><span class="n">save_iters</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
 </pre></div>
@@ -1213,7 +1213,7 @@ q_{b}^{transfer}=\frac{1}{2} \sum_{b^{\prime}} \mathcal{F}_{b b^{\prime}}^{-1} \
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">transfer</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_transfer</span><span class="p">(</span><span class="n">signal_shape</span><span class="p">)</span>
+<span></span><span class="n">transfer</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_transfer</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">transfer</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 </pre></div>
 </div>
@@ -1372,7 +1372,7 @@ SPIDER to run the ensemble of simulations needed for the Feldman-Cousins analysi
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">cbl</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">signal_shape</span><span class="p">,</span> <span class="n">map_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span></span><span class="n">cbl</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">map_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1584,24 +1584,25 @@ automatically adjusted to be the lowest level possible while still having the al
 </div>
 <div class="section" id="Constructing-final-bandpowers">
 <h4>Constructing final bandpowers<a class="headerlink" href="#Constructing-final-bandpowers" title="Permalink to this headline">¶</a></h4>
-<p>To construct bandpowers, we need to apply the <span class="math notranslate nohighlight">\(q_b\)</span> parameters to the input shape spectra. The function that handles this is <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.do_qb2cb"><span class="std std-ref">do_qb2cb()</span></a> This is done by integrating over each bin using a weighting scheme. For this example, the quantity we want in the end should be in units of <span class="math notranslate nohighlight">\(\mathcal{D}_\ell = \ell (\ell + 1) C_\ell / 2\pi\)</span>, where <span class="math notranslate nohighlight">\(C_\ell\)</span> is the appropriate input shape spectrum. You can also return <span class="math notranslate nohighlight">\(C_\ell\)</span>s
-using <code class="docutils literal notranslate"><span class="pre">return_cls=True</span></code>, which will change this weighting scheme. Assuming some weighted integral <span class="math notranslate nohighlight">\(\mathcal{I}_b\)</span> for a given bin, we compute each bandpower as a weighted integral of <span class="math notranslate nohighlight">\(\ell (\ell + 1) C_\ell / 2\pi\)</span>, scaled by the appropriate <span class="math notranslate nohighlight">\(q_b\)</span>, and normalized by the integral of the weights:</p>
+<p>To construct bandpowers, we need to convert the <span class="math notranslate nohighlight">\(q_b\)</span> parameters to spectrum bandpowers. The function that handles this is <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.do_qb2cb"><span class="std std-ref">do_qb2cb()</span></a> This is done by first constructing window functions for each <span class="math notranslate nohighlight">\(q_b\)</span> parameter (using <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.fisher_calc"><span class="std std-ref">fisher_calc()</span></a> with the option <code class="docutils literal notranslate"><span class="pre">windows=True</span></code>), then using that to build a matrix that rotates <span class="math notranslate nohighlight">\(q_b\)</span> into bandpowers. For this example, the quantity
+we want in the end should be in units of <span class="math notranslate nohighlight">\(\mathcal{D}_\ell = \ell (\ell + 1) C_\ell / 2\pi\)</span>. You can also return bandpowers in units of <span class="math notranslate nohighlight">\(C_\ell\)</span> using <code class="docutils literal notranslate"><span class="pre">return_cls=True</span></code>, which will change the rotation matrix. Explicitly, we have for the <span class="math notranslate nohighlight">\(\mathcal{D}_b\)</span> bandpowers:</p>
 <p><span class="math">\begin{equation}
-\mathcal{D}_b = q_b \frac{ \mathcal{I}_b\left[\frac{\ell (\ell + 1)}{2\pi} C_\ell \right] }{ \mathcal{I}_b\left[ 1 \right] }
+\mathcal{D}^{XY}_b = \sum_B q^{XY}_B \frac{\partial\langle \mathcal{D}^{XY}_b\rangle}{\partial q^{XY}_B} =
+\sum_B q^{XY}_B \frac{\sum_\ell \mathcal{N}_\ell W^{XY(q)}_{b\ell} \chi^{XY}_{B \ell} \mathcal{D}^{XY(S)}_\ell} {\sum_\ell \mathcal{N}_\ell W^{XY(q)}_{b\ell} }\,,
 \end{equation}</span></p>
-<p>Similarly, the errors on each bandpower are:</p>
+<p>where the normalization function is</p>
 <p><span class="math">\begin{equation}
-\Delta\mathcal{D}_b = \sqrt{F^{-1}_{bb}} \frac{ \mathcal{I}_b\left[\frac{\ell (\ell + 1)}{2\pi} C_\ell \right] }{ \mathcal{I}_b\left[ 1 \right] }
+\mathcal{N}_\ell = \frac{1}{2}\frac{(2\ell + 1)}{\ell (\ell + 1)}\,,
 \end{equation}</span></p>
-<p>To be specific, we define the weighted integral as:</p>
+<p>and the matrix of derivatives is block-diagonal in the spectrum component <span class="math notranslate nohighlight">\(XY\)</span>. Similarly, the errors on each bandpower are:</p>
 <p><span class="math">\begin{equation}
-\mathcal{I}_b\left[f_\ell\right] = \sum_\ell \frac{1}{2} \frac{2\ell + 1}{\ell (\ell + 1)} \chi_b(\ell) \, f_\ell
+\Delta\mathcal{D}_b = \left[\sum_{BB^\prime} \mathcal{F}^{-1}_{BB^\prime} \frac{\partial\langle \mathcal{D}_b\rangle}{\partial q_B} \frac{\partial\langle \mathcal{D}_{b}\rangle}{\partial q_{B^\prime}}\right]^{1/2}\,,
 \end{equation}</span></p>
-<p>where <span class="math notranslate nohighlight">\(\chi_b(\ell)\)</span> is a top-hat function with value 1 within the bin and 0 outside of it. This weighting scheme is taken from <a class="reference external" href="https://arxiv.org/pdf/astro-ph/9808264.pdf">Section 4.2 of Bond, Jaffe, and Knox (2000)</a>. With this definition, the bin centers are:</p>
+<p>and the window functions for each <span class="math notranslate nohighlight">\(\mathcal{D}_b\)</span> are:</p>
 <p><span class="math">\begin{equation}
-\ell_b = \frac{ \mathcal{I}_b\left[\frac{\ell (\ell + 1)}{2\pi} C_\ell \, \ell \right] }{ \mathcal{I}_b\left[ \frac{\ell (\ell + 1)}{2\pi} C_\ell \right] }
+W_{b\ell}^{XY(\mathcal{D})} = \sum_B W_{B\ell}^{XY(q)} \frac{\partial\langle \mathcal{D}^{XY}_b\rangle}{\partial q^{XY}_B} \,,
 \end{equation}</span></p>
-<p>While this definition of the integral is sufficient, the more accurate calculation constructs <span class="math notranslate nohighlight">\(\chi_b(\ell)\)</span> as a window function that includes beam, transfer function and kernel effects that distribute power as a function of <span class="math notranslate nohighlight">\(\ell\)</span>. These bandpower window functions are also stored in the bandpowers output file.</p>
+<p>with normalization <span class="math notranslate nohighlight">\(\sum_\ell \mathcal{N}_\ell W_{b\ell}^{(\mathcal{D})} = 1\)</span>. The bandpowers, errors, <span class="math notranslate nohighlight">\(q_b\)</span> window functions and bandpower window functions are all stored in the bandpowers output file. More details on the bandpower window functions can be found in Section 2.5 of the <a class="reference external" href="https://arxiv.org/abs/2104.01172">XFaster paper</a>.</p>
 </div>
 <div class="section" id="Looking-at-results">
 <h4>Looking at results<a class="headerlink" href="#Looking-at-results" title="Permalink to this headline">¶</a></h4>
@@ -1611,8 +1612,7 @@ using <code class="docutils literal notranslate"><span class="pre">return_cls=Tr
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">bp</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_bandpowers</span><span class="p">(</span><span class="n">signal_shape</span><span class="p">,</span> <span class="n">converge_criteria</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span> <span class="n">iter_max</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">save_iters</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                      <span class="n">cond_noise</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+<span></span><span class="n">bp</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_bandpowers</span><span class="p">(</span><span class="n">converge_criteria</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span> <span class="n">iter_max</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">save_iters</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cond_noise</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">cond_criteria</span><span class="o">=</span><span class="mf">5e3</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1779,7 +1779,7 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7efcf8070760&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7f75f1470c10&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1877,7 +1877,7 @@ just vary <span class="math notranslate nohighlight">\(r\)</span>. For this exam
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[ 2021-05-05 20:23:29UTC ] INFO: Computing brute-force r profile likelihood
+[ 2021-05-17 20:32:22UTC ] INFO: Computing brute-force r profile likelihood
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">

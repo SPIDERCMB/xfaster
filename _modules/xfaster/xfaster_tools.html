@@ -172,7 +172,6 @@
     <span class="s2">&quot;wigner3j&quot;</span><span class="p">,</span>
     <span class="s2">&quot;get_camb_cl&quot;</span><span class="p">,</span>
     <span class="s2">&quot;expand_qb&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;bin_spec&quot;</span><span class="p">,</span>
     <span class="s2">&quot;scale_dust&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
@@ -367,106 +366,6 @@
         <span class="n">cl</span><span class="p">[</span><span class="n">left</span><span class="p">:</span><span class="n">right</span><span class="p">]</span> <span class="o">=</span> <span class="n">qb</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">cl</span></div>
-
-
-<div class="viewcode-block" id="bin_spec"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_tools.bin_spec">[docs]</a><span class="k">def</span> <span class="nf">bin_spec</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">cls_shape</span><span class="p">,</span> <span class="n">bin_def</span><span class="p">,</span> <span class="n">inv_fish</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tophat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">lfac</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Compute binned output spectra and covariances by averaging the shape</span>
-<span class="sd">    spectrum over each bin, and applying the appropriate ``qb`` bandpower</span>
-<span class="sd">    amplitude.</span>
-
-<span class="sd">    Arguments</span>
-<span class="sd">    ---------</span>
-<span class="sd">    qb : dict</span>
-<span class="sd">        Bandpower amplitudes for each spectrum bin.</span>
-<span class="sd">    cls_shape : dict</span>
-<span class="sd">        Shape spectrum</span>
-<span class="sd">    bin_def : dict</span>
-<span class="sd">        Bin definition dictionary</span>
-<span class="sd">    inv_fish : array_like, (nbins, nbins)</span>
-<span class="sd">        Inverse fisher matrix for computing the bin errors and covariance.  If</span>
-<span class="sd">        not supplied, these are not computed.</span>
-<span class="sd">    tophat : bool</span>
-<span class="sd">        If True, compute binned bandpowers using a tophat weight.  Otherwise a</span>
-<span class="sd">        logarithmic ell-space weighting is applied.</span>
-<span class="sd">    lfac : bool</span>
-<span class="sd">        If False, return binned C_l spectrum rather than the default D_l</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    cb : dict of arrays</span>
-<span class="sd">        Binned spectrum</span>
-<span class="sd">    dcb : dict of arrays</span>
-<span class="sd">        Binned spectrum error, if ``inv_fish`` is not None</span>
-<span class="sd">    ellb : dict of arrays</span>
-<span class="sd">        Average bin center</span>
-<span class="sd">    cov : array_like, (nbins, nbins)</span>
-<span class="sd">        Binned spectrum covariance, if ``inv_fish`` is not None</span>
-<span class="sd">    qb2cb : dict</span>
-<span class="sd">        The conversion factor from ``qb`` to ``cb``, computed by averaging over the</span>
-<span class="sd">        input shape spectrum.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">parse_tools</span> <span class="k">as</span> <span class="n">pt</span>
-
-    <span class="n">lmax</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">dict_to_arr</span><span class="p">(</span><span class="n">bin_def</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-
-    <span class="n">qb2cb</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-    <span class="n">ellb</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-    <span class="n">cb</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-
-    <span class="n">ell</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">lmax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">fac1</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">ell</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mf">4.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
-    <span class="n">fac2</span> <span class="o">=</span> <span class="n">ell</span> <span class="o">*</span> <span class="p">(</span><span class="n">ell</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
-
-    <span class="k">if</span> <span class="n">tophat</span><span class="p">:</span>
-        <span class="n">fac</span> <span class="o">=</span> <span class="n">fac2</span> <span class="k">if</span> <span class="n">lfac</span> <span class="k">else</span> <span class="mi">1</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">fac3</span> <span class="o">=</span> <span class="n">fac1</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">fac3</span><span class="p">[</span><span class="n">ell</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/=</span> <span class="n">fac2</span><span class="p">[</span><span class="n">ell</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
-        <span class="n">fac</span> <span class="o">=</span> <span class="n">fac1</span> <span class="k">if</span> <span class="n">lfac</span> <span class="k">else</span> <span class="n">fac3</span>
-
-    <span class="n">ecls_shape</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">fac</span> <span class="o">*</span> <span class="n">v</span><span class="p">[:</span> <span class="n">lmax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">cls_shape</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-
-    <span class="n">bin_index</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">dict_to_index</span><span class="p">(</span><span class="n">bin_def</span><span class="p">)</span>
-    <span class="n">nbins</span> <span class="o">=</span> <span class="mi">0</span>
-
-    <span class="k">for</span> <span class="n">stag</span><span class="p">,</span> <span class="n">qb1</span> <span class="ow">in</span> <span class="n">qb</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">comp</span><span class="p">,</span> <span class="n">spec</span> <span class="o">=</span> <span class="n">stag</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">comp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;cmb&quot;</span><span class="p">,</span> <span class="s2">&quot;fg&quot;</span><span class="p">]:</span>
-            <span class="k">continue</span>
-
-        <span class="n">shape</span> <span class="o">=</span> <span class="n">ecls_shape</span><span class="p">[</span><span class="s2">&quot;fg&quot;</span> <span class="k">if</span> <span class="n">comp</span> <span class="o">==</span> <span class="s2">&quot;fg&quot;</span> <span class="k">else</span> <span class="n">stag</span><span class="p">]</span>
-        <span class="n">ellb</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">qb1</span><span class="p">)</span>
-        <span class="n">qb2cb</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">qb1</span><span class="p">)</span>
-
-        <span class="n">nbins</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">nbins</span><span class="p">,</span> <span class="n">bin_index</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="mi">1</span><span class="p">]])</span>
-
-        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bin_def</span><span class="p">[</span><span class="n">stag</span><span class="p">]):</span>
-            <span class="n">il</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">tophat</span><span class="p">:</span>
-                <span class="n">qb2cb</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="n">il</span><span class="p">])</span>
-                <span class="n">ellb</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ell</span><span class="p">[</span><span class="n">il</span><span class="p">])</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="n">il</span><span class="p">])</span>
-                <span class="n">qb2cb</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">fac3</span><span class="p">[</span><span class="n">il</span><span class="p">])</span>
-                <span class="n">av</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="n">il</span><span class="p">])</span>
-                <span class="n">ellb</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">av</span> <span class="o">*</span> <span class="n">ell</span><span class="p">[</span><span class="n">il</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">av</span><span class="p">)</span>
-
-        <span class="n">cb</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span> <span class="o">=</span> <span class="n">qb1</span> <span class="o">*</span> <span class="n">qb2cb</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span>
-
-    <span class="k">if</span> <span class="n">inv_fish</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">inv_fish</span> <span class="o">=</span> <span class="n">inv_fish</span><span class="p">[:</span><span class="n">nbins</span><span class="p">,</span> <span class="p">:</span><span class="n">nbins</span><span class="p">]</span>
-        <span class="n">qb2cb_arr</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">dict_to_arr</span><span class="p">(</span><span class="n">qb2cb</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">dcb_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">qb2cb_arr</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">inv_fish</span><span class="p">))</span> <span class="o">*</span> <span class="n">qb2cb_arr</span><span class="p">)</span>
-        <span class="n">dcb</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">arr_to_dict</span><span class="p">(</span><span class="n">dcb_arr</span><span class="p">,</span> <span class="n">qb2cb</span><span class="p">)</span>
-        <span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">qb2cb_arr</span><span class="p">,</span> <span class="n">qb2cb_arr</span><span class="p">)</span> <span class="o">*</span> <span class="n">inv_fish</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">dcb</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="n">cov</span> <span class="o">=</span> <span class="kc">None</span>
-
-    <span class="k">return</span> <span class="n">cb</span><span class="p">,</span> <span class="n">dcb</span><span class="p">,</span> <span class="n">ellb</span><span class="p">,</span> <span class="n">cov</span><span class="p">,</span> <span class="n">qb2cb</span></div>
 </pre></div>
 
            </div>

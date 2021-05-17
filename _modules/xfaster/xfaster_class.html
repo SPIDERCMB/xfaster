@@ -1737,7 +1737,7 @@
                     <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_planck_sub&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">weighted_bins</span><span class="p">:</span>
                 <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_wbins&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_cls</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;return_cls&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
                 <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_cl&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">map_tag</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -3944,6 +3944,7 @@
             <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">r</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">r_model</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;r_model&quot;</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cls_shape</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;cls_shape&quot;</span><span class="p">]</span>
                 <span class="k">return</span> <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;cls_shape&quot;</span><span class="p">]</span>
 
         <span class="n">ell</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">lmax_kern</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
@@ -4053,10 +4054,10 @@
                     <span class="n">cls_shape</span><span class="p">[</span><span class="n">csk</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">1.0e-12</span>
 
         <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cls_shape</span> <span class="o">=</span> <span class="n">cls_shape</span>
             <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;cls_shape&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls_shape</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">save_data</span><span class="p">(</span><span class="n">save_name</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">cls_shape</span> <span class="o">=</span> <span class="n">cls_shape</span>
         <span class="k">return</span> <span class="n">cls_shape</span></div>
 
 <div class="viewcode-block" id="XFaster.get_beams"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_beams">[docs]</a>    <span class="k">def</span> <span class="nf">get_beams</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pixwin</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -4437,7 +4438,7 @@
 
 <div class="viewcode-block" id="XFaster.bin_cl_template"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.bin_cl_template">[docs]</a>    <span class="k">def</span> <span class="nf">bin_cl_template</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">cls_shape</span><span class="p">,</span>
+        <span class="n">cls_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">map_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">transfer_run</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">beam_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -4483,6 +4484,9 @@
 <span class="sd">            and unmixed terms are stored in elements ``cbl[&#39;cmb_ee&#39;]`` and</span>
 <span class="sd">            ``cbl[&#39;cmb_bb&#39;]``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">cls_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cls_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls_shape</span>
+
         <span class="n">map_pairs</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">map_tag</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">map_tag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_pairs</span><span class="p">:</span>
@@ -5058,9 +5062,7 @@
 
         <span class="k">return</span> <span class="n">obs</span><span class="p">,</span> <span class="n">nell</span><span class="p">,</span> <span class="n">debias</span></div>
 
-<div class="viewcode-block" id="XFaster.do_qb2cb"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.do_qb2cb">[docs]</a>    <span class="k">def</span> <span class="nf">do_qb2cb</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">qb</span><span class="p">,</span> <span class="n">cls_shape</span><span class="p">,</span> <span class="n">inv_fish</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tophat_bins</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">return_cls</span><span class="o">=</span><span class="kc">False</span>
-    <span class="p">):</span>
+<div class="viewcode-block" id="XFaster.do_qb2cb"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.do_qb2cb">[docs]</a>    <span class="k">def</span> <span class="nf">do_qb2cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="n">wbl</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute binned output spectra and covariances by averaging</span>
 <span class="sd">        the shape spectrum over each bin, and applying the appropriate</span>
@@ -5074,39 +5076,87 @@
 <span class="sd">        ---------</span>
 <span class="sd">        qb : dict</span>
 <span class="sd">            Bandpower amplitudes for each spectrum bin.</span>
-<span class="sd">        cls_shape : dict</span>
-<span class="sd">            Shape spectrum</span>
 <span class="sd">        inv_fish : array_like, (nbins, nbins)</span>
-<span class="sd">            Inverse fisher matrix for computing the bin errors</span>
-<span class="sd">            and covariance.  If not supplied, these are not computed.</span>
-<span class="sd">        tophat_bins : bool</span>
-<span class="sd">            If True, compute binned bandpowers using a tophat weight.</span>
-<span class="sd">            Otherwise a logarithmic ell-space weighting is applied.</span>
-<span class="sd">        return_cls : bool</span>
-<span class="sd">            If True, return binned C_l spectrum rather than the default D_l</span>
+<span class="sd">            Inverse fisher matrix for computing the bin errors and covariance.</span>
+<span class="sd">        wbl : dict</span>
+<span class="sd">            Window functions for each qb</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        cb : dict of arrays</span>
 <span class="sd">            Binned spectrum</span>
 <span class="sd">        dcb : dict of arrays</span>
-<span class="sd">            Binned spectrum error, if ``inv_fish`` is not None</span>
+<span class="sd">            Binned spectrum error</span>
 <span class="sd">        ellb : dict of arrays</span>
 <span class="sd">            Average bin center</span>
 <span class="sd">        cov : array_like, (nbins, nbins)</span>
-<span class="sd">            Binned spectrum covariance, if ``inv_fish`` is not None</span>
+<span class="sd">            Binned spectrum covariance</span>
 <span class="sd">        qb2cb : dict</span>
-<span class="sd">            The conversion factor from ``qb`` to ``cb``, computed by</span>
-<span class="sd">            averaging over the input shape spectrum.</span>
+<span class="sd">            The conversion matrix from ``qb`` to ``cb`` for each spectrum</span>
+<span class="sd">            component, computed from the qb window functions</span>
+<span class="sd">        wbl_cb : dict</span>
+<span class="sd">            Window functions for each cb</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">xft</span><span class="o">.</span><span class="n">bin_spec</span><span class="p">(</span>
-            <span class="n">qb</span><span class="p">,</span>
-            <span class="n">cls_shape</span><span class="p">,</span>
-            <span class="n">bin_def</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">,</span>
-            <span class="n">inv_fish</span><span class="o">=</span><span class="n">inv_fish</span><span class="p">,</span>
-            <span class="n">tophat</span><span class="o">=</span><span class="n">tophat_bins</span><span class="p">,</span>
-            <span class="n">lfac</span><span class="o">=</span><span class="ow">not</span> <span class="n">return_cls</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="n">qb2cb</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">ellb</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">wbl_cb</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+
+        <span class="c1"># truncate to only bins for which there are window functions</span>
+        <span class="n">bin_index</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">dict_to_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">)</span>
+        <span class="n">nbins</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">bin_index</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">stag</span> <span class="ow">in</span> <span class="n">wbl</span><span class="p">])</span>
+        <span class="n">inv_fish</span> <span class="o">=</span> <span class="n">inv_fish</span><span class="p">[:</span><span class="n">nbins</span><span class="p">,</span> <span class="p">:</span><span class="n">nbins</span><span class="p">]</span>
+        <span class="n">qb2cb_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">inv_fish</span><span class="p">)</span>
+
+        <span class="c1"># window function normalization</span>
+        <span class="n">ell</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lmax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">ell</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">4.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+
+        <span class="c1"># normalization shape spectrum</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_cls</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">ell</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">model</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="n">ell</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">/</span> <span class="p">(</span><span class="n">ell</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">stag</span><span class="p">,</span> <span class="n">wbl1</span> <span class="ow">in</span> <span class="n">wbl</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># compute conversion factors</span>
+            <span class="n">qb2cb</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">wbl1</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">wbl1</span><span class="p">)))</span>
+            <span class="n">cls_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;fg&quot;</span> <span class="k">if</span> <span class="s2">&quot;fg&quot;</span> <span class="ow">in</span> <span class="n">stag</span> <span class="k">else</span> <span class="n">stag</span><span class="p">][:</span> <span class="nb">len</span><span class="p">(</span><span class="n">ell</span><span class="p">)]</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">wbl1</span> <span class="o">*</span> <span class="n">cls_shape</span>
+            <span class="n">bd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span>
+            <span class="n">bw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_weights</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">((</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">),</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">bd</span><span class="p">,</span> <span class="n">bw</span><span class="p">)):</span>
+                <span class="n">qb2cb</span><span class="p">[</span><span class="n">stag</span><span class="p">][:,</span> <span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">l</span><span class="p">:</span><span class="n">r</span><span class="p">]</span> <span class="o">*</span> <span class="n">w</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># normalize for cb&#39;s or db&#39;s</span>
+            <span class="n">qb2cb</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">norm</span> <span class="o">*</span> <span class="n">wbl1</span> <span class="o">*</span> <span class="n">model</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># construct conversion matrix for covariance</span>
+            <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">bin_index</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span>
+            <span class="n">qb2cb_mat</span><span class="p">[</span><span class="n">left</span><span class="p">:</span><span class="n">right</span><span class="p">,</span> <span class="n">left</span><span class="p">:</span><span class="n">right</span><span class="p">]</span> <span class="o">=</span> <span class="n">qb2cb</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span>
+
+            <span class="c1"># compute wbls for cb&#39;s</span>
+            <span class="n">wbl_cb</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,jl-&gt;il&quot;</span><span class="p">,</span> <span class="n">qb2cb</span><span class="p">[</span><span class="n">stag</span><span class="p">],</span> <span class="n">wbl1</span><span class="p">)</span>
+
+            <span class="c1"># check normalization</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> cb window function normalization: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">stag</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">norm</span> <span class="o">*</span> <span class="n">wbl_cb</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="p">),</span>
+                <span class="s2">&quot;debug&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># compute bin centers</span>
+            <span class="n">ellb</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">norm</span> <span class="o">*</span> <span class="n">wbl_cb</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span> <span class="o">*</span> <span class="n">model</span> <span class="o">*</span> <span class="n">ell</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># compute cb&#39;s</span>
+            <span class="n">cb</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,j-&gt;i&quot;</span><span class="p">,</span> <span class="n">qb2cb</span><span class="p">[</span><span class="n">stag</span><span class="p">],</span> <span class="n">qb</span><span class="p">[</span><span class="n">stag</span><span class="p">])</span>
+
+        <span class="c1"># compute covariance and errors</span>
+        <span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ik,jl,kl-&gt;ij&quot;</span><span class="p">,</span> <span class="n">qb2cb_mat</span><span class="p">,</span> <span class="n">qb2cb_mat</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">)</span>
+        <span class="n">dcb</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">arr_to_dict</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cov</span><span class="p">)),</span> <span class="n">qb2cb</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cb</span><span class="p">,</span> <span class="n">dcb</span><span class="p">,</span> <span class="n">ellb</span><span class="p">,</span> <span class="n">cov</span><span class="p">,</span> <span class="n">qb2cb</span><span class="p">,</span> <span class="n">wbl_cb</span></div>
 
 <div class="viewcode-block" id="XFaster.fisher_precalc"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.fisher_precalc">[docs]</a>    <span class="k">def</span> <span class="nf">fisher_precalc</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -5330,6 +5380,9 @@
 <span class="sd">        -- or --</span>
 <span class="sd">        likelihood : scalar</span>
 <span class="sd">            Likelihood of the given input parameters.</span>
+<span class="sd">        -- or --</span>
+<span class="sd">        windows : OrderedDict</span>
+<span class="sd">            qb window functions</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">cond_criteria</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">cond_criteria</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
@@ -5586,7 +5639,7 @@
 
             <span class="c1"># compute prefactors</span>
             <span class="n">ells</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lmax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="n">lfac</span> <span class="o">=</span> <span class="n">ells</span> <span class="o">*</span> <span class="p">(</span><span class="n">ells</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">ells</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="n">norm</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">ells</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">4.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
 
             <span class="c1"># compute binning term</span>
             <span class="n">arg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,kljm-&gt;klim&quot;</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="n">mat</span><span class="p">)</span>
@@ -5596,9 +5649,9 @@
 
             <span class="c1"># compute window functions for each spectrum</span>
             <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> <span class="ow">in</span> <span class="n">bin_index</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="k">if</span> <span class="s2">&quot;cmb&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">k</span><span class="p">:</span>
+                <span class="n">comp</span><span class="p">,</span> <span class="n">spec</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">comp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;cmb&quot;</span><span class="p">,</span> <span class="s2">&quot;fg&quot;</span><span class="p">]:</span>
                     <span class="k">continue</span>
-                <span class="n">spec</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
 
                 <span class="c1"># select bins for corresponding spectrum</span>
                 <span class="n">sarg</span> <span class="o">=</span> <span class="n">arg</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">left</span><span class="p">:</span><span class="n">right</span><span class="p">]</span>
@@ -5610,27 +5663,23 @@
                     <span class="n">mspec</span> <span class="o">=</span> <span class="s2">&quot;bb&quot;</span> <span class="k">if</span> <span class="n">spec</span> <span class="o">==</span> <span class="s2">&quot;ee&quot;</span> <span class="k">else</span> <span class="s2">&quot;ee&quot;</span>
                     <span class="n">smat</span> <span class="o">+=</span> <span class="n">spec_mask</span><span class="p">[</span><span class="n">mspec</span><span class="p">][:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">Mmat_mix</span>
 
+                <span class="c1"># qb window function</span>
+                <span class="n">wbl1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;iil,ijkl,jilm-&gt;km&quot;</span><span class="p">,</span> <span class="n">gmat</span><span class="p">,</span> <span class="n">sarg</span><span class="p">,</span> <span class="n">smat</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="n">norm</span>
+
                 <span class="c1"># bin weighting, allowing for overlapping bin edges</span>
-                <span class="n">chi_bl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">lfac</span><span class="p">)</span>
+                <span class="n">chi_bl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span>
                 <span class="k">for</span> <span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">),</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_weights</span><span class="p">[</span><span class="n">k</span><span class="p">]):</span>
                     <span class="n">chi_bl</span><span class="p">[</span><span class="n">l</span><span class="p">:</span><span class="n">r</span><span class="p">]</span> <span class="o">+=</span> <span class="n">w</span>
 
-                <span class="c1"># qb window function</span>
-                <span class="n">wbl1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;iil,ijkl,jilm-&gt;km&quot;</span><span class="p">,</span> <span class="n">gmat</span><span class="p">,</span> <span class="n">sarg</span><span class="p">,</span> <span class="n">smat</span><span class="p">)</span> <span class="o">*</span> <span class="n">lfac</span> <span class="o">*</span> <span class="n">chi_bl</span>
-
                 <span class="c1"># check normalization</span>
-                <span class="n">norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">lfac</span><span class="p">)</span>
-                <span class="n">norm</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">lfac</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
-                <span class="n">cls_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls_shape</span><span class="p">[</span><span class="n">k</span><span class="p">][:</span> <span class="nb">len</span><span class="p">(</span><span class="n">norm</span><span class="p">)]</span>
+                <span class="n">cls_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;fg&quot;</span> <span class="k">if</span> <span class="n">comp</span> <span class="o">==</span> <span class="s2">&quot;fg&quot;</span> <span class="k">else</span> <span class="n">k</span><span class="p">][:</span> <span class="nb">len</span><span class="p">(</span><span class="n">norm</span><span class="p">)]</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
-                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> window function normalization: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">k</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">wbl1</span> <span class="o">*</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">cls_shape</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> qb window function normalization: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">k</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">wbl1</span> <span class="o">*</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">chi_bl</span> <span class="o">*</span> <span class="n">cls_shape</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
                     <span class="p">),</span>
                     <span class="s2">&quot;debug&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
-                <span class="c1"># normalization for Cb and Db, for CosmoMC and friends</span>
-                <span class="n">wbl1</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">wbl1</span> <span class="o">*</span> <span class="n">norm</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
                 <span class="n">wbl</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">wbl1</span>
 
             <span class="k">return</span> <span class="n">wbl</span>
@@ -5665,20 +5714,16 @@
 <div class="viewcode-block" id="XFaster.fisher_iterate"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.fisher_iterate">[docs]</a>    <span class="k">def</span> <span class="nf">fisher_iterate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">cbl</span><span class="p">,</span>
-        <span class="n">cls_shape</span><span class="p">,</span>
         <span class="n">map_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">iter_max</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
         <span class="n">converge_criteria</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
         <span class="n">qb_start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">transfer_run</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">save_iters</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">tophat_bins</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">return_cls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">null_first_cmb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">delta_beta_prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">cond_noise</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">cond_criteria</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">windows</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">like_profiles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">like_profile_sigma</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>
         <span class="n">like_profile_points</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
@@ -5692,8 +5737,6 @@
 <span class="sd">        ---------</span>
 <span class="sd">        cbl : OrderedDict</span>
 <span class="sd">            Cbl matrix computed from an input shape spectrum</span>
-<span class="sd">        cls_shape : OrderedDict</span>
-<span class="sd">            Input shape spectrum</span>
 <span class="sd">        map_tag : str</span>
 <span class="sd">            If not None, then iteration is performed over the spectra</span>
 <span class="sd">            corresponding to the given map, rather over all possible</span>
@@ -5719,16 +5762,9 @@
 <span class="sd">        save_iters : bool</span>
 <span class="sd">            If True, the output data from each Fisher iteration are stored</span>
 <span class="sd">            in an individual npz file.</span>
-<span class="sd">        tophat_bins : bool</span>
-<span class="sd">            If True, use uniform weights within each bin rather than any</span>
-<span class="sd">            ell-based weighting.</span>
-<span class="sd">        return_cls : bool</span>
-<span class="sd">            If True, return C_l spectrum rather than D_l spectrum</span>
 <span class="sd">        cond_criteria : float</span>
 <span class="sd">            The maximum condition number allowed for Dmat1 to be acceptable</span>
 <span class="sd">            for taking its inverse.</span>
-<span class="sd">        windows : bool</span>
-<span class="sd">            If True, include window functions for CMB bins in the output</span>
 <span class="sd">        like_profiles : bool</span>
 <span class="sd">            If True, compute profile likelihoods for each qb, leaving all</span>
 <span class="sd">            others fixed at their maximum likelihood values.  Profiles are</span>
@@ -5862,10 +5898,6 @@
                 <span class="n">qb</span><span class="p">,</span> <span class="n">cbl</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cls_noise</span><span class="o">=</span><span class="n">nell</span><span class="p">,</span> <span class="n">cond_noise</span><span class="o">=</span><span class="kc">None</span>
             <span class="p">)</span>
 
-            <span class="n">cb</span><span class="p">,</span> <span class="n">dcb</span><span class="p">,</span> <span class="n">ellb</span><span class="p">,</span> <span class="n">cov</span><span class="p">,</span> <span class="n">qb2cb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_qb2cb</span><span class="p">(</span>
-                <span class="n">qb</span><span class="p">,</span> <span class="n">cls_shape</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="n">tophat_bins</span><span class="o">=</span><span class="n">tophat_bins</span><span class="p">,</span> <span class="n">return_cls</span><span class="o">=</span><span class="n">return_cls</span>
-            <span class="p">)</span>
-
             <span class="k">if</span> <span class="s2">&quot;delta_beta&quot;</span> <span class="ow">in</span> <span class="n">qb</span><span class="p">:</span>
                 <span class="c1"># get beta fit and beta error</span>
                 <span class="n">beta_fit</span> <span class="o">=</span> <span class="n">qb</span><span class="p">[</span><span class="s2">&quot;delta_beta&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_ref</span>
@@ -5877,29 +5909,19 @@
 
             <span class="k">if</span> <span class="n">save_iters</span><span class="p">:</span>
                 <span class="c1"># save only the quantities that change with each iteration</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">save_data</span><span class="p">(</span>
-                    <span class="n">save_name</span><span class="p">,</span>
-                    <span class="n">bp_opts</span><span class="o">=</span><span class="ow">not</span> <span class="n">transfer_run</span><span class="p">,</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
                     <span class="n">map_tag</span><span class="o">=</span><span class="n">map_tag</span><span class="p">,</span>
                     <span class="n">map_tags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">map_tags</span><span class="p">,</span>
                     <span class="n">iter_index</span><span class="o">=</span><span class="n">iter_idx</span><span class="p">,</span>
                     <span class="n">bin_def</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">,</span>
-                    <span class="n">cls_shape</span><span class="o">=</span><span class="n">cls_shape</span><span class="p">,</span>
+                    <span class="n">bin_weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_weights</span><span class="p">,</span>
+                    <span class="n">cls_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls_shape</span><span class="p">,</span>
                     <span class="n">cls_obs</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span>
-                    <span class="n">ellb</span><span class="o">=</span><span class="n">ellb</span><span class="p">,</span>
                     <span class="n">qb</span><span class="o">=</span><span class="n">qb</span><span class="p">,</span>
                     <span class="n">fqb</span><span class="o">=</span><span class="n">fqb</span><span class="p">,</span>
-                    <span class="n">cb</span><span class="o">=</span><span class="n">cb</span><span class="p">,</span>
-                    <span class="n">dcb</span><span class="o">=</span><span class="n">dcb</span><span class="p">,</span>
-                    <span class="n">qb2cb</span><span class="o">=</span><span class="n">qb2cb</span><span class="p">,</span>
                     <span class="n">inv_fish</span><span class="o">=</span><span class="n">inv_fish</span><span class="p">,</span>
-                    <span class="n">cov</span><span class="o">=</span><span class="n">cov</span><span class="p">,</span>
                     <span class="n">cls_model</span><span class="o">=</span><span class="n">cls_model</span><span class="p">,</span>
                     <span class="n">cbl</span><span class="o">=</span><span class="n">cbl</span><span class="p">,</span>
-                    <span class="n">beta_fit</span><span class="o">=</span><span class="n">beta_fit</span><span class="p">,</span>
-                    <span class="n">beta_err</span><span class="o">=</span><span class="n">beta_err</span><span class="p">,</span>
-                    <span class="n">ref_freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_freq</span><span class="p">,</span>
-                    <span class="n">beta_ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_ref</span><span class="p">,</span>
                     <span class="n">map_freqs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">map_freqs</span><span class="p">,</span>
                     <span class="n">cls_signal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls_signal</span><span class="p">,</span>
                     <span class="n">cls_noise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls_noise</span><span class="p">,</span>
@@ -5907,6 +5929,16 @@
                     <span class="n">gmat_ell</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gmat_ell</span><span class="p">,</span>
                     <span class="n">extra_tag</span><span class="o">=</span><span class="n">file_tag</span><span class="p">,</span>
                 <span class="p">)</span>
+
+                <span class="k">if</span> <span class="s2">&quot;fg_tt&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">:</span>
+                    <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                        <span class="n">beta_fit</span><span class="o">=</span><span class="n">beta_fit</span><span class="p">,</span>
+                        <span class="n">beta_err</span><span class="o">=</span><span class="n">beta_err</span><span class="p">,</span>
+                        <span class="n">ref_freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_freq</span><span class="p">,</span>
+                        <span class="n">beta_ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_ref</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">save_data</span><span class="p">(</span><span class="n">save_name</span><span class="p">,</span> <span class="n">bp_opts</span><span class="o">=</span><span class="ow">not</span> <span class="n">transfer_run</span><span class="p">,</span> <span class="o">**</span><span class="n">out</span><span class="p">)</span>
 
             <span class="p">(</span><span class="n">nans</span><span class="p">,)</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">qb_new_arr</span><span class="p">))</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nans</span><span class="p">):</span>
@@ -5941,14 +5973,6 @@
                         <span class="n">cond_noise</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                         <span class="n">delta_beta_prior</span><span class="o">=</span><span class="n">delta_beta_prior</span><span class="p">,</span>
                         <span class="n">null_first_cmb</span><span class="o">=</span><span class="n">null_first_cmb</span><span class="p">,</span>
-                    <span class="p">)</span>
-
-                    <span class="n">cb</span><span class="p">,</span> <span class="n">dcb</span><span class="p">,</span> <span class="n">ellb</span><span class="p">,</span> <span class="n">cov</span><span class="p">,</span> <span class="n">qb2cb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_qb2cb</span><span class="p">(</span>
-                        <span class="n">qb</span><span class="p">,</span>
-                        <span class="n">cls_shape</span><span class="p">,</span>
-                        <span class="n">inv_fish</span><span class="p">,</span>
-                        <span class="n">tophat_bins</span><span class="o">=</span><span class="n">tophat_bins</span><span class="p">,</span>
-                        <span class="n">return_cls</span><span class="o">=</span><span class="n">return_cls</span><span class="p">,</span>
                     <span class="p">)</span>
 
                 <span class="c1"># If any diagonals of inv_fisher are negative, something went wrong</span>
@@ -6007,30 +6031,30 @@
         <span class="c1"># save and return</span>
         <span class="n">out</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
             <span class="n">qb</span><span class="o">=</span><span class="n">qb</span><span class="p">,</span>
-            <span class="n">cb</span><span class="o">=</span><span class="n">cb</span><span class="p">,</span>
-            <span class="n">dcb</span><span class="o">=</span><span class="n">dcb</span><span class="p">,</span>
-            <span class="n">ellb</span><span class="o">=</span><span class="n">ellb</span><span class="p">,</span>
-            <span class="n">cov</span><span class="o">=</span><span class="n">cov</span><span class="p">,</span>
             <span class="n">inv_fish</span><span class="o">=</span><span class="n">inv_fish</span><span class="p">,</span>
             <span class="n">fqb</span><span class="o">=</span><span class="n">fqb</span><span class="p">,</span>
-            <span class="n">qb2cb</span><span class="o">=</span><span class="n">qb2cb</span><span class="p">,</span>
             <span class="n">bin_def</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">,</span>
+            <span class="n">bin_weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bin_weights</span><span class="p">,</span>
             <span class="n">iters</span><span class="o">=</span><span class="n">iter_idx</span><span class="p">,</span>
             <span class="n">success</span><span class="o">=</span><span class="n">success</span><span class="p">,</span>
-            <span class="n">beta_fit</span><span class="o">=</span><span class="n">beta_fit</span><span class="p">,</span>
-            <span class="n">beta_err</span><span class="o">=</span><span class="n">beta_err</span><span class="p">,</span>
             <span class="n">map_tags</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">map_tags</span><span class="p">,</span>
-            <span class="n">ref_freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_freq</span><span class="p">,</span>
-            <span class="n">beta_ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_ref</span><span class="p">,</span>
             <span class="n">map_freqs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">map_freqs</span><span class="p">,</span>
             <span class="n">converge_criteria</span><span class="o">=</span><span class="n">converge_criteria</span><span class="p">,</span>
-            <span class="n">delta_beta_prior</span><span class="o">=</span><span class="n">delta_beta_prior</span><span class="p">,</span>
             <span class="n">cond_noise</span><span class="o">=</span><span class="n">cond_noise</span><span class="p">,</span>
             <span class="n">cond_criteria</span><span class="o">=</span><span class="n">cond_criteria</span><span class="p">,</span>
             <span class="n">null_first_cmb</span><span class="o">=</span><span class="n">null_first_cmb</span><span class="p">,</span>
             <span class="n">apply_gcorr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_gcorr</span><span class="p">,</span>
             <span class="n">weighted_bins</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weighted_bins</span><span class="p">,</span>
         <span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;fg_tt&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">:</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">delta_beta_prior</span><span class="o">=</span><span class="n">delta_beta_prior</span><span class="p">,</span>
+                <span class="n">beta_fit</span><span class="o">=</span><span class="n">beta_fit</span><span class="p">,</span>
+                <span class="n">beta_err</span><span class="o">=</span><span class="n">beta_err</span><span class="p">,</span>
+                <span class="n">ref_freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_freq</span><span class="p">,</span>
+                <span class="n">beta_ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_ref</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
             <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
@@ -6039,7 +6063,7 @@
                 <span class="n">cls_signal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls_signal</span><span class="p">,</span>
                 <span class="n">cls_noise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls_noise</span><span class="p">,</span>
                 <span class="n">cls_model</span><span class="o">=</span><span class="n">cls_model</span><span class="p">,</span>
-                <span class="n">cls_shape</span><span class="o">=</span><span class="n">cls_shape</span><span class="p">,</span>
+                <span class="n">cls_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls_shape</span><span class="p">,</span>
                 <span class="n">cond_noise</span><span class="o">=</span><span class="n">cond_noise</span><span class="p">,</span>
                 <span class="n">Dmat_obs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Dmat_obs</span><span class="p">,</span>
             <span class="p">)</span>
@@ -6078,36 +6102,40 @@
                 <span class="n">null_first_cmb</span><span class="o">=</span><span class="n">null_first_cmb</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="n">_</span><span class="p">,</span> <span class="n">dcb_nosampvar</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">cov_nosampvar</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_qb2cb</span><span class="p">(</span>
-                <span class="n">qb_new_ns</span><span class="p">,</span>
-                <span class="n">cls_shape</span><span class="p">,</span>
-                <span class="n">inv_fish_ns</span><span class="p">,</span>
-                <span class="n">tophat_bins</span><span class="o">=</span><span class="n">tophat_bins</span><span class="p">,</span>
-                <span class="n">return_cls</span><span class="o">=</span><span class="n">return_cls</span><span class="p">,</span>
-            <span class="p">)</span>
-
             <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-                <span class="n">dcb_nosampvar</span><span class="o">=</span><span class="n">dcb_nosampvar</span><span class="p">,</span>
-                <span class="n">cov_nosampvar</span><span class="o">=</span><span class="n">cov_nosampvar</span><span class="p">,</span>
                 <span class="n">invfish_nosampvar</span><span class="o">=</span><span class="n">inv_fish_ns</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">windows</span><span class="p">:</span>
-                <span class="c1"># compute window functions for CMB bins</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Calculating window functions for CMB bins&quot;</span><span class="p">,</span> <span class="s2">&quot;info&quot;</span><span class="p">)</span>
-                <span class="n">wbl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_calc</span><span class="p">(</span>
-                    <span class="n">qb</span><span class="p">,</span>
-                    <span class="n">cbl</span><span class="p">,</span>
-                    <span class="n">obs</span><span class="p">,</span>
-                    <span class="n">cls_noise</span><span class="o">=</span><span class="n">nell</span><span class="p">,</span>
-                    <span class="n">cls_debias</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                    <span class="n">cond_noise</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                    <span class="n">delta_beta_prior</span><span class="o">=</span><span class="n">delta_beta_prior</span><span class="p">,</span>
-                    <span class="n">null_first_cmb</span><span class="o">=</span><span class="n">null_first_cmb</span><span class="p">,</span>
-                    <span class="n">windows</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                    <span class="n">inv_fish</span><span class="o">=</span><span class="n">inv_fish</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">wbl</span><span class="o">=</span><span class="n">wbl</span><span class="p">)</span>
+            <span class="c1"># compute window functions for CMB bins</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Calculating window functions for CMB bins&quot;</span><span class="p">,</span> <span class="s2">&quot;info&quot;</span><span class="p">)</span>
+            <span class="n">wbl_qb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_calc</span><span class="p">(</span>
+                <span class="n">qb</span><span class="p">,</span>
+                <span class="n">cbl</span><span class="p">,</span>
+                <span class="n">obs</span><span class="p">,</span>
+                <span class="n">cls_noise</span><span class="o">=</span><span class="n">nell</span><span class="p">,</span>
+                <span class="n">cls_debias</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">cond_noise</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">delta_beta_prior</span><span class="o">=</span><span class="n">delta_beta_prior</span><span class="p">,</span>
+                <span class="n">null_first_cmb</span><span class="o">=</span><span class="n">null_first_cmb</span><span class="p">,</span>
+                <span class="n">windows</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">inv_fish</span><span class="o">=</span><span class="n">inv_fish</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">wbl_qb</span><span class="o">=</span><span class="n">wbl_qb</span><span class="p">)</span>
+
+            <span class="c1"># compute bandpowers and covariances</span>
+            <span class="n">cb</span><span class="p">,</span> <span class="n">dcb</span><span class="p">,</span> <span class="n">ellb</span><span class="p">,</span> <span class="n">cov</span><span class="p">,</span> <span class="n">qb2cb</span><span class="p">,</span> <span class="n">wbl_cb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_qb2cb</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="n">wbl_qb</span><span class="p">)</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">dcb_ns</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">cov_ns</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_qb2cb</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish_ns</span><span class="p">,</span> <span class="n">wbl_qb</span><span class="p">)</span>
+
+            <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">cb</span><span class="o">=</span><span class="n">cb</span><span class="p">,</span>
+                <span class="n">dcb</span><span class="o">=</span><span class="n">dcb</span><span class="p">,</span>
+                <span class="n">ellb</span><span class="o">=</span><span class="n">ellb</span><span class="p">,</span>
+                <span class="n">cov</span><span class="o">=</span><span class="n">cov</span><span class="p">,</span>
+                <span class="n">qb2cb</span><span class="o">=</span><span class="n">qb2cb</span><span class="p">,</span>
+                <span class="n">wbl_cb</span><span class="o">=</span><span class="n">wbl_cb</span><span class="p">,</span>
+                <span class="n">dcb_nosampvar</span><span class="o">=</span><span class="n">dcb_ns</span><span class="p">,</span>
+                <span class="n">cov_nosampvar</span><span class="o">=</span><span class="n">cov_ns</span><span class="p">,</span>
+            <span class="p">)</span>
 
             <span class="k">if</span> <span class="n">like_profiles</span><span class="p">:</span>
                 <span class="c1"># compute bandpower likelihoods</span>
@@ -6177,13 +6205,10 @@
 
 <div class="viewcode-block" id="XFaster.get_transfer"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_transfer">[docs]</a>    <span class="k">def</span> <span class="nf">get_transfer</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">cls_shape</span><span class="p">,</span>
         <span class="n">converge_criteria</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
         <span class="n">iter_max</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
         <span class="n">save_iters</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">fix_bb_xfer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">tophat_bins</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">return_cls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute the transfer function from signal simulations created using</span>
@@ -6194,9 +6219,6 @@
 
 <span class="sd">        Arguments</span>
 <span class="sd">        ---------</span>
-<span class="sd">        cls_shape : OrderedDict</span>
-<span class="sd">            Input shape spectrum.  Must match the input spectrum used to</span>
-<span class="sd">            generate the signal simulations.</span>
 <span class="sd">        converge_criteria : float</span>
 <span class="sd">            Maximum fractional change in qb that indicates convergence and</span>
 <span class="sd">            stops iteration.</span>
@@ -6209,11 +6231,6 @@
 <span class="sd">        fix_bb_xfer : bool</span>
 <span class="sd">            If True, after transfer functions have been calculated, impose</span>
 <span class="sd">            the BB xfer is exactly equal to the EE transfer.</span>
-<span class="sd">        tophat_bins : bool</span>
-<span class="sd">            If True, use uniform weights within each bin rather than any</span>
-<span class="sd">            ell-based weighting.</span>
-<span class="sd">        return_cls : bool</span>
-<span class="sd">            If True, return C_l spectrum rather than D_l spectrum</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -6235,8 +6252,6 @@
 <span class="sd">        Additionally the final output of ``fisher_iterate`` is stored</span>
 <span class="sd">        in a dictionary called ``transfer_map&lt;idx&gt;`` for each map.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">return_cls</span> <span class="o">=</span> <span class="n">return_cls</span>
-
         <span class="n">transfer_shape</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">num_maps</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">specs</span><span class="p">),</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">nbins_cmb</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">specs</span><span class="p">),</span>
@@ -6290,17 +6305,14 @@
                 <span class="s2">&quot;info&quot;</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">clear_precalc</span><span class="p">()</span>
-            <span class="n">cbl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">cls_shape</span><span class="p">,</span> <span class="n">m0</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">cbl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">map_tag</span><span class="o">=</span><span class="n">m0</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_iterate</span><span class="p">(</span>
                 <span class="n">cbl</span><span class="p">,</span>
-                <span class="n">cls_shape</span><span class="p">,</span>
                 <span class="n">m0</span><span class="p">,</span>
                 <span class="n">transfer_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">iter_max</span><span class="o">=</span><span class="n">iter_max</span><span class="p">,</span>
                 <span class="n">converge_criteria</span><span class="o">=</span><span class="n">converge_criteria</span><span class="p">,</span>
                 <span class="n">save_iters</span><span class="o">=</span><span class="n">save_iters</span><span class="p">,</span>
-                <span class="n">tophat_bins</span><span class="o">=</span><span class="n">tophat_bins</span><span class="p">,</span>
-                <span class="n">return_cls</span><span class="o">=</span><span class="n">return_cls</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">qb</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;qb&quot;</span><span class="p">]</span>
 
@@ -6347,7 +6359,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">save_data</span><span class="p">(</span>
             <span class="s2">&quot;</span><span class="si">{}{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="n">success</span> <span class="k">else</span> <span class="s2">&quot;ERROR_&quot;</span><span class="p">,</span> <span class="n">save_name</span><span class="p">),</span>
             <span class="n">from_attrs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;nbins&quot;</span><span class="p">,</span> <span class="s2">&quot;bin_def&quot;</span><span class="p">,</span> <span class="s2">&quot;qb_transfer&quot;</span><span class="p">,</span> <span class="s2">&quot;map_tags&quot;</span><span class="p">],</span>
-            <span class="n">cls_shape</span><span class="o">=</span><span class="n">cls_shape</span><span class="p">,</span>
+            <span class="n">cls_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls_shape</span><span class="p">,</span>
             <span class="n">success</span><span class="o">=</span><span class="n">success</span><span class="p">,</span>
             <span class="o">**</span><span class="n">opts</span>
         <span class="p">)</span>
@@ -6359,7 +6371,6 @@
 
 <div class="viewcode-block" id="XFaster.get_bandpowers"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_bandpowers">[docs]</a>    <span class="k">def</span> <span class="nf">get_bandpowers</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">cls_shape</span><span class="p">,</span>
         <span class="n">map_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">converge_criteria</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
         <span class="n">iter_max</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
@@ -6369,9 +6380,7 @@
         <span class="n">cond_noise</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">cond_criteria</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">null_first_cmb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">tophat_bins</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">return_cls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">windows</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">like_profiles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">like_profile_sigma</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>
         <span class="n">like_profile_points</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
@@ -6384,9 +6393,6 @@
 
 <span class="sd">        Arguments</span>
 <span class="sd">        ---------</span>
-<span class="sd">        cls_shape : array_like</span>
-<span class="sd">            Input shape spectrum.  Can differ from that used to compute the</span>
-<span class="sd">            transfer function.</span>
 <span class="sd">        map_tag : string</span>
 <span class="sd">            If not None, then iteration is performed over the spectra</span>
 <span class="sd">            corresponding to the given map, rather over all possible</span>
@@ -6405,13 +6411,8 @@
 <span class="sd">        save_iters : bool</span>
 <span class="sd">            If True, the output data from each Fisher iteration are stored</span>
 <span class="sd">            in an individual npz file.</span>
-<span class="sd">        tophat_bins : bool</span>
-<span class="sd">            If True, use uniform weights within each bin rather than any</span>
-<span class="sd">            ell-based weighting.</span>
 <span class="sd">        return_cls : bool</span>
 <span class="sd">            If True, return C_ls rather than D_ls</span>
-<span class="sd">        windows : bool</span>
-<span class="sd">            If True, include window functions for CMB bins in the output</span>
 <span class="sd">        cond_criteria : float</span>
 <span class="sd">            The maximum condition number allowed for Dmat1 to be acceptable</span>
 <span class="sd">            for taking its inverse.</span>
@@ -6451,12 +6452,17 @@
         <span class="n">opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
             <span class="n">converge_criteria</span><span class="o">=</span><span class="n">converge_criteria</span><span class="p">,</span>
             <span class="n">cond_noise</span><span class="o">=</span><span class="n">cond_noise</span><span class="p">,</span>
+            <span class="n">cond_criteria</span><span class="o">=</span><span class="n">cond_criteria</span><span class="p">,</span>
             <span class="n">null_first_cmb</span><span class="o">=</span><span class="n">null_first_cmb</span><span class="p">,</span>
             <span class="n">apply_gcorr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_gcorr</span><span class="p">,</span>
             <span class="n">weighted_bins</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weighted_bins</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">if</span> <span class="s1">&#39;delta_beta&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">:</span>
-            <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">delta_beta_prior</span><span class="o">=</span><span class="n">delta_beta_prior</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;fg_tt&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">:</span>
+            <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">delta_beta_prior</span><span class="o">=</span><span class="n">delta_beta_prior</span><span class="p">,</span>
+                <span class="n">ref_freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_freq</span><span class="p">,</span>
+                <span class="n">beta_ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_ref</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_cleaned</span><span class="p">:</span>
             <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">template_alpha</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">template_alpha</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">return_cls</span> <span class="o">=</span> <span class="n">return_cls</span>
@@ -6479,11 +6485,10 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">clear_precalc</span><span class="p">()</span>
 
-        <span class="n">cbl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">cls_shape</span><span class="p">,</span> <span class="n">map_tag</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">cbl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">map_tag</span><span class="o">=</span><span class="n">map_tag</span><span class="p">,</span> <span class="n">transfer_run</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_iterate</span><span class="p">(</span>
             <span class="n">cbl</span><span class="p">,</span>
-            <span class="n">cls_shape</span><span class="p">,</span>
             <span class="n">map_tag</span><span class="p">,</span>
             <span class="n">transfer_run</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">iter_max</span><span class="o">=</span><span class="n">iter_max</span><span class="p">,</span>
@@ -6493,9 +6498,6 @@
             <span class="n">cond_criteria</span><span class="o">=</span><span class="n">cond_criteria</span><span class="p">,</span>
             <span class="n">null_first_cmb</span><span class="o">=</span><span class="n">null_first_cmb</span><span class="p">,</span>
             <span class="n">delta_beta_prior</span><span class="o">=</span><span class="n">delta_beta_prior</span><span class="p">,</span>
-            <span class="n">tophat_bins</span><span class="o">=</span><span class="n">tophat_bins</span><span class="p">,</span>
-            <span class="n">return_cls</span><span class="o">=</span><span class="n">return_cls</span><span class="p">,</span>
-            <span class="n">windows</span><span class="o">=</span><span class="n">windows</span><span class="p">,</span>
             <span class="n">like_profiles</span><span class="o">=</span><span class="n">like_profiles</span><span class="p">,</span>
             <span class="n">like_profile_sigma</span><span class="o">=</span><span class="n">like_profile_sigma</span><span class="p">,</span>
             <span class="n">like_profile_points</span><span class="o">=</span><span class="n">like_profile_points</span><span class="p">,</span>
@@ -6515,7 +6517,6 @@
         <span class="n">qb</span><span class="p">,</span>
         <span class="n">inv_fish</span><span class="p">,</span>
         <span class="n">map_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">cls_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">null_first_cmb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">lmin</span><span class="o">=</span><span class="mi">33</span><span class="p">,</span>
         <span class="n">lmax</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span>
@@ -6549,9 +6550,6 @@
 <span class="sd">            corresponding to the given map, rather over all possible</span>
 <span class="sd">            combinations of map-map cross-spectra.  The input qb&#39;s and inv_fish</span>
 <span class="sd">            must have been computed with the same option.</span>
-<span class="sd">        cls_shape : array_like</span>
-<span class="sd">            Input shape spectrum used to compute the qb&#39;s.  Required if r_prior</span>
-<span class="sd">            is None.</span>
 <span class="sd">        mcmc : bool</span>
 <span class="sd">            If True, sample the likelihood using an MCMC sampler.  Remaining options</span>
 <span class="sd">            determine parameter space and sampler configuration.</span>
@@ -6750,7 +6748,7 @@
         <span class="k">if</span> <span class="n">r_prior</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing model spectrum&quot;</span><span class="p">,</span> <span class="s2">&quot;debug&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Beam variation not implemented for case of no r fit&quot;</span><span class="p">)</span>
-            <span class="n">cbl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">cls_shape</span><span class="p">,</span> <span class="n">map_tag</span><span class="p">)</span>
+            <span class="n">cbl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">map_tag</span><span class="o">=</span><span class="n">map_tag</span><span class="p">)</span>
             <span class="n">cls_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_model_spectra</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">cbl</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cls_noise</span><span class="o">=</span><span class="n">cls_noise</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">qb</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">qb</span><span class="p">)</span>
