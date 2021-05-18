@@ -203,6 +203,12 @@ def parse_data(data, field):
 
     dv = XFaster.data_version
 
+    if version == 1:
+        if "foreground_type" in data:
+            data["foreground_type_sim"] = data.pop("foreground_type")
+
+        return data[field]
+
     # add backward-compatibile parsing here if necessary
     if version != dv:
         raise ValueError(
