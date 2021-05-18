@@ -1573,7 +1573,7 @@ class XFaster(object):
                     name = "{}_planck_sub".format(name)
             if self.weighted_bins:
                 name = "{}_wbins".format(name)
-            if self.return_cls:
+            if getattr(self, "return_cls", False):
                 name = "{}_cl".format(name)
 
         if map_tag is not None:
@@ -3788,6 +3788,7 @@ class XFaster(object):
             if ret is not None:
                 if r is not None:
                     self.r_model = ret["r_model"]
+                self.cls_shape = ret["cls_shape"]
                 return ret["cls_shape"]
 
         ell = np.arange(lmax_kern + 1)
@@ -3897,10 +3898,10 @@ class XFaster(object):
                     cls_shape[csk] *= 1.0e-12
 
         if save:
+            self.cls_shape = cls_shape
             opts["cls_shape"] = cls_shape
             self.save_data(save_name, **opts)
 
-        self.cls_shape = cls_shape
         return cls_shape
 
     def get_beams(self, pixwin=True):
@@ -4281,7 +4282,7 @@ class XFaster(object):
 
     def bin_cl_template(
         self,
-        cls_shape,
+        cls_shape=None,
         map_tag=None,
         transfer_run=False,
         beam_error=False,
@@ -4327,6 +4328,9 @@ class XFaster(object):
             and unmixed terms are stored in elements ``cbl['cmb_ee']`` and
             ``cbl['cmb_bb']``.
         """
+        if cls_shape is None:
+            cls_shape = self.cls_shape
+
         map_pairs = None
         if map_tag is not None:
             if map_tag in self.map_pairs:
@@ -4902,9 +4906,7 @@ class XFaster(object):
 
         return obs, nell, debias
 
-    def do_qb2cb(
-        self, qb, cls_shape, inv_fish=None, tophat_bins=False, return_cls=False
-    ):
+    def do_qb2cb(self, qb, inv_fish, wbl):
         """
         Compute binned output spectra and covariances by averaging
         the shape spectrum over each bin, and applying the appropriate
@@ -4918,39 +4920,87 @@ class XFaster(object):
         ---------
         qb : dict
             Bandpower amplitudes for each spectrum bin.
-        cls_shape : dict
-            Shape spectrum
         inv_fish : array_like, (nbins, nbins)
-            Inverse fisher matrix for computing the bin errors
-            and covariance.  If not supplied, these are not computed.
-        tophat_bins : bool
-            If True, compute binned bandpowers using a tophat weight.
-            Otherwise a logarithmic ell-space weighting is applied.
-        return_cls : bool
-            If True, return binned C_l spectrum rather than the default D_l
+            Inverse fisher matrix for computing the bin errors and covariance.
+        wbl : dict
+            Window functions for each qb
 
         Returns
         -------
         cb : dict of arrays
             Binned spectrum
         dcb : dict of arrays
-            Binned spectrum error, if ``inv_fish`` is not None
+            Binned spectrum error
         ellb : dict of arrays
             Average bin center
         cov : array_like, (nbins, nbins)
-            Binned spectrum covariance, if ``inv_fish`` is not None
+            Binned spectrum covariance
         qb2cb : dict
-            The conversion factor from ``qb`` to ``cb``, computed by
-            averaging over the input shape spectrum.
+            The conversion matrix from ``qb`` to ``cb`` for each spectrum
+            component, computed from the qb window functions
+        wbl_cb : dict
+            Window functions for each cb
         """
-        return xft.bin_spec(
-            qb,
-            cls_shape,
-            bin_def=self.bin_def,
-            inv_fish=inv_fish,
-            tophat=tophat_bins,
-            lfac=not return_cls,
-        )
+        qb2cb = OrderedDict()
+        ellb = OrderedDict()
+        cb = OrderedDict()
+        wbl_cb = OrderedDict()
+
+        # truncate to only bins for which there are window functions
+        bin_index = pt.dict_to_index(self.bin_def)
+        nbins = max([bin_index[stag][1] for stag in wbl])
+        inv_fish = inv_fish[:nbins, :nbins]
+        qb2cb_mat = np.zeros_like(inv_fish)
+
+        # window function normalization
+        ell = np.arange(self.lmax + 1)
+        norm = (2.0 * ell + 1.0) / 4.0 / np.pi
+
+        # normalization shape spectrum
+        model = 1
+        if not self.return_cls:
+            model = np.ones_like(ell, dtype=float)
+            model[1:] = 2.0 * np.pi / ell[1:] / (ell[1:] + 1)
+
+        for stag, wbl1 in wbl.items():
+            # compute conversion factors
+            qb2cb[stag] = np.zeros((len(wbl1), len(wbl1)))
+            cls_shape = self.cls_shape["fg" if "fg" in stag else stag][: len(ell)]
+            v = norm * wbl1 * cls_shape
+            bd = self.bin_def[stag]
+            bw = self.bin_weights[stag]
+            for idx, ((l, r), w) in enumerate(zip(bd, bw)):
+                qb2cb[stag][:, idx] = np.sum(v[..., l:r] * w, axis=-1)
+
+            # normalize for cb's or db's
+            qb2cb[stag] /= np.sum(norm * wbl1 * model, axis=-1)
+
+            # construct conversion matrix for covariance
+            left, right = bin_index[stag]
+            qb2cb_mat[left:right, left:right] = qb2cb[stag]
+
+            # compute wbls for cb's
+            wbl_cb[stag] = np.einsum("ij,jl->il", qb2cb[stag], wbl1)
+
+            # check normalization
+            self.log(
+                "{} cb window function normalization: {}".format(
+                    stag, np.sum(norm * wbl_cb[stag] * model, axis=-1)
+                ),
+                "debug",
+            )
+
+            # compute bin centers
+            ellb[stag] = np.sum(norm * wbl_cb[stag] * model * ell, axis=-1)
+
+            # compute cb's
+            cb[stag] = np.einsum("ij,j->i", qb2cb[stag], qb[stag])
+
+        # compute covariance and errors
+        cov = np.einsum("ik,jl,kl->ij", qb2cb_mat, qb2cb_mat, inv_fish)
+        dcb = pt.arr_to_dict(np.sqrt(np.diag(cov)), qb2cb)
+
+        return cb, dcb, ellb, cov, qb2cb, wbl_cb
 
     def fisher_precalc(
         self,
@@ -5174,6 +5224,9 @@ class XFaster(object):
         -- or --
         likelihood : scalar
             Likelihood of the given input parameters.
+        -- or --
+        windows : OrderedDict
+            qb window functions
         """
         if cond_criteria is None:
             cond_criteria = np.inf
@@ -5430,7 +5483,7 @@ class XFaster(object):
 
             # compute prefactors
             ells = np.arange(0, self.lmax + 1)
-            lfac = ells * (ells + 1.0) / (2.0 * ells + 1.0)
+            norm = (2.0 * ells + 1.0) / 4.0 / np.pi
 
             # compute binning term
             arg = np.einsum("ij,kljm->klim", inv_fish, mat)
@@ -5440,9 +5493,9 @@ class XFaster(object):
 
             # compute window functions for each spectrum
             for k, (left, right) in bin_index.items():
-                if "cmb" not in k:
+                comp, spec = k.split("_", 1)
+                if comp not in ["cmb", "fg"]:
                     continue
-                spec = k.split("_")[1]
 
                 # select bins for corresponding spectrum
                 sarg = arg[:, :, left:right]
@@ -5454,27 +5507,23 @@ class XFaster(object):
                     mspec = "bb" if spec == "ee" else "ee"
                     smat += spec_mask[mspec][:, :, None, None] * Mmat_mix
 
+                # qb window function
+                wbl1 = np.einsum("iil,ijkl,jilm->km", gmat, sarg, smat) / 2.0 / norm
+
                 # bin weighting, allowing for overlapping bin edges
-                chi_bl = np.zeros_like(lfac)
+                chi_bl = np.zeros_like(norm)
                 for (l, r), w in zip(self.bin_def[k], self.bin_weights[k]):
                     chi_bl[l:r] += w
 
-                # qb window function
-                wbl1 = np.einsum("iil,ijkl,jilm->km", gmat, sarg, smat) * lfac * chi_bl
-
                 # check normalization
-                norm = np.zeros_like(lfac)
-                norm[1:] = 1.0 / (2.0 * lfac[1:])
-                cls_shape = self.cls_shape[k][: len(norm)]
+                cls_shape = self.cls_shape["fg" if comp == "fg" else k][: len(norm)]
                 self.log(
-                    "{} window function normalization: {}".format(
-                        k, np.sum(wbl1 * norm * cls_shape, axis=-1)
+                    "{} qb window function normalization: {}".format(
+                        k, np.sum(wbl1 * norm * chi_bl * cls_shape, axis=-1)
                     ),
                     "debug",
                 )
 
-                # normalization for Cb and Db, for CosmoMC and friends
-                wbl1 /= np.sum(wbl1 * norm, axis=-1)[:, None]
                 wbl[k] = wbl1
 
             return wbl
@@ -5509,20 +5558,16 @@ class XFaster(object):
     def fisher_iterate(
         self,
         cbl,
-        cls_shape,
         map_tag=None,
         iter_max=200,
         converge_criteria=0.005,
         qb_start=None,
         transfer_run=False,
         save_iters=False,
-        tophat_bins=False,
-        return_cls=False,
         null_first_cmb=False,
         delta_beta_prior=None,
         cond_noise=None,
         cond_criteria=None,
-        windows=False,
         like_profiles=False,
         like_profile_sigma=3.0,
         like_profile_points=100,
@@ -5536,8 +5581,6 @@ class XFaster(object):
         ---------
         cbl : OrderedDict
             Cbl matrix computed from an input shape spectrum
-        cls_shape : OrderedDict
-            Input shape spectrum
         map_tag : str
             If not None, then iteration is performed over the spectra
             corresponding to the given map, rather over all possible
@@ -5563,16 +5606,9 @@ class XFaster(object):
         save_iters : bool
             If True, the output data from each Fisher iteration are stored
             in an individual npz file.
-        tophat_bins : bool
-            If True, use uniform weights within each bin rather than any
-            ell-based weighting.
-        return_cls : bool
-            If True, return C_l spectrum rather than D_l spectrum
         cond_criteria : float
             The maximum condition number allowed for Dmat1 to be acceptable
             for taking its inverse.
-        windows : bool
-            If True, include window functions for CMB bins in the output
         like_profiles : bool
             If True, compute profile likelihoods for each qb, leaving all
             others fixed at their maximum likelihood values.  Profiles are
@@ -5706,10 +5742,6 @@ class XFaster(object):
                 qb, cbl, delta=True, cls_noise=nell, cond_noise=None
             )
 
-            cb, dcb, ellb, cov, qb2cb = self.do_qb2cb(
-                qb, cls_shape, inv_fish, tophat_bins=tophat_bins, return_cls=return_cls
-            )
-
             if "delta_beta" in qb:
                 # get beta fit and beta error
                 beta_fit = qb["delta_beta"][0] + self.beta_ref
@@ -5721,29 +5753,19 @@ class XFaster(object):
 
             if save_iters:
                 # save only the quantities that change with each iteration
-                self.save_data(
-                    save_name,
-                    bp_opts=not transfer_run,
+                out = dict(
                     map_tag=map_tag,
                     map_tags=self.map_tags,
                     iter_index=iter_idx,
                     bin_def=self.bin_def,
-                    cls_shape=cls_shape,
+                    bin_weights=self.bin_weights,
+                    cls_shape=self.cls_shape,
                     cls_obs=obs,
-                    ellb=ellb,
                     qb=qb,
                     fqb=fqb,
-                    cb=cb,
-                    dcb=dcb,
-                    qb2cb=qb2cb,
                     inv_fish=inv_fish,
-                    cov=cov,
                     cls_model=cls_model,
                     cbl=cbl,
-                    beta_fit=beta_fit,
-                    beta_err=beta_err,
-                    ref_freq=self.ref_freq,
-                    beta_ref=self.beta_ref,
                     map_freqs=self.map_freqs,
                     cls_signal=self.cls_signal,
                     cls_noise=self.cls_noise,
@@ -5751,6 +5773,16 @@ class XFaster(object):
                     gmat_ell=self.gmat_ell,
                     extra_tag=file_tag,
                 )
+
+                if "fg_tt" in self.bin_def:
+                    out.update(
+                        beta_fit=beta_fit,
+                        beta_err=beta_err,
+                        ref_freq=self.ref_freq,
+                        beta_ref=self.beta_ref,
+                    )
+
+                self.save_data(save_name, bp_opts=not transfer_run, **out)
 
             (nans,) = np.where(np.isnan(qb_new_arr))
             if len(nans):
@@ -5785,14 +5817,6 @@ class XFaster(object):
                         cond_noise=None,
                         delta_beta_prior=delta_beta_prior,
                         null_first_cmb=null_first_cmb,
-                    )
-
-                    cb, dcb, ellb, cov, qb2cb = self.do_qb2cb(
-                        qb,
-                        cls_shape,
-                        inv_fish,
-                        tophat_bins=tophat_bins,
-                        return_cls=return_cls,
                     )
 
                 # If any diagonals of inv_fisher are negative, something went wrong
@@ -5851,30 +5875,30 @@ class XFaster(object):
         # save and return
         out = dict(
             qb=qb,
-            cb=cb,
-            dcb=dcb,
-            ellb=ellb,
-            cov=cov,
             inv_fish=inv_fish,
             fqb=fqb,
-            qb2cb=qb2cb,
             bin_def=self.bin_def,
+            bin_weights=self.bin_weights,
             iters=iter_idx,
             success=success,
-            beta_fit=beta_fit,
-            beta_err=beta_err,
             map_tags=self.map_tags,
-            ref_freq=self.ref_freq,
-            beta_ref=self.beta_ref,
             map_freqs=self.map_freqs,
             converge_criteria=converge_criteria,
-            delta_beta_prior=delta_beta_prior,
             cond_noise=cond_noise,
             cond_criteria=cond_criteria,
             null_first_cmb=null_first_cmb,
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
         )
+
+        if "fg_tt" in self.bin_def:
+            out.update(
+                delta_beta_prior=delta_beta_prior,
+                beta_fit=beta_fit,
+                beta_err=beta_err,
+                ref_freq=self.ref_freq,
+                beta_ref=self.beta_ref,
+            )
 
         if self.debug:
             out.update(
@@ -5883,7 +5907,7 @@ class XFaster(object):
                 cls_signal=self.cls_signal,
                 cls_noise=self.cls_noise,
                 cls_model=cls_model,
-                cls_shape=cls_shape,
+                cls_shape=self.cls_shape,
                 cond_noise=cond_noise,
                 Dmat_obs=self.Dmat_obs,
             )
@@ -5922,36 +5946,40 @@ class XFaster(object):
                 null_first_cmb=null_first_cmb,
             )
 
-            _, dcb_nosampvar, _, cov_nosampvar, _ = self.do_qb2cb(
-                qb_new_ns,
-                cls_shape,
-                inv_fish_ns,
-                tophat_bins=tophat_bins,
-                return_cls=return_cls,
-            )
-
             out.update(
-                dcb_nosampvar=dcb_nosampvar,
-                cov_nosampvar=cov_nosampvar,
                 invfish_nosampvar=inv_fish_ns,
             )
 
-            if windows:
-                # compute window functions for CMB bins
-                self.log("Calculating window functions for CMB bins", "info")
-                wbl = self.fisher_calc(
-                    qb,
-                    cbl,
-                    obs,
-                    cls_noise=nell,
-                    cls_debias=None,
-                    cond_noise=None,
-                    delta_beta_prior=delta_beta_prior,
-                    null_first_cmb=null_first_cmb,
-                    windows=True,
-                    inv_fish=inv_fish,
-                )
-                out.update(wbl=wbl)
+            # compute window functions for CMB bins
+            self.log("Calculating window functions for CMB bins", "info")
+            wbl_qb = self.fisher_calc(
+                qb,
+                cbl,
+                obs,
+                cls_noise=nell,
+                cls_debias=None,
+                cond_noise=None,
+                delta_beta_prior=delta_beta_prior,
+                null_first_cmb=null_first_cmb,
+                windows=True,
+                inv_fish=inv_fish,
+            )
+            out.update(wbl_qb=wbl_qb)
+
+            # compute bandpowers and covariances
+            cb, dcb, ellb, cov, qb2cb, wbl_cb = self.do_qb2cb(qb, inv_fish, wbl_qb)
+            _, dcb_ns, _, cov_ns, _, _ = self.do_qb2cb(qb, inv_fish_ns, wbl_qb)
+
+            out.update(
+                cb=cb,
+                dcb=dcb,
+                ellb=ellb,
+                cov=cov,
+                qb2cb=qb2cb,
+                wbl_cb=wbl_cb,
+                dcb_nosampvar=dcb_ns,
+                cov_nosampvar=cov_ns,
+            )
 
             if like_profiles:
                 # compute bandpower likelihoods
@@ -6021,13 +6049,10 @@ class XFaster(object):
 
     def get_transfer(
         self,
-        cls_shape,
         converge_criteria=0.005,
         iter_max=200,
         save_iters=False,
         fix_bb_xfer=False,
-        tophat_bins=False,
-        return_cls=False,
     ):
         """
         Compute the transfer function from signal simulations created using
@@ -6038,9 +6063,6 @@ class XFaster(object):
 
         Arguments
         ---------
-        cls_shape : OrderedDict
-            Input shape spectrum.  Must match the input spectrum used to
-            generate the signal simulations.
         converge_criteria : float
             Maximum fractional change in qb that indicates convergence and
             stops iteration.
@@ -6053,11 +6075,6 @@ class XFaster(object):
         fix_bb_xfer : bool
             If True, after transfer functions have been calculated, impose
             the BB xfer is exactly equal to the EE transfer.
-        tophat_bins : bool
-            If True, use uniform weights within each bin rather than any
-            ell-based weighting.
-        return_cls : bool
-            If True, return C_l spectrum rather than D_l spectrum
 
         Returns
         -------
@@ -6079,8 +6096,6 @@ class XFaster(object):
         Additionally the final output of ``fisher_iterate`` is stored
         in a dictionary called ``transfer_map<idx>`` for each map.
         """
-        self.return_cls = return_cls
-
         transfer_shape = (
             self.num_maps * len(self.specs),
             self.nbins_cmb / len(self.specs),
@@ -6134,17 +6149,14 @@ class XFaster(object):
                 "info",
             )
             self.clear_precalc()
-            cbl = self.bin_cl_template(cls_shape, m0, transfer_run=True)
+            cbl = self.bin_cl_template(map_tag=m0, transfer_run=True)
             ret = self.fisher_iterate(
                 cbl,
-                cls_shape,
                 m0,
                 transfer_run=True,
                 iter_max=iter_max,
                 converge_criteria=converge_criteria,
                 save_iters=save_iters,
-                tophat_bins=tophat_bins,
-                return_cls=return_cls,
             )
             qb = ret["qb"]
 
@@ -6191,7 +6203,7 @@ class XFaster(object):
         self.save_data(
             "{}{}".format("" if success else "ERROR_", save_name),
             from_attrs=["nbins", "bin_def", "qb_transfer", "map_tags"],
-            cls_shape=cls_shape,
+            cls_shape=self.cls_shape,
             success=success,
             **opts
         )
@@ -6203,7 +6215,6 @@ class XFaster(object):
 
     def get_bandpowers(
         self,
-        cls_shape,
         map_tag=None,
         converge_criteria=0.005,
         iter_max=200,
@@ -6213,9 +6224,7 @@ class XFaster(object):
         cond_noise=None,
         cond_criteria=None,
         null_first_cmb=False,
-        tophat_bins=False,
         return_cls=False,
-        windows=False,
         like_profiles=False,
         like_profile_sigma=3.0,
         like_profile_points=100,
@@ -6228,9 +6237,6 @@ class XFaster(object):
 
         Arguments
         ---------
-        cls_shape : array_like
-            Input shape spectrum.  Can differ from that used to compute the
-            transfer function.
         map_tag : string
             If not None, then iteration is performed over the spectra
             corresponding to the given map, rather over all possible
@@ -6249,13 +6255,8 @@ class XFaster(object):
         save_iters : bool
             If True, the output data from each Fisher iteration are stored
             in an individual npz file.
-        tophat_bins : bool
-            If True, use uniform weights within each bin rather than any
-            ell-based weighting.
         return_cls : bool
             If True, return C_ls rather than D_ls
-        windows : bool
-            If True, include window functions for CMB bins in the output
         cond_criteria : float
             The maximum condition number allowed for Dmat1 to be acceptable
             for taking its inverse.
@@ -6295,12 +6296,17 @@ class XFaster(object):
         opts = dict(
             converge_criteria=converge_criteria,
             cond_noise=cond_noise,
+            cond_criteria=cond_criteria,
             null_first_cmb=null_first_cmb,
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
         )
-        if "delta_beta" in self.bin_def:
-            opts.update(delta_beta_prior=delta_beta_prior)
+        if "fg_tt" in self.bin_def:
+            opts.update(
+                delta_beta_prior=delta_beta_prior,
+                ref_freq=self.ref_freq,
+                beta_ref=self.beta_ref,
+            )
         if self.template_cleaned:
             opts.update(template_alpha=self.template_alpha)
         self.return_cls = return_cls
@@ -6323,11 +6329,10 @@ class XFaster(object):
 
         self.clear_precalc()
 
-        cbl = self.bin_cl_template(cls_shape, map_tag, transfer_run=False)
+        cbl = self.bin_cl_template(map_tag=map_tag, transfer_run=False)
 
         ret = self.fisher_iterate(
             cbl,
-            cls_shape,
             map_tag,
             transfer_run=False,
             iter_max=iter_max,
@@ -6337,9 +6342,6 @@ class XFaster(object):
             cond_criteria=cond_criteria,
             null_first_cmb=null_first_cmb,
             delta_beta_prior=delta_beta_prior,
-            tophat_bins=tophat_bins,
-            return_cls=return_cls,
-            windows=windows,
             like_profiles=like_profiles,
             like_profile_sigma=like_profile_sigma,
             like_profile_points=like_profile_points,
@@ -6359,7 +6361,6 @@ class XFaster(object):
         qb,
         inv_fish,
         map_tag=None,
-        cls_shape=None,
         null_first_cmb=False,
         lmin=33,
         lmax=250,
@@ -6393,9 +6394,6 @@ class XFaster(object):
             corresponding to the given map, rather over all possible
             combinations of map-map cross-spectra.  The input qb's and inv_fish
             must have been computed with the same option.
-        cls_shape : array_like
-            Input shape spectrum used to compute the qb's.  Required if r_prior
-            is None.
         mcmc : bool
             If True, sample the likelihood using an MCMC sampler.  Remaining options
             determine parameter space and sampler configuration.
@@ -6594,7 +6592,7 @@ class XFaster(object):
         if r_prior is None:
             self.log("Computing model spectrum", "debug")
             self.warn("Beam variation not implemented for case of no r fit")
-            cbl = self.bin_cl_template(cls_shape, map_tag)
+            cbl = self.bin_cl_template(map_tag=map_tag)
             cls_model = self.get_model_spectra(qb, cbl, delta=True, cls_noise=cls_noise)
         else:
             qb = copy.deepcopy(qb)

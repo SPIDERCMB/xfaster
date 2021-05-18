@@ -62,7 +62,6 @@ def xfaster_run(
     tbeb=False,
     fix_bb_xfer=False,
     window_lmax=None,
-    windows=False,
     like_lmin=33,
     like_lmax=250,
     like_profiles=False,
@@ -87,7 +86,6 @@ def xfaster_run(
     template_alpha_tags=["95", "150"],
     template_alpha=[0.015, 0.043],
     sub_hm_noise=True,
-    tophat_bins=False,
     return_cls=False,
     apply_gcorr=False,
     reload_gcorr=False,
@@ -223,8 +221,6 @@ def xfaster_run(
         the BB xfer is exactly equal to the EE transfer.
     window_lmax : int
         The size of the window used in computing the mask kernels
-    windows : bool
-        If True compute window functions for each CMB bin in the output
     like_lmin : int
         The minimum ell value to be included in the likelihood calculation
     like_lmax : int
@@ -301,9 +297,6 @@ def xfaster_run(
     sub_hm_noise : bool
         If True, subtract average of Planck ffp10 noise crosses to debias
         template-cleaned spectra
-    tophat_bins : bool
-        If True, use uniform weights within each bin rather than any
-        ell-based weighting.
     return_cls : bool
         If True, return C_l spectrum rather than the D_l spectrum
     apply_gcorr : bool
@@ -441,12 +434,10 @@ def xfaster_run(
         cond_noise=cond_noise,
         cond_criteria=cond_criteria,
         null_first_cmb=null_first_cmb,
-        tophat_bins=tophat_bins,
         return_cls=return_cls,
         apply_gcorr=apply_gcorr,
         reload_gcorr=reload_gcorr,
         gcorr_file=gcorr_file,
-        windows=windows,
         like_profiles=like_profiles,
         like_profile_sigma=like_profile_sigma,
         like_profile_points=like_profile_points,
@@ -491,7 +482,7 @@ def xfaster_run(
     fisher_opts.pop("cond_criteria")
     fisher_opts.pop("delta_beta_prior")
     fisher_opts.pop("null_first_cmb")
-    fisher_opts.pop("windows")
+    fisher_opts.pop("return_cls")
     fisher_opts.pop("like_profiles")
     fisher_opts.pop("like_profile_sigma")
     fisher_opts.pop("like_profile_points")
@@ -559,10 +550,10 @@ def xfaster_run(
     X.get_beams(**beam_opts)
 
     X.log("Loading spectrum shape for transfer function...", "notice")
-    cls_shape = X.get_signal_shape(filename=signal_transfer_spec, transfer=True)
+    X.get_signal_shape(filename=signal_transfer_spec, transfer=True)
 
     X.log("Computing transfer functions...", "notice")
-    X.get_transfer(cls_shape, fix_bb_xfer=fix_bb_xfer, **fisher_opts)
+    X.get_transfer(fix_bb_xfer=fix_bb_xfer, **fisher_opts)
 
     # Rerun to add bins for foreground and residuals, if requested
     X.log("Setting up bin definitions with foregrounds and residuals...", "notice")
@@ -620,18 +611,18 @@ def xfaster_run(
 
     if X.null_run:
         X.log("Loading flat spectrum for null test...", "notice")
-        cls_shape = X.get_signal_shape(flat=True)
+        X.get_signal_shape(flat=True)
     else:
         X.log("Loading spectrum shape for bandpowers...", "notice")
-        cls_shape = X.get_signal_shape(filename=signal_spec, r=model_r)
+        X.get_signal_shape(filename=signal_spec, r=model_r)
 
     if multi_map:
         X.log("Computing multi-map bandpowers...", "notice")
-        qb, inv_fish = X.get_bandpowers(cls_shape, return_qb=True, **bandpwr_opts)
+        qb, inv_fish = X.get_bandpowers(return_qb=True, **bandpwr_opts)
 
         if likelihood:
             X.log("Computing multi-map likelihood...", "notice")
-            X.get_likelihood(qb, inv_fish, cls_shape=cls_shape, **like_opts)
+            X.get_likelihood(qb, inv_fish, **like_opts)
 
     else:
         for map_tag, map_file in zip(X.map_tags, X.map_files):
@@ -639,14 +630,12 @@ def xfaster_run(
 
             X.log("Computing bandpowers for map {}".format(map_tag), "info")
             qb, inv_fish = X.get_bandpowers(
-                cls_shape, map_tag=map_tag, return_qb=True, **bandpwr_opts
+                map_tag=map_tag, return_qb=True, **bandpwr_opts
             )
 
             if likelihood:
                 X.log("Computing likelihoods for map {}".format(map_tag), "info")
-                X.get_likelihood(
-                    qb, inv_fish, map_tag=map_tag, cls_shape=cls_shape, **like_opts
-                )
+                X.get_likelihood(qb, inv_fish, map_tag=map_tag, **like_opts)
 
     cpu_elapsed = cpu_time() - cpu_start
     time_elapsed = time.time() - time_start
@@ -1138,7 +1127,6 @@ def xfaster_parse(args=None, test=False):
             argtype=float,
             help="Convergence criteria for likelihood MCMC chains",
         )
-        add_arg(G, "tophat_bins", help="Use uniform weights in each bin.")
         add_arg(G, "return_cls", help="Return C_ls rather than the default D_ls.")
         add_arg(
             G,
