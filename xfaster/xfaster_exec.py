@@ -89,6 +89,7 @@ def xfaster_run(
     return_cls=False,
     apply_gcorr=False,
     reload_gcorr=False,
+    gcorr_file=None,
     qb_file=None,
     like_alpha_tags=["95", "150"],
     alpha_prior=[-np.inf, np.inf],
@@ -305,6 +306,10 @@ def xfaster_run(
     reload_gcorr : bool
         If True, reload the gcorr file from the masks directory. Useful when
         iteratively solving for the correction terms.
+    gcorr_file : str
+        If not None, path to gcorr file. Otherwise, use file labeled
+        mask_map_<tag>_gcorr.npy in mask directory for signal, or
+        mask_map_<tag>_gcorr_null.npy for nulls.
     qb_file : string
         Pointer to a bandpowers.npz file in the output directory. If used
         in sim_index mode, the noise sim read from disk will be corrected
@@ -432,6 +437,7 @@ def xfaster_run(
         return_cls=return_cls,
         apply_gcorr=apply_gcorr,
         reload_gcorr=reload_gcorr,
+        gcorr_file=gcorr_file,
         like_profiles=like_profiles,
         like_profile_sigma=like_profile_sigma,
         like_profile_points=like_profile_points,
@@ -467,6 +473,7 @@ def xfaster_run(
     spec_opts.pop("sub_hm_noise")
     spec_opts.pop("apply_gcorr")
     spec_opts.pop("reload_gcorr")
+    spec_opts.pop("gcorr_file")
     bandpwr_opts = spec_opts.copy()
     spec_opts.pop("file_tag")
 
@@ -524,7 +531,8 @@ def xfaster_run(
     )
 
     X.log("Computing mask cross-spectra and weights...", "notice")
-    X.get_mask_weights(apply_gcorr=apply_gcorr, reload_gcorr=reload_gcorr)
+    X.get_mask_weights(apply_gcorr=apply_gcorr, reload_gcorr=reload_gcorr,
+                       gcorr_file=gcorr_file)
 
     X.log("Computing kernels...", "notice")
     X.get_kernels(window_lmax=window_lmax)
@@ -1129,6 +1137,11 @@ def xfaster_parse(args=None, test=False):
             G,
             "reload_gcorr",
             help="Reload correction factor from file in masks directory.",
+        )
+        add_arg(
+            G,
+            "gcorr_file",
+            help="Path to g-correction file",
         )
         add_arg(G, "bp_tag", help="Append tag to bandpowers output file")
         add_arg(G, "like_tag", help="Append tag to likelihood output files")
