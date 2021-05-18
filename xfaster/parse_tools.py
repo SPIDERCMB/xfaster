@@ -21,6 +21,7 @@ __all__ = [
     "corr_index",
     "num_maps",
     "num_corr",
+    "expand_qb",
 ]
 
 
@@ -643,3 +644,32 @@ def load_and_parse(filename):
     for k in data:
         ret[k] = parse_data(data, k)
     return ret
+
+
+def expand_qb(qb, bin_def, lmax=None):
+    """
+    Expand a qb-type array to an ell-by-ell spectrum using bin_def.
+
+    Arguments
+    ---------
+    qb : array_like, (nbins,)
+        Array of bandpower deviations
+    bin_def : array_like, (nbins, 2)
+        Array of bin edges for each bin
+    lmax : int, optional
+        If supplied, limit the output spectrum to this value.
+        Otherwise the output spectrum extends to include the last bin.
+
+    Returns
+    -------
+    cl : array_like, (lmax + 1,)
+        Array of expanded bandpowers
+    """
+    lmax = lmax if lmax is not None else bin_def.max() - 1
+
+    cl = np.zeros(lmax + 1)
+
+    for idx, (left, right) in enumerate(bin_def):
+        cl[left:right] = qb[idx]
+
+    return cl

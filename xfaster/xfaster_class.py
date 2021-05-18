@@ -9,7 +9,7 @@ import warnings
 import copy
 import logging
 from collections import OrderedDict
-from . import xfaster_tools as xft
+from . import spec_tools as st
 from . import parse_tools as pt
 from configparser import RawConfigParser
 
@@ -2796,7 +2796,7 @@ class XFaster(object):
                             )
                         )
                         rqb[bad] = 1
-                    mod = xft.expand_qb(rqb, rb0)
+                    mod = pt.expand_qb(rqb, rb0)
 
                     for rf in rfields[srb[1]]:
                         if self.map_tags[idx] == srb[2]:
@@ -3835,9 +3835,9 @@ class XFaster(object):
             l2 = np.min([2 * lmax + 1, l + lmax + 1])
             # populate upper triangle
             for ll in all_ells[l:l2]:
-                j0, j0_lmin, j0_lmax = xft.wigner3j(l, 0, ll, 0)
+                j0, j0_lmin, j0_lmax = st.wigner3j(l, 0, ll, 0)
                 if pol:
-                    j2, j2_lmin, j2_lmax = xft.wigner3j(l, 2, ll, -2)
+                    j2, j2_lmin, j2_lmax = st.wigner3j(l, 2, ll, -2)
 
                 # only go up to window lmax
                 j0_lmax = np.minimum(j0_lmax, window_lmax)
@@ -4002,9 +4002,9 @@ class XFaster(object):
             # cache model components
             if not hasattr(self, "r_model") or self.r_model is None:
                 # scalar CAMB spectrum
-                scal = xft.get_camb_cl(r=0, lmax=lmax_kern)
+                scal = st.get_camb_cl(r=0, lmax=lmax_kern)
                 # tensor CAMB spectrum for r=1, scales linearly with r
-                tens = xft.get_camb_cl(r=1, lmax=lmax_kern, nt=0, spec="tensor")
+                tens = st.get_camb_cl(r=1, lmax=lmax_kern, nt=0, spec="tensor")
                 self.r_model = {"scalar": scal, "tensor": tens}
                 if save:
                     opts["r_model"] = self.r_model
@@ -4444,7 +4444,7 @@ class XFaster(object):
                 transfer[spec] = OrderedDict()
                 stag = "cmb_{}".format(spec)
                 for tag in map_tags:
-                    transfer[spec][tag] = xft.expand_qb(
+                    transfer[spec][tag] = pt.expand_qb(
                         self.qb_transfer[stag][tag], self.bin_def[stag], lmax + 1
                     )
 
@@ -4873,7 +4873,7 @@ class XFaster(object):
                         # frequency scaling for foreground model
                         # I don't remember why delta beta was done this way.
                         # For likelihood, it makes sense to just use beta_ref+db
-                        freq_scale = xft.scale_dust(
+                        freq_scale = st.scale_dust(
                             self.map_freqs[tag1],
                             self.map_freqs[tag2],
                             ref_freq=self.ref_freq,
@@ -5532,7 +5532,7 @@ class XFaster(object):
 
                 # get foreground at pivot point spectral index
                 # and first derivative
-                freq_scale0, freq_scale_deriv = xft.scale_dust(
+                freq_scale0, freq_scale_deriv = st.scale_dust(
                     self.map_freqs[m0],
                     self.map_freqs[m1],
                     ref_freq=self.ref_freq,
