@@ -367,6 +367,12 @@
 
     <span class="n">dv</span> <span class="o">=</span> <span class="n">XFaster</span><span class="o">.</span><span class="n">data_version</span>
 
+    <span class="k">if</span> <span class="n">version</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;foreground_type&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;foreground_type_sim&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;foreground_type&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="n">field</span><span class="p">]</span>
+
     <span class="c1"># add backward-compatibile parsing here if necessary</span>
     <span class="k">if</span> <span class="n">version</span> <span class="o">!=</span> <span class="n">dv</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
