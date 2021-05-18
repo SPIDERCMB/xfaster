@@ -16,6 +16,10 @@ import matplotlib.pyplot as plt
 import xfaster as xf
 from xfaster import parse_tools as pt
 
+# Set this option to False to keep corrections to gcorr from being
+# too large on each iteration. Try if things aren't converging.
+allow_extreme = True
+
 P = ap.ArgumentParser()
 P.add_argument("--gcorr-config", help="The config file for gcorr computation")
 P.add_argument(
@@ -127,15 +131,17 @@ for tag in tags:
         if k in ["te", "eb", "tb"]:
             # We don't compute gcorr for off-diagonals
             v[:] = 1
-        # Don't update gcorr if correction is extreme
-        v[v < 0.05] /= gcorr_corr["gcorr"][k][v < 0.05]
-        v[v > 5] /= gcorr_corr["gcorr"][k][v > 5]
-        for v0, val in enumerate(v):
-            if val > 1.2:
-                if v0 != 0:
-                    v[v0] = v[v0 - 1]
-                else:
-                    v[v0] = 1.2
+        if not allow_extreme:
+            # Don't update gcorr if correction is extreme
+            v[v < 0.05] /= gcorr_corr["gcorr"][k][v < 0.05]
+            v[v > 5] /= gcorr_corr["gcorr"][k][v > 5]
+            for v0, val in enumerate(v):
+                if val > 1.2:
+                    if v0 != 0:
+                        v[v0] = v[v0 - 1]
+                    else:
+                        v[v0] = 1.2
+
         ax_tot[i].plot(v)
         ax_tot[i].set_title("{} total gcorr".format(k))
         ax_corr[i].plot(gcorr_corr["gcorr"][k])
