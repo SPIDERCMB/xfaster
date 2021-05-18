@@ -1360,7 +1360,7 @@ returned containing only the T map.</p>
 
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.get_mask_weights">
-<code class="sig-name descname">get_mask_weights</code><span class="sig-paren">(</span><em class="sig-param">apply_gcorr=False</em>, <em class="sig-param">reload_gcorr=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_mask_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_mask_weights" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_mask_weights</code><span class="sig-paren">(</span><em class="sig-param">apply_gcorr=False</em>, <em class="sig-param">reload_gcorr=False</em>, <em class="sig-param">gcorr_file=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_mask_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_mask_weights" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute cross spectra of the masks for each data map.</p>
 <p>Mode counting matrices are also computed and stored for each mask.</p>
 <dl class="field-list simple">
@@ -1371,6 +1371,9 @@ matrix.  The correction factor should have been pre-computed for
 each map tag.</p></li>
 <li><p><strong>reload_gcorr</strong> (<em>bool</em>) – If True, reload the gcorr file from the masks directory. Useful when
 iteratively solving for the correction terms.</p></li>
+<li><p><strong>gcorr_file</strong> (<em>str</em>) – If not None, path to gcorr file. Otherwise, use file labeled
+mask_map_&lt;tag&gt;_gcorr.npy in mask directory for signal, or
+mask_map_&lt;tag&gt;_gcorr_null.npy for nulls.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1867,7 +1870,7 @@ is set to the path to the data file on disk.</p>
 submits the job to a grid system</p>
 <dl class="function">
 <dt id="xfaster.xfaster_exec.xfaster_run">
-<code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">xfaster_run</code><span class="sig-paren">(</span><em class="sig-param">config='config_example.ini', pol=True, pol_mask=True, bin_width=25, lmin=2, lmax=500, multi_map=True, likelihood=False, mcmc=True, output_root=None, output_tag=None, data_root='all', data_subset='full/*0', signal_subset='*', noise_subset='*', mask_type='hitsmask_tailored', data_type='raw', noise_type='stationary', signal_type='r0p03', signal_transfer_type=None, signal_spec=None, signal_transfer_spec=None, model_r=None, data_root2=None, data_subset2=None, residual_fit=True, foreground_fit=False, bin_width_fg=30, res_specs=None, bin_width_res=25, weighted_bins=False, ensemble_mean=False, ensemble_median=False, sim_index=None, sims_add_alms=True, converge_criteria=0.005, iter_max=200, tbeb=False, fix_bb_xfer=False, window_lmax=None, like_lmin=33, like_lmax=250, like_profiles=False, like_profile_sigma=3.0, like_profile_points=100, pixwin=True, save_iters=False, verbose='notice', debug=False, checkpoint=None, add_log=False, cond_noise=1e-05, cond_criteria=5000.0, null_first_cmb=False, ref_freq=359.7, beta_ref=1.54, delta_beta_prior=0.5, noise_type_sim=None, signal_type_sim=None, foreground_type_sim=None, template_type=None, template_alpha_tags=['95', '150'], template_alpha=[0.015, 0.043], sub_hm_noise=True, return_cls=False, apply_gcorr=False, reload_gcorr=False, qb_file=None, like_alpha_tags=['95', '150'], alpha_prior=[-inf, inf], r_prior=[-inf, inf], res_prior=None, like_beam_tags=['95', '150'], beam_prior=None, betad_prior=None, dust_amp_prior=None, dust_ellind_prior=None, mcmc_walkers=50, like_converge_criteria=0.01, bp_tag=None, like_tag=None, sub_planck=False, fake_data_r=None, fake_data_template=None, do_fake_signal=True, do_fake_noise=True, save_fake_data=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#xfaster_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.xfaster_run" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">xfaster_run</code><span class="sig-paren">(</span><em class="sig-param">config='config_example.ini', pol=True, pol_mask=True, bin_width=25, lmin=2, lmax=500, multi_map=True, likelihood=False, mcmc=True, output_root=None, output_tag=None, data_root='all', data_subset='full/*0', signal_subset='*', noise_subset='*', mask_type='hitsmask_tailored', data_type='raw', noise_type='stationary', signal_type='r0p03', signal_transfer_type=None, signal_spec=None, signal_transfer_spec=None, model_r=None, data_root2=None, data_subset2=None, residual_fit=True, foreground_fit=False, bin_width_fg=30, res_specs=None, bin_width_res=25, weighted_bins=False, ensemble_mean=False, ensemble_median=False, sim_index=None, sims_add_alms=True, converge_criteria=0.005, iter_max=200, tbeb=False, fix_bb_xfer=False, window_lmax=None, like_lmin=33, like_lmax=250, like_profiles=False, like_profile_sigma=3.0, like_profile_points=100, pixwin=True, save_iters=False, verbose='notice', debug=False, checkpoint=None, add_log=False, cond_noise=1e-05, cond_criteria=5000.0, null_first_cmb=False, ref_freq=359.7, beta_ref=1.54, delta_beta_prior=0.5, noise_type_sim=None, signal_type_sim=None, foreground_type_sim=None, template_type=None, template_alpha_tags=['95', '150'], template_alpha=[0.015, 0.043], sub_hm_noise=True, return_cls=False, apply_gcorr=False, reload_gcorr=False, gcorr_file=None, qb_file=None, like_alpha_tags=['95', '150'], alpha_prior=[-inf, inf], r_prior=[-inf, inf], res_prior=None, like_beam_tags=['95', '150'], beam_prior=None, betad_prior=None, dust_amp_prior=None, dust_ellind_prior=None, mcmc_walkers=50, like_converge_criteria=0.01, bp_tag=None, like_tag=None, sub_planck=False, fake_data_r=None, fake_data_template=None, do_fake_signal=True, do_fake_noise=True, save_fake_data=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#xfaster_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.xfaster_run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main function for running the XFaster algorithm.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1995,6 +1998,9 @@ matrix.  The correction factor should have been pre-computed
 for each map tag.</p></li>
 <li><p><strong>reload_gcorr</strong> (<em>bool</em>) – If True, reload the gcorr file from the masks directory. Useful when
 iteratively solving for the correction terms.</p></li>
+<li><p><strong>gcorr_file</strong> (<em>str</em>) – If not None, path to gcorr file. Otherwise, use file labeled
+mask_map_&lt;tag&gt;_gcorr.npy in mask directory for signal, or
+mask_map_&lt;tag&gt;_gcorr_null.npy for nulls.</p></li>
 <li><p><strong>qb_file</strong> (<em>string</em>) – Pointer to a bandpowers.npz file in the output directory. If used
 in sim_index mode, the noise sim read from disk will be corrected
 by the residual qb values stored in qb_file.</p></li>

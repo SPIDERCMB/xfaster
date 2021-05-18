@@ -2105,7 +2105,7 @@
             <span class="bp">cls</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="n">lmin</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="XFaster.get_mask_weights"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_mask_weights">[docs]</a>    <span class="k">def</span> <span class="nf">get_mask_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">apply_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reload_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="XFaster.get_mask_weights"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_mask_weights">[docs]</a>    <span class="k">def</span> <span class="nf">get_mask_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">apply_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reload_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">gcorr_file</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute cross spectra of the masks for each data map.</span>
 
@@ -2120,6 +2120,10 @@
 <span class="sd">        reload_gcorr : bool</span>
 <span class="sd">            If True, reload the gcorr file from the masks directory. Useful when</span>
 <span class="sd">            iteratively solving for the correction terms.</span>
+<span class="sd">        gcorr_file : str</span>
+<span class="sd">            If not None, path to gcorr file. Otherwise, use file labeled</span>
+<span class="sd">            mask_map_&lt;tag&gt;_gcorr.npy in mask directory for signal, or</span>
+<span class="sd">            mask_map_&lt;tag&gt;_gcorr_null.npy for nulls.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
@@ -2158,7 +2162,7 @@
             <span class="n">alt_name</span><span class="o">=</span><span class="s2">&quot;data_xcorr&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">process_gcorr</span><span class="p">():</span>
+        <span class="k">def</span> <span class="nf">process_gcorr</span><span class="p">(</span><span class="n">gcorr_file</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;gcorr&quot;</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">gcorr</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">if</span> <span class="n">apply_gcorr</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">gcorr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -2171,7 +2175,11 @@
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">reload_gcorr</span> <span class="ow">and</span> <span class="n">tag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">gcorr</span><span class="p">:</span>
                     <span class="k">continue</span>
 
-                <span class="n">gcorr_file</span> <span class="o">=</span> <span class="n">mfile</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.fits&quot;</span><span class="p">,</span> <span class="s2">&quot;_gcorr.npz&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">gcorr_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_run</span><span class="p">:</span>
+                        <span class="n">gcorr_file</span> <span class="o">=</span> <span class="n">mfile</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.fits&quot;</span><span class="p">,</span> <span class="s2">&quot;_gcorr_null.npz&quot;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">gcorr_file</span> <span class="o">=</span> <span class="n">mfile</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.fits&quot;</span><span class="p">,</span> <span class="s2">&quot;_gcorr.npz&quot;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">gcorr_file</span><span class="p">):</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;G correction file </span><span class="si">{}</span><span class="s2"> not found&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">gcorr_file</span><span class="p">))</span>
                     <span class="k">continue</span>
@@ -2220,7 +2228,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">gmat_ell</span> <span class="o">=</span> <span class="n">gmat_ell</span>
 
         <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">process_gcorr</span><span class="p">()</span>
+            <span class="n">process_gcorr</span><span class="p">(</span><span class="n">gcorr_file</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">apply_gcorr</span> <span class="ow">and</span> <span class="p">(</span><span class="n">reload_gcorr</span> <span class="ow">or</span> <span class="n">ret</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gcorr&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_data</span><span class="p">(</span><span class="n">save_name</span><span class="p">,</span> <span class="n">from_attrs</span><span class="o">=</span><span class="n">save_attrs</span><span class="p">)</span>
             <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;gcorr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gcorr</span>
@@ -2318,7 +2326,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">w4</span> <span class="o">=</span> <span class="n">w4</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">gmat</span> <span class="o">=</span> <span class="n">gmat</span>
 
-        <span class="n">process_gcorr</span><span class="p">()</span>
+        <span class="n">process_gcorr</span><span class="p">(</span><span class="n">gcorr_file</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Fsky: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fsky</span><span class="p">),</span> <span class="s2">&quot;debug&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Effective fsky: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fsky_eff</span><span class="p">),</span> <span class="s2">&quot;debug&quot;</span><span class="p">)</span>

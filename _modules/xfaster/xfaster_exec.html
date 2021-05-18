@@ -253,6 +253,7 @@
     <span class="n">return_cls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">apply_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">reload_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">gcorr_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">qb_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">like_alpha_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;95&quot;</span><span class="p">,</span> <span class="s2">&quot;150&quot;</span><span class="p">],</span>
     <span class="n">alpha_prior</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">],</span>
@@ -469,6 +470,10 @@
 <span class="sd">    reload_gcorr : bool</span>
 <span class="sd">        If True, reload the gcorr file from the masks directory. Useful when</span>
 <span class="sd">        iteratively solving for the correction terms.</span>
+<span class="sd">    gcorr_file : str</span>
+<span class="sd">        If not None, path to gcorr file. Otherwise, use file labeled</span>
+<span class="sd">        mask_map_&lt;tag&gt;_gcorr.npy in mask directory for signal, or</span>
+<span class="sd">        mask_map_&lt;tag&gt;_gcorr_null.npy for nulls.</span>
 <span class="sd">    qb_file : string</span>
 <span class="sd">        Pointer to a bandpowers.npz file in the output directory. If used</span>
 <span class="sd">        in sim_index mode, the noise sim read from disk will be corrected</span>
@@ -596,6 +601,7 @@
         <span class="n">return_cls</span><span class="o">=</span><span class="n">return_cls</span><span class="p">,</span>
         <span class="n">apply_gcorr</span><span class="o">=</span><span class="n">apply_gcorr</span><span class="p">,</span>
         <span class="n">reload_gcorr</span><span class="o">=</span><span class="n">reload_gcorr</span><span class="p">,</span>
+        <span class="n">gcorr_file</span><span class="o">=</span><span class="n">gcorr_file</span><span class="p">,</span>
         <span class="n">like_profiles</span><span class="o">=</span><span class="n">like_profiles</span><span class="p">,</span>
         <span class="n">like_profile_sigma</span><span class="o">=</span><span class="n">like_profile_sigma</span><span class="p">,</span>
         <span class="n">like_profile_points</span><span class="o">=</span><span class="n">like_profile_points</span><span class="p">,</span>
@@ -631,6 +637,7 @@
     <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;sub_hm_noise&quot;</span><span class="p">)</span>
     <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;apply_gcorr&quot;</span><span class="p">)</span>
     <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;reload_gcorr&quot;</span><span class="p">)</span>
+    <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;gcorr_file&quot;</span><span class="p">)</span>
     <span class="n">bandpwr_opts</span> <span class="o">=</span> <span class="n">spec_opts</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;file_tag&quot;</span><span class="p">)</span>
 
@@ -688,7 +695,8 @@
     <span class="p">)</span>
 
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing mask cross-spectra and weights...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-    <span class="n">X</span><span class="o">.</span><span class="n">get_mask_weights</span><span class="p">(</span><span class="n">apply_gcorr</span><span class="o">=</span><span class="n">apply_gcorr</span><span class="p">,</span> <span class="n">reload_gcorr</span><span class="o">=</span><span class="n">reload_gcorr</span><span class="p">)</span>
+    <span class="n">X</span><span class="o">.</span><span class="n">get_mask_weights</span><span class="p">(</span><span class="n">apply_gcorr</span><span class="o">=</span><span class="n">apply_gcorr</span><span class="p">,</span> <span class="n">reload_gcorr</span><span class="o">=</span><span class="n">reload_gcorr</span><span class="p">,</span>
+                       <span class="n">gcorr_file</span><span class="o">=</span><span class="n">gcorr_file</span><span class="p">)</span>
 
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing kernels...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
     <span class="n">X</span><span class="o">.</span><span class="n">get_kernels</span><span class="p">(</span><span class="n">window_lmax</span><span class="o">=</span><span class="n">window_lmax</span><span class="p">)</span>
@@ -1293,6 +1301,11 @@
             <span class="n">G</span><span class="p">,</span>
             <span class="s2">&quot;reload_gcorr&quot;</span><span class="p">,</span>
             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Reload correction factor from file in masks directory.&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span>
+            <span class="n">G</span><span class="p">,</span>
+            <span class="s2">&quot;gcorr_file&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Path to g-correction file&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;bp_tag&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Append tag to bandpowers output file&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;like_tag&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Append tag to likelihood output files&quot;</span><span class="p">)</span>
