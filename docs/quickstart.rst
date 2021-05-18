@@ -20,6 +20,13 @@ After cloning the repo (`<https://github.com/annegambrel/xfaster>`_), install xf
 
     $ python setup.py install
 
+Or, if installing on a shared machine::
+
+    $ python setup.py install --user
+
+**Note:** Every time you pull or make local changes to files in ``xfaster/xfaster``, you must reinstall for them to take effect.
+XFaster is under active development as we add new features-- if something is broken, try to git pull and reinstall!
+
 Example Script
 --------------
 To get started with the code before running it on your data, you can run through the example, described in more detail in the :ref:`Tutorial<Tutorial>` link.

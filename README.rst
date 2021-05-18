@@ -24,3 +24,7 @@ example:
 To get started, install xfaster:
 
     python setup.py install
+
+Or, if running on a shared machine:
+
+    python setup.py install --user
