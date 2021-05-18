@@ -71,9 +71,9 @@ if not os.path.exists(rundir) or args.force_restart:
 
 else:
     # check plots directory to find what iteration we're at
-    plots = sorted(glob.glob(os.path.join(rundir, "plots", "*.png")))
-    print(plots[-1])
-    last_iter = plots[-1].split("iter")[-1].split(".")[0]
+    plots = glob.glob(os.path.join(rundir, "plots", "*.png"))
+    plot_inds = sorted([int(x.split("iter")[-1].split(".")[0]) for x in plots])
+    last_iter = plot_inds[-1]
     iternum = int(last_iter) + 1
 print("Starting iteration {}".format(iternum))
 
@@ -139,7 +139,7 @@ for tag in tags:
         ax_tot[i].plot(v)
         ax_tot[i].set_title("{} total gcorr".format(k))
         ax_corr[i].plot(gcorr_corr["gcorr"][k])
-        ax_tot[i].set_title("{} gcorr corr".format(k))
+        ax_corr[i].set_title("{} gcorr corr".format(k))
 
     print(gcorr["gcorr"])
     fig_tot.savefig(
