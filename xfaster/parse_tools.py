@@ -206,6 +206,8 @@ def parse_data(data, field):
     if version == 1:
         if "foreground_type" in data:
             data["foreground_type_sim"] = data.pop("foreground_type")
+        if "clean_type" in data:
+            data["data_type"] = data.pop("clean_type")
 
         return data[field]
 
