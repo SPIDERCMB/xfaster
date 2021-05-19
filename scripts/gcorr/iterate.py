@@ -18,7 +18,7 @@ from xfaster import parse_tools as pt
 
 # Set this option to False to keep corrections to gcorr from being
 # too large on each iteration. Try if things aren't converging.
-allow_extreme = True
+allow_extreme = False
 
 P = ap.ArgumentParser()
 P.add_argument("--gcorr-config", help="The config file for gcorr computation")
@@ -141,6 +141,11 @@ for tag in tags:
                         v[v0] = v[v0 - 1]
                     else:
                         v[v0] = 1.2
+                if val < 0.2:
+                    if v0 != 0:
+                        v[v0] = v[v0 - 1]
+                    else:
+                        v[v0] = 0.2
 
         ax_tot[i].plot(v)
         ax_tot[i].set_title("{} total gcorr".format(k))
