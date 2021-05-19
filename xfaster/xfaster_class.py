@@ -1020,21 +1020,6 @@ class XFaster(object):
         if null_run:
             ref_opts.update(data_subset2=data_subset2)
 
-        no_return = [
-            "signal_files",
-            "signal_files_sim",
-            "signal_transfer_files",
-            "noise_files",
-            "noise_files_sim",
-            "signal_files2",
-            "signal_files_sim2",
-            "signal_transfer_files2",
-            "noise_files2",
-            "noise_files_sim2",
-            "foreground_files",
-            "foreground_files2",
-        ]
-
         def get_template_files(fs, template_type):
             """
             Update options for template cleaning
@@ -1268,8 +1253,6 @@ class XFaster(object):
                         [replace_root(k, vv) for vv in v.ravel()]
                     ).reshape(v.shape)
                     setattr(self, k, ret[k])
-                if k in no_return:
-                    ret.pop(k)
 
             if template_type != ret.get("template_type", None):
                 get_template_files(ret, template_type)
@@ -1375,8 +1358,6 @@ class XFaster(object):
             self.save_data(save_name, **fs)
         for k in list(fs):
             setattr(self, k, fs[k])
-            if k in no_return:
-                fs.pop(k)
         return fs
 
     def get_map(self, filename, check_nside=True, cache=False, **kwargs):
@@ -2589,8 +2570,53 @@ class XFaster(object):
         """
         import healpy as hp
 
-        null_run = self.null_run
+        mask_files = self.mask_files
+        map_tags = self.map_tags
+        map_pairs = pt.tag_pairs(map_tags, index=True)
+        num_maps = self.num_maps
+        num_corr = self.num_corr
         data_shape = self.data_shape
+
+        sims_attr = {}
+
+        if transfer:
+            sims_attr["signal_files"] = self.signal_transfer_files
+            sims_attr["num_signal"] = self.num_signal_transfer
+        else:
+            sims_attr["signal_files"] = self.signal_files
+            sims_attr["num_signal"] = self.num_signal
+
+        sims_attr["noise_files"] = self.noise_files
+        sims_attr["num_noise"] = self.num_noise
+        sims_attr["noise_files_sim"] = self.noise_files_sim
+        sims_attr["signal_files_sim"] = self.signal_files_sim
+        sims_attr["num_noise_sim"] = self.num_noise_sim
+        sims_attr["num_signal_sim"] = self.num_signal_sim
+        sims_attr["foreground_files"] = self.foreground_files
+        sims_attr["num_foreground"] = self.num_foreground
+
+        foreground_sims = sims_attr["foreground_files"] is not None
+
+        if do_noise:
+            do_noise = sims_attr["noise_files"] is not None
+            # if qb file is not none, modify cls by residual in file
+            if qb_file is not None:
+                if not os.path.exists(qb_file):
+                    qb_file = os.path.join(self.output_root, qb_file)
+                qb_file = pt.load_and_parse(qb_file)
+
+        null_run = self.null_run
+        if transfer:
+            sims_attr["signal_files2"] = (
+                self.signal_transfer_files2 if null_run else None
+            )
+        else:
+            sims_attr["signal_files2"] = self.signal_files2 if null_run else None
+
+        sims_attr["noise_files2"] = self.noise_files2 if null_run else None
+        sims_attr["noise_files_sim2"] = self.noise_files_sim2 if null_run else None
+        sims_attr["signal_files_sim2"] = self.signal_files_sim2 if null_run else None
+        sims_attr["foreground_files2"] = self.foreground_files2 if null_run else None
 
         # convenience functions
         def process_index(files, files2, idx, idx2=None, cache=None, qbf=None):
@@ -3111,53 +3137,6 @@ class XFaster(object):
             # with the same signal type
             if transfer and self.signal_transfer_type == self.signal_type:
                 self.force_rerun["sims"] = False
-
-
-        mask_files = self.mask_files
-        map_tags = self.map_tags
-        map_pairs = pt.tag_pairs(map_tags, index=True)
-        num_maps = self.num_maps
-        num_corr = self.num_corr
-
-        sims_attr = {}
-
-        if transfer:
-            sims_attr["signal_files"] = self.signal_transfer_files
-            sims_attr["num_signal"] = self.num_signal_transfer
-        else:
-            sims_attr["signal_files"] = self.signal_files
-            sims_attr["num_signal"] = self.num_signal
-
-        sims_attr["noise_files"] = self.noise_files
-        sims_attr["num_noise"] = self.num_noise
-        sims_attr["noise_files_sim"] = self.noise_files_sim
-        sims_attr["signal_files_sim"] = self.signal_files_sim
-        sims_attr["num_noise_sim"] = self.num_noise_sim
-        sims_attr["num_signal_sim"] = self.num_signal_sim
-        sims_attr["foreground_files"] = self.foreground_files
-        sims_attr["num_foreground"] = self.num_foreground
-
-        foreground_sims = sims_attr["foreground_files"] is not None
-
-        if do_noise:
-            do_noise = sims_attr["noise_files"] is not None
-            # if qb file is not none, modify cls by residual in file
-            if qb_file is not None:
-                if not os.path.exists(qb_file):
-                    qb_file = os.path.join(self.output_root, qb_file)
-                qb_file = pt.load_and_parse(qb_file)
-
-        if transfer:
-            sims_attr["signal_files2"] = (
-                self.signal_transfer_files2 if null_run else None
-            )
-        else:
-            sims_attr["signal_files2"] = self.signal_files2 if null_run else None
-
-        sims_attr["noise_files2"] = self.noise_files2 if null_run else None
-        sims_attr["noise_files_sim2"] = self.noise_files_sim2 if null_run else None
-        sims_attr["signal_files_sim2"] = self.signal_files_sim2 if null_run else None
-        sims_attr["foreground_files2"] = self.foreground_files2 if null_run else None
 
         # process signal, noise, and S+N
         process_files()
