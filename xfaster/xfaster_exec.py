@@ -71,7 +71,7 @@ def xfaster_run(
     like_profile_sigma=3.0,
     like_profile_points=100,
     like_r_specs=["EE", "BB"],
-    like_temp_specs=["EE", "BB", "EB"],
+    like_template_specs=["EE", "BB", "EB"],
     pixwin=True,
     save_iters=False,
     verbose="notice",
@@ -87,7 +87,7 @@ def xfaster_run(
     template_type=None,
     template_alpha_tags=["95", "150"],
     template_alpha=[0.015, 0.043],
-    sub_hm_noise=True,
+    subtract_template_noise=True,
     return_cls=False,
     apply_gcorr=False,
     reload_gcorr=False,
@@ -106,7 +106,7 @@ def xfaster_run(
     like_converge_criteria=0.01,
     bp_tag=None,
     like_tag=None,
-    sub_planck=False,
+    subtract_planck_signal=False,
     fake_data_r=None,
     fake_data_template=None,
     do_fake_signal=True,
@@ -251,7 +251,7 @@ def xfaster_run(
         Number of points to sample along the likelihood profile
     like_r_specs : list
         Which spectra to use in the r likelihood.
-    like_temp_specs : list
+    like_template_specs : list
         Which spectra to use for alpha in the likelihood.
     pixwin : bool
         If True, apply pixel window functions to beam windows.
@@ -301,7 +301,7 @@ def xfaster_run(
     template_alpha : list of floats
         Scalar to be applied to template map for subtraction from each of the
         data with tags in the list ``template_alpha_tags``.
-    sub_hm_noise : bool
+    subtract_template_noise : bool
         If True, subtract average of Planck ffp10 noise crosses to debias
         template-cleaned spectra
     return_cls : bool
@@ -359,7 +359,7 @@ def xfaster_run(
         Tag to append to bandpowers output file
     like_tag : str
         Tag to append to likelihood output file
-    sub_planck : bool
+    subtract_planck_signal : bool
         If True, subtract reobserved Planck from maps. Properly uses half
         missions so no Planck autos are used. Useful for removing expected
         signal residuals from null tests.
@@ -384,9 +384,6 @@ def xfaster_run(
     cpu_time = getattr(time, "process_time", getattr(time, "clock", time.time))
     cpu_start = cpu_time()
     time_start = time.time()
-
-    if noise_type == "None":
-        noise_type = None
 
     if foreground_type_sim is not None and sim_index is None:
         warnings.warn(
@@ -445,8 +442,8 @@ def xfaster_run(
         data_subset2=data_subset2,
         foreground_type_sim=foreground_type_sim,
         template_type=template_type,
-        sub_planck=sub_planck,
-        sub_hm_noise=sub_hm_noise,
+        subtract_planck_signal=subtract_planck_signal,
+        subtract_template_noise=subtract_template_noise,
     )
     config_vars.update(file_opts, "File Options")
 
@@ -492,7 +489,7 @@ def xfaster_run(
         like_profile_points=like_profile_points,
         qb_file=qb_file,
         template_alpha=template_alpha,
-        sub_hm_noise=sub_hm_noise,
+        subtract_template_noise=subtract_template_noise,
         file_tag=bp_tag,
     )
     config_vars.update(spec_opts, "Spectrum Estimation Options")
@@ -519,7 +516,7 @@ def xfaster_run(
     spec_opts.pop("model_r")
     spec_opts.pop("qb_file")
     spec_opts.pop("template_alpha")
-    spec_opts.pop("sub_hm_noise")
+    spec_opts.pop("subtract_template_noise")
     spec_opts.pop("apply_gcorr")
     spec_opts.pop("reload_gcorr")
     spec_opts.pop("gcorr_file")
@@ -545,7 +542,7 @@ def xfaster_run(
         lmin=like_lmin,
         lmax=like_lmax,
         r_specs=like_r_specs,
-        temp_specs=like_temp_specs,
+        template_specs=like_template_specs,
         null_first_cmb=null_first_cmb,
         alpha_tags=like_alpha_tags,
         alpha_prior=alpha_prior,
@@ -559,13 +556,13 @@ def xfaster_run(
         num_walkers=mcmc_walkers,
         converge_criteria=like_converge_criteria,
         file_tag=like_tag,
-        sub_hm_noise=sub_hm_noise,
+        subtract_template_noise=subtract_template_noise,
     )
     config_vars.update(like_opts, "Likelihood Estimation Options")
     config_vars.remove_option("XFaster General", "like_lmin")
     config_vars.remove_option("XFaster General", "like_lmax")
     config_vars.remove_option("XFaster General", "like_r_specs")
-    config_vars.remove_option("XFaster General", "like_temp_specs")
+    config_vars.remove_option("XFaster General", "like_template_specs")
     config_vars.remove_option("XFaster General", "mcmc_walkers")
     config_vars.remove_option("XFaster General", "like_converge_criteria")
     config_vars.remove_option("XFaster General", "like_tag")
@@ -624,15 +621,15 @@ def xfaster_run(
         weighted_bins=weighted_bins,
     )
 
-    if template_type is not None and sub_hm_noise:
+    if template_type is not None and subtract_template_noise:
         X.log("Computing template noise ensemble averages...", "notice")
         X.get_masked_template_noise()
 
     X.log("Computing masked data cross-spectra...", "notice")
     X.get_masked_data(
         template_alpha=template_alpha,
-        sub_planck=sub_planck,
-        sub_hm_noise=sub_hm_noise,
+        subtract_planck_signal=subtract_planck_signal,
+        subtract_template_noise=subtract_template_noise,
     )
 
     X.log("Computing sim ensemble averages...", "notice")
@@ -659,7 +656,7 @@ def xfaster_run(
             do_signal=do_fake_signal,
             do_noise=do_fake_noise,
             save_data=save_fake_data,
-            sub_hm_noise=sub_hm_noise,
+            subtract_template_noise=subtract_template_noise,
             qb_file=qb_file,
         )
 
@@ -1111,7 +1108,7 @@ def xfaster_parse(args=None, test=False):
         )
         add_arg(
             G,
-            "like_temp_specs",
+            "like_template_specs",
             nargs="+",
             help="Which spectra to use in the alpha likelihood calculation",
             choices=["TT", "EE", "BB", "TE", "EB", "TB"],
@@ -1204,7 +1201,7 @@ def xfaster_parse(args=None, test=False):
         )
         add_arg(
             G,
-            "sub_hm_noise",
+            "subtract_template_noise",
             help="Subtract hm1xhm2 Planck noise sim average from template-cleaned"
             " spectra.",
         )
@@ -1233,7 +1230,7 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "bp_tag", help="Append tag to bandpowers output file")
         add_arg(G, "like_tag", help="Append tag to likelihood output files")
         add_arg(
-            G, "sub_planck", argtype=bool, help="Subtract Planck maps from data maps"
+            G, "subtract_planck_signal", argtype=bool, help="Subtract Planck maps from data maps"
         )
         add_arg(
             G,
@@ -1357,7 +1354,9 @@ def xfaster_parse(args=None, test=False):
 
     # fix arguments meant to be empty
     for k, v in vars(args).items():
-        if v is not None and str(v).lower() in ["none", "['none']"]:
+        if not np.isscalar(v) and len(v) == 1:
+            v = v[0]
+        if str(v).lower().strip() == "none":
             setattr(args, k, None)
 
     # test mode
@@ -1459,7 +1458,7 @@ class XFasterJobGroup(object):
                     "beam_prior",
                     "res_prior",
                     "like_r_specs",
-                    "like_temp_specs",
+                    "like_template_specs",
                     "betad_prior",
                     "dust_amp_prior",
                     "dust_ellind_prior",

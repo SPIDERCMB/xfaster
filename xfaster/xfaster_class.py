@@ -512,7 +512,7 @@ class XFaster(object):
         suffix="",
         foreground_type_sim=None,
         template_type=None,
-        sub_planck=False,
+        subtract_planck_signal=False,
     ):
         """
         Find all files for the given data root.  Internal function, see
@@ -882,8 +882,8 @@ class XFaster(object):
         data_subset2=None,
         foreground_type_sim=None,
         template_type=None,
-        sub_planck=False,
-        sub_hm_noise=False,
+        subtract_planck_signal=False,
+        subtract_template_noise=False,
     ):
         """
         Find all files for the given data root.  The data structure is::
@@ -917,7 +917,7 @@ class XFaster(object):
                       (same filenames as data_<data_type>)
                    -> halfmission-2
                       (same filenames as data_<data_type>)
-                -> reobs_planck (if sub_planck=True)
+                -> reobs_planck (if subtract_planck_signal=True)
                    -> halfmission-1
                       (same filenames as data_<data_type>)
                    -> halfmission-2
@@ -993,12 +993,12 @@ class XFaster(object):
             (e.g. a foreground model) to be scaled by a scalar value per
             map tag and subtracted from the data. The directory contains one
             template per map tag.
-        sub_planck : bool
+        subtract_planck_signal : bool
             If True, subtract reobserved Planck from maps. Properly uses half
             missions so no Planck autos are used. Useful for removing expected
             signal residuals from null tests. Maps are expected to be in
             reobs_planck directory
-        sub_hm_noise : bool
+        subtract_template_noise : bool
             If True, subtract average of Planck ffp10 noise crosses to debias
             template-cleaned spectra
 
@@ -1035,6 +1035,9 @@ class XFaster(object):
                 )
             null_run = True
 
+        if null_run:
+            template_type = None
+
         opts = dict(
             data_type=data_type,
             noise_type=noise_type,
@@ -1051,7 +1054,7 @@ class XFaster(object):
         if null_run:
             ref_opts.update(data_subset2=data_subset2)
 
-        def get_template_files(fs, template_type):
+        def get_template_files(fs):
             """
             Update options for template cleaning. Internal to get_files.
 
@@ -1062,108 +1065,8 @@ class XFaster(object):
             template_type : str
                 Tag for template files
             """
-            # no template fitting for null runs
-            if fs["null_run"]:
-                template_type = None
-
-            if "template_type" in fs:
-                if template_type == fs["template_type"]:
-                    return
-
-            fs["template_type"] = template_type
-
-            # find all corresponding foreground templates
-            if template_type is None:
-                fs["template_root"] = None
-                fs["template_root2"] = None
-                fs["template_files"] = None
-                fs["template_files2"] = None
-                fs["template_noise_root"] = None
-                fs["template_noise_root2"] = None
-                fs["template_noise_files"] = None
-                fs["template_noise_files2"] = None
-                fs["num_template"] = 0
-                fs["num_template_noise"] = 0
-            else:
-                num_template_noise = None
-                for hm in ["1", "2"]:
-                    suff = "" if hm == "1" else "2"
-                    troot = os.path.join(
-                        fs["data_root"],
-                        "templates_{}".format(template_type),
-                        "halfmission-{}".format(hm),
-                    )
-                    ### this block is so sims with template type like
-                    # 353_100_gauss_003 can use ensemble in 353_100_gauss
-                    tp = template_type.split("_")
-                    ttype = template_type
-                    if tp[-1].isdigit():
-                        if ttype[-7:] not in ["353_100", "217_100"]:
-                            ttype = "_".join(tp[:-1])
-
-                    tnroot = os.path.join(
-                        fs["data_root"],
-                        "templates_noise_{}".format(ttype),
-                        "halfmission-{}".format(hm),
-                    )
-
-                    tfiles = []
-                    tnfiles = []
-                    for f in fs["map_files"]:
-                        nfile = f.replace(fs["map_root"], troot)
-                        if not os.path.exists(nfile):
-                            raise OSError("Missing hm-{} template for {}".format(hm, f))
-                        tfiles.append(nfile)
-                        if sub_hm_noise:
-                            nfiles = sorted(
-                                glob.glob(
-                                    f.replace(fs["map_root"], tnroot).replace(
-                                        ".fits", "_*.fits"
-                                    )
-                                )
-                            )
-                            if not len(nfiles):
-                                raise OSError(
-                                    "Missing hm-{} template noise for {}".format(hm, f)
-                                )
-                            tnfiles.append(nfiles)
-                        else:
-                            nfiles = []
-
-                        if num_template_noise is not None:
-                            if len(nfiles) != num_template_noise:
-                                raise OSError(
-                                    "Wrong number of template noise sims.  "
-                                    "Found {} files, expected {}.".format(
-                                        len(nfiles), num_template_noise
-                                    )
-                                )
-
-                        num_template_noise = len(nfiles)
-
-                    tfiles = np.asarray(tfiles)
-                    tnfiles = np.asarray(tnfiles)
-                    fs["template_root{}".format(suff)] = troot
-                    fs["template_files{}".format(suff)] = tfiles
-                    fs["template_noise_root{}".format(suff)] = tnroot
-                    fs["template_noise_files{}".format(suff)] = tnfiles
-
-                fs["num_template"] = len(fs["template_files"])
-                fs["num_template_noise"] = num_template_noise
-                self.log(
-                    "Found {} templates in {}".format(
-                        fs["num_template"], fs["template_root"]
-                    ),
-                    "info",
-                )
-                if sub_hm_noise:
-                    self.log(
-                        "Found {} template noise files in {}".format(
-                            fs["num_template_noise"], fs["template_noise_root"]
-                        ),
-                        "info",
-                    )
-                self.log("Template files: {}".format(fs["template_files"]), "debug")
+            if template_type == fs.get("template_type", None):
+                return
 
             fields = [
                 "template_type",
@@ -1178,10 +1081,101 @@ class XFaster(object):
                 "num_template",
                 "num_template_noise",
             ]
+
+            # find all corresponding foreground templates
+            if template_type is None:
+                for k in fields:
+                    fs[k] = 0 if k.startswith("num") else None
+                    setattr(self, k, fs[k])
+                return
+
+            fs["template_type"] = template_type
+
+            num_template_noise = None
+            for hm in ["1", "2"]:
+                suff = "" if hm == "1" else "2"
+                troot = os.path.join(
+                    fs["data_root"],
+                    "templates_{}".format(template_type),
+                    "halfmission-{}".format(hm),
+                )
+                ### this block is so sims with template type like
+                # 353_100_gauss_003 can use ensemble in 353_100_gauss
+                tp = template_type.split("_")
+                ttype = template_type
+                if tp[-1].isdigit():
+                    if ttype[-7:] not in ["353_100", "217_100"]:
+                        ttype = "_".join(tp[:-1])
+
+                if subtract_template_noise:
+                    tnroot = os.path.join(
+                        fs["data_root"],
+                        "templates_noise_{}".format(ttype),
+                        "halfmission-{}".format(hm),
+                    )
+
+                tfiles = []
+                tnfiles = []
+                for f in fs["map_files"]:
+                    nfile = f.replace(fs["map_root"], troot)
+                    if not os.path.exists(nfile):
+                        raise OSError("Missing hm-{} template for {}".format(hm, f))
+                    tfiles.append(nfile)
+
+                    if not subtract_template_noise:
+                        continue
+
+                    nfiles = sorted(
+                        glob.glob(
+                            f.replace(fs["map_root"], tnroot).replace(
+                                ".fits", "_*.fits"
+                            )
+                        )
+                    )
+                    if not len(nfiles):
+                        raise OSError(
+                            "Missing hm-{} template noise for {}".format(hm, f)
+                        )
+                    tnfiles.append(nfiles)
+                    if num_template_noise is not None:
+                        if len(nfiles) != num_template_noise:
+                            raise OSError(
+                                "Wrong number of template noise sims.  "
+                                "Found {} files, expected {}.".format(
+                                    len(nfiles), num_template_noise
+                                )
+                            )
+                    else:
+                        num_template_noise = len(nfiles)
+
+                tfiles = np.asarray(tfiles)
+                tnfiles = np.asarray(tnfiles)
+                fs["template_root{}".format(suff)] = troot
+                fs["template_files{}".format(suff)] = tfiles
+                fs["template_noise_root{}".format(suff)] = tnroot
+                fs["template_noise_files{}".format(suff)] = tnfiles
+                fs["num_template"] = len(fs["template_files"])
+                fs["num_template_noise"] = num_template_noise
+
+                self.log(
+                    "Found {} templates in {}".format(
+                        fs["num_template"], fs["template_root"]
+                    ),
+                    "info",
+                )
+                if subtract_template_noise:
+                    self.log(
+                        "Found {} template noise files in {}".format(
+                            fs["num_template_noise"], fs["template_noise_root"]
+                        ),
+                        "info",
+                    )
+                self.log("Template files: {}".format(fs["template_files"]), "debug")
+
             for k in fields:
                 setattr(self, k, fs[k])
 
-        def get_planck_files(fs, sub_planck=False):
+        def get_planck_files(fs):
             """
             Update options for planck subtraction. Internal to get_files.
 
@@ -1192,52 +1186,53 @@ class XFaster(object):
             sub_planck : bool
                 If true, get Planck map files to be subtracted from data
             """
-            if not sub_planck:
-                fs["planck_root"] = None
-                fs["planck_files"] = None
-                fs["num_planck"] = 0
-            else:
-                fs["planck_root"] = {}
-                fs["planck_files"] = {}
-                fs["num_planck"] = 0
-                for null_split in ["a", "b"]:
-                    if null_split == "a":
-                        suff = ""
-                    else:
-                        suff = 2
-                    for hm in ["1", "2"]:
-                        pgrp = "hm{}{}".format(hm, null_split)
-                        proot = os.path.join(
-                            fs["data_root{}".format(suff)],
-                            "reobs_planck",
-                            "halfmission-{}".format(hm),
-                        )
-                        pfiles = []
-                        for f in fs["map_files{}".format(suff)]:
-                            nfile = f.replace(fs["map_root{}".format(suff)], proot)
-                            if not os.path.exists(nfile):
-                                raise OSError("Missing hm-{} map for {}".format(hm, f))
-                            pfiles.append(nfile)
-                        if fs["num_planck"] == 0:
-                            fs["num_planck"] = len(pfiles)
-                        elif len(pfiles) != fs["num_planck"]:
-                            raise OSError(
-                                "Found {} files for planck group {}, expected {}".format(
-                                    len(pfiles), pgrp, fs["num_planck"]
-                                )
-                            )
-                        pfiles = np.asarray(pfiles)
-                        fs["planck_root"][pgrp] = proot
-                        fs["planck_files"][pgrp] = pfiles
+            if not subtract_planck_signal:
+                for k in ["planck_root", "planck_files", "num_planck"]:
+                    fs[k] = None
+                    setattr(self, k, None)
+                return
 
-                        self.log(
-                            "Found {} planck maps in {}".format(
-                                fs["num_planck"],
-                                fs["planck_root"][pgrp],
-                            ),
-                            "info",
+            fs["planck_root"] = {}
+            fs["planck_files"] = {}
+            fs["num_planck"] = 0
+            for null_split in ["a", "b"]:
+                if null_split == "a":
+                    suff = ""
+                else:
+                    suff = 2
+                for hm in ["1", "2"]:
+                    pgrp = "hm{}{}".format(hm, null_split)
+                    proot = os.path.join(
+                        fs["data_root{}".format(suff)],
+                        "reobs_planck",
+                        "halfmission-{}".format(hm),
+                    )
+                    pfiles = []
+                    for f in fs["map_files{}".format(suff)]:
+                        nfile = f.replace(fs["map_root{}".format(suff)], proot)
+                        if not os.path.exists(nfile):
+                            raise OSError("Missing hm-{} map for {}".format(hm, f))
+                        pfiles.append(nfile)
+                    if fs["num_planck"] == 0:
+                        fs["num_planck"] = len(pfiles)
+                    elif len(pfiles) != fs["num_planck"]:
+                        raise OSError(
+                            "Found {} files for planck group {}, expected {}".format(
+                                len(pfiles), pgrp, fs["num_planck"]
+                            )
                         )
-                        self.log("Planck files: {}".format(pfiles), "debug")
+                    pfiles = np.asarray(pfiles)
+                    fs["planck_root"][pgrp] = proot
+                    fs["planck_files"][pgrp] = pfiles
+
+                    self.log(
+                        "Found {} planck maps in {}".format(
+                            fs["num_planck"],
+                            fs["planck_root"][pgrp],
+                        ),
+                        "info",
+                    )
+                    self.log("Planck files: {}".format(pfiles), "debug")
 
             for k in ["planck_root", "planck_files", "num_planck"]:
                 setattr(self, k, fs[k])
@@ -1250,7 +1245,7 @@ class XFaster(object):
         if template_type is not None:
             alt_name = save_name
             save_name = "{}_clean_{}".format(save_name, template_type)
-        if sub_planck:
+        if subtract_planck_signal:
             alt_name = save_name
             save_name = "{}_planck_sub".format(save_name)
         # load file info from disk
@@ -1270,10 +1265,10 @@ class XFaster(object):
                 not null_run or data_root2 == ret_data_root2
             ):
                 if template_type != ret.get("template_type", None):
-                    get_template_files(ret, template_type)
+                    get_template_files(ret)
                     self.save_data(save_name, **ret)
-                if sub_planck and ret.get("planck_root", None) is None:
-                    get_planck_files(ret, sub_planck)
+                if subtract_planck_signal and ret.get("planck_root", None) is None:
+                    get_planck_files(ret)
                     self.save_data(save_name, **ret)
                 return ret
 
@@ -1298,11 +1293,11 @@ class XFaster(object):
                     setattr(self, k, ret[k])
 
             if template_type != ret.get("template_type", None):
-                get_template_files(ret, template_type)
+                get_template_files(ret)
                 self.save_data(save_name, **ret)
 
-            if sub_planck and ret.get("planck_root", None) is None:
-                get_planck_files(ret, sub_planck)
+            if subtract_planck_signal and ret.get("planck_root", None) is None:
+                get_planck_files(ret)
                 self.save_data(save_name, **ret)
             return ret
 
@@ -1393,8 +1388,8 @@ class XFaster(object):
             # we're doing a null test
             fs.update(null_run=True, **fs2)
 
-        get_template_files(fs, template_type)
-        get_planck_files(fs, sub_planck)
+        get_template_files(fs)
+        get_planck_files(fs)
 
         # store and return settings dictionary
         if save:
@@ -1591,7 +1586,7 @@ class XFaster(object):
                     name = "{}_{}".format(name, self.data_type)
                 if getattr(self, "template_cleaned", False):
                     name = "{}_clean_{}".format(name, self.template_type)
-                if getattr(self, "planck_sub", False):
+                if getattr(self, "planck_subtracted", False):
                     name = "{}_planck_sub".format(name)
             if self.weighted_bins:
                 name = "{}_wbins".format(name)
@@ -2241,9 +2236,9 @@ class XFaster(object):
     def get_masked_data(
         self,
         template_alpha=None,
-        sub_planck=False,
-        sub_hm_noise=True,
-        temp_specs=None,
+        subtract_planck_signal=False,
+        subtract_template_noise=True,
+        template_specs=None,
     ):
         """
         Compute cross spectra of the data maps.
@@ -2272,14 +2267,14 @@ class XFaster(object):
             Dictionary of template scaling factors to apply to foreground
             templates to be subtracted from the data.  Keys should match
             original map tags in the data set.
-        sub_planck : bool
+        subtract_planck_signal : bool
             If True, subtract reobserved Planck from maps. Properly uses half
             missions so no Planck auto correlations are introduced. Useful for
             removing expected signal residuals from null tests.
-        sub_hm_noise : bool
+        subtract_template_noise : bool
             If True, subtract average of Planck ffp10 noise crosses to debias
             template-cleaned spectra.
-        temp_specs : list
+        template_specs : list
             Which spectra to use for alpha in the likelihood.
 
         Notes
@@ -2306,8 +2301,8 @@ class XFaster(object):
         null_run = self.null_run
         map_files2 = self.map_files2 if null_run else None
 
-        if temp_specs is None:
-            temp_specs = ["ee", "bb", "te", "eb", "tb"]
+        if template_specs is None:
+            template_specs = ["ee", "bb", "te", "eb", "tb"]
 
         # ensure dictionary
         if template_alpha is None:
@@ -2332,7 +2327,7 @@ class XFaster(object):
 
         if null_run:
             save_attrs += ["cls_data_null"]
-            if sub_planck:
+            if subtract_planck_signal:
                 save_attrs += ["cls_data_sub_null"]
                 save_attrs += ["cls_planck_null"]
 
@@ -2345,7 +2340,7 @@ class XFaster(object):
                 "template_alpha",
             ]
 
-        if sub_planck:
+        if subtract_planck_signal:
             save_attrs += ["cls_data_sub"]
             save_attrs += ["cls_planck"]
 
@@ -2355,7 +2350,7 @@ class XFaster(object):
             """
             cls_clean = getattr(self, "cls_data_clean", OrderedDict())
 
-            for spec in set(self.specs) & set(temp_specs):
+            for spec in set(self.specs) & set(template_specs):
                 cls_clean[spec] = copy.deepcopy(self.cls_data[spec])
                 if spec not in self.cls_template:
                     continue
@@ -2374,7 +2369,7 @@ class XFaster(object):
                         if alphas[0] is not None:
                             d += alphas[0] * alphas[1] * t3
                             # subtract average template noise spectrum to debias
-                            if sub_hm_noise:
+                            if subtract_template_noise:
                                 n = self.cls_template_noise["hm1:hm2"][spec][xname]
                                 d -= alphas[0] * alphas[1] * n
 
@@ -2406,7 +2401,7 @@ class XFaster(object):
             self.cls_data_sub = cls_data_sub
             if null_run:
                 self.cls_data_sub_null = cls_data_sub_null
-            self.planck_sub = True
+            self.planck_subtracted = True
 
         # change template subtraction coefficients for pre-loaded data
         if all([hasattr(self, attr) for attr in save_attrs]):
@@ -2429,10 +2424,10 @@ class XFaster(object):
             shape_ref="cls_data",
         )
         if ret is not None:
-            self.planck_sub = False
+            self.planck_subtracted = False
             self.template_cleaned = False
             if null_run:
-                if sub_planck and not self.planck_sub:
+                if subtract_planck_signal and not self.planck_subtracted:
                     subtract_planck_maps()
                 return ret
             if all([x is None for x in template_alpha.values()]):
@@ -2457,13 +2452,12 @@ class XFaster(object):
 
         # set up planck subtraction
         cls_planck = None
-        if sub_planck:
+        if subtract_planck_signal:
             cls_planck = OrderedDict()
             cls_planck_null = OrderedDict() if null_run else None
             planck_files_split = list(
                 zip(self.planck_files[x] for x in ["hm1a", "hm2a", "hm1b", "hm2b"])
             )
-        planck_subtracted = False
 
         cache = dict()
 
@@ -2490,7 +2484,7 @@ class XFaster(object):
                 # compare power with sum...
                 m_alms = self.map2alm((m + m2) / 2.0, self.pol)
                 mn_alms = self.map2alm((m - m2) / 2.0, self.pol)
-                if sub_planck:
+                if subtract_planck_signal:
                     # cache raw data alms and planck alms together
                     mp1hm1, mp1hm2, mp2hm1, mp2hm2 = (
                         self.apply_mask(self.get_map(f), mask)
@@ -2535,7 +2529,7 @@ class XFaster(object):
 
             # store cross spectra
             if isinstance(imap_alms, tuple) and len(imap_alms) == 3:
-                if not sub_planck:
+                if not subtract_planck_signal:
                     template_cleaned = True
                 # raw map spectrum component
                 cls1 = self.alm2cl(imap_alms[0], jmap_alms[0])
@@ -2554,9 +2548,9 @@ class XFaster(object):
 
                 for s, spec in enumerate(self.specs):
                     # apply template to TE/TB but not TT
-                    if not sub_planck and spec == "tt":
+                    if not subtract_planck_signal and spec == "tt":
                         continue
-                    cls_dict = cls_planck if sub_planck else cls_tmp
+                    cls_dict = cls_planck if subtract_planck_signal else cls_tmp
                     cls_dict = cls_dict.setdefault(spec, OrderedDict())
                     cls_dict[xname] = (t1[s], t2[s], t3[s])
 
@@ -2600,12 +2594,12 @@ class XFaster(object):
         else:
             self.template_cleaned = False
 
-        if sub_planck:
+        if subtract_planck_signal:
             self.cls_planck = cls_planck
             self.cls_planck_null = cls_planck_null
             subtract_planck_maps()
         else:
-            self.planck_sub = False
+            self.planck_subtracted = False
 
         return self.save_data(save_name, from_attrs=save_attrs)
 
@@ -2956,19 +2950,15 @@ class XFaster(object):
                 self.log("Substitute signal + noise for observed spectrum", "notice")
                 for spec in self.specs:
                     for xname in self.cls_data[spec]:
-                        if do_noise:
-                            self.cls_data[spec][xname] = self.cls_sim[spec][xname]
-                        else:
-                            self.cls_data[spec][xname] = self.cls_signal[spec][xname]
-                        if null_run:
-                            if do_noise:
-                                self.cls_data_null[spec][xname] = self.cls_sim_null[
-                                    spec
-                                ][xname]
-                            else:
-                                self.cls_data_null[spec][xname] = self.cls_signal_null[
-                                    spec
-                                ][xname]
+                        self.cls_data[spec][xname] = (
+                            self.cls_sim if do_noise else self.cls_signal
+                        )[spec][xname]
+                        if not null_run:
+                            continue
+                        self.cls_data_null[spec][xname] = (
+                            self.cls_sim_null if do_noise else self.cls_signal_null
+                        )[spec][xname]
+
             elif ensemble_median:
                 self.log(
                     "Substitute signal + noise median for observed spectrum", "notice"
@@ -2976,10 +2966,9 @@ class XFaster(object):
                 for spec in self.specs:
                     for xname in self.cls_data[spec]:
                         self.cls_data[spec][xname] = self.cls_med[spec][xname]
-                        if null_run:
-                            self.cls_data_null[spec][xname] = self.cls_med_null[spec][
-                                xname
-                            ]
+                        if not null_run:
+                            continue
+                        self.cls_data_null[spec][xname] = self.cls_med_null[spec][xname]
 
             elif sim_index is not None:
                 msg = "Substitute #{} sim signal + noise for observed alms"
@@ -3167,7 +3156,7 @@ class XFaster(object):
         do_noise=True,
         do_signal=True,
         save_data=False,
-        sub_hm_noise=True,
+        subtract_template_noise=True,
         qb_file=None,
     ):
         """
@@ -3208,7 +3197,7 @@ class XFaster(object):
             template noise only.
         save_data : bool
             If true, save data_xcorr file to disk for fake data.
-        sub_hm_noise : bool
+        subtract_template_noise : bool
             If True, subtract average of Planck ffp10 noise crosses to debias
             template-cleaned spectra
         qb_file : str
@@ -3472,7 +3461,7 @@ class XFaster(object):
                         if alphas[0] is not None:
                             d += alphas[0] * alphas[1] * t3
                             # subtract average template noise spectrum to debias
-                            if sub_hm_noise:
+                            if subtract_template_noise:
                                 n = self.cls_template_noise["hm1:hm2"][spec][xname]
                                 d -= alphas[0] * alphas[1] * n
 
@@ -4881,7 +4870,7 @@ class XFaster(object):
         if transfer_run:
             obs_quant = self.cls_signal
         elif self.null_run:
-            if self.planck_sub:
+            if self.planck_subtracted:
                 obs_quant = self.cls_data_sub_null
             else:
                 obs_quant = self.cls_data_null
@@ -4903,38 +4892,19 @@ class XFaster(object):
         nell = None
         debias = None
         # Nulls are debiased by average of S+N sims
-        if self.null_run and not transfer_run:
-            if self.cls_noise is not None:
-                nell = OrderedDict()
+        if self.null_run and not transfer_run and self.cls_sim_null is not None:
+            nell = OrderedDict()
             debias = OrderedDict()
             for spec in specs:
-                if self.cls_noise is not None:
-                    nell[spec] = OrderedDict()
+                nell[spec] = OrderedDict()
                 debias[spec] = OrderedDict()
-                for xname, (m0, m1) in map_pairs.items():
-                    if m0 != m1:
-                        if self.cls_noise is not None:
-                            nell[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
-                        if self.planck_sub:
-                            debias[spec][xname] = np.copy(
-                                self.cls_noise_null[spec][xname]
-                            )
-                        else:
-                            debias[spec][xname] = np.copy(
-                                self.cls_sim_null[spec][xname]
-                            )
-
+                for xname in map_pairs:
+                    nell[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
+                    if self.planck_subtracted:
+                        # signal term already subtracted with planck maps
+                        debias[spec][xname] = np.copy(self.cls_noise_null[spec][xname])
                     else:
-                        if self.cls_noise is not None:
-                            nell[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
-                        if self.planck_sub:
-                            debias[spec][xname] = np.copy(
-                                self.cls_noise_null[spec][xname]
-                            )
-                        else:
-                            debias[spec][xname] = np.copy(
-                                self.cls_sim_null[spec][xname]
-                            )
+                        debias[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
 
         # Non-nulls are debiased by average of N sims
         elif not transfer_run and self.cls_noise is not None:
@@ -6507,9 +6477,9 @@ class XFaster(object):
         converge_criteria=0.01,
         reset_backend=None,
         file_tag=None,
-        sub_hm_noise=False,
+        subtract_template_noise=False,
         r_specs=["ee", "bb"],
-        temp_specs=["ee", "bb", "eb"],
+        template_specs=["ee", "bb", "eb"],
     ):
         """
         Explore the likelihood, optionally with an MCMC sampler.
@@ -6579,12 +6549,12 @@ class XFaster(object):
             set to True if the checkpoint has been forced to be rerun.
         file_tag : string
             If supplied, appended to the likelihood filename.
-        sub_hm_noise : bool
+        subtract_template_noise : bool
             If True, subtract average of Planck ffp10 noise crosses to debias
             template-cleaned spectra
         r_specs : list
             Which spectra to use in the r likelihood.
-        temp_specs : list
+        template_specs : list
             Which spectra to use for alpha in the likelihood.
         """
 
@@ -6608,7 +6578,7 @@ class XFaster(object):
                 x[:] = [float(x[0]), float(x[1])]
 
         r_specs = [x.lower() for x in r_specs]
-        temp_specs = [x.lower() for x in temp_specs]
+        template_specs = [x.lower() for x in template_specs]
 
         save_name = "like_mcmc"
         if not mcmc:
@@ -6910,8 +6880,8 @@ class XFaster(object):
             else:
                 self.get_masked_data(
                     template_alpha=OrderedDict(zip(alpha_tags, alpha)),
-                    sub_hm_noise=sub_hm_noise,
-                    temp_specs=temp_specs,
+                    subtract_template_noise=subtract_template_noise,
+                    template_specs=template_specs,
                 )
                 clsi = self.get_data_spectra(do_noise=False)
 
