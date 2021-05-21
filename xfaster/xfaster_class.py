@@ -1020,21 +1020,6 @@ class XFaster(object):
         if null_run:
             ref_opts.update(data_subset2=data_subset2)
 
-        no_return = [
-            "signal_files",
-            "signal_files_sim",
-            "signal_transfer_files",
-            "noise_files",
-            "noise_files_sim",
-            "signal_files2",
-            "signal_files_sim2",
-            "signal_transfer_files2",
-            "noise_files2",
-            "noise_files_sim2",
-            "foreground_files",
-            "foreground_files2",
-        ]
-
         def get_template_files(fs, template_type):
             """
             Update options for template cleaning
@@ -1247,8 +1232,6 @@ class XFaster(object):
                 if sub_planck and ret.get("planck_root1", None) is None:
                     get_planck_files(ret, sub_planck)
                     self.save_data(save_name, **ret)
-                for k in no_return:
-                    ret.pop(k, None)
                 return ret
 
             def replace_root(k, v):
@@ -1270,8 +1253,6 @@ class XFaster(object):
                         [replace_root(k, vv) for vv in v.ravel()]
                     ).reshape(v.shape)
                     setattr(self, k, ret[k])
-                if k in no_return:
-                    ret.pop(k)
 
             if template_type != ret.get("template_type", None):
                 get_template_files(ret, template_type)
@@ -1377,8 +1358,6 @@ class XFaster(object):
             self.save_data(save_name, **fs)
         for k in list(fs):
             setattr(self, k, fs[k])
-            if k in no_return:
-                fs.pop(k)
         return fs
 
     def get_map(self, filename, check_nside=True, cache=False, **kwargs):
