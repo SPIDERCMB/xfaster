@@ -1184,21 +1184,6 @@
         <span class="k">if</span> <span class="n">null_run</span><span class="p">:</span>
             <span class="n">ref_opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data_subset2</span><span class="o">=</span><span class="n">data_subset2</span><span class="p">)</span>
 
-        <span class="n">no_return</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s2">&quot;signal_files&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;signal_files_sim&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;signal_transfer_files&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;noise_files&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;noise_files_sim&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;signal_files2&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;signal_files_sim2&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;signal_transfer_files2&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;noise_files2&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;noise_files_sim2&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;foreground_files&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;foreground_files2&quot;</span><span class="p">,</span>
-        <span class="p">]</span>
-
         <span class="k">def</span> <span class="nf">get_template_files</span><span class="p">(</span><span class="n">fs</span><span class="p">,</span> <span class="n">template_type</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Update options for template cleaning</span>
@@ -1411,8 +1396,6 @@
                 <span class="k">if</span> <span class="n">sub_planck</span> <span class="ow">and</span> <span class="n">ret</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;planck_root1&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">get_planck_files</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">sub_planck</span><span class="p">)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">save_data</span><span class="p">(</span><span class="n">save_name</span><span class="p">,</span> <span class="o">**</span><span class="n">ret</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">no_return</span><span class="p">:</span>
-                    <span class="n">ret</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">ret</span>
 
             <span class="k">def</span> <span class="nf">replace_root</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
@@ -1434,8 +1417,6 @@
                         <span class="p">[</span><span class="n">replace_root</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">vv</span><span class="p">)</span> <span class="k">for</span> <span class="n">vv</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">ravel</span><span class="p">()]</span>
                     <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
                     <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">ret</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
-                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">no_return</span><span class="p">:</span>
-                    <span class="n">ret</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">template_type</span> <span class="o">!=</span> <span class="n">ret</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;template_type&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
                 <span class="n">get_template_files</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">template_type</span><span class="p">)</span>
@@ -1541,8 +1522,6 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">save_data</span><span class="p">(</span><span class="n">save_name</span><span class="p">,</span> <span class="o">**</span><span class="n">fs</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">fs</span><span class="p">):</span>
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">fs</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">no_return</span><span class="p">:</span>
-                <span class="n">fs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">fs</span></div>
 
 <div class="viewcode-block" id="XFaster.get_map"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_map">[docs]</a>    <span class="k">def</span> <span class="nf">get_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">check_nside</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
