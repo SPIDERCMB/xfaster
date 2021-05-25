@@ -5959,7 +5959,6 @@ class XFaster(object):
                 dcb_nosampvar=dcb_ns,
                 cov_nosampvar=cov_ns,
             )
-
             if like_profiles:
                 # compute bandpower likelihoods
                 self.log("Calculating bandpower profile likelihoods", "info")
@@ -5976,20 +5975,30 @@ class XFaster(object):
 
                 dqb = pt.arr_to_dict(np.sqrt(np.abs(np.diag(inv_fish))), qb)
                 qb_like = OrderedDict()
+                cb_like = OrderedDict()
 
                 for stag, qbs in qb.items():
                     qb_like[stag] = np.zeros(
                         (len(qbs), 2, like_profile_points), dtype=float
                     )
+                    if "res" not in stag:
+                        cb_like[stag] = np.zeros(
+                            (len(qbs), 2, like_profile_points), dtype=float
+                        )
 
                     for ibin, q in enumerate(qbs):
                         qb1 = copy.deepcopy(qb)
                         dq = dqb[stag][ibin] * like_profile_sigma
                         q_arr = np.linspace(q - dq, q + dq, like_profile_points)
                         like_arr = np.zeros_like(q_arr)
+                        cb_arr = np.zeros_like(q_arr)
 
                         for iq, q1 in enumerate(q_arr):
                             qb1[stag][ibin] = q1
+                            # use max likelihood qb's qb2cb to convert qb->cb
+                            if "res" not in stag:
+                                cb_arr[iq] = np.einsum(
+                                    "ij,j->i", qb2cb[stag], qb1[stag])[ibin]
                             try:
                                 like = self.fisher_calc(
                                     qb1,
@@ -6000,6 +6009,7 @@ class XFaster(object):
                                     delta_beta_prior=delta_beta_prior,
                                     null_first_cmb=null_first_cmb,
                                     likelihood=True,
+                                    windows=True,
                                 )
                             except np.linalg.LinAlgError:
                                 like = np.nan
@@ -6014,8 +6024,10 @@ class XFaster(object):
                             )
 
                         qb_like[stag][ibin] = np.vstack([q_arr, like_arr])
+                        if "res" not in stag:
+                            cb_like[stag][ibin] = np.vstack([cb_arr, like_arr])
 
-                out.update(max_like=max_like, qb_like=qb_like)
+                out.update(max_like=max_like, qb_like=qb_like, cb_like=cb_like)
 
         if not success:
             save_name = "ERROR_{}".format(save_name)
