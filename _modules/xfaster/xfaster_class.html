@@ -3324,6 +3324,7 @@
         <span class="n">do_signal</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">save_data</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">sub_hm_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">qb_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        In memory, make a fake data map with signal, noise, and</span>
@@ -3338,6 +3339,8 @@
 <span class="sd">        This function doesn&#39;t write anything to disk. It just constructs</span>
 <span class="sd">        the maps and computes the Cls and replaces data cls with them</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+
         <span class="n">map_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_tags</span>
         <span class="n">map_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_files</span>
         <span class="n">map_root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_root</span>
@@ -3346,6 +3349,11 @@
         <span class="n">num_maps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_maps</span>
         <span class="n">data_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_shape</span>
         <span class="n">data_root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_root</span>
+
+        <span class="k">if</span> <span class="n">qb_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">qb_file</span><span class="p">):</span>
+                <span class="n">qb_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_root</span><span class="p">,</span> <span class="n">qb_file</span><span class="p">)</span>
+            <span class="n">qb_file</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">load_and_parse</span><span class="p">(</span><span class="n">qb_file</span><span class="p">)</span>
 
         <span class="n">scalar_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_root</span><span class="p">,</span> <span class="s2">&quot;signal_r0&quot;</span><span class="p">)</span>
         <span class="n">tensor_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_root</span><span class="p">,</span> <span class="s2">&quot;signal_r1tens&quot;</span><span class="p">)</span>
@@ -3414,17 +3422,54 @@
                     <span class="n">mfile</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">map_root</span><span class="p">,</span> <span class="n">noise_root</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.fits&quot;</span><span class="p">,</span> <span class="s2">&quot;_0000.fits&quot;</span><span class="p">)</span>
                 <span class="p">)</span>
 
-            <span class="n">template</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">if</span> <span class="n">template_fit</span><span class="p">:</span>
                 <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_map</span><span class="p">(</span><span class="n">mfile</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">map_root</span><span class="p">,</span> <span class="n">template_root</span><span class="p">))</span>
-
-            <span class="n">m_tot</span> <span class="o">=</span> <span class="n">scalar</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">fake_data_r</span><span class="p">))</span> <span class="o">*</span> <span class="n">tensor</span> <span class="o">+</span> <span class="n">noise</span>
-            <span class="k">if</span> <span class="n">template_fit</span><span class="p">:</span>
-                <span class="n">m_tot</span> <span class="o">+=</span> <span class="n">template_alpha</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">map_tags_orig</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span> <span class="o">*</span> <span class="n">template</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">template</span> <span class="o">=</span> <span class="mi">0</span>
 
             <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_mask</span><span class="p">(</span><span class="n">mask_files</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">apply_mask</span><span class="p">(</span><span class="n">m_tot</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
-            <span class="n">m_alms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map2alm</span><span class="p">(</span><span class="n">m_tot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">qb_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">m_tot</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">scalar</span>
+                    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">fake_data_r</span><span class="p">))</span> <span class="o">*</span> <span class="n">tensor</span>
+                    <span class="o">+</span> <span class="n">noise</span>
+                    <span class="o">+</span> <span class="n">template_alpha</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">map_tags_orig</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span> <span class="o">*</span> <span class="n">template</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">apply_mask</span><span class="p">(</span><span class="n">m_tot</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+                <span class="n">m_alms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map2alm</span><span class="p">(</span><span class="n">m_tot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># have to do noise alms separately</span>
+                <span class="n">m_tot</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">scalar</span>
+                    <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">fake_data_r</span><span class="p">))</span> <span class="o">*</span> <span class="n">tensor</span>
+                    <span class="o">+</span> <span class="n">template_alpha</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">map_tags_orig</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span> <span class="o">*</span> <span class="n">template</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">apply_mask</span><span class="p">(</span><span class="n">m_tot</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+                <span class="n">m_alms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map2alm</span><span class="p">(</span><span class="n">m_tot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span><span class="p">)</span>
+                <span class="c1"># if qb file is not none, modify alms by residual in file</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">apply_mask</span><span class="p">(</span><span class="n">noise</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+                <span class="n">noise_alms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map2alm</span><span class="p">(</span><span class="n">noise</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span><span class="p">)</span>
+                <span class="n">rbins</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                    <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s2">&quot;res&quot;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qb_file</span><span class="p">[</span><span class="s2">&quot;bin_def&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+                <span class="p">)</span>
+                <span class="n">rfields</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tt&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;ee&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;bb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s2">&quot;eebb&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]}</span>
+                <span class="k">for</span> <span class="n">rb</span><span class="p">,</span> <span class="n">rb0</span> <span class="ow">in</span> <span class="n">rbins</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">srb</span> <span class="o">=</span> <span class="n">rb</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                    <span class="n">mod</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">rb0</span><span class="p">))</span>
+                    <span class="k">for</span> <span class="n">ib</span><span class="p">,</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rb0</span><span class="p">):</span>
+                        <span class="n">il</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span>
+                        <span class="n">mod</span><span class="p">[</span><span class="n">il</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">qb_file</span><span class="p">[</span><span class="s2">&quot;qb&quot;</span><span class="p">][</span><span class="n">rb</span><span class="p">][</span><span class="n">ib</span><span class="p">])</span>
+                        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">mod</span><span class="p">[</span><span class="n">il</span><span class="p">])):</span>
+                            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                                <span class="s2">&quot;Unphysical residuals fit, &quot;</span>
+                                <span class="o">+</span> <span class="s2">&quot;setting to zero </span><span class="si">{}</span><span class="s2"> bin </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rb</span><span class="p">,</span> <span class="n">ib</span><span class="p">)</span>
+                            <span class="p">)</span>
+                            <span class="n">mod</span><span class="p">[</span><span class="n">il</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">mod</span><span class="p">[</span><span class="n">il</span><span class="p">])]</span> <span class="o">=</span> <span class="mi">1</span>
+
+                    <span class="k">for</span> <span class="n">rf</span> <span class="ow">in</span> <span class="n">rfields</span><span class="p">[</span><span class="n">srb</span><span class="p">[</span><span class="mi">1</span><span class="p">]]:</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_tags</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">==</span> <span class="n">srb</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+                            <span class="n">noise_alms</span><span class="p">[</span><span class="n">rf</span><span class="p">]</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">almxfl</span><span class="p">(</span><span class="n">noise_alms</span><span class="p">[</span><span class="n">rf</span><span class="p">],</span> <span class="n">mod</span><span class="p">)</span>
+                <span class="n">m_alms</span> <span class="o">+=</span> <span class="n">noise_alms</span>
 
             <span class="k">if</span> <span class="n">fake_data_r</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">m_totn</span> <span class="o">=</span> <span class="n">scalar</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">fake_data_r</span><span class="p">))</span> <span class="o">*</span> <span class="n">tensor</span> <span class="o">+</span> <span class="n">noise</span>
@@ -6140,20 +6185,30 @@
 
                 <span class="n">dqb</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">arr_to_dict</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">inv_fish</span><span class="p">))),</span> <span class="n">qb</span><span class="p">)</span>
                 <span class="n">qb_like</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+                <span class="n">cb_like</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
 
                 <span class="k">for</span> <span class="n">stag</span><span class="p">,</span> <span class="n">qbs</span> <span class="ow">in</span> <span class="n">qb</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                     <span class="n">qb_like</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
                         <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">qbs</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">like_profile_points</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span>
                     <span class="p">)</span>
+                    <span class="k">if</span> <span class="s2">&quot;res&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stag</span><span class="p">:</span>
+                        <span class="n">cb_like</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+                            <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">qbs</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">like_profile_points</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span>
+                        <span class="p">)</span>
 
                     <span class="k">for</span> <span class="n">ibin</span><span class="p">,</span> <span class="n">q</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">qbs</span><span class="p">):</span>
                         <span class="n">qb1</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">qb</span><span class="p">)</span>
                         <span class="n">dq</span> <span class="o">=</span> <span class="n">dqb</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">ibin</span><span class="p">]</span> <span class="o">*</span> <span class="n">like_profile_sigma</span>
                         <span class="n">q_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">q</span> <span class="o">-</span> <span class="n">dq</span><span class="p">,</span> <span class="n">q</span> <span class="o">+</span> <span class="n">dq</span><span class="p">,</span> <span class="n">like_profile_points</span><span class="p">)</span>
                         <span class="n">like_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">q_arr</span><span class="p">)</span>
+                        <span class="n">cb_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">q_arr</span><span class="p">)</span>
 
                         <span class="k">for</span> <span class="n">iq</span><span class="p">,</span> <span class="n">q1</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">q_arr</span><span class="p">):</span>
                             <span class="n">qb1</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">ibin</span><span class="p">]</span> <span class="o">=</span> <span class="n">q1</span>
+                            <span class="c1"># use max likelihood qb&#39;s qb2cb to convert qb-&gt;cb</span>
+                            <span class="k">if</span> <span class="s2">&quot;res&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stag</span><span class="p">:</span>
+                                <span class="n">cb_arr</span><span class="p">[</span><span class="n">iq</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span>
+                                    <span class="s2">&quot;ij,j-&gt;i&quot;</span><span class="p">,</span> <span class="n">qb2cb</span><span class="p">[</span><span class="n">stag</span><span class="p">],</span> <span class="n">qb1</span><span class="p">[</span><span class="n">stag</span><span class="p">])[</span><span class="n">ibin</span><span class="p">]</span>
                             <span class="k">try</span><span class="p">:</span>
                                 <span class="n">like</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_calc</span><span class="p">(</span>
                                     <span class="n">qb1</span><span class="p">,</span>
@@ -6178,8 +6233,10 @@
                             <span class="p">)</span>
 
                         <span class="n">qb_like</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">ibin</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">q_arr</span><span class="p">,</span> <span class="n">like_arr</span><span class="p">])</span>
+                        <span class="k">if</span> <span class="s2">&quot;res&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stag</span><span class="p">:</span>
+                            <span class="n">cb_like</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">ibin</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">cb_arr</span><span class="p">,</span> <span class="n">like_arr</span><span class="p">])</span>
 
-                <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">max_like</span><span class="o">=</span><span class="n">max_like</span><span class="p">,</span> <span class="n">qb_like</span><span class="o">=</span><span class="n">qb_like</span><span class="p">)</span>
+                <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">max_like</span><span class="o">=</span><span class="n">max_like</span><span class="p">,</span> <span class="n">qb_like</span><span class="o">=</span><span class="n">qb_like</span><span class="p">,</span> <span class="n">cb_like</span><span class="o">=</span><span class="n">cb_like</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">success</span><span class="p">:</span>
             <span class="n">save_name</span> <span class="o">=</span> <span class="s2">&quot;ERROR_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">save_name</span><span class="p">)</span>
