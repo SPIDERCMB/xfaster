@@ -3160,6 +3160,7 @@ class XFaster(object):
         do_signal=True,
         save_data=False,
         sub_hm_noise=True,
+        qb_file=None,
     ):
         """
         In memory, make a fake data map with signal, noise, and
@@ -3174,6 +3175,8 @@ class XFaster(object):
         This function doesn't write anything to disk. It just constructs
         the maps and computes the Cls and replaces data cls with them
         """
+        import healpy as hp
+
         map_tags = self.map_tags
         map_files = self.map_files
         map_root = self.map_root
@@ -3182,6 +3185,11 @@ class XFaster(object):
         num_maps = self.num_maps
         data_shape = self.data_shape
         data_root = self.data_root
+
+        if qb_file is not None:
+            if not os.path.exists(qb_file):
+                qb_file = os.path.join(self.output_root, qb_file)
+            qb_file = pt.load_and_parse(qb_file)
 
         scalar_root = os.path.join(data_root, "signal_r0")
         tensor_root = os.path.join(data_root, "signal_r1tens")
@@ -3250,17 +3258,54 @@ class XFaster(object):
                     mfile.replace(map_root, noise_root).replace(".fits", "_0000.fits")
                 )
 
-            template = None
             if template_fit:
                 template = self.get_map(mfile.replace(map_root, template_root))
-
-            m_tot = scalar + np.sqrt(np.abs(fake_data_r)) * tensor + noise
-            if template_fit:
-                m_tot += template_alpha[self.map_tags_orig[idx]] * template
+            else:
+                template = 0
 
             mask = self.get_mask(mask_files[idx])
-            self.apply_mask(m_tot, mask)
-            m_alms = self.map2alm(m_tot, self.pol)
+            if qb_file is None:
+                m_tot = (
+                    scalar
+                    + np.sqrt(np.abs(fake_data_r)) * tensor
+                    + noise
+                    + template_alpha[self.map_tags_orig[idx]] * template
+                )
+                self.apply_mask(m_tot, mask)
+                m_alms = self.map2alm(m_tot, self.pol)
+
+            else:  # have to do noise alms separately
+                m_tot = (
+                    scalar
+                    + np.sqrt(np.abs(fake_data_r)) * tensor
+                    + template_alpha[self.map_tags_orig[idx]] * template
+                )
+                self.apply_mask(m_tot, mask)
+                m_alms = self.map2alm(m_tot, self.pol)
+                # if qb file is not none, modify alms by residual in file
+                self.apply_mask(noise, mask)
+                noise_alms = self.map2alm(noise, self.pol)
+                rbins = dict(
+                    filter(lambda x: "res" in x[0], qb_file["bin_def"].items())
+                )
+                rfields = {"tt": [0], "ee": [1], "bb": [2], "eebb": [1, 2]}
+                for rb, rb0 in rbins.items():
+                    srb = rb.split("_", 2)
+                    mod = np.zeros(np.max(rb0))
+                    for ib, (left, right) in enumerate(rb0):
+                        il = slice(left, right)
+                        mod[il] = np.sqrt(1 + qb_file["qb"][rb][ib])
+                        if np.any(np.isnan(mod[il])):
+                            warnings.warn(
+                                "Unphysical residuals fit, "
+                                + "setting to zero {} bin {}".format(rb, ib)
+                            )
+                            mod[il][np.isnan(mod[il])] = 1
+
+                    for rf in rfields[srb[1]]:
+                        if self.map_tags[idx] == srb[2]:
+                            noise_alms[rf] = hp.almxfl(noise_alms[rf], mod)
+                m_alms += noise_alms
 
             if fake_data_r < 0:
                 m_totn = scalar - np.sqrt(np.abs(fake_data_r)) * tensor + noise
