@@ -443,7 +443,7 @@ class XFaster(object):
 
     def warn(self, message):
         """
-        Log a warning message
+        Log a warning message.
         """
 
         warnings.warn(message, XFasterWarning, stacklevel=2)
@@ -840,10 +840,10 @@ class XFaster(object):
         signal_subset="*",
         noise_subset="*",
         data_type="raw",
-        noise_type="stationary",
+        noise_type="gaussian",
         noise_type_sim=None,
-        mask_type="hitsmask_tailored",
-        signal_type="r0p03",
+        mask_type="rectangle",
+        signal_type="synfast",
         signal_type_sim=None,
         signal_transfer_type=None,
         data_root2=None,
@@ -858,10 +858,8 @@ class XFaster(object):
             <data_root>
                 -> data_<data_type>
                     -> full
-                        -> map_x1.fits
+                        -> map_<tag>.fits
                         ...
-                        -> map_150.fits
-                        -> map_90.fits
                     -> 1of4 (same filenames as full)
                     -> 2of4 ('')
                     -> 3of4 ('')
@@ -869,19 +867,16 @@ class XFaster(object):
                 -> signal_<signal_type>
                    -> spec_signal_<signal_type>.dat
                    -> full
-                      -> map_x1_0000.fits
+                      -> map_<tag>_####.fits
                       ...
-                      -> map_90_####.fits
                    -> 1of4 (same filenames as full)
                    -> 2of4 (same filenames as full)
                    -> 3of4 (same filenames as full)
                    -> 4of4 (same filenames as full)
                 -> noise_<noise_type> (same filenames as signal_<signal_type>)
                 -> masks_<mask_type>
-                    -> mask_map_x1.fits
+                    -> mask_map_<tag>.fits
                     ...
-                    -> mask_map_90.fits
-                    -> mask_map_150.fits
                 -> foreground_<foreground_type_sim>
                     (same filenames as signal_<signal_type>)
                 -> templates_<template_type>
@@ -894,7 +889,7 @@ class XFaster(object):
                       (same filenames as data_<data_type>)
                    -> halfmission-2
                       (same filenames as data_<data_type>)
-            <data_root2>
+            <data_root2> (If provided, same structure as data_root)
                 ...
 
         Arguments
@@ -922,22 +917,22 @@ class XFaster(object):
             to use. For example, for all, use ``'*'``. For the first 300 sims,
             use ``'0[0-2]*'``.
         data_type : string
-            The type of data to use.
+            The type of data to use, default: "raw"
         noise_type: string
-            The variant of noise simulation to use, e.g. 'stationary',
-            'variable', etc.  The directory should contain the same number
+            The variant of noise simulation to use, e.g. 'gaussian',
+            'stationary', etc.  The directory should contain the same number
             of simulations for each map tag.
         noise_type_sim : string
             The variant of noise sims to use for sim_index fake data map.
             This enables having a different noise sim ensemble to use for
             sim_index run than the ensemble from which the noise is computed.
         mask_type : string
-            The variant of mask to use, e.g. 'hitsmask', etc.
-            XXX: for the time being we assume a mask per file tag,
-            rather than a mask per file in ``data_<data_type>``.
+            The variant of mask to use, e.g. 'rectangle', etc.
+            We assume a mask per file tag in the mask_<mask_type> folder,
+            corresponding to the files in data.
         signal_type : string
             The variant of signal simulation to use, typically identified
-            by the input spectrum model used to generate it, e.g 'r0p03'.
+            by the input spectrum model used to generate it, e.g 'synfast'.
         signal_type_sim : string
             The variant of signal sims to use for sim_index fake data map.
             This enables having a different noise sim ensemble to use for
@@ -945,7 +940,7 @@ class XFaster(object):
         signal_transfer_type : string
             The variant of signal simulation to use for transfer function
             calculation, typically identified by the input spectrum model
-            used to generate it, e.g 'r0p03'. This directory may also contain
+            used to generate it, e.g 'synfast'. This directory may also contain
             a copy of the input spectrum, to make sure that the correct
             spectrum is used to compute the transfer function.
         data_root2, data_subset2 : string
@@ -1022,7 +1017,7 @@ class XFaster(object):
 
         def get_template_files(fs, template_type):
             """
-            Update options for template cleaning
+            Update options for template cleaning. Internal to get_files.
             """
             # no template fitting for null runs
             if fs["null_run"]:
@@ -1140,7 +1135,7 @@ class XFaster(object):
 
         def get_planck_files(fs, sub_planck=False):
             """
-            Update options for planck subtraction
+            Update options for planck subtraction. Internal to get_files.
             """
             if not sub_planck:
                 fs["planck_root1_hm1"] = None
@@ -1513,11 +1508,11 @@ class XFaster(object):
             Use this argument when storing output data in a loop over
             input maps.
         iter_index : int
-            If supplied, the name is appended with '_iter<iter_index>'
+            If supplied, the name is appended with '_iter<iter_index>'.
         extra_tag : string
             If supplied the extra tag is appended to the name as is.
         bp_opts : bool
-            If True, the output filename is constructed  by checking the
+            If True, the output filename is constructed by checking the
             following list  of options used in constructing bandpowers:
             ensemble_mean, ensemble_median, sim_index, template_cleaned,
             weighted_bins, signal_type_sim, noise_type_sim
@@ -1581,12 +1576,12 @@ class XFaster(object):
         **file_opts
     ):
         """
-        Load xfaster data from an output npz file on disk.
+        Load xfaster data from an output.npz file on disk.
 
         This method is called throughout the code at various checkpoints.  If
         the data exist on disk, they are loaded and returned.  If the data are
-        missing or otherwise incompatible, they are recomputed by the calling
-        method, and trigger all subsequent data to also be recomputed.  Data
+        missing or otherwise incompatible, they are recomputed by the corresponding
+         calling method, and trigger all subsequent data to also be recomputed.  Data
         handling is described in the ``Notes`` section for methods that use this
         functionality.
 
