@@ -6004,6 +6004,7 @@ class XFaster(object):
                 dcb_nosampvar=dcb_ns,
                 cov_nosampvar=cov_ns,
             )
+
             if like_profiles:
                 # compute bandpower likelihoods
                 self.log("Calculating bandpower profile likelihoods", "info")
@@ -6054,7 +6055,6 @@ class XFaster(object):
                                     delta_beta_prior=delta_beta_prior,
                                     null_first_cmb=null_first_cmb,
                                     likelihood=True,
-                                    windows=True,
                                 )
                             except np.linalg.LinAlgError:
                                 like = np.nan
