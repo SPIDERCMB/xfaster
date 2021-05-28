@@ -605,6 +605,7 @@ def xfaster_run(
             do_noise=do_fake_noise,
             save_data=save_fake_data,
             sub_hm_noise=sub_hm_noise,
+            qb_file=qb_file,
         )
 
     X.log("Computing spectra...", "notice")
