@@ -1602,6 +1602,13 @@ class XFasterJobGroup(object):
         ---------
         group_by : int, optional
             Group xfaster calls into jobs with this many calls each.
+        verbose : bool, optional
+            Print the working directory, and the job ID if submitted successfully.
+
+        Returns
+        -------
+        job_ids : list of strings
+            The IDs of the submitted jobs
         """
         if not self.job_list:
             raise RuntimeError("No xfaster jobs have been added.")
