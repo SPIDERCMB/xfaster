@@ -569,8 +569,9 @@ def xfaster_run(
     )
 
     X.log("Computing mask cross-spectra and weights...", "notice")
-    X.get_mask_weights(apply_gcorr=apply_gcorr, reload_gcorr=reload_gcorr,
-                       gcorr_file=gcorr_file)
+    X.get_mask_weights(
+        apply_gcorr=apply_gcorr, reload_gcorr=reload_gcorr, gcorr_file=gcorr_file
+    )
 
     X.log("Computing kernels...", "notice")
     X.get_kernels(window_lmax=window_lmax)
@@ -801,8 +802,25 @@ def xfaster_parse(args=None, test=False):
     defaults.pop("add_log", None)
     rem_args = list(defaults)
 
-    # helper function for populating command line arguments
     def add_arg(P, name, argtype=None, default=None, short=None, help=None, **kwargs):
+        """
+        Helper function for populating command line arguments. Wrapper
+        for ArgumentParser.add_argument.
+
+        Arguments
+        ---------
+        P : argument parser instance
+        name : str
+            Name of argument to add
+        argtype : str
+            Data type of argument
+        default : arb
+            Default value of the argument
+        short : str
+            Shortened name of argument
+        help : str
+            Description of argument
+        """
 
         name = name.replace("-", "_")
         argname = "--{}".format(name.replace("_", "-"))
@@ -1448,6 +1466,7 @@ class XFasterJobGroup(object):
     def set_job_options(
         self,
         output=None,
+        workdir=None,
         cput=None,
         wallt=None,
         ppn=8,
@@ -1460,12 +1479,61 @@ class XFasterJobGroup(object):
         job_prefix=None,
         test=False,
         pbs=False,
-        workdir=None,
         dep_afterok=None,
         exclude=None,
     ):
         """
         Parse options that control the job script, rather than xfaster.
+        Passed to batch_tools.batch_sub.
+
+        Arguments
+        ---------
+        output : string, optional
+            Path for output scheduler files, in a logs subdirectory.
+            If None, use output_root. Overrided by workdir.
+        workdir : string, optional
+            If not None, path to output scheduler files. Overrides output.
+        cput : string or float or datetime.timedelta, optional
+            Amount of CPU time requested.
+            String values should be in the format HH:MM:SS, e.g. '10:00:00'.
+            Numerical values are interpreted as a number of hours.
+        wallt : string or float or datetime.timedelta, optional
+            Amount of wall clock time requested.
+            String values should be in the format HH:MM:SS, e.g. '10:00:00'.
+            Numerical values are interpreted as a number of hours.
+        ppn : int, optional
+            Numper of processes per node
+        nodes : int or string, optional
+            Number of nodes to use in job
+            If a string, will be passed as-is to PBS -l node= resource
+            If using SLURM and a string, will overwrite node_list if None
+        mem : float or string, optional
+            Amount of memory to request for the job. float values in GB.
+            Or pass a string (eg '4gb') to use directly.
+        env_script : string, optional
+            Path to script to source during job script preamble
+            For loading modules, setting environment variables, etc
+        omp_threads : int, optional
+            Number of OpenMP threads to use per process
+        nice : int, optional
+            Adjust scheduling priority (SLURM only). Range from -5000 (highest
+            priority) to 5000 (lowest priority).
+            Note: actual submitted --nice value is 5000 higher, since negative
+            values require special privilege.
+        queue : string, optional
+            The name of the queue to which to submit jobs
+        job_prefix : string, optional
+            The name of the job. Default: xfaster
+        test : bool
+            If True, only print out the job submission script, don't submit it.
+        pbs : bool
+            If True, use pbs scheduler. Else, use slurm.
+        dep_afterok : string or list of strings
+            Dependency. Job ID (or IDs) on which to wait for successful completion,
+            before starting this job
+        exclude : string or list of strings
+            List of nodes that will be excluded for job. SLURM-only.
+
         """
 
         # XFaster runs faster with OMP and does not use MPI
