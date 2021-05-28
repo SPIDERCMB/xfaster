@@ -33,7 +33,7 @@ def get_job_logfile():
         if jobname == "bash":
             logfile = None
         else:
-            logfile = os.path.join(workdir, "{}-{}.uni".format(jobname, jobid))
+            logfile = os.path.join(workdir, "{}-{}.log".format(jobname, jobid))
     # TODO generate different logs for multiple processes in same job?
     else:
         logfile = None
