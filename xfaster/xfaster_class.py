@@ -1602,7 +1602,7 @@ class XFaster(object):
             step are recomputed.
         to_attrs : bool or list of bools or strings
             If True, all items in ``fields`` are stored as attributes of the
-            parent object.  If A list of booleans, must have the same length
+            parent object. If A list of booleans, must have the same length
             as ``fields``; any field for which this list item is True is then
             stored as an attribute of the object.  If any list item is a string,
             then the corresponding field is stored as an attribute with this
@@ -1756,7 +1756,7 @@ class XFaster(object):
 
     def save_data(self, name, from_attrs=[], **data):
         """
-        Save xfaster data to an output npz file on disk.
+        Save xfaster data to an output.npz file on disk.
 
         Arguments
         ---------
@@ -1861,7 +1861,8 @@ class XFaster(object):
         Arguments
         ---------
         m : array_like
-            Masked input map for which Alms are computed.
+            Masked input map for which spherical harmonic alms are 
+            computed.
         pol : bool
             If None, this is set using the value with which the object
             was initialized.
@@ -1870,7 +1871,7 @@ class XFaster(object):
         -------
         alms : array_like
             Alms for the input map, computed using the equivalent of
-            ``healpy.map2alm(m, lmax, pol=self.pol, use_weights=True)``.
+            ``healpy.map2alm (m, lmax, pol=self.pol, use_weights=True)``.
         """
         import healpy as hp
 
@@ -1888,13 +1889,13 @@ class XFaster(object):
             Masked alms for map1
         m2 : array_like
             Masked alms for map2
-        lmin : int
+        lmin : int, default: 2
             The minimum ell bin to include in the output Cls.  All ell
             bins below this are nulled out.
         lmax : int
             The maximum ell bin to compute.  If None, this is set to the
             lmax value with which the class was initialized.
-        symmetric : bool
+        symmetric : bool, default: True
             If True, the average cross spectrum of (m1-x-m2 + m2-x-m1) / 2.
             is computed.
 
@@ -1926,7 +1927,7 @@ class XFaster(object):
         apply_gcorr : bool
             If True, a correction factor is applied to the g (mode counting)
             matrix.  The correction factor should have been pre-computed for
-            each map tag.
+            each map tag using independent scripts in the code package.
         reload_gcorr : bool
             If True, reload the gcorr file from the masks directory. Useful when
             iteratively solving for the correction terms.
@@ -1940,13 +1941,13 @@ class XFaster(object):
         This method is called at the 'masks' checkpoint, loads or saves a
         data dictionary with the following keys:
 
-           wls : (num_map_corr, num_pol_mask_corr, lmax + 1)
+         wls: shape (num_map_corr, num_pol_mask_corr, lmax + 1)
                mask1-x-mask2 mask cross spectra for every mask pair
-           fsky, w1, w2, w4 : (num_map_corr, num_pol_mask_corr)
+         fsky, w1, w2, w4: shape (num_map_corr, num_pol_mask_corr)
                sky fraction and weighted modes per mask product
-           gmat : (num_maps * num_pol_mask_corr, ) * 2
+         gmat: shape (num_maps * num_pol_mask_corr, ) * 2
                mode-counting matrix, computed from
-                   g = fsky * w2 ** 2 / w4
+                g = fsky * w2 ** 2 / w4
 
         Where the dimensions of each item are determined from:
 
@@ -2060,6 +2061,9 @@ class XFaster(object):
         cache = dict()
 
         def process_index(idx):
+            """
+            A internal convenience function computes/loads alms from/to cache for each mask idx.
+            """
             if idx in cache:
                 return cache[idx]
 
@@ -2160,10 +2164,10 @@ class XFaster(object):
         method with the appropriate file selection options.
 
         If only one dataset is selected, spectra are computed for every
-        combination of pairs of data maps.  This results in N * (N + 1) / 2
-        cross spectra for N maps.  A unique mask is used for each input map.
+        combination of pairs of data maps. This results in N * (N + 1) / 2
+        cross spectra for N maps. A unique mask is used for each input map.
 
-        If two datasets are selected, then sum and difference cross-spectra are
+        If two datasets are selected for a null test, then sum and difference cross-spectra are
         computed by summing and differencing the two datasets.  A unique mask is
         used for each map in the first dataset, and the same mask is applied to
         the corresponding map in the second dataset, so that both halves are
@@ -2182,8 +2186,8 @@ class XFaster(object):
             original map tags in the data set.
         sub_planck : bool
             If True, subtract reobserved Planck from maps. Properly uses half
-            missions so no Planck autos are used. Useful for removing expected
-            signal residuals from null tests.
+            missions so no Planck auto correlations are introduced. Useful for
+            removing expected signal residuals from null tests.
         sub_hm_noise : bool
             If True, subtract average of Planck ffp10 noise crosses to debias
             template-cleaned spectra.
@@ -2253,6 +2257,9 @@ class XFaster(object):
             save_attrs += ["cls_planck"]
 
         def apply_template():
+            """
+            Internal data processing function to have scaled foreground template subtracted from data map.
+            """
             cls_clean = getattr(self, "cls_data_clean", OrderedDict())
 
             for spec in self.specs:
@@ -2283,6 +2290,9 @@ class XFaster(object):
             self.template_cleaned = True
 
         def subtract_planck_maps():
+            """
+            Internal data processing function to have planck maps subtracted from data map, useful for null tests
+            """
             cls_data_sub = getattr(self, "cls_data_sub", OrderedDict())
             if null_run:
                 cls_data_sub_null = getattr(self, "cls_data_sub_null", OrderedDict())
@@ -2369,8 +2379,11 @@ class XFaster(object):
 
         cache = dict()
 
-        # convenience function
         def process_index(idx):
+            """
+            A internal convenience function computes/loads alms from/to cache for each data map idx,
+            or data map pair for null tests.
+            """
             if idx in cache:
                 return cache[idx]
 
@@ -2521,8 +2534,8 @@ class XFaster(object):
     ):
         """
         Compute average signal and noise spectra for a given
-        ensemble of maps.  The same procedure that is used for computing
-        data cross spectra is used for each realization in the sim
+        ensemble of sim maps.  The same procedure that is used for c
+        omputing data cross spectra is used for each realization in the sim
         ensemble, and only the average spectra for all realizations
         are stored.
 
@@ -2533,21 +2546,21 @@ class XFaster(object):
         ---------
         ensemble_mean : bool
             If true, the mean signal + noise spectrum is used in place
-            of input data.  This is useful for testing the behavior of
+            of input data. This is useful for testing the behavior of
             the estimator and mapmaker independently of the data.
         ensemble_median : bool
             If true, the median signal + noise spectrum is used in place
             of input data.  This is useful for testing the behavior of
             the estimator and mapmaker independently of the data.
         sim_index : int
-            If not None, substitute the sim_index S+N alms for the observed alms
+            If not None, substitute the sim_index S+N alms for the data alms
         sims_add_alms : bool
             If True and sim_index is not None, add sim alms instead of sim Cls
             to include signal and noise correlations
         qb_file : string
             Pointer to a bandpowers.npz file in the output directory. If used
             in sim_index mode, the noise sim read from disk will be corrected
-            by the residual qb values stored in qb_file.
+            by the residual qb values stored in qb_file. Useful for noise rescaling.
 
         Notes
         -----
@@ -2613,10 +2626,10 @@ class XFaster(object):
         sims_attr["signal_files_sim2"] = self.signal_files_sim2 if null_run else None
         sims_attr["foreground_files2"] = self.foreground_files2 if null_run else None
 
-        # convenience functions
         def process_index(files, files2, idx, idx2=None, cache=None, qbf=None):
             """
-            Compute alms of masked input map
+            Internal processing function to compute alms for masked sim map, 
+            or sim map pair for null tests.
             """
             if cache is None:
                 cache = {}
@@ -2682,7 +2695,7 @@ class XFaster(object):
 
         def process_files():
             """
-            Compute cross spectra
+            Function to compute cross spectra for ensemble of files and then save in place.
             """
             sig_field = "cls_signal"
             sig_null_field = "cls_signal_null"
@@ -2928,6 +2941,9 @@ class XFaster(object):
             setattr(self, nxs1_null_field, cls_null_nxs1)
 
         def check_options():
+            """
+            Check for data options and calls process_files() to compute cross spectra.
+            """
             if ensemble_mean:
                 self.log("Substitute signal + noise for observed spectrum", "notice")
                 for spec in self.specs:
@@ -3168,7 +3184,8 @@ class XFaster(object):
         templates_fake_data_template/halfmission-1.
 
         This function doesn't write anything to disk. It just constructs
-        the maps and computes the Cls and replaces data cls with them
+        the maps and computes the Cls and replaces data cls with them.
+        Useful for fake data testing.
         """
         import healpy as hp
 
@@ -3212,8 +3229,10 @@ class XFaster(object):
         self.log("Fake data r: {}".format(fake_data_r), "notice")
 
         def process_index(idx):
-            # create the fake map for each map in map_files,
-            # compute alms for that and templates
+            '''
+            create the fake map for each map in map_files,
+            them compute alms for that and templates.
+            '''
             if idx in cache:
                 return cache[idx]
             self.log(
@@ -3452,7 +3471,7 @@ class XFaster(object):
     def get_masked_template_noise(self, template_type):
         """
         Compute hm1, hm2, and hm1xhm2 template noise spectra from
-        sim ensemble
+        sim ensemble.
 
         Notes
         -----
@@ -3479,7 +3498,7 @@ class XFaster(object):
         # convenience functions
         def process_index(files, idx, idx2=None, cache=None):
             """
-            Compute alms of masked input map
+            Compute alms of masked input map.
             """
             if cache is None:
                 cache = {}
@@ -3511,7 +3530,7 @@ class XFaster(object):
 
         def process_files():
             """
-            Compute cross spectra
+            Compute cross spectra.
             """
             hm1_field = "cls_tnoise_hm1"
             hm2_field = "cls_tnoise_hm2"
@@ -3611,8 +3630,8 @@ class XFaster(object):
         This method is called at the 'kernels' checkpoint and loads or saves
         the following data keys to disk:
 
-            kern, pkern, mkern, xkern : (num_mask_corr, lmax+1, 2*lmax+1)
-                Temperature and polarization kernels
+        kern, pkern, mkern, xkern : shape (num_mask_corr, lmax+1, 2*lmax+1)
+        Temperature and polarization kernels
         """
 
         if window_lmax is None:
