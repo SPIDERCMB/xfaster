@@ -25,7 +25,7 @@ g_cfg.read(args.gcorr_config)
 null = g_cfg.getboolean("gcorr_opts", "null")
 if null:
     # no sample variance used for null tests
-    fish_name = "inv_fish_nosampvar"
+    fish_name = "invfish_nosampvar"
 else:
     fish_name = "inv_fish"
 
