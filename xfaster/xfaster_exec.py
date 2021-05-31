@@ -110,6 +110,7 @@ def xfaster_run(
     do_fake_signal=True,
     do_fake_noise=True,
     save_fake_data=False,
+    use_xfer_mat=False,
 ):
     """
     Main function for running the XFaster algorithm.
@@ -332,6 +333,9 @@ def xfaster_run(
         If true, use sim_index to set noise seed. If false, always use seed 0.
     save_fake_data : bool
         If true, save data_xcorr file to disk for fake data.
+    use_xfer_mat : bool
+        If True, use NSI transfer matrix instead of transfer function computed
+        by XFaster.
     """
     from . import __version__ as version
 
@@ -508,6 +512,7 @@ def xfaster_run(
         num_walkers=mcmc_walkers,
         converge_criteria=like_converge_criteria,
         file_tag=like_tag,
+        use_xfer_mat=use_xfer_mat,
     )
     config_vars.update(like_opts, "Likelihood Estimation Options")
     config_vars.remove_option("XFaster General", "like_lmin")
@@ -875,6 +880,12 @@ def xfaster_parse(args=None, test=False):
             nargs="+",
             help="Prior on dust ell index different from ref "
             "(should be [0, sig] for [mean 0, width sig] gaussian)",
+        )
+        add_arg(
+            G,
+            "use_xfer_mat",
+            help="Use NSI transfer matrix instead of transfer function"
+            " XFaster computes",
         )
         add_arg(
             G,
