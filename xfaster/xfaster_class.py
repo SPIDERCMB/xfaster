@@ -6773,7 +6773,7 @@ class XFaster(object):
         converge_criteria=0.01,
         reset_backend=None,
         file_tag=None,
-        use_xfer_mat=True  # labah
+        use_xfer_mat=True  
     ):
         """
         Explore the likelihood, optionally with an MCMC sampler.
@@ -6927,8 +6927,16 @@ class XFaster(object):
             weighted_bins=self.weighted_bins,
             lmin=lmin,
             lmax=lmax,
+            use_xfer_mat=use_xfer_mat,
         )
-
+    
+        if use_xfer_mat:
+            bin_cl_template = self.bin_cl_template_tmat
+            self.lmax = 308
+            self.lmin = 8
+        else:
+            bin_cl_template = self.bin_cl_template
+    
         if mcmc and reset_backend is None:
             ret = self.load_data(
                 save_name,
