@@ -3581,6 +3581,12 @@ class XFaster(object):
             cls_tnoise_hm1 : <same shape as cls_data>
             cls_tnoise_hm2 : <same shape as cls_data>
             cls_tnoise_hm1xhm2 : <same shape as cls_data>
+
+        Arguments
+        ---------
+        template_type : str
+            Tag of the template maps directory (noise files in
+            template_noise_<template_type>).
         """
         mask_files = self.mask_files
         map_tags = self.map_tags
@@ -3883,6 +3889,8 @@ class XFaster(object):
             and ``r`` is None and ``flat`` is False, will search for a spectrum
             stored in
             ``signal_<signal_transfer_type>/spec_signal_<signal_transfer_type>.dat``.
+        save : bool
+            If True, save signal shape dict to disk.
 
         Returns
         -------
@@ -4350,6 +4358,9 @@ class XFaster(object):
             If supplied, the kernels are computed only for the given map tag
             (or cross if map_tag is map_tag1:map_tag2).
             Otherwise, it is computed for all maps and crosses.
+        transfer_run : bool
+            If True, set transfer function to 1 to solve for transfer function
+            qbs.
 
         Returns
         -------
@@ -5339,6 +5350,10 @@ class XFaster(object):
             If supplied, the noise spectrum is applied to the model spectrum.
         cls_debias : OrderedDict
             If supplied, the debias spectrum is subtracted from the input.
+        cls_model : OrderedDict
+            Unbinned model spectrum computed from cbl
+        cond_noise : float
+            The level of regularizing noise to add to EE and BB diagonals.
         cond_criteria : float
             The maximum condition number allowed for Dmat1 to be acceptable
             for taking its inverse.
@@ -5346,12 +5361,25 @@ class XFaster(object):
             If True, return the likelihood for the given input bandpowers, shapes
             and data spectra.  Otherwise, computes output bandpowers and the fisher
             covariance for a NR iteration.
+        like_lmin : int
+            The minimum ell value to be included in the likelihood calculation
+        like_lmax : int
+            The maximum ell value to be included in the likelihood calculation
+        delta_beta_prior : float
+            The width of the prior on the additive change from beta_ref. If you
+            don't want the code to fit for a spectral index different
+            from beta_ref, set this to be a very small value (O(1e-10)).
+        null_first_cmb : bool
+            Keep first CMB bandpowers fixed to input shape (qb=1).
         use_precalc : bool
             If True, load pre-calculated terms stored from a previous iteration,
             and store for a future iteration.  Otherwise, all calculations are
             repeated.
         windows : bool
             If True, return W_bl window functions for each CMB qb.
+        inv_fish : array_like
+            Inverse Fisher matrix. If provided, don't need to recompute. Useful
+            if just getting bandpower window functions.
 
         Returns
         -------
@@ -5744,6 +5772,14 @@ class XFaster(object):
         save_iters : bool
             If True, the output data from each Fisher iteration are stored
             in an individual npz file.
+        null_first_cmb : bool
+            Keep first CMB bandpowers fixed to input shape (qb=1).
+        delta_beta_prior : float
+            The width of the prior on the additive change from beta_ref. If you
+            don't want the code to fit for a spectral index different
+            from beta_ref, set this to be a very small value (O(1e-10)).
+        cond_noise : float
+            The level of regularizing noise to add to EE and BB diagonals.
         cond_criteria : float
             The maximum condition number allowed for Dmat1 to be acceptable
             for taking its inverse.
@@ -6406,11 +6442,19 @@ class XFaster(object):
         save_iters : bool
             If True, the output data from each Fisher iteration are stored
             in an individual npz file.
-        return_cls : bool
-            If True, return C_ls rather than D_ls
+        delta_beta_prior : float
+            The width of the prior on the additive change from beta_ref. If you
+            don't want the code to fit for a spectral index different
+            from beta_ref, set this to be a very small value (O(1e-10)).
+        cond_noise : float
+            The level of regularizing noise to add to EE and BB diagonals.
         cond_criteria : float
             The maximum condition number allowed for Dmat1 to be acceptable
             for taking its inverse.
+        null_first_cmb : bool
+            Keep first CMB bandpowers fixed to input shape (qb=1).
+        return_cls : bool
+            If True, return C_ls rather than D_ls
         like_profiles : bool
             If True, compute profile likelihoods for each qb, leaving all
             others fixed at their maximum likelihood values.  Profiles are
@@ -6545,9 +6589,23 @@ class XFaster(object):
             corresponding to the given map, rather over all possible
             combinations of map-map cross-spectra.  The input qb's and inv_fish
             must have been computed with the same option.
+        null_first_cmb : bool
+            Keep first CMB bandpowers fixed to input shape (qb=1).
+        lmin : int
+            The minimum ell value to be included in the likelihood calculation
+        lmax : int
+            The maximum ell value to be included in the likelihood calculation
         mcmc : bool
-            If True, sample the likelihood using an MCMC sampler.  Remaining options
-            determine parameter space and sampler configuration.
+            If True, sample the likelihood using an MCMC sampler.  Remaining
+            options determine parameter space and sampler configuration.
+        alpha_tags : list of strings
+            List of map tags from which foreground template maps should be
+            subtracted.  These should be the original map tags, not
+            those generated for chunk sets.
+        beam_tags : list of strings
+            List of map tags from which beam error envelopes should be
+            marginalized over. These should be the original map tags, not
+            those generated for chunk sets.
         r_prior : 2-list or None
             Prior upper and lower bound on tensor to scalar ratio.  If None, the
             fiducial shape spectrum is assumed, and the r parameter space is not
@@ -6575,7 +6633,10 @@ class XFaster(object):
         num_walkers : int
             Number of unique walkers with which to sample the parameter space.
         num_steps : int
-            Number of steps each walker should take in sampling the parameter space.
+            Maximum number of steps each walker can take in sampling the
+            parameter space.
+        converge_criteria : float
+            Convergence criteria for likelihood MCMC chains
         reset_backend : bool
             If True, clear the backend buffer before sampling.  If False,
             samples are appended to the existing buffer.  If not supplied,
