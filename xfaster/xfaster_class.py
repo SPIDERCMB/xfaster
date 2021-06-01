@@ -2674,7 +2674,7 @@ class XFaster(object):
                             )
                         )
                         rqb[bad] = 1
-                    mod = xft.expand_qb(qrb, rb0)
+                    mod = xft.expand_qb(rqb, rb0)
 
                     for rf in rfields[srb[1]]:
                         if self.map_tags[idx] == srb[2]:
