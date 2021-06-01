@@ -938,7 +938,7 @@ class XFaster(object):
         signal_type : string
             The variant of signal simulation to use, typically identified
             by the input spectrum model used to generate it, e.g 'r0p03'.
-        signal_type_sim : string
+        signal_type_sim :string
             The variant of signal sims to use for sim_index fake data map.
             This enables having a different noise sim ensemble to use for
             sim_index run than the ensemble from which the signal is computed.
@@ -2674,7 +2674,7 @@ class XFaster(object):
                             )
                         )
                         rqb[bad] = 1
-                    mod = xft.expand_qb(qrb, rb0)
+                    mod = xft.expand_qb(rqb, rb0)
 
                     for rf in rfields[srb[1]]:
                         if self.map_tags[idx] == srb[2]:
@@ -6826,7 +6826,7 @@ class XFaster(object):
             set to True if the checkpoint has been forced to be rerun.
         file_tag : string
             If supplied, appended to the likelihood filename.
-        use_xfer_mat : bool
+       use_xfer_mat : bool
             If True, use transfer matrix to construct model spectrum. If false, use
             transfer function XFaster computes
         """
