@@ -160,7 +160,7 @@ class XFaster(object):
         debug=False,
         checkpoint=None,
         add_log=False,
-        ref_freq=353.0,
+        ref_freq=359.7,
         beta_ref=1.54,
     ):
         """
@@ -169,6 +169,9 @@ class XFaster(object):
 
         Arguments
         ---------
+        config : string
+            Configuration file. If path doesn't exist, assumed
+            to be in xfaster/config/<config>
         lmax : int
             The maximum multipole for which spectra are computed
         pol : bool
@@ -193,6 +196,13 @@ class XFaster(object):
         add_log : bool
             If True, write log output to a file instead of to STDOUT.
             The log will be in ``<output_root>/run_<output_tag>.log``.
+        ref_freq : float
+            In GHz, reference frequency for dust model. Dust bandpowers output
+            will be at this reference frequency.
+        beta_ref : float
+            The spectral index of the dust model. This is a fixed value, with
+            an additive deviation from this value fit for in foreground fitting
+            mode.
         """
         # verbosity
         self.init_log(
@@ -281,7 +291,13 @@ class XFaster(object):
         transfer function in a joint analysis.  If not supplied, it is assumed
         that a transfer function should be computed for every tag in
         "frequencies".
+
+        Arguments
+        ----------
+        filename : str
+            Path to config file
         """
+
         # Load map configuration file
         assert os.path.exists(filename), "Missing config file {}".format(filename)
         self.config_root = os.path.dirname(os.path.abspath(filename))
@@ -380,6 +396,11 @@ class XFaster(object):
         def logger_notice(self, msg, *args, **kwargs):
             """
             Log a message with severity "NOTICE".
+
+            Arguments
+            ---------
+            msg : str
+                Log message
             """
             if self.isEnabledFor(logging.NOTICE):
                 self._log(logging.NOTICE, msg, args, **kwargs)
@@ -389,6 +410,11 @@ class XFaster(object):
         def root_notice(msg, *args, **kwargs):
             """
             Log a message with severity "NOTICE" on the root logger.
+
+            Arguments
+            ---------
+            msg : str
+                Log message
             """
             if len(logging.root.handlers) == 0:
                 logging.basicConfig()
@@ -430,6 +456,8 @@ class XFaster(object):
 
         Arguments
         ---------
+        message : str
+            Log message
         level : string, default : None
             Logging level.  Must be one of "critical", "error", "warning",
             "notice", "info", "debug", "all".  If not supplied, "all" is assumed.
@@ -444,6 +472,11 @@ class XFaster(object):
     def warn(self, message):
         """
         Log a warning message.
+
+        Arguments
+        ---------
+        message : str
+            Warning log message
         """
 
         warnings.warn(message, XFasterWarning, stacklevel=2)
@@ -1018,6 +1051,13 @@ class XFaster(object):
         def get_template_files(fs, template_type):
             """
             Update options for template cleaning. Internal to get_files.
+
+            Arguments
+            ---------
+            fs : dict
+                Dictionary of file options
+            template_type : str
+                Tag for template files
             """
             # no template fitting for null runs
             if fs["null_run"]:
@@ -1136,6 +1176,13 @@ class XFaster(object):
         def get_planck_files(fs, sub_planck=False):
             """
             Update options for planck subtraction. Internal to get_files.
+
+            Arguments
+            ---------
+            fs : dict
+                Dictionary of file options
+            sub_planck : bool
+                If true, get Planck map files to be subtracted from data
             """
             if not sub_planck:
                 fs["planck_root1_hm1"] = None
@@ -1613,6 +1660,17 @@ class XFaster(object):
         shape_ref : string
             The reference field whose shape is checked against ``shape``.
             If None and ``shape`` is set, use the first field in ``fields``.
+        alt_name : string
+            Alternative to ``name`` argument that will be read if file matching
+            ``name`` doesn't exist.
+        value_ref : dict
+            Dictionary of reference values that is checked if simply loading a
+            file from disk instead of recomputing-- forces rerun of checkpoints
+            if loaded dictionary differs from value_ref.
+        optional : list of strings
+            Fields that, if missing from the data loaded from disk, will not
+            trigger force rerunning of any checkpoints.
+
 
         Remaining options are passed to ``get_filename`` for constructing the
         output file path.
@@ -1766,14 +1824,6 @@ class XFaster(object):
             then the data are recomputed.
         from_attrs : list of strings
             A list of object attributes which should be stored in the data file.
-        map_tag : str
-            Load the dataset corresponding to this map.
-            See ``get_filename`` for documentation.
-        iter_index : int
-            Load the dataset corresponding to this iteration index.
-            See ``get_filename`` for documentation.
-        bp_opts : bool
-            Format output bandpowers file.  See ``get_filename`` for documentation.
 
         Any remaining keyword arguments are added to the output dictionary.
 
@@ -1809,6 +1859,16 @@ class XFaster(object):
         Save a configuration file for the current run on disk.
         This method is used by ``xfaster_run`` to store the config
         in ``<output_root>/config_<output_tag>.txt``.
+
+        Arguments
+        ---------
+        cfg : XFasterConfig or RawConfigParser object
+            Config object containing all relevant arguments to save to disk.
+
+        Returns
+        -------
+        filename : str
+            Name of the config file saved to disk.
         """
         filename = self.get_filename("config", ext=".txt")
         if filename is None:
@@ -1846,6 +1906,11 @@ class XFaster(object):
             This array is modified in place.
         mask : array_like
             Mask to apply (T/P if polarized, T-only if not)
+
+        Returns
+        -------
+        m : array_like
+            Input map multiplied by mask.
         """
 
         m[0] *= mask[0]
@@ -1861,7 +1926,7 @@ class XFaster(object):
         Arguments
         ---------
         m : array_like
-            Masked input map for which spherical harmonic alms are 
+            Masked input map for which spherical harmonic alms are
             computed.
         pol : bool
             If None, this is set using the value with which the object
@@ -2628,7 +2693,7 @@ class XFaster(object):
 
         def process_index(files, files2, idx, idx2=None, cache=None, qbf=None):
             """
-            Internal processing function to compute alms for masked sim map, 
+            Internal processing function to compute alms for masked sim map,
             or sim map pair for null tests.
             """
             if cache is None:
