@@ -2594,7 +2594,6 @@ class XFaster(object):
         transfer=False,
         do_noise=True,
         sims_add_alms=True,
-        lmin=2,
         qb_file=None,
     ):
         """
@@ -3248,9 +3247,41 @@ class XFaster(object):
         from usual noise directory. Templates read read from
         templates_fake_data_template/halfmission-1.
 
-        This function doesn't write anything to disk. It just constructs
-        the maps and computes the Cls and replaces data cls with them.
-        Useful for fake data testing.
+        This function doesn't write anything to disk unless save_data=True.
+        It just constructs the maps and computes the Cls and replaces data
+        cls with them. Useful for doing sim runs with template subtraction.
+
+        Arguments
+        ---------
+        fake_data_r : float
+            Tensor-to-scalar ratio to use for CMB sims as scalar + r * tensor.
+        fake_data_template : str
+            If not None, add halfmission-1 template in this directory scaled by
+            alpha to fake data maps
+        sim_index : int
+            Index of sim maps to use for CMB, noise, and template noise
+            simulations.
+        template_alpha : dict
+            Dictionary of (map_tag, alpha scaling) values.
+        noise_type_sim : str
+            The variant of noise sims to use for the fake data map.
+        do_noise : bool
+            If true, use sim_index to set noise seed. If false, always use seed
+            0. Useful for sims isolating effects of varying CMB only or template
+            noise only.
+        do_signal : bool
+            If true, use sim_index to set CMB seed. If false, always use seed
+            0. Useful for sims isolating effects of varying noise only or
+            template noise only.
+        save_data : bool
+            If true, save data_xcorr file to disk for fake data.
+        sub_hm_noise : bool
+            If True, subtract average of Planck ffp10 noise crosses to debias
+            template-cleaned spectra
+        qb_file : str
+            Pointer to a bandpowers.npz file in the output directory.
+            The noise sim read from disk will be corrected by the residual qb
+            values stored in qb_file.
         """
         import healpy as hp
 
@@ -3294,10 +3325,10 @@ class XFaster(object):
         self.log("Fake data r: {}".format(fake_data_r), "notice")
 
         def process_index(idx):
-            '''
+            """
             create the fake map for each map in map_files,
             them compute alms for that and templates.
-            '''
+            """
             if idx in cache:
                 return cache[idx]
             self.log(
@@ -3483,6 +3514,10 @@ class XFaster(object):
                 self.cls_data[spec][xname] = cls1[s]
 
         def apply_template():
+            """
+            In place, subtract the scaled template cross terms from the data
+            pseudo-spectra.
+            """
             cls_clean = getattr(self, "cls_data_clean", OrderedDict())
 
             for spec in self.specs:
@@ -6123,7 +6158,8 @@ class XFaster(object):
                             # use max likelihood qb's qb2cb to convert qb->cb
                             if "res" not in stag:
                                 cb_arr[iq] = np.einsum(
-                                    "ij,j->i", qb2cb[stag], qb1[stag])[ibin]
+                                    "ij,j->i", qb2cb[stag], qb1[stag]
+                                )[ibin]
                             try:
                                 like = self.fisher_calc(
                                     qb1,
