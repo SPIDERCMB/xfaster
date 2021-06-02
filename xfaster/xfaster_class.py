@@ -4587,7 +4587,7 @@ class XFaster(object):
     
     def bin_cl_template_tmat(
         self,
-        cls_shape,
+        cls_shape=None,
         map_tag=None,
         beam_error=False,
         fg_ell_ind=0,
@@ -4623,6 +4623,9 @@ class XFaster(object):
             E/B mixing terms are stored in elements `cbl[:, 1, :]`,
             and unmixed terms are stored in elements `cbl[:, 0, :]`.
         """
+        if cls_shape is None:
+            cls_shape = self.cls_shape
+
         from spider_analysis import nsi
 
         T = nsi.TransferMatrix()
@@ -4650,7 +4653,12 @@ class XFaster(object):
         lmax = max(transfer_bins)
         lmax_kern = lmax
 
+        if beam_error:
+            beam_error = self.get_beam_errors()
+            beam_keys = ["b1", "b2", "b3"]
+
         ls = slice(2, lmax + 1)
+        lk = slice(0, lmax_kern + 1)
         cbl = OrderedDict()
 
         comps = []
@@ -4673,10 +4681,10 @@ class XFaster(object):
         if self.weighted_bins:
             lfac_binned = stats.binned_statistic(ell, lfac, bins=transfer_bins)[0]
 
-        def binup(d, left, right):
-            return d[..., left:right].sum(axis=-1)
+        def binup(d, left, right, weights):
+            return (d[..., left:right] * weights).sum(axis=-1)
 
-        def bin_things(comp, d, md, d_b1, d_b2, d_b3, md_b1, md_b2, md_b3):
+        def bin_things(comp, d, md):
             if "res" in comp:
                 return
             for si, spec in enumerate(specs):
@@ -4687,51 +4695,50 @@ class XFaster(object):
                     mstag = stag + "_mix"
                     cbl.setdefault(mstag, OrderedDict())
                 bd = self.bin_def[stag]
+                bw = self.bin_weights[stag]
                 for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
                     if beam_error:
-                        cbl[stag].setdefault(xname, OrderedDict())
-                        cbl[stag][xname]["b1"] = np.zeros((len(bd), lmax + 1))
-                        cbl[stag][xname]["b2"] = np.zeros((len(bd), lmax + 1))
-                        cbl[stag][xname]["b3"] = np.zeros((len(bd), lmax + 1))
+                        cbl[mstag][xname] = OrderedDict(
+                            [(k, np.zeros((len(bd), lmax + 1))) for k in beam_keys]
+                        )
                     else:
                         cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
+                    
                     if spec in ["ee", "bb"]:
                         if beam_error:
-                            cbl[mstag].setdefault(xname, OrderedDict())
-                            cbl[mstag][xname]["b1"] = np.zeros((len(bd), lmax + 1))
-                            cbl[mstag][xname]["b2"] = np.zeros((len(bd), lmax + 1))
-                            cbl[mstag][xname]["b3"] = np.zeros((len(bd), lmax + 1))
+                            cbl[mstag][xname] = OrderedDict(
+                                [(k, np.zeros((len(bd), lmax + 1))) for k in beam_keys]
+                            )
                         else:
                             cbl[mstag][xname] = np.zeros((len(bd), lmax + 1))
 
                     # integrate per bin
-                    for idx, (left, right) in enumerate(bd):
+                    for idx, ((left, right), weights) in enumerate(zip(bd, bw)):
                         if beam_error:
-                            cbl[stag][xname]["b1"][idx, ls] = binup(
-                                d_b1[:, si, xi], left, right
-                            )
-                            cbl[stag][xname]["b2"][idx, ls] = binup(
-                                d_b2[:, si, xi], left, right
-                            )
-                            cbl[stag][xname]["b3"][idx, ls] = binup(
-                                d_b3[:, si, xi], left, right
-                            )
+                            for k in beam_keys:
+                                cbl[stag][xname][k][idx, ls] = binup(
+                                    d[k][si, xi], left, right, weights
+                                )
+                            #cbl[stag][xname]["b1"][idx, ls] = binup(
+                            #    d_b1[:, si, xi], left, right
+                            #)
                         else:
-                            cbl[stag][xname][idx, ls] = binup(d[:, si, xi], left, right)
+                            cbl[stag][xname][idx, ls] = binup(
+                                d[si, xi], left, right, weights
+                            )
                         if spec in ["ee", "bb"]:
                             if beam_error:
-                                cbl[mstag][xname]["b1"][idx, ls] = binup(
-                                    md_b1[:, si - 1, xi], left, right
-                                )
-                                cbl[mstag][xname]["b2"][idx, ls] = binup(
-                                    md_b2[:, si - 1, xi], left, right
-                                )
-                                cbl[mstag][xname]["b3"][idx, ls] = binup(
-                                    md_b3[:, si - 1, xi], left, right
-                                )
+                                for k in beam_keys:
+                                    cbl[mstag][xname][k][idx, ls] = binup(
+                                        md[k][si - 1, xi], left, right, weights
+                                    )
+                
+                                    #cbl[mstag][xname]["b1"][idx, ls] = binup(
+                                    #    md_b1[:, si - 1, xi], left, right
+                                    #)
                             else:
                                 cbl[mstag][xname][idx, ls] = binup(
-                                    md[:, si - 1, xi], left, right
+                                    md[si - 1, xi], left, right, weights
                                 )
 
         for comp in comps:
@@ -4750,53 +4757,45 @@ class XFaster(object):
                     self.md = np.multiply(
                         self.md_fg, s_arr, out=getattr(self, "md", None)
                     )
-                    bin_things(
-                        comp, self.d, self.md, None, None, None, None, None, None
-                    )
+                    # Question
+                    #bin_things(
+                    #    comp, self.d, self.md, None, None, None, None, None, None
+                    #)
                 else:
-                    self.d_b1 = np.multiply(
-                        self.d_fg_b1, s_arr, out=getattr(self, "d_b1", None)
-                    )
-                    self.d_b2 = np.multiply(
-                        self.d_fg_b2, s_arr, out=getattr(self, "d_b2", None)
-                    )
-                    self.d_b3 = np.multiply(
-                        self.d_fg_b3, s_arr, out=getattr(self, "d_b3", None)
-                    )
-                    self.md_b1 = np.multiply(
-                        self.md_fg_b1, s_arr, out=getattr(self, "md_b1", None)
-                    )
-                    self.md_b2 = np.multiply(
-                        self.md_fg_b2, s_arr, out=getattr(self, "md_b2", None)
-                    )
-                    self.md_b3 = np.multiply(
-                        self.md_fg_b3, s_arr, out=getattr(self, "md_b3", None)
-                    )
-                    bin_things(
-                        comp,
-                        None,
-                        None,
-                        self.d_b1,
-                        self.d_b2,
-                        self.d_b3,
-                        self.md_b1,
-                        self.md_b2,
-                        self.md_b3,
-                    )
+                    for k in beam_keys:
+                        if not hasattr(self, "d"):
+                            self.d = OrderedDict([(k, None) for k in beam_keys])
+                            self.md = OrderedDict([(k, None) for k in beam_keys])
+                        self.d[k] = np.multiply(self.d_fg[k], s_arr, out=self.d[k])
+                        self.md[k] = np.multiply(self.md_fg[k], s_arr, out=self.md[k])
+                    #self.d_b1 = np.multiply(
+                    #    self.d_fg_b1, s_arr, out=getattr(self, "d_b1", None)
+                    #)
+                bin_things(comp, self.d, self.md)
             else:
-                k_arr = np.zeros([nspec, nxmap, lmax - 1, lmax_kern + 1])
-                mk_arr = np.zeros([2, nxmap, lmax - 1, lmax_kern + 1])
+                #k_arr = np.zeros([nspec, nxmap, self.lmax - 1, lmax_kern + 1])
+                #mk_arr = np.zeros([2, nxmap, lmax - 1, lmax_kern + 1])
+                kshape = [nspec, nxmap, self.lmax - 1, lmax_kern + 1]
+                mkshape = [2] + kshape[1:]
+                k_arr = np.zeros(kshape)
+                mk_arr = np.zeros(mkshape)
+
                 # because transfer matrix includes flbl2, combine those, just store
                 # xfermat * binned shape
-                fbs_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
+          
+                #fbs_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
+                shape = [nspec, nxmap, 1, lmax_kern + 1]
+                s_arr = np.zeros(shape)
+                if beam_error:
+                    b_arr = {k: np.zeros(shape) for k in beam_keys}
 
-                for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
-                    for si, spec in enumerate(specs):
-                        stag = "{}_{}".format(comp, spec)
-                        mstag = None
-                        if comp != "res" and spec in ["ee", "bb"]:
-                            mstag = stag + "_mix"
-
+                for si, spec in enumerate(specs):
+                    stag = "{}_{}".format(comp, spec)
+                    mstag = None
+                    if comp != "res" and spec in ["ee", "bb"]:
+                        mstag = stag + "_mix"
+                    
+                    for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
                         if "res" in comp:
                             s0, s1 = spec
                             res_tags = {
@@ -4817,96 +4816,87 @@ class XFaster(object):
                                             bd = self.bin_def[v]
                                 else:
                                     bd = self.bin_def[v]
-                            for comp in [
-                                "res0_nxn",
-                                "res1_nxn",
-                                "res0_sxn",
-                                "res1_sxn",
-                                "res0_nxs",
-                                "res1_nxs",
-                                "res",
+                            for comp, cls in [
+                                ("res0_nxn", cls_noise0),
+                                ("res1_nxn", cls_noise1),
+                                ("res0_sxn", cls_sxn0),
+                                ("res1_sxn", cls_sxn1),
+                                ("res0_nxs", cls_nxs0),
+                                ("res1_nxs", cls_nxs1),
+                                ("res", cls_noise),
                             ]:
                                 stag = "{}_{}".format(comp, spec)
                                 cbl.setdefault(stag, OrderedDict())
                                 cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
-                                if comp == "res0_nxn":
-                                    cl1 = cls_noise0[spec][xname]
-                                elif comp == "res1_nxn":
-                                    cl1 = cls_noise1[spec][xname]
-                                elif comp == "res0_sxn":
-                                    cl1 = cls_sxn0[spec][xname]
-                                elif comp == "res1_sxn":
-                                    cl1 = cls_sxn1[spec][xname]
-                                elif comp == "res0_nxs":
-                                    cl1 = cls_nxs0[spec][xname]
-                                elif comp == "res1_nxs":
-                                    cl1 = cls_sxn1[spec][xname]
-                                elif comp == "res":
-                                    cl1 = cls_noise[spec][xname]
+                                cl1 = cls[spec][xname]
                                 for idx, (left, right) in enumerate(bd):
                                     lls = slice(left, right)
                                     cbl[stag][xname][idx, lls] = np.copy(cl1[lls])
 
                             continue
-
-                    xfermat = T.get(
-                        self.map_reobs_freqs[tag1], self.map_reobs_freqs[tag1]
-                    )
-
-                    # use correct shape spectrum
-                    if comp == "fg":
-                        # single foreground spectrum
-                        s_arr = (
-                            cls_shape["fg"][: lmax_kern + 1]
-                            * (ell / 80.0) ** fg_ell_ind
+                        
+                        if beam_error:
+                            b_arr["b1"][si, xi] = beam_error[spec][tag1]
+                            b_arr["b2"][si, xi] = beam_error[spec][tag2]
+                            b_arr["b3"][si, xi] = (
+                                b_arr["b1"][si, xi] * b_arr["b2"][si, xi]
+                            )
+    
+                        xfermat = T.get(
+                            self.map_reobs_freqs[tag1], self.map_reobs_freqs[tag1]
                         )
-                        s_arr[0] = 0
-                        if self.weighted_bins:
-                            s_arr = stats.binned_statistic(
-                                ell, lfac * s_arr, bins=transfer_bins
-                            )[0]
-                            s_arr /= lfac_binned
-                        else:
-                            s_arr = stats.binned_statistic(
-                                ell, s_arr, bins=transfer_bins
-                            )[0]
 
-                        # repeat for all specs
-                        s_arr = np.tile(s_arr, len(specs))
-                    else:
-                        s_arr = np.zeros(nbins_transfer * len(specs))
-                        for si, spec in enumerate(specs):
-                            s_spec = cls_shape["cmb_{}".format(spec)][: lmax_kern + 1]
+                        # use correct shape spectrum
+                        if comp == "fg":
+                            # single foreground spectrum
+                            s_arr = cls_shape["fg"][lk] * (ell / 80.0) ** fg_ell_ind
+                            s_arr[0] = 0
                             if self.weighted_bins:
-                                s_spec = stats.binned_statistic(
-                                    ell, lfac * s_spec, bins=transfer_bins
+                                s_arr = stats.binned_statistic(
+                                    ell, lfac * s_arr, bins=transfer_bins
                                 )[0]
-                                s_spec /= lfac_binned
+                                s_arr /= lfac_binned
                             else:
-                                s_spec = stats.binned_statistic(
-                                    ell, s_spec, bins=transfer_bins
+                                s_arr = stats.binned_statistic(
+                                    ell, s_arr, bins=transfer_bins
                                 )[0]
-                            s_arr[
-                                si * nbins_transfer : (si + 1) * nbins_transfer
-                            ] = s_spec
-                    binned_fbs = np.matmul(np.linalg.inv(xfermat), s_arr)
-                    #  fbs_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
-                    for si, spec in enumerate(specs):
-                        for ib, b0 in enumerate(transfer_bins[:-1]):
-                            fbs_arr[si][xi][b0 : transfer_bins[ib + 1]] = binned_fbs[ib]
+                           # FROM HERE ON ... 
+                            # repeat for all specs
+                            s_arr = np.tile(s_arr, len(specs))
+                        else:
+                            s_arr = np.zeros(nbins_transfer * len(specs))
+                            for si, spec in enumerate(specs):
+                                s_spec = cls_shape["cmb_{}".format(spec)][: lmax_kern + 1]
+                                if self.weighted_bins:
+                                    s_spec = stats.binned_statistic(
+                                        ell, lfac * s_spec, bins=transfer_bins
+                                    )[0]
+                                    s_spec /= lfac_binned
+                                else:
+                                    s_spec = stats.binned_statistic(
+                                        ell, s_spec, bins=transfer_bins
+                                    )[0]
+                                s_arr[
+                                    si * nbins_transfer : (si + 1) * nbins_transfer
+                                ] = s_spec
+                        binned_fbs = np.matmul(np.linalg.inv(xfermat), s_arr)
+                        #  fbs_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
+                        for si, spec in enumerate(specs):
+                            for ib, b0 in enumerate(transfer_bins[:-1]):
+                                fbs_arr[si][xi][b0 : transfer_bins[ib + 1]] = binned_fbs[ib]
 
-                        # get cross spectrum kernel terms
-                        if spec == "tt":
-                            k_arr[si, xi] = self.kern[xname][ls, : lmax_kern + 1]
-                        elif spec in ["ee", "bb"]:
-                            k_arr[si, xi] = self.pkern[xname][ls, : lmax_kern + 1]
-                            mk_arr[si - 1, xi] = self.mkern[xname][ls, : lmax_kern + 1]
-                        elif spec in ["te", "tb"]:
-                            k_arr[si, xi] = self.xkern[xname][ls, : lmax_kern + 1]
-                        elif spec == "eb":
-                            k_arr[si, xi] = (
-                                self.pkern[xname][ls] - self.mkern[xname][ls]
-                            )[:, : lmax_kern + 1]
+                            # get cross spectrum kernel terms
+                            if spec == "tt":
+                                k_arr[si, xi] = self.kern[xname][ls, : lmax_kern + 1]
+                            elif spec in ["ee", "bb"]:
+                                k_arr[si, xi] = self.pkern[xname][ls, : lmax_kern + 1]
+                                mk_arr[si - 1, xi] = self.mkern[xname][ls, : lmax_kern + 1]
+                            elif spec in ["te", "tb"]:
+                                k_arr[si, xi] = self.xkern[xname][ls, : lmax_kern + 1]
+                            elif spec == "eb":
+                                k_arr[si, xi] = (
+                                    self.pkern[xname][ls] - self.mkern[xname][ls]
+                                )[:, : lmax_kern + 1]
                 # need last 3 dims of kernel to match other arrays
                 k_arr = np.transpose(k_arr, axes=[2, 0, 1, 3])
                 mk_arr = np.transpose(mk_arr, axes=[2, 0, 1, 3])
