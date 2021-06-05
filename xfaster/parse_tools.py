@@ -1,3 +1,4 @@
+""" Module for parsing intermediate and output XFaster files. """
 import sys
 import numpy as np
 from warnings import warn
@@ -25,8 +26,8 @@ __all__ = [
 
 def corr_index(idx, n):
     """
-    This gets the index of the auto spectrum when getting all
-    pairwise combinations of n maps
+    Gets the index of the auto spectrum when getting all
+    pairwise combinations of n maps.
 
     Arguments
     ---------
@@ -193,6 +194,16 @@ def load_compat(*args, **kwargs):
     Load and decode a numpy archive file from disk.
 
     Backward compatible with python2 data files.
+
+    Arguments
+    ---------
+    args, kwargs : key/value pairs
+        Passed to np.load.
+
+    Returns
+    -------
+    out : dict
+        Dictionary of info from numpy archive file
     """
     if sys.version_info.major > 2:
         kwargs.setdefault("encoding", "latin1")
@@ -415,7 +426,7 @@ def spec_index(spec=None):
     Return the matrix indices of the given spectrum within a 3x3 matrix.  If
     ``spec`` is None, return a dictionary of such indices keyed by spectrum.
 
-    Arguemnts
+    Arguments
     ---------
     spec : str
         Which spectrum to return index for. If None, return dict of all.

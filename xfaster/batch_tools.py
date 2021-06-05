@@ -17,6 +17,11 @@ __all__ = ["get_job_logfile", "batch_sub", "batch_group", "JobArgumentParser"]
 def get_job_logfile():
     """
     Generate a path to use for the output log, based on job environment
+
+    Returns
+    -------
+    logfile : str
+        Path to log file.
     """
     if os.getenv("PBS_O_WORKDIR"):
         if os.getenv("PBS_ENVIRONMENT") != "PBS_INTERACTIVE":
@@ -49,6 +54,11 @@ def format_time(t):
     t : datetime.timedelta object or float
         The time for the job.
         If floating point, will be interpreted in hours
+
+    Returns
+    -------
+    time : str
+        Time in the format expected by scheduler.
     """
     if isinstance(t, str):
         m = re.match("([0-9]+):([0-9]{2}):([0-9]{2})", t)
@@ -187,7 +197,6 @@ def batch_sub(
     221114.feynman.princeton.edu
     >>> print(open('testing.o221114','r').read())
     Hello
-
     """
 
     if isinstance(cmd, list):
@@ -397,6 +406,13 @@ def batch_group(cmds, group_by=1, serial=False, *args, **kwargs):
     serial : bool, optional
         Set to ``True`` to run cmds sequentially, rather than starting them all
         in parallel. This will also work with MPI/OpenMP parallel jobs.
+    args, kwargs : arb
+        Additional arguments passed to batch_sub
+
+    Returns
+    -------
+    jobids : list of strings
+        List of job IDs used by the scheduler
     """
     grouped = []
     jobids = []
