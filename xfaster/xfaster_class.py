@@ -1814,7 +1814,7 @@ class XFaster(object):
 
     def save_data(self, name, from_attrs=[], **data):
         """
-        Save xfaster data to an output.npz file on disk.
+        Save xfaster data to an output .npz file on disk.
 
         Arguments
         ---------
@@ -1824,6 +1824,17 @@ class XFaster(object):
             then the data are recomputed.
         from_attrs : list of strings
             A list of object attributes which should be stored in the data file.
+        map_tag : str
+            Load the dataset corresponding to this map.
+            See ``get_filename`` for documentation.
+        iter_index : int
+            Load the dataset corresponding to this iteration index.
+            See ``get_filename`` for documentation.
+        bp_opts : bool
+            Format output bandpowers file.  See ``get_filename`` for
+            documentation.
+        extra_tag : str
+             Tag to add to file name.
 
         Any remaining keyword arguments are added to the output dictionary.
 
