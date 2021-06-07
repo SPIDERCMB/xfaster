@@ -1,3 +1,4 @@
+""" Module for parsing intermediate and output XFaster files. """
 import sys
 import numpy as np
 from warnings import warn
@@ -25,8 +26,8 @@ __all__ = [
 
 def corr_index(idx, n):
     """
-    This gets the index of the auto spectrum when getting all
-    pairwise combinations of n maps
+    Gets the index of the auto spectrum when getting all
+    pairwise combinations of n maps.
 
     Arguments
     ---------
@@ -46,6 +47,16 @@ def corr_index(idx, n):
 def num_maps(n):
     """
     Returns how many maps there are if there are n total cross spectra.
+
+    Arguments
+    ---------
+    n : int
+        Number of cross spectra.
+
+    Returns
+    -------
+    nmaps : int
+        Number of maps.
     """
     return int(np.sqrt(8 * n + 1) - 1) // 2
 
@@ -53,6 +64,16 @@ def num_maps(n):
 def num_corr(n):
     """
     Returns how many cross spectra there are if there are n total maps.
+
+    Arguments
+    ---------
+    n : int
+        Number of maps.
+
+    Returns
+    -------
+    nxspec : int
+        Number of cross spectra.
     """
     return n * (n + 1) // 2
 
@@ -61,6 +82,17 @@ def unique_tags(tags):
     """
     If map tags are repeated (eg, two 150 maps in different chunk
     subdirectories), return a list modifying them with an index
+
+    Arguments
+    ---------
+    tags : list of strings
+        List of original map tags.
+
+    Returns
+    -------
+    new_tags : list of strings
+        List of map tags where repeated tags are modified to be
+        <tag>_<index>, with unique indices.
     """
     if len(np.unique(tags)) == len(tags):
         return tags
@@ -88,6 +120,21 @@ def tag_pairs(tags, index=False):
     is True.  If ``index`` is a list, then it should be a list the same length as
     ``tags``, and the tuple is populated by indexing into ``index`` using the two
     indices of the tags in the original tag list.
+
+    Arguments
+    ---------
+    tags : list of strings
+        Map tags from which to construct cross-spectrum keys like "tag1:tag2".
+    index : bool
+        If True, make values in dictionary the indices of the map tags, rather
+        than the tags themselves.
+
+    Returns
+    -------
+    pairs : OrderedDict
+        Dictionary whose keys are pairs of tags in the format "tag1:tag2" and
+        whose values are a tuple of the two tags used to construct the key, or
+        their indices, if index=True.
 
     Example
     -------
@@ -117,6 +164,16 @@ def dict_decode(d):
     """
     Recursively decode key or value bytestrings in a dictionary.
     Useful when loading a bytes-encoded numpy archive file from disk.
+
+    Arguments
+    ---------
+    d : dict
+        Dictionary to decode.
+
+    Returns
+    -------
+    d2 : dict
+        Bytestring-decoded dictionary.
     """
     if not isinstance(d, dict):
         if isinstance(d, bytes):
@@ -137,6 +194,16 @@ def load_compat(*args, **kwargs):
     Load and decode a numpy archive file from disk.
 
     Backward compatible with python2 data files.
+
+    Arguments
+    ---------
+    args, kwargs : key/value pairs
+        Passed to np.load.
+
+    Returns
+    -------
+    out : dict
+        Dictionary of info from numpy archive file
     """
     if sys.version_info.major > 2:
         kwargs.setdefault("encoding", "latin1")
@@ -164,6 +231,16 @@ def load_pickle_compat(filename):
     Load a pickle file from the given filename.
     Ensure that the file is open in mode 'rb' (required for python3), and
     that the encoding is set to 'latin1' in python3.
+
+    Arguments
+    ---------
+    filename : str
+        Path to pickled output file to read.
+
+    Returns
+    -------
+    f : dict
+        Unpickled file.
     """
     import pickle
 
@@ -194,6 +271,11 @@ def parse_data(data, field):
         Either the path to an npz file on disk or a loaded npz dict.
     field : str
         Which key in data to return as a dictionary.
+
+    Returns
+    -------
+    data[field] : arb
+        The value in the ```data`` dictionary for key ``field``.
     """
     if isinstance(data, str):
         data = load_compat(data)
@@ -227,6 +309,22 @@ def dict_to_arr(d, out=None, flatten=False):
 
     If not all items are the same shape, eg, for qb, or if flatten=True,
     flatten everything into a vector
+
+    Arguments
+    ---------
+    d : dict
+        Dictionary to transform into an array.
+    out : array
+        If not None, the starting array onto which to stack the arrays
+        contained in dictionary d.
+    flatten : bool
+        If True, return flattened vector instead of array.
+
+    Returns
+    -------
+    out : array
+        The array containing stacked elements of the arrays contained in
+        dictionary ``d``.
     """
     if not isinstance(d, dict):
         return d
@@ -252,6 +350,19 @@ def arr_to_dict(arr, ref_dict):
     Requires that the length of the array is the sum of the lengths of the
     arrays in each entry of ref_dict.  The other dimensions of the input
     array and reference dict can differ.
+
+    Arguments
+    ---------
+    arr : array
+        Input array to be transformed into dictionary.
+    ref_dict : dict
+        Reference dictionary containing the keys used to construct the output
+        dictionary.
+
+    Returns
+    -------
+    out : dict
+        Dictionary of values from arr keyed with keys from ref_dict.
     """
     out = OrderedDict()
     idx = 0
@@ -267,6 +378,16 @@ def dict_to_index(d):
     Construct a dictionary of (start, stop) indices that correspond to the
     location of each sub-array when the dict is converted to a single array
     using ``dict_to_arr``.
+
+    Arguments
+    ---------
+    d : dict
+        Input dictionary.
+
+    Returns
+    -------
+    index : dict
+        Dictionary containing location of sub-arrays corresponding to keys.
 
     Examples
     --------
@@ -304,6 +425,17 @@ def spec_index(spec=None):
     """
     Return the matrix indices of the given spectrum within a 3x3 matrix.  If
     ``spec`` is None, return a dictionary of such indices keyed by spectrum.
+
+    Arguments
+    ---------
+    spec : str
+        Which spectrum to return index for. If None, return dict of all.
+
+    Returns
+    -------
+    index : dict or list
+        Dictionary of indices if spec in None, or list of indices if spec is
+        provided.
     """
     inds = OrderedDict(
         [
@@ -325,6 +457,19 @@ def spec_mask(spec=None, nmaps=1):
     Return a mask for extracting spectrum terms from a matrix of shape (3 *
     nmaps, 3 * nmaps).  If ``spec`` is None, returns a dictionary of masks keyed
     by spectrum.
+
+    Arguments
+    ---------
+    spec : str
+        Which spectrum to return mask for. If None, return dict of all masks.
+    nmaps : int
+        Number of maps used for the cross-spectrum analysis.
+
+    Returns
+    -------
+    spec_mask : dict or arr
+        Dictionary of masks if spec in None, or (3 * nmaps, 3 * nmaps) array
+        that is 1 in elements corresponding to spec if spec is provided.
     """
     spec_mask = OrderedDict()
 
@@ -345,6 +490,16 @@ def dict_to_dmat(dmat_dict):
     Take a dmat dictionary and return the right shaped Dmat matrix:
     (Nmaps * 3, Nmaps * 3, lmax + 1) if pol else
     (Nmaps, Nmaps, lmax + 1)
+
+    Arguments
+    ---------
+    dmat_dict : dict
+        Dictionary containing the model covariance terms.
+
+    Returns
+    -------
+    Dmat : arr
+        Dmat total model covariance matrix.
     """
     nmaps = num_maps(len(dmat_dict))
 
@@ -385,8 +540,19 @@ def dict_to_dsdqb_mat(dsdqb_dict, bin_def):
     (Nmaps * 3, Nmaps * 3, nbins_cmb+nbins_fg+nbins_res, lmax + 1) if pol
     else first two dimensions are Nmaps.
 
-    If gmat is given, the terms in the resulting matrix are multiplied by the
-    appriopriate mode density term.
+    Arguments
+    ---------
+    dsdqb_dict : dict
+        Dictionary containing the terms for the derivative of the signal
+        model, S, w.r.t. the qb parameters.
+    bin_def : dict
+        Dictionary containing the bin edges for each qb value fit.
+
+    Returns
+    -------
+    dsdqb_mat : arr
+        Signal derivative matrix in the expected shape for matrix multiplication
+        in the Fisher iteration.
     """
     # get the unique map tags in order from the keys map1:map2
     mtags = [x.split(":")[0] for x in dsdqb_dict["cmb"]]
@@ -462,7 +628,15 @@ def load_and_parse(filename):
     """
     Load a .npz data file from disk and parse all the fields it contains.
 
-    Returns a dictionary of parsed fields.
+    Arguments
+    ---------
+    filename : str
+        Path to file to parse.
+
+    Returns
+    -------
+    ret : dict
+        Dictionary of parsed fields.
     """
     data = load_compat(filename)
     ret = dict()
