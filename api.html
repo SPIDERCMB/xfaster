@@ -204,6 +204,14 @@
 <dt id="xfaster.batch_tools.get_job_logfile">
 <code class="sig-prename descclassname">xfaster.batch_tools.</code><code class="sig-name descname">get_job_logfile</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#get_job_logfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.batch_tools.get_job_logfile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate a path to use for the output log, based on job environment</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>logfile</strong> – Path to log file.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -301,7 +309,14 @@ balance well when <code class="docutils literal notranslate"><span class="pre">l
 Eg. on scinet use <code class="docutils literal notranslate"><span class="pre">group_by=8</span></code> to efficiently use whole nodes.</p></li>
 <li><p><strong>serial</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to <code class="docutils literal notranslate"><span class="pre">True</span></code> to run cmds sequentially, rather than starting them all
 in parallel. This will also work with MPI/OpenMP parallel jobs.</p></li>
+<li><p><strong>kwargs</strong> (<em>args</em><em>,</em>) – Additional arguments passed to batch_sub</p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>jobids</strong> – List of job IDs used by the scheduler</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of strings</p>
 </dd>
 </dl>
 </dd></dl>
@@ -398,6 +413,7 @@ can be overridden in this way.</p>
 </div>
 <div class="section" id="module-xfaster.parse_tools">
 <span id="parse-tools"></span><h2>parse_tools<a class="headerlink" href="#module-xfaster.parse_tools" title="Permalink to this headline">¶</a></h2>
+<p>Module for parsing intermediate and output XFaster files.</p>
 <p>Tools for parsing XFasters outputs and intermediate data structures</p>
 <dl class="function">
 <dt id="xfaster.parse_tools.parse_data">
@@ -411,6 +427,12 @@ descriptive keys.</p>
 <li><p><strong>field</strong> (<em>str</em>) – Which key in data to return as a dictionary.</p></li>
 </ul>
 </dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>data[field]</strong> – The value in the <code class="docutils literal notranslate"><span class="pre">`data</span></code> dictionary for key <code class="docutils literal notranslate"><span class="pre">field</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>arb</p>
+</dd>
 </dl>
 </dd></dl>
 
@@ -420,6 +442,23 @@ descriptive keys.</p>
 <dd><p>Transform ordered dict into an array, if all items are same shape</p>
 <p>If not all items are the same shape, eg, for qb, or if flatten=True,
 flatten everything into a vector</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d</strong> (<em>dict</em>) – Dictionary to transform into an array.</p></li>
+<li><p><strong>out</strong> (<em>array</em>) – If not None, the starting array onto which to stack the arrays
+contained in dictionary d.</p></li>
+<li><p><strong>flatten</strong> (<em>bool</em>) – If True, return flattened vector instead of array.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>out</strong> – The array containing stacked elements of the arrays contained in
+dictionary <code class="docutils literal notranslate"><span class="pre">d</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -430,6 +469,21 @@ ref_dict, with data divided into chunks of the same length as in ref_dict.
 Requires that the length of the array is the sum of the lengths of the
 arrays in each entry of ref_dict.  The other dimensions of the input
 array and reference dict can differ.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>array</em>) – Input array to be transformed into dictionary.</p></li>
+<li><p><strong>ref_dict</strong> (<em>dict</em>) – Reference dictionary containing the keys used to construct the output
+dictionary.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>out</strong> – Dictionary of values from arr keyed with keys from ref_dict.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -437,6 +491,18 @@ array and reference dict can differ.</p>
 <code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">unique_tags</code><span class="sig-paren">(</span><em class="sig-param">tags</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#unique_tags"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.unique_tags" title="Permalink to this definition">¶</a></dt>
 <dd><p>If map tags are repeated (eg, two 150 maps in different chunk
 subdirectories), return a list modifying them with an index</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>tags</strong> (<em>list of strings</em>) – List of original map tags.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>new_tags</strong> – List of map tags where repeated tags are modified to be
+&lt;tag&gt;_&lt;index&gt;, with unique indices.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of strings</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -448,6 +514,23 @@ a tuple of the indices of the two tags in the original tag list, if <code class=
 is True.  If <code class="docutils literal notranslate"><span class="pre">index</span></code> is a list, then it should be a list the same length as
 <code class="docutils literal notranslate"><span class="pre">tags</span></code>, and the tuple is populated by indexing into <code class="docutils literal notranslate"><span class="pre">index</span></code> using the two
 indices of the tags in the original tag list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tags</strong> (<em>list of strings</em>) – Map tags from which to construct cross-spectrum keys like “tag1:tag2”.</p></li>
+<li><p><strong>index</strong> (<em>bool</em>) – If True, make values in dictionary the indices of the map tags, rather
+than the tags themselves.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>pairs</strong> – Dictionary whose keys are pairs of tags in the format “tag1:tag2” and
+whose values are a tuple of the two tags used to construct the key, or
+their indices, if index=True.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>OrderedDict</p>
+</dd>
+</dl>
 <p class="rubric">Example</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">tags</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">tag_pairs</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
@@ -466,6 +549,17 @@ indices of the tags in the original tag list.</p>
 <dd><p>Construct a dictionary of (start, stop) indices that correspond to the
 location of each sub-array when the dict is converted to a single array
 using <code class="docutils literal notranslate"><span class="pre">dict_to_arr</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>d</strong> (<em>dict</em>) – Input dictionary.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>index</strong> – Dictionary containing location of sub-arrays corresponding to keys.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
 <p class="rubric">Examples</p>
 <p>To use this function to index into a (nbins, nbins) array, create
 the index dictionary:</p>
@@ -496,6 +590,18 @@ the index dictionary:</p>
 <code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">spec_index</code><span class="sig-paren">(</span><em class="sig-param">spec=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#spec_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.spec_index" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the matrix indices of the given spectrum within a 3x3 matrix.  If
 <code class="docutils literal notranslate"><span class="pre">spec</span></code> is None, return a dictionary of such indices keyed by spectrum.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>spec</strong> (<em>str</em>) – Which spectrum to return index for. If None, return dict of all.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>index</strong> – Dictionary of indices if spec in None, or list of indices if spec is
+provided.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict or list</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -504,6 +610,21 @@ the index dictionary:</p>
 <dd><p>Return a mask for extracting spectrum terms from a matrix of shape (3 *
 nmaps, 3 * nmaps).  If <code class="docutils literal notranslate"><span class="pre">spec</span></code> is None, returns a dictionary of masks keyed
 by spectrum.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spec</strong> (<em>str</em>) – Which spectrum to return mask for. If None, return dict of all masks.</p></li>
+<li><p><strong>nmaps</strong> (<em>int</em>) – Number of maps used for the cross-spectrum analysis.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>spec_mask</strong> – Dictionary of masks if spec in None, or (3 * nmaps, 3 * nmaps) array
+that is 1 in elements corresponding to spec if spec is provided.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict or arr</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -512,6 +633,17 @@ by spectrum.</p>
 <dd><p>Take a dmat dictionary and return the right shaped Dmat matrix:
 (Nmaps * 3, Nmaps * 3, lmax + 1) if pol else
 (Nmaps, Nmaps, lmax + 1)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dmat_dict</strong> (<em>dict</em>) – Dictionary containing the model covariance terms.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Dmat</strong> – Dmat total model covariance matrix.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>arr</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -520,8 +652,22 @@ by spectrum.</p>
 <dd><p>Take a dSdqb dictionary and return the right shaped dSdqb matrix:
 (Nmaps * 3, Nmaps * 3, nbins_cmb+nbins_fg+nbins_res, lmax + 1) if pol
 else first two dimensions are Nmaps.</p>
-<p>If gmat is given, the terms in the resulting matrix are multiplied by the
-appriopriate mode density term.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dsdqb_dict</strong> (<em>dict</em>) – Dictionary containing the terms for the derivative of the signal
+model, S, w.r.t. the qb parameters.</p></li>
+<li><p><strong>bin_def</strong> (<em>dict</em>) – Dictionary containing the bin edges for each qb value fit.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>dsdqb_mat</strong> – Signal derivative matrix in the expected shape for matrix multiplication
+in the Fisher iteration.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>arr</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -529,6 +675,17 @@ appriopriate mode density term.</p>
 <code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">load_compat</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#load_compat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.load_compat" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load and decode a numpy archive file from disk.</p>
 <p>Backward compatible with python2 data files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>kwargs</strong> (<em>args</em><em>,</em>) – Passed to np.load.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>out</strong> – Dictionary of info from numpy archive file</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -537,20 +694,41 @@ appriopriate mode density term.</p>
 <dd><p>Load a pickle file from the given filename.
 Ensure that the file is open in mode ‘rb’ (required for python3), and
 that the encoding is set to ‘latin1’ in python3.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – Path to pickled output file to read.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>f</strong> – Unpickled file.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="xfaster.parse_tools.load_and_parse">
 <code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">load_and_parse</code><span class="sig-paren">(</span><em class="sig-param">filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#load_and_parse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.load_and_parse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load a .npz data file from disk and parse all the fields it contains.</p>
-<p>Returns a dictionary of parsed fields.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – Path to file to parse.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>ret</strong> – Dictionary of parsed fields.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="xfaster.parse_tools.corr_index">
 <code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">corr_index</code><span class="sig-paren">(</span><em class="sig-param">idx</em>, <em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#corr_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.corr_index" title="Permalink to this definition">¶</a></dt>
-<dd><p>This gets the index of the auto spectrum when getting all
-pairwise combinations of n maps</p>
+<dd><p>Gets the index of the auto spectrum when getting all
+pairwise combinations of n maps.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -571,12 +749,34 @@ pairwise combinations of n maps</p>
 <dt id="xfaster.parse_tools.num_maps">
 <code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">num_maps</code><span class="sig-paren">(</span><em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#num_maps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.num_maps" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns how many maps there are if there are n total cross spectra.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n</strong> (<em>int</em>) – Number of cross spectra.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>nmaps</strong> – Number of maps.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="xfaster.parse_tools.num_corr">
 <code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">num_corr</code><span class="sig-paren">(</span><em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#num_corr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.num_corr" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns how many cross spectra there are if there are n total maps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n</strong> (<em>int</em>) – Number of maps.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>nxspec</strong> – Number of cross spectra.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>
@@ -628,7 +828,7 @@ Keys are stored alphabetically if <cite>sort</cite> is True.</p>
 
 <dl class="class">
 <dt id="xfaster.xfaster_class.XFaster">
-<em class="property">class </em><code class="sig-prename descclassname">xfaster.xfaster_class.</code><code class="sig-name descname">XFaster</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">lmax=500</em>, <em class="sig-param">pol=True</em>, <em class="sig-param">pol_mask=True</em>, <em class="sig-param">output_root=None</em>, <em class="sig-param">output_tag=None</em>, <em class="sig-param">verbose='notice'</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">checkpoint=None</em>, <em class="sig-param">add_log=False</em>, <em class="sig-param">ref_freq=353.0</em>, <em class="sig-param">beta_ref=1.54</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">xfaster.xfaster_class.</code><code class="sig-name descname">XFaster</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">lmax=500</em>, <em class="sig-param">pol=True</em>, <em class="sig-param">pol_mask=True</em>, <em class="sig-param">output_root=None</em>, <em class="sig-param">output_tag=None</em>, <em class="sig-param">verbose='notice'</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">checkpoint=None</em>, <em class="sig-param">add_log=False</em>, <em class="sig-param">ref_freq=359.7</em>, <em class="sig-param">beta_ref=1.54</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.alm2cl">
 <code class="sig-name descname">alm2cl</code><span class="sig-paren">(</span><em class="sig-param">m1</em>, <em class="sig-param">m2=None</em>, <em class="sig-param">lmin=2</em>, <em class="sig-param">lmax=None</em>, <em class="sig-param">symmetric=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.alm2cl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.alm2cl" title="Permalink to this definition">¶</a></dt>
@@ -638,11 +838,11 @@ Keys are stored alphabetically if <cite>sort</cite> is True.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>m1</strong> (<em>array_like</em>) – Masked alms for map1</p></li>
 <li><p><strong>m2</strong> (<em>array_like</em>) – Masked alms for map2</p></li>
-<li><p><strong>lmin</strong> (<em>int</em>) – The minimum ell bin to include in the output Cls.  All ell
+<li><p><strong>lmin</strong> (<em>int</em><em>, </em><em>default: 2</em>) – The minimum ell bin to include in the output Cls.  All ell
 bins below this are nulled out.</p></li>
 <li><p><strong>lmax</strong> (<em>int</em>) – The maximum ell bin to compute.  If None, this is set to the
 lmax value with which the class was initialized.</p></li>
-<li><p><strong>symmetric</strong> (<em>bool</em>) – If True, the average cross spectrum of (m1-x-m2 + m2-x-m1) / 2.
+<li><p><strong>symmetric</strong> (<em>bool</em><em>, </em><em>default: True</em>) – If True, the average cross spectrum of (m1-x-m2 + m2-x-m1) / 2.
 is computed.</p></li>
 </ul>
 </dd>
@@ -669,6 +869,12 @@ is also polarized.</p>
 This array is modified in place.</p></li>
 <li><p><strong>mask</strong> (<em>array_like</em>) – Mask to apply (T/P if polarized, T-only if not)</p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>m</strong> – Input map multiplied by mask.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array_like</p>
 </dd>
 </dl>
 </dd></dl>
@@ -785,15 +991,25 @@ test, this is <code class="docutils literal notranslate"><span class="pre">cls_d
 <code class="docutils literal notranslate"><span class="pre">cls_data</span></code>, for a single map or several input maps.</p></li>
 <li><p><strong>cls_noise</strong> (<em>OrderedDict</em>) – If supplied, the noise spectrum is applied to the model spectrum.</p></li>
 <li><p><strong>cls_debias</strong> (<em>OrderedDict</em>) – If supplied, the debias spectrum is subtracted from the input.</p></li>
+<li><p><strong>cls_model</strong> (<em>OrderedDict</em>) – Unbinned model spectrum computed from cbl</p></li>
+<li><p><strong>cond_noise</strong> (<em>float</em>) – The level of regularizing noise to add to EE and BB diagonals.</p></li>
 <li><p><strong>cond_criteria</strong> (<em>float</em>) – The maximum condition number allowed for Dmat1 to be acceptable
 for taking its inverse.</p></li>
 <li><p><strong>likelihood</strong> (<em>bool</em>) – If True, return the likelihood for the given input bandpowers, shapes
 and data spectra.  Otherwise, computes output bandpowers and the fisher
 covariance for a NR iteration.</p></li>
+<li><p><strong>like_lmin</strong> (<em>int</em>) – The minimum ell value to be included in the likelihood calculation</p></li>
+<li><p><strong>like_lmax</strong> (<em>int</em>) – The maximum ell value to be included in the likelihood calculation</p></li>
+<li><p><strong>delta_beta_prior</strong> (<em>float</em>) – The width of the prior on the additive change from beta_ref. If you
+don’t want the code to fit for a spectral index different
+from beta_ref, set this to be a very small value (O(1e-10)).</p></li>
+<li><p><strong>null_first_cmb</strong> (<em>bool</em>) – Keep first CMB bandpowers fixed to input shape (qb=1).</p></li>
 <li><p><strong>use_precalc</strong> (<em>bool</em>) – If True, load pre-calculated terms stored from a previous iteration,
 and store for a future iteration.  Otherwise, all calculations are
 repeated.</p></li>
 <li><p><strong>windows</strong> (<em>bool</em>) – If True, return W_bl window functions for each CMB qb.</p></li>
+<li><p><strong>inv_fish</strong> (<em>array_like</em>) – Inverse Fisher matrix. If provided, don’t need to recompute. Useful
+if just getting bandpower window functions.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -838,6 +1054,11 @@ how these are computed.  The input noise is similarly either
 <code class="docutils literal notranslate"><span class="pre">cls_noise_null</span></code> or <code class="docutils literal notranslate"><span class="pre">cls_noise</span></code>.</p></li>
 <li><p><strong>save_iters</strong> (<em>bool</em>) – If True, the output data from each Fisher iteration are stored
 in an individual npz file.</p></li>
+<li><p><strong>null_first_cmb</strong> (<em>bool</em>) – Keep first CMB bandpowers fixed to input shape (qb=1).</p></li>
+<li><p><strong>delta_beta_prior</strong> (<em>float</em>) – The width of the prior on the additive change from beta_ref. If you
+don’t want the code to fit for a spectral index different
+from beta_ref, set this to be a very small value (O(1e-10)).</p></li>
+<li><p><strong>cond_noise</strong> (<em>float</em>) – The level of regularizing noise to add to EE and BB diagonals.</p></li>
 <li><p><strong>cond_criteria</strong> (<em>float</em>) – The maximum condition number allowed for Dmat1 to be acceptable
 for taking its inverse.</p></li>
 <li><p><strong>like_profiles</strong> (<em>bool</em>) – If True, compute profile likelihoods for each qb, leaving all
@@ -947,9 +1168,14 @@ reached, a warning is issued.</p></li>
 Otherwise, the complete output dictionary is returned.</p></li>
 <li><p><strong>save_iters</strong> (<em>bool</em>) – If True, the output data from each Fisher iteration are stored
 in an individual npz file.</p></li>
-<li><p><strong>return_cls</strong> (<em>bool</em>) – If True, return C_ls rather than D_ls</p></li>
+<li><p><strong>delta_beta_prior</strong> (<em>float</em>) – The width of the prior on the additive change from beta_ref. If you
+don’t want the code to fit for a spectral index different
+from beta_ref, set this to be a very small value (O(1e-10)).</p></li>
+<li><p><strong>cond_noise</strong> (<em>float</em>) – The level of regularizing noise to add to EE and BB diagonals.</p></li>
 <li><p><strong>cond_criteria</strong> (<em>float</em>) – The maximum condition number allowed for Dmat1 to be acceptable
 for taking its inverse.</p></li>
+<li><p><strong>null_first_cmb</strong> (<em>bool</em>) – Keep first CMB bandpowers fixed to input shape (qb=1).</p></li>
+<li><p><strong>return_cls</strong> (<em>bool</em>) – If True, return C_ls rather than D_ls</p></li>
 <li><p><strong>like_profiles</strong> (<em>bool</em>) – If True, compute profile likelihoods for each qb, leaving all
 others fixed at their maximum likelihood values.  Profiles are
 computed over a range +/–sigma as estimated from the diagonals
@@ -1096,9 +1322,9 @@ output data dictionaries.</p></li>
 <li><p><strong>map_tag</strong> (<em>string</em>) – If supplied, the name is appended with ‘_map_&lt;map_tag&gt;’.
 Use this argument when storing output data in a loop over
 input maps.</p></li>
-<li><p><strong>iter_index</strong> (<em>int</em>) – If supplied, the name is appended with ‘_iter&lt;iter_index&gt;’</p></li>
+<li><p><strong>iter_index</strong> (<em>int</em>) – If supplied, the name is appended with ‘_iter&lt;iter_index&gt;’.</p></li>
 <li><p><strong>extra_tag</strong> (<em>string</em>) – If supplied the extra tag is appended to the name as is.</p></li>
-<li><p><strong>bp_opts</strong> (<em>bool</em>) – If True, the output filename is constructed  by checking the
+<li><p><strong>bp_opts</strong> (<em>bool</em>) – If True, the output filename is constructed by checking the
 following list  of options used in constructing bandpowers:
 ensemble_mean, ensemble_median, sim_index, template_cleaned,
 weighted_bins, signal_type_sim, noise_type_sim</p></li>
@@ -1117,15 +1343,13 @@ or output tag.</p>
 
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.get_files">
-<code class="sig-name descname">get_files</code><span class="sig-paren">(</span><em class="sig-param">data_root</em>, <em class="sig-param">data_subset='full/*0'</em>, <em class="sig-param">signal_subset='*'</em>, <em class="sig-param">noise_subset='*'</em>, <em class="sig-param">data_type='raw'</em>, <em class="sig-param">noise_type='stationary'</em>, <em class="sig-param">noise_type_sim=None</em>, <em class="sig-param">mask_type='hitsmask_tailored'</em>, <em class="sig-param">signal_type='r0p03'</em>, <em class="sig-param">signal_type_sim=None</em>, <em class="sig-param">signal_transfer_type=None</em>, <em class="sig-param">data_root2=None</em>, <em class="sig-param">data_subset2=None</em>, <em class="sig-param">foreground_type_sim=None</em>, <em class="sig-param">template_type=None</em>, <em class="sig-param">sub_planck=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_files" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_files</code><span class="sig-paren">(</span><em class="sig-param">data_root</em>, <em class="sig-param">data_subset='full/*0'</em>, <em class="sig-param">signal_subset='*'</em>, <em class="sig-param">noise_subset='*'</em>, <em class="sig-param">data_type='raw'</em>, <em class="sig-param">noise_type='gaussian'</em>, <em class="sig-param">noise_type_sim=None</em>, <em class="sig-param">mask_type='rectangle'</em>, <em class="sig-param">signal_type='synfast'</em>, <em class="sig-param">signal_type_sim=None</em>, <em class="sig-param">signal_transfer_type=None</em>, <em class="sig-param">data_root2=None</em>, <em class="sig-param">data_subset2=None</em>, <em class="sig-param">foreground_type_sim=None</em>, <em class="sig-param">template_type=None</em>, <em class="sig-param">sub_planck=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_files" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find all files for the given data root.  The data structure is:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">data_root</span><span class="o">&gt;</span>
     <span class="o">-&gt;</span> <span class="n">data_</span><span class="o">&lt;</span><span class="n">data_type</span><span class="o">&gt;</span>
         <span class="o">-&gt;</span> <span class="n">full</span>
-            <span class="o">-&gt;</span> <span class="n">map_x1</span><span class="o">.</span><span class="n">fits</span>
+            <span class="o">-&gt;</span> <span class="n">map_</span><span class="o">&lt;</span><span class="n">tag</span><span class="o">&gt;.</span><span class="n">fits</span>
             <span class="o">...</span>
-            <span class="o">-&gt;</span> <span class="n">map_150</span><span class="o">.</span><span class="n">fits</span>
-            <span class="o">-&gt;</span> <span class="n">map_90</span><span class="o">.</span><span class="n">fits</span>
         <span class="o">-&gt;</span> <span class="mi">1</span><span class="n">of4</span> <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">full</span><span class="p">)</span>
         <span class="o">-&gt;</span> <span class="mi">2</span><span class="n">of4</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
         <span class="o">-&gt;</span> <span class="mi">3</span><span class="n">of4</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
@@ -1133,19 +1357,16 @@ or output tag.</p>
     <span class="o">-&gt;</span> <span class="n">signal_</span><span class="o">&lt;</span><span class="n">signal_type</span><span class="o">&gt;</span>
        <span class="o">-&gt;</span> <span class="n">spec_signal_</span><span class="o">&lt;</span><span class="n">signal_type</span><span class="o">&gt;.</span><span class="n">dat</span>
        <span class="o">-&gt;</span> <span class="n">full</span>
-          <span class="o">-&gt;</span> <span class="n">map_x1_0000</span><span class="o">.</span><span class="n">fits</span>
+          <span class="o">-&gt;</span> <span class="n">map_</span><span class="o">&lt;</span><span class="n">tag</span><span class="o">&gt;</span><span class="n">_</span><span class="c1">####.fits</span>
           <span class="o">...</span>
-          <span class="o">-&gt;</span> <span class="n">map_90_</span><span class="c1">####.fits</span>
        <span class="o">-&gt;</span> <span class="mi">1</span><span class="n">of4</span> <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">full</span><span class="p">)</span>
        <span class="o">-&gt;</span> <span class="mi">2</span><span class="n">of4</span> <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">full</span><span class="p">)</span>
        <span class="o">-&gt;</span> <span class="mi">3</span><span class="n">of4</span> <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">full</span><span class="p">)</span>
        <span class="o">-&gt;</span> <span class="mi">4</span><span class="n">of4</span> <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">full</span><span class="p">)</span>
     <span class="o">-&gt;</span> <span class="n">noise_</span><span class="o">&lt;</span><span class="n">noise_type</span><span class="o">&gt;</span> <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">signal_</span><span class="o">&lt;</span><span class="n">signal_type</span><span class="o">&gt;</span><span class="p">)</span>
     <span class="o">-&gt;</span> <span class="n">masks_</span><span class="o">&lt;</span><span class="n">mask_type</span><span class="o">&gt;</span>
-        <span class="o">-&gt;</span> <span class="n">mask_map_x1</span><span class="o">.</span><span class="n">fits</span>
+        <span class="o">-&gt;</span> <span class="n">mask_map_</span><span class="o">&lt;</span><span class="n">tag</span><span class="o">&gt;.</span><span class="n">fits</span>
         <span class="o">...</span>
-        <span class="o">-&gt;</span> <span class="n">mask_map_90</span><span class="o">.</span><span class="n">fits</span>
-        <span class="o">-&gt;</span> <span class="n">mask_map_150</span><span class="o">.</span><span class="n">fits</span>
     <span class="o">-&gt;</span> <span class="n">foreground_</span><span class="o">&lt;</span><span class="n">foreground_type_sim</span><span class="o">&gt;</span>
         <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">signal_</span><span class="o">&lt;</span><span class="n">signal_type</span><span class="o">&gt;</span><span class="p">)</span>
     <span class="o">-&gt;</span> <span class="n">templates_</span><span class="o">&lt;</span><span class="n">template_type</span><span class="o">&gt;</span>
@@ -1158,7 +1379,7 @@ or output tag.</p>
           <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">data_</span><span class="o">&lt;</span><span class="n">data_type</span><span class="o">&gt;</span><span class="p">)</span>
        <span class="o">-&gt;</span> <span class="n">halfmission</span><span class="o">-</span><span class="mi">2</span>
           <span class="p">(</span><span class="n">same</span> <span class="n">filenames</span> <span class="k">as</span> <span class="n">data_</span><span class="o">&lt;</span><span class="n">data_type</span><span class="o">&gt;</span><span class="p">)</span>
-<span class="o">&lt;</span><span class="n">data_root2</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">data_root2</span><span class="o">&gt;</span> <span class="p">(</span><span class="n">If</span> <span class="n">provided</span><span class="p">,</span> <span class="n">same</span> <span class="n">structure</span> <span class="k">as</span> <span class="n">data_root</span><span class="p">)</span>
     <span class="o">...</span>
 </pre></div>
 </div>
@@ -1183,24 +1404,24 @@ sims.  This should be a string that is parseable using <code class="docutils lit
 that is added onto the data_subset path to indicate which sims
 to use. For example, for all, use <code class="docutils literal notranslate"><span class="pre">'*'</span></code>. For the first 300 sims,
 use <code class="docutils literal notranslate"><span class="pre">'0[0-2]*'</span></code>.</p></li>
-<li><p><strong>data_type</strong> (<em>string</em>) – The type of data to use.</p></li>
-<li><p><strong>noise_type</strong> (<em>string</em>) – The variant of noise simulation to use, e.g. ‘stationary’,
-‘variable’, etc.  The directory should contain the same number
+<li><p><strong>data_type</strong> (<em>string</em>) – The type of data to use, default: “raw”</p></li>
+<li><p><strong>noise_type</strong> (<em>string</em>) – The variant of noise simulation to use, e.g. ‘gaussian’,
+‘stationary’, etc.  The directory should contain the same number
 of simulations for each map tag.</p></li>
 <li><p><strong>noise_type_sim</strong> (<em>string</em>) – The variant of noise sims to use for sim_index fake data map.
 This enables having a different noise sim ensemble to use for
 sim_index run than the ensemble from which the noise is computed.</p></li>
-<li><p><strong>mask_type</strong> (<em>string</em>) – The variant of mask to use, e.g. ‘hitsmask’, etc.
-XXX: for the time being we assume a mask per file tag,
-rather than a mask per file in <code class="docutils literal notranslate"><span class="pre">data_&lt;data_type&gt;</span></code>.</p></li>
+<li><p><strong>mask_type</strong> (<em>string</em>) – The variant of mask to use, e.g. ‘rectangle’, etc.
+We assume a mask per file tag in the mask_&lt;mask_type&gt; folder,
+corresponding to the files in data.</p></li>
 <li><p><strong>signal_type</strong> (<em>string</em>) – The variant of signal simulation to use, typically identified
-by the input spectrum model used to generate it, e.g ‘r0p03’.</p></li>
+by the input spectrum model used to generate it, e.g ‘synfast’.</p></li>
 <li><p><strong>signal_type_sim</strong> (<em>string</em>) – The variant of signal sims to use for sim_index fake data map.
 This enables having a different noise sim ensemble to use for
 sim_index run than the ensemble from which the signal is computed.</p></li>
 <li><p><strong>signal_transfer_type</strong> (<em>string</em>) – The variant of signal simulation to use for transfer function
 calculation, typically identified by the input spectrum model
-used to generate it, e.g ‘r0p03’. This directory may also contain
+used to generate it, e.g ‘synfast’. This directory may also contain
 a copy of the input spectrum, to make sure that the correct
 spectrum is used to compute the transfer function.</p></li>
 <li><p><strong>data_subset2</strong> (<em>data_root2</em><em>,</em>) – The root and subset for a second set of data.
@@ -1249,12 +1470,8 @@ each ell bin.</p>
 <p class="rubric">Notes</p>
 <p>This method is called at the ‘kernels’ checkpoint and loads or saves
 the following data keys to disk:</p>
-<blockquote>
-<div><dl class="simple">
-<dt>kern, pkern, mkern, xkern<span class="classifier">(num_mask_corr, lmax+1, 2*lmax+1)</span></dt><dd><p>Temperature and polarization kernels</p>
-</dd>
-</dl>
-</div></blockquote>
+<p>kern, pkern, mkern, xkern : shape (num_mask_corr, lmax+1, 2*lmax+1)
+Temperature and polarization kernels</p>
 </dd></dl>
 
 <dl class="method">
@@ -1270,8 +1487,17 @@ the following data keys to disk:</p>
 corresponding to the given map, rather over all possible
 combinations of map-map cross-spectra.  The input qb’s and inv_fish
 must have been computed with the same option.</p></li>
-<li><p><strong>mcmc</strong> (<em>bool</em>) – If True, sample the likelihood using an MCMC sampler.  Remaining options
-determine parameter space and sampler configuration.</p></li>
+<li><p><strong>null_first_cmb</strong> (<em>bool</em>) – Keep first CMB bandpowers fixed to input shape (qb=1).</p></li>
+<li><p><strong>lmin</strong> (<em>int</em>) – The minimum ell value to be included in the likelihood calculation</p></li>
+<li><p><strong>lmax</strong> (<em>int</em>) – The maximum ell value to be included in the likelihood calculation</p></li>
+<li><p><strong>mcmc</strong> (<em>bool</em>) – If True, sample the likelihood using an MCMC sampler.  Remaining
+options determine parameter space and sampler configuration.</p></li>
+<li><p><strong>alpha_tags</strong> (<em>list of strings</em>) – List of map tags from which foreground template maps should be
+subtracted.  These should be the original map tags, not
+those generated for chunk sets.</p></li>
+<li><p><strong>beam_tags</strong> (<em>list of strings</em>) – List of map tags from which beam error envelopes should be
+marginalized over. These should be the original map tags, not
+those generated for chunk sets.</p></li>
 <li><p><strong>r_prior</strong> (<em>2-list</em><em> or </em><em>None</em>) – Prior upper and lower bound on tensor to scalar ratio.  If None, the
 fiducial shape spectrum is assumed, and the r parameter space is not
 varied.</p></li>
@@ -1290,7 +1516,9 @@ If None, the dust amp parameter space is not varied.</p></li>
 power law index. If None, don’t vary from reference if fitting dust
 power spectrum model.</p></li>
 <li><p><strong>num_walkers</strong> (<em>int</em>) – Number of unique walkers with which to sample the parameter space.</p></li>
-<li><p><strong>num_steps</strong> (<em>int</em>) – Number of steps each walker should take in sampling the parameter space.</p></li>
+<li><p><strong>num_steps</strong> (<em>int</em>) – Maximum number of steps each walker can take in sampling the
+parameter space.</p></li>
+<li><p><strong>converge_criteria</strong> (<em>float</em>) – Convergence criteria for likelihood MCMC chains</p></li>
 <li><p><strong>reset_backend</strong> (<em>bool</em>) – If True, clear the backend buffer before sampling.  If False,
 samples are appended to the existing buffer.  If not supplied,
 set to True if the checkpoint has been forced to be rerun.</p></li>
@@ -1368,7 +1596,7 @@ returned containing only the T map.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>apply_gcorr</strong> (<em>bool</em>) – If True, a correction factor is applied to the g (mode counting)
 matrix.  The correction factor should have been pre-computed for
-each map tag.</p></li>
+each map tag using independent scripts in the code package.</p></li>
 <li><p><strong>reload_gcorr</strong> (<em>bool</em>) – If True, reload the gcorr file from the masks directory. Useful when
 iteratively solving for the correction terms.</p></li>
 <li><p><strong>gcorr_file</strong> (<em>str</em>) – If not None, path to gcorr file. Otherwise, use file labeled
@@ -1382,11 +1610,11 @@ mask_map_&lt;tag&gt;_gcorr_null.npy for nulls.</p></li>
 data dictionary with the following keys:</p>
 <blockquote>
 <div><dl class="simple">
-<dt>wls<span class="classifier">(num_map_corr, num_pol_mask_corr, lmax + 1)</span></dt><dd><p>mask1-x-mask2 mask cross spectra for every mask pair</p>
+<dt>wls: shape (num_map_corr, num_pol_mask_corr, lmax + 1)</dt><dd><p>mask1-x-mask2 mask cross spectra for every mask pair</p>
 </dd>
-<dt>fsky, w1, w2, w4<span class="classifier">(num_map_corr, num_pol_mask_corr)</span></dt><dd><p>sky fraction and weighted modes per mask product</p>
+<dt>fsky, w1, w2, w4: shape (num_map_corr, num_pol_mask_corr)</dt><dd><p>sky fraction and weighted modes per mask product</p>
 </dd>
-<dt>gmat<span class="classifier">(num_maps * num_pol_mask_corr, ) * 2</span></dt><dd><dl class="simple">
+<dt>gmat: shape (num_maps * num_pol_mask_corr, ) * 2</dt><dd><dl class="simple">
 <dt>mode-counting matrix, computed from</dt><dd><p>g = fsky * w2 ** 2 / w4</p>
 </dd>
 </dl>
@@ -1411,9 +1639,9 @@ data dictionary with the following keys:</p>
 <p>Map and mask files must have been loaded in by calling the <code class="docutils literal notranslate"><span class="pre">get_files</span></code>
 method with the appropriate file selection options.</p>
 <p>If only one dataset is selected, spectra are computed for every
-combination of pairs of data maps.  This results in N * (N + 1) / 2
-cross spectra for N maps.  A unique mask is used for each input map.</p>
-<p>If two datasets are selected, then sum and difference cross-spectra are
+combination of pairs of data maps. This results in N * (N + 1) / 2
+cross spectra for N maps. A unique mask is used for each input map.</p>
+<p>If two datasets are selected for a null test, then sum and difference cross-spectra are
 computed by summing and differencing the two datasets.  A unique mask is
 used for each map in the first dataset, and the same mask is applied to
 the corresponding map in the second dataset, so that both halves are
@@ -1429,8 +1657,8 @@ processing, if this method is called repeatedly with different values.</p>
 templates to be subtracted from the data.  Keys should match
 original map tags in the data set.</p></li>
 <li><p><strong>sub_planck</strong> (<em>bool</em>) – If True, subtract reobserved Planck from maps. Properly uses half
-missions so no Planck autos are used. Useful for removing expected
-signal residuals from null tests.</p></li>
+missions so no Planck auto correlations are introduced. Useful for
+removing expected signal residuals from null tests.</p></li>
 <li><p><strong>sub_hm_noise</strong> (<em>bool</em>) – If True, subtract average of Planck ffp10 noise crosses to debias
 template-cleaned spectra.</p></li>
 </ul>
@@ -1464,16 +1692,42 @@ and tensor maps are assumed to be in signal_r1tens directory.
 sim_index is used to determine which sims. Noise maps taken
 from usual noise directory. Templates read read from
 templates_fake_data_template/halfmission-1.</p>
-<p>This function doesn’t write anything to disk. It just constructs
-the maps and computes the Cls and replaces data cls with them</p>
+<p>This function doesn’t write anything to disk unless save_data=True.
+It just constructs the maps and computes the Cls and replaces data
+cls with them. Useful for doing sim runs with template subtraction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fake_data_r</strong> (<em>float</em>) – Tensor-to-scalar ratio to use for CMB sims as scalar + r * tensor.</p></li>
+<li><p><strong>fake_data_template</strong> (<em>str</em>) – If not None, add halfmission-1 template in this directory scaled by
+alpha to fake data maps</p></li>
+<li><p><strong>sim_index</strong> (<em>int</em>) – Index of sim maps to use for CMB, noise, and template noise
+simulations.</p></li>
+<li><p><strong>template_alpha</strong> (<em>dict</em>) – Dictionary of (map_tag, alpha scaling) values.</p></li>
+<li><p><strong>noise_type_sim</strong> (<em>str</em>) – The variant of noise sims to use for the fake data map.</p></li>
+<li><p><strong>do_noise</strong> (<em>bool</em>) – If true, use sim_index to set noise seed. If false, always use seed
+0. Useful for sims isolating effects of varying CMB only or template
+noise only.</p></li>
+<li><p><strong>do_signal</strong> (<em>bool</em>) – If true, use sim_index to set CMB seed. If false, always use seed
+0. Useful for sims isolating effects of varying noise only or
+template noise only.</p></li>
+<li><p><strong>save_data</strong> (<em>bool</em>) – If true, save data_xcorr file to disk for fake data.</p></li>
+<li><p><strong>sub_hm_noise</strong> (<em>bool</em>) – If True, subtract average of Planck ffp10 noise crosses to debias
+template-cleaned spectra</p></li>
+<li><p><strong>qb_file</strong> (<em>str</em>) – Pointer to a bandpowers.npz file in the output directory.
+The noise sim read from disk will be corrected by the residual qb
+values stored in qb_file.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.get_masked_sims">
-<code class="sig-name descname">get_masked_sims</code><span class="sig-paren">(</span><em class="sig-param">ensemble_mean=False</em>, <em class="sig-param">ensemble_median=False</em>, <em class="sig-param">sim_index=None</em>, <em class="sig-param">transfer=False</em>, <em class="sig-param">do_noise=True</em>, <em class="sig-param">sims_add_alms=True</em>, <em class="sig-param">lmin=2</em>, <em class="sig-param">qb_file=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_masked_sims"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_masked_sims" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_masked_sims</code><span class="sig-paren">(</span><em class="sig-param">ensemble_mean=False</em>, <em class="sig-param">ensemble_median=False</em>, <em class="sig-param">sim_index=None</em>, <em class="sig-param">transfer=False</em>, <em class="sig-param">do_noise=True</em>, <em class="sig-param">sims_add_alms=True</em>, <em class="sig-param">qb_file=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_masked_sims"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_masked_sims" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute average signal and noise spectra for a given
-ensemble of maps.  The same procedure that is used for computing
-data cross spectra is used for each realization in the sim
+ensemble of sim maps.  The same procedure that is used for c
+omputing data cross spectra is used for each realization in the sim
 ensemble, and only the average spectra for all realizations
 are stored.</p>
 <p>See <code class="docutils literal notranslate"><span class="pre">get_masked_data</span></code> for more details on how cross spectra
@@ -1482,17 +1736,17 @@ are computed.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ensemble_mean</strong> (<em>bool</em>) – If true, the mean signal + noise spectrum is used in place
-of input data.  This is useful for testing the behavior of
+of input data. This is useful for testing the behavior of
 the estimator and mapmaker independently of the data.</p></li>
 <li><p><strong>ensemble_median</strong> (<em>bool</em>) – If true, the median signal + noise spectrum is used in place
 of input data.  This is useful for testing the behavior of
 the estimator and mapmaker independently of the data.</p></li>
-<li><p><strong>sim_index</strong> (<em>int</em>) – If not None, substitute the sim_index S+N alms for the observed alms</p></li>
+<li><p><strong>sim_index</strong> (<em>int</em>) – If not None, substitute the sim_index S+N alms for the data alms</p></li>
 <li><p><strong>sims_add_alms</strong> (<em>bool</em>) – If True and sim_index is not None, add sim alms instead of sim Cls
 to include signal and noise correlations</p></li>
 <li><p><strong>qb_file</strong> (<em>string</em>) – Pointer to a bandpowers.npz file in the output directory. If used
 in sim_index mode, the noise sim read from disk will be corrected
-by the residual qb values stored in qb_file.</p></li>
+by the residual qb values stored in qb_file. Useful for noise rescaling.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1515,7 +1769,7 @@ a data dictionary with the following entries:</p>
 <dt id="xfaster.xfaster_class.XFaster.get_masked_template_noise">
 <code class="sig-name descname">get_masked_template_noise</code><span class="sig-paren">(</span><em class="sig-param">template_type</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_masked_template_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_masked_template_noise" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute hm1, hm2, and hm1xhm2 template noise spectra from
-sim ensemble</p>
+sim ensemble.</p>
 <p class="rubric">Notes</p>
 <p>This method is called at the ‘template_noise’ checkpoint,
 and loads or saves a data dictionary with the following entries:</p>
@@ -1524,6 +1778,12 @@ and loads or saves a data dictionary with the following entries:</p>
 cls_tnoise_hm2 : &lt;same shape as cls_data&gt;
 cls_tnoise_hm1xhm2 : &lt;same shape as cls_data&gt;</p>
 </div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>template_type</strong> (<em>str</em>) – Tag of the template maps directory (noise files in
+template_noise_&lt;template_type&gt;).</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -1597,6 +1857,7 @@ Options: TT, EE, BB, TE, EB, TB</p></li>
 and <code class="docutils literal notranslate"><span class="pre">r</span></code> is None and <code class="docutils literal notranslate"><span class="pre">flat</span></code> is False, will search for a spectrum
 stored in
 <code class="docutils literal notranslate"><span class="pre">signal_&lt;signal_transfer_type&gt;/spec_signal_&lt;signal_transfer_type&gt;.dat</span></code>.</p></li>
+<li><p><strong>save</strong> (<em>bool</em>) – If True, save signal shape dict to disk.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1675,9 +1936,13 @@ Options are “critical”, “error”, “warning”, “notice”, “info”
 <code class="docutils literal notranslate"><span class="pre">bin_cl_template</span></code> to pre-compute kernel terms.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>map_tag</strong> (<em>str</em>) – If supplied, the kernels are computed only for the given map tag
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>map_tag</strong> (<em>str</em>) – If supplied, the kernels are computed only for the given map tag
 (or cross if map_tag is map_tag1:map_tag2).
-Otherwise, it is computed for all maps and crosses.</p>
+Otherwise, it is computed for all maps and crosses.</p></li>
+<li><p><strong>transfer_run</strong> (<em>bool</em>) – If True, set transfer function to 1 to solve for transfer function
+qbs.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><strong>mll</strong> – Dictionary of M_ll’ matrices, keyed by spec and xname.</p>
@@ -1691,12 +1956,14 @@ Otherwise, it is computed for all maps and crosses.</p>
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.load_data">
 <code class="sig-name descname">load_data</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">checkpoint</em>, <em class="sig-param">fields=None</em>, <em class="sig-param">to_attrs=True</em>, <em class="sig-param">shape=None</em>, <em class="sig-param">shape_ref=None</em>, <em class="sig-param">alt_name=None</em>, <em class="sig-param">value_ref=None</em>, <em class="sig-param">optional=None</em>, <em class="sig-param">**file_opts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.load_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.load_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load xfaster data from an output npz file on disk.</p>
+<dd><p>Load xfaster data from an output.npz file on disk.</p>
 <p>This method is called throughout the code at various checkpoints.  If
 the data exist on disk, they are loaded and returned.  If the data are
-missing or otherwise incompatible, they are recomputed by the calling
-method, and trigger all subsequent data to also be recomputed.  Data
-handling is described in the <code class="docutils literal notranslate"><span class="pre">Notes</span></code> section for methods that use this
+missing or otherwise incompatible, they are recomputed by the corresponding</p>
+<blockquote>
+<div><p>calling method, and trigger all subsequent data to also be recomputed.  Data</p>
+</div></blockquote>
+<p>handling is described in the <code class="docutils literal notranslate"><span class="pre">Notes</span></code> section for methods that use this
 functionality.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1712,7 +1979,7 @@ quantities from this point forward are recomputed.</p></li>
 If any are not found, the entire dataset and all subsequent
 step are recomputed.</p></li>
 <li><p><strong>to_attrs</strong> (<em>bool</em><em> or </em><em>list of bools</em><em> or </em><em>strings</em>) – If True, all items in <code class="docutils literal notranslate"><span class="pre">fields</span></code> are stored as attributes of the
-parent object.  If A list of booleans, must have the same length
+parent object. If A list of booleans, must have the same length
 as <code class="docutils literal notranslate"><span class="pre">fields</span></code>; any field for which this list item is True is then
 stored as an attribute of the object.  If any list item is a string,
 then the corresponding field is stored as an attribute with this
@@ -1721,20 +1988,29 @@ new name.</p></li>
 shape.  If this check fails, then all data are recomputed.</p></li>
 <li><p><strong>shape_ref</strong> (<em>string</em>) – The reference field whose shape is checked against <code class="docutils literal notranslate"><span class="pre">shape</span></code>.
 If None and <code class="docutils literal notranslate"><span class="pre">shape</span></code> is set, use the first field in <code class="docutils literal notranslate"><span class="pre">fields</span></code>.</p></li>
-<li><p><strong>options are passed to get_filename for constructing the</strong> (<em>Remaining</em>) – </p></li>
-<li><p><strong>file path.</strong> (<em>output</em>) – </p></li>
+<li><p><strong>alt_name</strong> (<em>string</em>) – Alternative to <code class="docutils literal notranslate"><span class="pre">name</span></code> argument that will be read if file matching
+<code class="docutils literal notranslate"><span class="pre">name</span></code> doesn’t exist.</p></li>
+<li><p><strong>value_ref</strong> (<em>dict</em>) – Dictionary of reference values that is checked if simply loading a
+file from disk instead of recomputing– forces rerun of checkpoints
+if loaded dictionary differs from value_ref.</p></li>
+<li><p><strong>optional</strong> (<em>list of strings</em>) – Fields that, if missing from the data loaded from disk, will not
+trigger force rerunning of any checkpoints.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>data</strong> – If all checks above succeed, the requested data are returned.
+</dl>
+<p>Remaining options are passed to <code class="docutils literal notranslate"><span class="pre">get_filename</span></code> for constructing the
+output file path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>data</strong> – If all checks above succeed, the requested data are returned.
 If any tests fail, None is returned, and all subsequent calls
 to <code class="docutils literal notranslate"><span class="pre">load_data</span></code> also return None to trigger recomputing all data
 that may depend on this dataset.
 The output dictionary has the additional key ‘output_file’ which
 is set to the path to the data file on disk.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>dict</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1775,6 +2051,11 @@ useful for including, e.g. optimally weighted Planck maps with no
 transfer function in a joint analysis.  If not supplied, it is assumed
 that a transfer function should be computed for every tag in
 “frequencies”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – Path to config file</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -1783,8 +2064,11 @@ that a transfer function should be computed for every tag in
 <dd><p>Log a message with the given logging level.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>level</strong> (<em>string</em><em>, </em><em>default : None</em>) – Logging level.  Must be one of “critical”, “error”, “warning”,
-“notice”, “info”, “debug”, “all”.  If not supplied, “all” is assumed.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>message</strong> (<em>str</em>) – Log message</p></li>
+<li><p><strong>level</strong> (<em>string</em><em>, </em><em>default : None</em>) – Logging level.  Must be one of “critical”, “error”, “warning”,
+“notice”, “info”, “debug”, “all”.  If not supplied, “all” is assumed.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -1796,14 +2080,15 @@ that a transfer function should be computed for every tag in
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>m</strong> (<em>array_like</em>) – Masked input map for which Alms are computed.</p></li>
+<li><p><strong>m</strong> (<em>array_like</em>) – Masked input map for which spherical harmonic alms are
+computed.</p></li>
 <li><p><strong>pol</strong> (<em>bool</em>) – If None, this is set using the value with which the object
 was initialized.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><strong>alms</strong> – Alms for the input map, computed using the equivalent of
-<code class="docutils literal notranslate"><span class="pre">healpy.map2alm(m,</span> <span class="pre">lmax,</span> <span class="pre">pol=self.pol,</span> <span class="pre">use_weights=True)</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">healpy.map2alm</span> <span class="pre">(m,</span> <span class="pre">lmax,</span> <span class="pre">pol=self.pol,</span> <span class="pre">use_weights=True)</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>array_like</p>
@@ -1817,12 +2102,23 @@ was initialized.</p></li>
 <dd><p>Save a configuration file for the current run on disk.
 This method is used by <code class="docutils literal notranslate"><span class="pre">xfaster_run</span></code> to store the config
 in <code class="docutils literal notranslate"><span class="pre">&lt;output_root&gt;/config_&lt;output_tag&gt;.txt</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cfg</strong> (<a class="reference internal" href="#xfaster.xfaster_class.XFasterConfig" title="xfaster.xfaster_class.XFasterConfig"><em>XFasterConfig</em></a><em> or </em><em>RawConfigParser object</em>) – Config object containing all relevant arguments to save to disk.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>filename</strong> – Name of the config file saved to disk.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.save_data">
 <code class="sig-name descname">save_data</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">from_attrs=[]</em>, <em class="sig-param">**data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.save_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.save_data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save xfaster data to an output npz file on disk.</p>
+<dd><p>Save xfaster data to an output .npz file on disk.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1834,7 +2130,9 @@ then the data are recomputed.</p></li>
 See <code class="docutils literal notranslate"><span class="pre">get_filename</span></code> for documentation.</p></li>
 <li><p><strong>iter_index</strong> (<em>int</em>) – Load the dataset corresponding to this iteration index.
 See <code class="docutils literal notranslate"><span class="pre">get_filename</span></code> for documentation.</p></li>
-<li><p><strong>bp_opts</strong> (<em>bool</em>) – Format output bandpowers file.  See <code class="docutils literal notranslate"><span class="pre">get_filename</span></code> for documentation.</p></li>
+<li><p><strong>bp_opts</strong> (<em>bool</em>) – Format output bandpowers file.  See <code class="docutils literal notranslate"><span class="pre">get_filename</span></code> for
+documentation.</p></li>
+<li><p><strong>extra_tag</strong> (<em>str</em>) – Tag to add to file name.</p></li>
 <li><p><strong>remaining keyword arguments are added to the output dictionary.</strong> (<em>Any</em>) – </p></li>
 </ul>
 </dd>
@@ -1852,7 +2150,12 @@ is set to the path to the data file on disk.</p>
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.warn">
 <code class="sig-name descname">warn</code><span class="sig-paren">(</span><em class="sig-param">message</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.warn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.warn" title="Permalink to this definition">¶</a></dt>
-<dd><p>Log a warning message</p>
+<dd><p>Log a warning message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>message</strong> (<em>str</em>) – Warning log message</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -1870,12 +2173,12 @@ is set to the path to the data file on disk.</p>
 submits the job to a grid system</p>
 <dl class="function">
 <dt id="xfaster.xfaster_exec.xfaster_run">
-<code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">xfaster_run</code><span class="sig-paren">(</span><em class="sig-param">config='config_example.ini', pol=True, pol_mask=True, bin_width=25, lmin=2, lmax=500, multi_map=True, likelihood=False, mcmc=True, output_root=None, output_tag=None, data_root='all', data_subset='full/*0', signal_subset='*', noise_subset='*', mask_type='hitsmask_tailored', data_type='raw', noise_type='stationary', signal_type='r0p03', signal_transfer_type=None, signal_spec=None, signal_transfer_spec=None, model_r=None, data_root2=None, data_subset2=None, residual_fit=True, foreground_fit=False, bin_width_fg=30, res_specs=None, bin_width_res=25, weighted_bins=False, ensemble_mean=False, ensemble_median=False, sim_index=None, sims_add_alms=True, converge_criteria=0.005, iter_max=200, tbeb=False, fix_bb_xfer=False, window_lmax=None, like_lmin=33, like_lmax=250, like_profiles=False, like_profile_sigma=3.0, like_profile_points=100, pixwin=True, save_iters=False, verbose='notice', debug=False, checkpoint=None, add_log=False, cond_noise=1e-05, cond_criteria=5000.0, null_first_cmb=False, ref_freq=359.7, beta_ref=1.54, delta_beta_prior=0.5, noise_type_sim=None, signal_type_sim=None, foreground_type_sim=None, template_type=None, template_alpha_tags=['95', '150'], template_alpha=[0.015, 0.043], sub_hm_noise=True, return_cls=False, apply_gcorr=False, reload_gcorr=False, gcorr_file=None, qb_file=None, like_alpha_tags=['95', '150'], alpha_prior=[-inf, inf], r_prior=[-inf, inf], res_prior=None, like_beam_tags=['95', '150'], beam_prior=None, betad_prior=None, dust_amp_prior=None, dust_ellind_prior=None, mcmc_walkers=50, like_converge_criteria=0.01, bp_tag=None, like_tag=None, sub_planck=False, fake_data_r=None, fake_data_template=None, do_fake_signal=True, do_fake_noise=True, save_fake_data=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#xfaster_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.xfaster_run" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">xfaster_run</code><span class="sig-paren">(</span><em class="sig-param">config='config_example.ini', pol=True, pol_mask=True, bin_width=25, lmin=2, lmax=500, multi_map=True, likelihood=False, mcmc=True, output_root=None, output_tag=None, data_root='all', data_subset='full/*0', signal_subset='*', noise_subset='*', mask_type='hitsmask_tailored', data_type='raw', noise_type='stationary', signal_type='r0p03', signal_transfer_type=None, signal_spec=None, signal_transfer_spec=None, signal_type_sim=None, noise_type_sim=None, foreground_type_sim=None, model_r=None, data_root2=None, data_subset2=None, residual_fit=True, foreground_fit=False, bin_width_fg=30, bin_width_res=25, res_specs=None, weighted_bins=False, ensemble_mean=False, ensemble_median=False, sim_index=None, sims_add_alms=True, converge_criteria=0.005, iter_max=200, tbeb=False, fix_bb_xfer=False, window_lmax=None, like_lmin=33, like_lmax=250, like_profiles=False, like_profile_sigma=3.0, like_profile_points=100, pixwin=True, save_iters=False, verbose='notice', debug=False, checkpoint=None, add_log=False, cond_noise=1e-05, cond_criteria=5000.0, null_first_cmb=False, ref_freq=359.7, beta_ref=1.54, delta_beta_prior=0.5, template_type=None, template_alpha_tags=['95', '150'], template_alpha=[0.015, 0.043], sub_hm_noise=True, return_cls=False, apply_gcorr=False, reload_gcorr=False, gcorr_file=None, qb_file=None, like_alpha_tags=['95', '150'], alpha_prior=[-inf, inf], r_prior=[-inf, inf], res_prior=None, like_beam_tags=['95', '150'], beam_prior=None, betad_prior=None, dust_amp_prior=None, dust_ellind_prior=None, mcmc_walkers=50, like_converge_criteria=0.01, bp_tag=None, like_tag=None, sub_planck=False, fake_data_r=None, fake_data_template=None, do_fake_signal=True, do_fake_noise=True, save_fake_data=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#xfaster_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.xfaster_run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main function for running the XFaster algorithm.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>config</strong> (<em>string</em>) – Configuration file. If path doesn’t exist, assumed
+<li><p><strong>config</strong> (<em>str</em>) – Configuration file. If path doesn’t exist, assumed
 to be in xfaster/config/&lt;config&gt;</p></li>
 <li><p><strong>pol</strong> (<em>bool</em>) – If True, polarization spectra are computed.</p></li>
 <li><p><strong>pol_mask</strong> (<em>bool</em>) – If True, a separate mask is applied for Q/U maps.</p></li>
@@ -1884,50 +2187,60 @@ to be in xfaster/config/&lt;config&gt;</p></li>
 in order to handle mixing correctly.</p></li>
 <li><p><strong>lmin</strong> (<em>int</em>) – Minimum ell for which to compute spectra.</p></li>
 <li><p><strong>lmax</strong> (<em>int</em>) – Maximum ell for which to compute spectra.</p></li>
-<li><p><strong>weighted_bins</strong> (<em>bool</em>) – If True, use an lfac-weighted binning operator to construct Cbls.
-By default, a flat binning operator is used.</p></li>
 <li><p><strong>multi_map</strong> (<em>bool</em>) – If True, compute all cross-spectra between maps</p></li>
 <li><p><strong>likelihood</strong> (<em>bool</em>) – If True, compute the r likelihood</p></li>
 <li><p><strong>mcmc</strong> (<em>bool</em>) – If True, sample the r likelihood using an MCMC sampler</p></li>
-<li><p><strong>output_root</strong> (<em>string</em>) – Directory in which to store output files</p></li>
-<li><p><strong>output_tag</strong> (<em>string</em>) – File tag for output files</p></li>
-<li><p><strong>data_root</strong> (<em>string</em>) – Root directory where all input files are stored</p></li>
-<li><p><strong>data_subset</strong> (<em>string</em>) – The subset of the data maps to include from each data split
+<li><p><strong>output_root</strong> (<em>str</em>) – Directory in which to store output files</p></li>
+<li><p><strong>output_tag</strong> (<em>str</em>) – File tag for output files</p></li>
+<li><p><strong>data_root</strong> (<em>str</em>) – Root directory where all input files are stored</p></li>
+<li><p><strong>data_subset</strong> (<em>str</em>) – The subset of the data maps to include from each data split
 Must be a glob-parseable string</p></li>
-<li><p><strong>signal_subset</strong> (<em>string</em>) – The subset of the signal sims to include
+<li><p><strong>signal_subset</strong> (<em>str</em>) – The subset of the signal sims to include
 Must be a glob-parseable string</p></li>
-<li><p><strong>noise_subset</strong> (<em>string</em>) – The subset of the noise sims to include
+<li><p><strong>noise_subset</strong> (<em>str</em>) – The subset of the noise sims to include
 Must be a glob-parseable string</p></li>
-<li><p><strong>data_type</strong> (<em>string</em>) – The data type to use</p></li>
-<li><p><strong>noise_type</strong> (<em>string</em>) – The variant of noise sims to use</p></li>
-<li><p><strong>noise_type_sim</strong> (<em>string</em>) – The variant of noise sims to use for sim_index fake data map.
-This enables having a different noise sim ensemble to use for
-sim_index run than the ensemble from which the noise is computed.</p></li>
-<li><p><strong>mask_type</strong> (<em>string</em>) – The variant of mask to use</p></li>
-<li><p><strong>signal_type</strong> (<em>string</em>) – The variant of signal sims to use</p></li>
-<li><p><strong>signal_type_sim</strong> (<em>string</em>) – The variant of signal sims to use for sim_index face data map.
-This enables having a different noise sim ensemble to use for
-sim_index run than the ensemble from which the signal is computed.</p></li>
-<li><p><strong>signal_transfer_type</strong> (<em>string</em>) – The variant of signal sims to use for transfer function</p></li>
-<li><p><strong>signal_spec</strong> (<em>string</em>) – The spectrum data file to use for estimating bandpowers.  If not
+<li><p><strong>mask_type</strong> (<em>str</em>) – The variant of mask to use</p></li>
+<li><p><strong>data_type</strong> (<em>str</em>) – The data type to use</p></li>
+<li><p><strong>noise_type</strong> (<em>str</em>) – The variant of noise sims to use</p></li>
+<li><p><strong>signal_type</strong> (<em>str</em>) – The variant of signal sims to use</p></li>
+<li><p><strong>signal_transfer_type</strong> (<em>str</em>) – The variant of signal sims to use for transfer function</p></li>
+<li><p><strong>signal_spec</strong> (<em>str</em>) – The spectrum data file to use for estimating bandpowers.  If not
 supplied, will search for <code class="docutils literal notranslate"><span class="pre">spec_signal_&lt;signal_type&gt;.dat</span></code> in the signal
 sim directory.</p></li>
-<li><p><strong>signal_transfer_spec</strong> (<em>string</em>) – The spectrum data file used to generate signal sims.  If not
+<li><p><strong>signal_transfer_spec</strong> (<em>str</em>) – The spectrum data file used to generate signal sims.  If not
 supplied, will search for <code class="docutils literal notranslate"><span class="pre">spec_signal_&lt;signal_type&gt;.dat</span></code> in the
 transfer signal sim directory. Used for computing transfer functions.</p></li>
+<li><p><strong>signal_type_sim</strong> (<em>str</em>) – The variant of signal sims to use for sim_index face data map.
+This enables having a different noise sim ensemble to use for
+sim_index run than the ensemble from which the signal is computed.</p></li>
+<li><p><strong>noise_type_sim</strong> (<em>str</em>) – The variant of noise sims to use for sim_index fake data map.
+This enables having a different noise sim ensemble to use for
+sim_index run than the ensemble from which the noise is computed.</p></li>
+<li><p><strong>foreground_type_sim</strong> (<em>str</em>) – Tag for directory (foreground_&lt;foreground_type_sim&gt;) where foreground
+sims are that should be added to the signal and noise sims
+when running in sim_index mode. Note: the same foreground sim
+map is used for each sim_index, despite signal and noise sims
+changing.</p></li>
 <li><p><strong>model_r</strong> (<em>float</em>) – The <code class="docutils literal notranslate"><span class="pre">r</span></code> value to use to compute a spectrum for estimating bandpowers.
 Overrides <code class="docutils literal notranslate"><span class="pre">signal_spec</span></code>.</p></li>
-<li><p><strong>data_subset2</strong> (<em>data_root2</em><em>,</em>) – If either of these is set, XFaster performs a null test between these
-two data halves.</p></li>
+<li><p><strong>data_root2</strong> (<em>str</em>) – Path for second set of maps for null test. If set, XFaster performs a
+null test between data_root and data_root2.</p></li>
+<li><p><strong>data_subset2</strong> (<em>str</em>) – The subset of the data maps to include from each data split for the
+second half of a null split.</p></li>
 <li><p><strong>residual_fit</strong> (<em>bool</em>) – True is residual shape is being fit to the power. The residual shape
 can be split into a number of bins -&gt; nbins_res. The residual bins can
 be marginalised over in the final output.</p></li>
 <li><p><strong>foreground_fit</strong> (<em>bool</em>) – Include foreground residuals in the residual bins to be fit</p></li>
+<li><p><strong>bin_width_fg</strong> (<em>int</em><em> or </em><em>array_like of 6 ints</em>) – Width of each ell bin for each of the six output foreground spectra
+(TT, EE, BB, TE, EB, TB).  EE/BB bins should be the same
+in order to handle mixing correctly.</p></li>
+<li><p><strong>bin_width_res</strong> (<em>int</em>) – Width of each bin to use for residual noise fitting</p></li>
 <li><p><strong>res_specs</strong> (<em>list of strings</em>) – Spectra to include in noise residual fitting.  List values can be any of
 the cross spectra TT, EE, BB, TE, EB, TB, or EEBB for fitting EE and BB
 residuals simultaneously.  If not supplied, this defaults to EEBB for
 polarized maps, or TT for unpolarized maps.</p></li>
-<li><p><strong>bin_width_res</strong> (<em>int</em>) – Width of each bin to use for residual noise fitting</p></li>
+<li><p><strong>weighted_bins</strong> (<em>bool</em>) – If True, use an lfac-weighted binning operator to construct Cbls.
+By default, a flat binning operator is used.</p></li>
 <li><p><strong>ensemble_mean</strong> (<em>bool</em>) – If True, substitute S+N ensemble means for Cls to test biasing</p></li>
 <li><p><strong>ensemble_median</strong> (<em>bool</em>) – If True, substitute S+N ensemble median for Cls to test biasing</p></li>
 <li><p><strong>sim_index</strong> (<em>int</em>) – If not None, substitute the sim_index S+N map for observed Cls</p></li>
@@ -1937,7 +2250,7 @@ to include signal and noise correlations</p></li>
 end iteration</p></li>
 <li><p><strong>iter_max</strong> (<em>int</em>) – The maximum number of iterations</p></li>
 <li><p><strong>tbeb</strong> (<em>bool</em>) – If True, compute TB/EB spectra.</p></li>
-<li><p><strong>null_bb_xfer</strong> (<em>bool</em>) – If True, after transfer functions have been calculated, impose
+<li><p><strong>fix_bb_xfer</strong> (<em>bool</em>) – If True, after transfer functions have been calculated, impose
 the BB xfer is exactly equal to the EE transfer.</p></li>
 <li><p><strong>window_lmax</strong> (<em>int</em>) – The size of the window used in computing the mask kernels</p></li>
 <li><p><strong>like_lmin</strong> (<em>int</em>) – The minimum ell value to be included in the likelihood calculation</p></li>
@@ -1951,22 +2264,18 @@ of the inverse Fisher matrix.</p></li>
 <li><p><strong>pixwin</strong> (<em>bool</em>) – If True, apply pixel window functions to beam windows.</p></li>
 <li><p><strong>save_iters</strong> (<em>bool</em>) – If True, store the output of each Fisher iteration, in addition to
 the end result.</p></li>
-<li><p><strong>verbose</strong> (<em>string</em>) – Logging verbosity level.  If True, defaults to ‘notice’.</p></li>
+<li><p><strong>verbose</strong> (<em>str</em>) – Logging verbosity level.  If True, defaults to ‘notice’.</p></li>
 <li><p><strong>debug</strong> (<em>bool</em>) – Store extra data in output files for debugging.</p></li>
-<li><p><strong>checkpoint</strong> (<em>string</em>) – If supplied, re-compute all steps of the algorithm from this point
+<li><p><strong>checkpoint</strong> (<em>str</em>) – If supplied, re-compute all steps of the algorithm from this point
 forward.  Valid checkpoints are [‘files’, ‘masks’, ‘kernels’, ‘sims_transfer’, ‘shape_transfer’, ‘transfer’, ‘sims’, ‘beams’, ‘data’, ‘template_noise’, ‘shape’, ‘bandpowers’, ‘beam_errors’, ‘likelihood’]</p></li>
 <li><p><strong>add_log</strong> (<em>bool</em>) – If True, write log output to a file instead of to STDOUT.
-The log will be in <code class="docutils literal notranslate"><span class="pre">&lt;output_root&gt;/run_&lt;output_tag&gt;.log</span></code>.
+The log will be in <code class="docutils literal notranslate"><span class="pre">&lt;output_root&gt;/xfaster-&lt;output_tag&gt;.log</span></code>.
 This option is useful for logging to file for jobs that
 are run directly (rather than submitted).</p></li>
 <li><p><strong>cond_noise</strong> (<em>float</em>) – The level of regularizing noise to add to EE and BB diagonals.</p></li>
 <li><p><strong>cond_criteria</strong> (<em>float</em>) – Threshold on covariance condition number. Above this, regularizing noise
 will be added to covariance to condition it.</p></li>
 <li><p><strong>null_first_cmb</strong> (<em>bool</em>) – Keep first CMB bandpowers fixed to input shape (qb=1).</p></li>
-<li><p><strong>foreground_fit</strong> – Fit for a dust component. Only for multi(freq)-map runs</p></li>
-<li><p><strong>bin_width_fg</strong> (<em>int</em><em> or </em><em>array_like of 6 ints</em>) – Width of each ell bin for each of the six output foreground spectra
-(TT, EE, BB, TE, EB, TB).  EE/BB bins should be the same
-in order to handle mixing correctly.</p></li>
 <li><p><strong>ref_freq</strong> (<em>float</em>) – In GHz, reference frequency for dust model. Dust bandpowers output
 will be at this reference frequency.</p></li>
 <li><p><strong>beta_ref</strong> (<em>float</em>) – The spectral index of the dust model. This is a fixed value, with
@@ -1975,12 +2284,7 @@ mode.</p></li>
 <li><p><strong>delta_beta_prior</strong> (<em>float</em>) – The width of the prior on the additive change from beta_ref. If you
 don’t want the code to fit for a spectral index different
 from beta_ref, set this to be a very small value (O(1e-10)).</p></li>
-<li><p><strong>foreground_type_sim</strong> (<em>string</em>) – Tag for directory (foreground_&lt;foreground_type_sim&gt;) where foreground
-sims are that should be added to the signal and noise sims
-when running in sim_index mode. Note: the same foreground sim
-map is used for each sim_index, despite signal and noise sims
-changing.</p></li>
-<li><p><strong>template_type</strong> (<em>string</em>) – Tag for directory (templates_&lt;template_type&gt;) containing templates
+<li><p><strong>template_type</strong> (<em>str</em>) – Tag for directory (templates_&lt;template_type&gt;) containing templates
 (e.g. a foreground model) to be scaled by a scalar value per
 map tag and subtracted from the data. The directory is assumed
 to contain halfmission-1 and halfmission-2 subdirectories, each
@@ -2001,9 +2305,33 @@ iteratively solving for the correction terms.</p></li>
 <li><p><strong>gcorr_file</strong> (<em>str</em>) – If not None, path to gcorr file. Otherwise, use file labeled
 mask_map_&lt;tag&gt;_gcorr.npy in mask directory for signal, or
 mask_map_&lt;tag&gt;_gcorr_null.npy for nulls.</p></li>
-<li><p><strong>qb_file</strong> (<em>string</em>) – Pointer to a bandpowers.npz file in the output directory. If used
+<li><p><strong>qb_file</strong> (<em>str</em>) – Pointer to a bandpowers.npz file in the output directory. If used
 in sim_index mode, the noise sim read from disk will be corrected
 by the residual qb values stored in qb_file.</p></li>
+<li><p><strong>like_alpha_tags</strong> (<em>list of strings</em>) – List of map tags from which foreground template maps should be
+subtracted and fit in the likelihood.</p></li>
+<li><p><strong>alpha_prior</strong> (<em>list of floats</em>) – Flat prior edges for allowed alpha values in the likelihood.
+Set to None to not fit for alpha values in the likelihood.</p></li>
+<li><p><strong>r_prior</strong> (<em>list of floats</em>) – Flat prior edges for allowed r values in the likelihood.</p></li>
+<li><p><strong>res_prior</strong> (<em>list of floats</em>) – Flat prior edges for allowed qb residual values in the likelihood.
+Set to None to not fit for residual qb values in the likelihood.</p></li>
+<li><p><strong>like_beam_tags</strong> (<em>list of strings</em>) – List of map tags from which beam error fields are read in to be
+fit for in the likelihood.</p></li>
+<li><p><strong>beam_prior</strong> (<em>list of floats</em>) – Gaussian prior mean and number of strandard deviations for beam error.
+This Gaussian is applied as a prior in fitting for beam error in the
+likelihood. Set to None to not fit for beam error.</p></li>
+<li><p><strong>betad_prior</strong> (<em>list of floats</em>) – Gaussian prior on dust index different from ref beta.
+Should be [0, sig] for [mean 0, width sig] gaussian.
+Set to None to not fit for betad in the likelihood.</p></li>
+<li><p><strong>dust_amp_prior</strong> (<em>list of floats</em>) – Flat prior edges on dust amplitude (rel to Planck 353 ref).
+Set to None to not fit for dust_amp in the likelihood.</p></li>
+<li><p><strong>dust_ellind_prior</strong> (<em>list of floats</em>) – Gaussian prior on dust ell index different from reference, -2.28.
+Should be [0, sig] for [mean 0, width sig] gaussian).
+Set to None to not fit for dust_ellind in the likelihood.</p></li>
+<li><p><strong>mcmc_walkers</strong> (<em>int</em>) – Number of MCMC walkers to use in the likelihood</p></li>
+<li><p><strong>like_converge_criteria</strong> (<em>float</em>) – Convergence criteria for likelihood MCMC chains</p></li>
+<li><p><strong>bp_tag</strong> (<em>str</em>) – Tag to append to bandpowers output file</p></li>
+<li><p><strong>like_tag</strong> (<em>str</em>) – Tag to append to likelihood output file</p></li>
 <li><p><strong>sub_planck</strong> (<em>bool</em>) – If True, subtract reobserved Planck from maps. Properly uses half
 missions so no Planck autos are used. Useful for removing expected
 signal residuals from null tests.</p></li>
@@ -2082,8 +2410,44 @@ with the command line flags for submit mode, with kwargs passed to
 
 <dl class="method">
 <dt id="xfaster.xfaster_exec.XFasterJobGroup.set_job_options">
-<code class="sig-name descname">set_job_options</code><span class="sig-paren">(</span><em class="sig-param">output=None</em>, <em class="sig-param">cput=None</em>, <em class="sig-param">wallt=None</em>, <em class="sig-param">ppn=8</em>, <em class="sig-param">nodes=1</em>, <em class="sig-param">mem=5</em>, <em class="sig-param">env_script=None</em>, <em class="sig-param">omp_threads=None</em>, <em class="sig-param">nice=0</em>, <em class="sig-param">queue=None</em>, <em class="sig-param">job_prefix=None</em>, <em class="sig-param">test=False</em>, <em class="sig-param">pbs=False</em>, <em class="sig-param">workdir=None</em>, <em class="sig-param">dep_afterok=None</em>, <em class="sig-param">exclude=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#XFasterJobGroup.set_job_options"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.XFasterJobGroup.set_job_options" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parse options that control the job script, rather than xfaster.</p>
+<code class="sig-name descname">set_job_options</code><span class="sig-paren">(</span><em class="sig-param">output=None</em>, <em class="sig-param">workdir=None</em>, <em class="sig-param">cput=None</em>, <em class="sig-param">wallt=None</em>, <em class="sig-param">ppn=8</em>, <em class="sig-param">nodes=1</em>, <em class="sig-param">mem=5</em>, <em class="sig-param">env_script=None</em>, <em class="sig-param">omp_threads=None</em>, <em class="sig-param">nice=0</em>, <em class="sig-param">queue=None</em>, <em class="sig-param">job_prefix=None</em>, <em class="sig-param">test=False</em>, <em class="sig-param">pbs=False</em>, <em class="sig-param">dep_afterok=None</em>, <em class="sig-param">exclude=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#XFasterJobGroup.set_job_options"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.XFasterJobGroup.set_job_options" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse options that control the job script, rather than xfaster.
+Passed to batch_tools.batch_sub.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output</strong> (<em>string</em><em>, </em><em>optional</em>) – Path for output scheduler files, in a logs subdirectory.
+If None, use output_root. Overrided by workdir.</p></li>
+<li><p><strong>workdir</strong> (<em>string</em><em>, </em><em>optional</em>) – If not None, path to output scheduler files. Overrides output.</p></li>
+<li><p><strong>cput</strong> (<em>string</em><em> or </em><em>float</em><em> or </em><em>datetime.timedelta</em><em>, </em><em>optional</em>) – Amount of CPU time requested.
+String values should be in the format HH:MM:SS, e.g. ‘10:00:00’.
+Numerical values are interpreted as a number of hours.</p></li>
+<li><p><strong>wallt</strong> (<em>string</em><em> or </em><em>float</em><em> or </em><em>datetime.timedelta</em><em>, </em><em>optional</em>) – Amount of wall clock time requested.
+String values should be in the format HH:MM:SS, e.g. ‘10:00:00’.
+Numerical values are interpreted as a number of hours.</p></li>
+<li><p><strong>ppn</strong> (<em>int</em><em>, </em><em>optional</em>) – Numper of processes per node</p></li>
+<li><p><strong>nodes</strong> (<em>int</em><em> or </em><em>string</em><em>, </em><em>optional</em>) – Number of nodes to use in job
+If a string, will be passed as-is to PBS -l node= resource
+If using SLURM and a string, will overwrite node_list if None</p></li>
+<li><p><strong>mem</strong> (<em>float</em><em> or </em><em>string</em><em>, </em><em>optional</em>) – Amount of memory to request for the job. float values in GB.
+Or pass a string (eg ‘4gb’) to use directly.</p></li>
+<li><p><strong>env_script</strong> (<em>string</em><em>, </em><em>optional</em>) – Path to script to source during job script preamble
+For loading modules, setting environment variables, etc</p></li>
+<li><p><strong>omp_threads</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of OpenMP threads to use per process</p></li>
+<li><p><strong>nice</strong> (<em>int</em><em>, </em><em>optional</em>) – Adjust scheduling priority (SLURM only). Range from -5000 (highest
+priority) to 5000 (lowest priority).
+Note: actual submitted –nice value is 5000 higher, since negative
+values require special privilege.</p></li>
+<li><p><strong>queue</strong> (<em>string</em><em>, </em><em>optional</em>) – The name of the queue to which to submit jobs</p></li>
+<li><p><strong>job_prefix</strong> (<em>string</em><em>, </em><em>optional</em>) – The name of the job. Default: xfaster</p></li>
+<li><p><strong>test</strong> (<em>bool</em>) – If True, only print out the job submission script, don’t submit it.</p></li>
+<li><p><strong>pbs</strong> (<em>bool</em>) – If True, use pbs scheduler. Else, use slurm.</p></li>
+<li><p><strong>dep_afterok</strong> (<em>string</em><em> or </em><em>list of strings</em>) – Dependency. Job ID (or IDs) on which to wait for successful completion,
+before starting this job</p></li>
+<li><p><strong>exclude</strong> (<em>string</em><em> or </em><em>list of strings</em>) – List of nodes that will be excluded for job. SLURM-only.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -2092,7 +2456,16 @@ with the command line flags for submit mode, with kwargs passed to
 <dd><p>Submit jobs that have been added.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>group_by</strong> (<em>int</em><em>, </em><em>optional</em>) – Group xfaster calls into jobs with this many calls each.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>group_by</strong> (<em>int</em><em>, </em><em>optional</em>) – Group xfaster calls into jobs with this many calls each.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Print the working directory, and the job ID if submitted successfully.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>job_ids</strong> – The IDs of the submitted jobs</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of strings</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2179,13 +2552,36 @@ Otherwise the output spectrum extends to include the last bin.</p></li>
 <dl class="function">
 <dt id="xfaster.xfaster_tools.scale_dust">
 <code class="sig-prename descclassname">xfaster.xfaster_tools.</code><code class="sig-name descname">scale_dust</code><span class="sig-paren">(</span><em class="sig-param">freq0</em>, <em class="sig-param">freq1</em>, <em class="sig-param">ref_freq</em>, <em class="sig-param">beta</em>, <em class="sig-param">delta_beta=None</em>, <em class="sig-param">deriv=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_tools.html#scale_dust"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_tools.scale_dust" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the factor by which you must dividide the cross spectrum from maps of
+<dd><p>Get the factor by which you must multiply the cross spectrum from maps of
 frequencies freq0 and freq1 to match the dust power at ref_freq given
 spectra index beta.</p>
 <p>If deriv is True, return the frequency scaling at the reference beta,
 and the first derivative w.r.t. beta.</p>
 <p>Otherwise if delta_beta is given, return the scale factor adjusted
 for a linearized offset delta_beta from the reference beta.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>freq0</strong> (<em>float</em>) – Frequency of map0 in GHz.</p></li>
+<li><p><strong>freq1</strong> (<em>float</em>) – Frequency of map1 in GHz.</p></li>
+<li><p><strong>ref_freq</strong> (<em>float</em>) – Reference frequency from which to compute relative scaling in GHz.</p></li>
+<li><p><strong>beta</strong> (<em>float</em>) – Dust spectral index.</p></li>
+<li><p><strong>delta_beta</strong> (<em>float</em>) – Difference from beta– scaling computed as a first order Taylor
+expansion from original beta-scaling.</p></li>
+<li><p><strong>deriv</strong> (<em>bool</em>) – If true, return the frequency scaling at the reference beta, along with
+the first derivative w.r.t. beta at the reference beta.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>freq_scale</strong> (<em>float</em>) – The relative scaling factor for the dust cross spectrum– multiply by
+this number to get the dust spectrum at the reference frequency</p></li>
+<li><p><em>– or –</em></p></li>
+<li><p><strong>freq_scale, deriv</strong> (<em>floats</em>) – The relative scaling factor and its derivative</p></li>
+</ul>
+</p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>

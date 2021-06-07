@@ -324,7 +324,7 @@
         <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">checkpoint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">add_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">ref_freq</span><span class="o">=</span><span class="mf">353.0</span><span class="p">,</span>
+        <span class="n">ref_freq</span><span class="o">=</span><span class="mf">359.7</span><span class="p">,</span>
         <span class="n">beta_ref</span><span class="o">=</span><span class="mf">1.54</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -333,6 +333,9 @@
 
 <span class="sd">        Arguments</span>
 <span class="sd">        ---------</span>
+<span class="sd">        config : string</span>
+<span class="sd">            Configuration file. If path doesn&#39;t exist, assumed</span>
+<span class="sd">            to be in xfaster/config/&lt;config&gt;</span>
 <span class="sd">        lmax : int</span>
 <span class="sd">            The maximum multipole for which spectra are computed</span>
 <span class="sd">        pol : bool</span>
@@ -357,6 +360,13 @@
 <span class="sd">        add_log : bool</span>
 <span class="sd">            If True, write log output to a file instead of to STDOUT.</span>
 <span class="sd">            The log will be in ``&lt;output_root&gt;/run_&lt;output_tag&gt;.log``.</span>
+<span class="sd">        ref_freq : float</span>
+<span class="sd">            In GHz, reference frequency for dust model. Dust bandpowers output</span>
+<span class="sd">            will be at this reference frequency.</span>
+<span class="sd">        beta_ref : float</span>
+<span class="sd">            The spectral index of the dust model. This is a fixed value, with</span>
+<span class="sd">            an additive deviation from this value fit for in foreground fitting</span>
+<span class="sd">            mode.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># verbosity</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">init_log</span><span class="p">(</span>
@@ -445,7 +455,13 @@
 <span class="sd">        transfer function in a joint analysis.  If not supplied, it is assumed</span>
 <span class="sd">        that a transfer function should be computed for every tag in</span>
 <span class="sd">        &quot;frequencies&quot;.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filename : str</span>
+<span class="sd">            Path to config file</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="c1"># Load map configuration file</span>
         <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="s2">&quot;Missing config file </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">config_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
@@ -544,6 +560,11 @@
         <span class="k">def</span> <span class="nf">logger_notice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Log a message with severity &quot;NOTICE&quot;.</span>
+
+<span class="sd">            Arguments</span>
+<span class="sd">            ---------</span>
+<span class="sd">            msg : str</span>
+<span class="sd">                Log message</span>
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">NOTICE</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">NOTICE</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -553,6 +574,11 @@
         <span class="k">def</span> <span class="nf">root_notice</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Log a message with severity &quot;NOTICE&quot; on the root logger.</span>
+
+<span class="sd">            Arguments</span>
+<span class="sd">            ---------</span>
+<span class="sd">            msg : str</span>
+<span class="sd">                Log message</span>
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">()</span>
@@ -594,6 +620,8 @@
 
 <span class="sd">        Arguments</span>
 <span class="sd">        ---------</span>
+<span class="sd">        message : str</span>
+<span class="sd">            Log message</span>
 <span class="sd">        level : string, default : None</span>
 <span class="sd">            Logging level.  Must be one of &quot;critical&quot;, &quot;error&quot;, &quot;warning&quot;,</span>
 <span class="sd">            &quot;notice&quot;, &quot;info&quot;, &quot;debug&quot;, &quot;all&quot;.  If not supplied, &quot;all&quot; is assumed.</span>
@@ -607,7 +635,12 @@
 
 <div class="viewcode-block" id="XFaster.warn"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.warn">[docs]</a>    <span class="k">def</span> <span class="nf">warn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Log a warning message</span>
+<span class="sd">        Log a warning message.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        message : str</span>
+<span class="sd">            Warning log message</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">XFasterWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
@@ -1004,10 +1037,10 @@
         <span class="n">signal_subset</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
         <span class="n">noise_subset</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
         <span class="n">data_type</span><span class="o">=</span><span class="s2">&quot;raw&quot;</span><span class="p">,</span>
-        <span class="n">noise_type</span><span class="o">=</span><span class="s2">&quot;stationary&quot;</span><span class="p">,</span>
+        <span class="n">noise_type</span><span class="o">=</span><span class="s2">&quot;gaussian&quot;</span><span class="p">,</span>
         <span class="n">noise_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">mask_type</span><span class="o">=</span><span class="s2">&quot;hitsmask_tailored&quot;</span><span class="p">,</span>
-        <span class="n">signal_type</span><span class="o">=</span><span class="s2">&quot;r0p03&quot;</span><span class="p">,</span>
+        <span class="n">mask_type</span><span class="o">=</span><span class="s2">&quot;rectangle&quot;</span><span class="p">,</span>
+        <span class="n">signal_type</span><span class="o">=</span><span class="s2">&quot;synfast&quot;</span><span class="p">,</span>
         <span class="n">signal_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">signal_transfer_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">data_root2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -1022,10 +1055,8 @@
 <span class="sd">            &lt;data_root&gt;</span>
 <span class="sd">                -&gt; data_&lt;data_type&gt;</span>
 <span class="sd">                    -&gt; full</span>
-<span class="sd">                        -&gt; map_x1.fits</span>
+<span class="sd">                        -&gt; map_&lt;tag&gt;.fits</span>
 <span class="sd">                        ...</span>
-<span class="sd">                        -&gt; map_150.fits</span>
-<span class="sd">                        -&gt; map_90.fits</span>
 <span class="sd">                    -&gt; 1of4 (same filenames as full)</span>
 <span class="sd">                    -&gt; 2of4 (&#39;&#39;)</span>
 <span class="sd">                    -&gt; 3of4 (&#39;&#39;)</span>
@@ -1033,19 +1064,16 @@
 <span class="sd">                -&gt; signal_&lt;signal_type&gt;</span>
 <span class="sd">                   -&gt; spec_signal_&lt;signal_type&gt;.dat</span>
 <span class="sd">                   -&gt; full</span>
-<span class="sd">                      -&gt; map_x1_0000.fits</span>
+<span class="sd">                      -&gt; map_&lt;tag&gt;_####.fits</span>
 <span class="sd">                      ...</span>
-<span class="sd">                      -&gt; map_90_####.fits</span>
 <span class="sd">                   -&gt; 1of4 (same filenames as full)</span>
 <span class="sd">                   -&gt; 2of4 (same filenames as full)</span>
 <span class="sd">                   -&gt; 3of4 (same filenames as full)</span>
 <span class="sd">                   -&gt; 4of4 (same filenames as full)</span>
 <span class="sd">                -&gt; noise_&lt;noise_type&gt; (same filenames as signal_&lt;signal_type&gt;)</span>
 <span class="sd">                -&gt; masks_&lt;mask_type&gt;</span>
-<span class="sd">                    -&gt; mask_map_x1.fits</span>
+<span class="sd">                    -&gt; mask_map_&lt;tag&gt;.fits</span>
 <span class="sd">                    ...</span>
-<span class="sd">                    -&gt; mask_map_90.fits</span>
-<span class="sd">                    -&gt; mask_map_150.fits</span>
 <span class="sd">                -&gt; foreground_&lt;foreground_type_sim&gt;</span>
 <span class="sd">                    (same filenames as signal_&lt;signal_type&gt;)</span>
 <span class="sd">                -&gt; templates_&lt;template_type&gt;</span>
@@ -1058,7 +1086,7 @@
 <span class="sd">                      (same filenames as data_&lt;data_type&gt;)</span>
 <span class="sd">                   -&gt; halfmission-2</span>
 <span class="sd">                      (same filenames as data_&lt;data_type&gt;)</span>
-<span class="sd">            &lt;data_root2&gt;</span>
+<span class="sd">            &lt;data_root2&gt; (If provided, same structure as data_root)</span>
 <span class="sd">                ...</span>
 
 <span class="sd">        Arguments</span>
@@ -1086,22 +1114,22 @@
 <span class="sd">            to use. For example, for all, use ``&#39;*&#39;``. For the first 300 sims,</span>
 <span class="sd">            use ``&#39;0[0-2]*&#39;``.</span>
 <span class="sd">        data_type : string</span>
-<span class="sd">            The type of data to use.</span>
+<span class="sd">            The type of data to use, default: &quot;raw&quot;</span>
 <span class="sd">        noise_type: string</span>
-<span class="sd">            The variant of noise simulation to use, e.g. &#39;stationary&#39;,</span>
-<span class="sd">            &#39;variable&#39;, etc.  The directory should contain the same number</span>
+<span class="sd">            The variant of noise simulation to use, e.g. &#39;gaussian&#39;,</span>
+<span class="sd">            &#39;stationary&#39;, etc.  The directory should contain the same number</span>
 <span class="sd">            of simulations for each map tag.</span>
 <span class="sd">        noise_type_sim : string</span>
 <span class="sd">            The variant of noise sims to use for sim_index fake data map.</span>
 <span class="sd">            This enables having a different noise sim ensemble to use for</span>
 <span class="sd">            sim_index run than the ensemble from which the noise is computed.</span>
 <span class="sd">        mask_type : string</span>
-<span class="sd">            The variant of mask to use, e.g. &#39;hitsmask&#39;, etc.</span>
-<span class="sd">            XXX: for the time being we assume a mask per file tag,</span>
-<span class="sd">            rather than a mask per file in ``data_&lt;data_type&gt;``.</span>
+<span class="sd">            The variant of mask to use, e.g. &#39;rectangle&#39;, etc.</span>
+<span class="sd">            We assume a mask per file tag in the mask_&lt;mask_type&gt; folder,</span>
+<span class="sd">            corresponding to the files in data.</span>
 <span class="sd">        signal_type : string</span>
 <span class="sd">            The variant of signal simulation to use, typically identified</span>
-<span class="sd">            by the input spectrum model used to generate it, e.g &#39;r0p03&#39;.</span>
+<span class="sd">            by the input spectrum model used to generate it, e.g &#39;synfast&#39;.</span>
 <span class="sd">        signal_type_sim : string</span>
 <span class="sd">            The variant of signal sims to use for sim_index fake data map.</span>
 <span class="sd">            This enables having a different noise sim ensemble to use for</span>
@@ -1109,7 +1137,7 @@
 <span class="sd">        signal_transfer_type : string</span>
 <span class="sd">            The variant of signal simulation to use for transfer function</span>
 <span class="sd">            calculation, typically identified by the input spectrum model</span>
-<span class="sd">            used to generate it, e.g &#39;r0p03&#39;. This directory may also contain</span>
+<span class="sd">            used to generate it, e.g &#39;synfast&#39;. This directory may also contain</span>
 <span class="sd">            a copy of the input spectrum, to make sure that the correct</span>
 <span class="sd">            spectrum is used to compute the transfer function.</span>
 <span class="sd">        data_root2, data_subset2 : string</span>
@@ -1186,7 +1214,14 @@
 
         <span class="k">def</span> <span class="nf">get_template_files</span><span class="p">(</span><span class="n">fs</span><span class="p">,</span> <span class="n">template_type</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Update options for template cleaning</span>
+<span class="sd">            Update options for template cleaning. Internal to get_files.</span>
+
+<span class="sd">            Arguments</span>
+<span class="sd">            ---------</span>
+<span class="sd">            fs : dict</span>
+<span class="sd">                Dictionary of file options</span>
+<span class="sd">            template_type : str</span>
+<span class="sd">                Tag for template files</span>
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="c1"># no template fitting for null runs</span>
             <span class="k">if</span> <span class="n">fs</span><span class="p">[</span><span class="s2">&quot;null_run&quot;</span><span class="p">]:</span>
@@ -1304,7 +1339,14 @@
 
         <span class="k">def</span> <span class="nf">get_planck_files</span><span class="p">(</span><span class="n">fs</span><span class="p">,</span> <span class="n">sub_planck</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Update options for planck subtraction</span>
+<span class="sd">            Update options for planck subtraction. Internal to get_files.</span>
+
+<span class="sd">            Arguments</span>
+<span class="sd">            ---------</span>
+<span class="sd">            fs : dict</span>
+<span class="sd">                Dictionary of file options</span>
+<span class="sd">            sub_planck : bool</span>
+<span class="sd">                If true, get Planck map files to be subtracted from data</span>
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">sub_planck</span><span class="p">:</span>
                 <span class="n">fs</span><span class="p">[</span><span class="s2">&quot;planck_root1_hm1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1677,11 +1719,11 @@
 <span class="sd">            Use this argument when storing output data in a loop over</span>
 <span class="sd">            input maps.</span>
 <span class="sd">        iter_index : int</span>
-<span class="sd">            If supplied, the name is appended with &#39;_iter&lt;iter_index&gt;&#39;</span>
+<span class="sd">            If supplied, the name is appended with &#39;_iter&lt;iter_index&gt;&#39;.</span>
 <span class="sd">        extra_tag : string</span>
 <span class="sd">            If supplied the extra tag is appended to the name as is.</span>
 <span class="sd">        bp_opts : bool</span>
-<span class="sd">            If True, the output filename is constructed  by checking the</span>
+<span class="sd">            If True, the output filename is constructed by checking the</span>
 <span class="sd">            following list  of options used in constructing bandpowers:</span>
 <span class="sd">            ensemble_mean, ensemble_median, sim_index, template_cleaned,</span>
 <span class="sd">            weighted_bins, signal_type_sim, noise_type_sim</span>
@@ -1745,12 +1787,12 @@
         <span class="o">**</span><span class="n">file_opts</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Load xfaster data from an output npz file on disk.</span>
+<span class="sd">        Load xfaster data from an output.npz file on disk.</span>
 
 <span class="sd">        This method is called throughout the code at various checkpoints.  If</span>
 <span class="sd">        the data exist on disk, they are loaded and returned.  If the data are</span>
-<span class="sd">        missing or otherwise incompatible, they are recomputed by the calling</span>
-<span class="sd">        method, and trigger all subsequent data to also be recomputed.  Data</span>
+<span class="sd">        missing or otherwise incompatible, they are recomputed by the corresponding</span>
+<span class="sd">         calling method, and trigger all subsequent data to also be recomputed.  Data</span>
 <span class="sd">        handling is described in the ``Notes`` section for methods that use this</span>
 <span class="sd">        functionality.</span>
 
@@ -1771,7 +1813,7 @@
 <span class="sd">            step are recomputed.</span>
 <span class="sd">        to_attrs : bool or list of bools or strings</span>
 <span class="sd">            If True, all items in ``fields`` are stored as attributes of the</span>
-<span class="sd">            parent object.  If A list of booleans, must have the same length</span>
+<span class="sd">            parent object. If A list of booleans, must have the same length</span>
 <span class="sd">            as ``fields``; any field for which this list item is True is then</span>
 <span class="sd">            stored as an attribute of the object.  If any list item is a string,</span>
 <span class="sd">            then the corresponding field is stored as an attribute with this</span>
@@ -1782,6 +1824,17 @@
 <span class="sd">        shape_ref : string</span>
 <span class="sd">            The reference field whose shape is checked against ``shape``.</span>
 <span class="sd">            If None and ``shape`` is set, use the first field in ``fields``.</span>
+<span class="sd">        alt_name : string</span>
+<span class="sd">            Alternative to ``name`` argument that will be read if file matching</span>
+<span class="sd">            ``name`` doesn&#39;t exist.</span>
+<span class="sd">        value_ref : dict</span>
+<span class="sd">            Dictionary of reference values that is checked if simply loading a</span>
+<span class="sd">            file from disk instead of recomputing-- forces rerun of checkpoints</span>
+<span class="sd">            if loaded dictionary differs from value_ref.</span>
+<span class="sd">        optional : list of strings</span>
+<span class="sd">            Fields that, if missing from the data loaded from disk, will not</span>
+<span class="sd">            trigger force rerunning of any checkpoints.</span>
+
 
 <span class="sd">        Remaining options are passed to ``get_filename`` for constructing the</span>
 <span class="sd">        output file path.</span>
@@ -1925,7 +1978,7 @@
 
 <div class="viewcode-block" id="XFaster.save_data"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.save_data">[docs]</a>    <span class="k">def</span> <span class="nf">save_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">from_attrs</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">data</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Save xfaster data to an output npz file on disk.</span>
+<span class="sd">        Save xfaster data to an output .npz file on disk.</span>
 
 <span class="sd">        Arguments</span>
 <span class="sd">        ---------</span>
@@ -1942,7 +1995,10 @@
 <span class="sd">            Load the dataset corresponding to this iteration index.</span>
 <span class="sd">            See ``get_filename`` for documentation.</span>
 <span class="sd">        bp_opts : bool</span>
-<span class="sd">            Format output bandpowers file.  See ``get_filename`` for documentation.</span>
+<span class="sd">            Format output bandpowers file.  See ``get_filename`` for</span>
+<span class="sd">            documentation.</span>
+<span class="sd">        extra_tag : str</span>
+<span class="sd">             Tag to add to file name.</span>
 
 <span class="sd">        Any remaining keyword arguments are added to the output dictionary.</span>
 
@@ -1978,6 +2034,16 @@
 <span class="sd">        Save a configuration file for the current run on disk.</span>
 <span class="sd">        This method is used by ``xfaster_run`` to store the config</span>
 <span class="sd">        in ``&lt;output_root&gt;/config_&lt;output_tag&gt;.txt``.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        cfg : XFasterConfig or RawConfigParser object</span>
+<span class="sd">            Config object containing all relevant arguments to save to disk.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        filename : str</span>
+<span class="sd">            Name of the config file saved to disk.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_filename</span><span class="p">(</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="n">ext</span><span class="o">=</span><span class="s2">&quot;.txt&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -2015,6 +2081,11 @@
 <span class="sd">            This array is modified in place.</span>
 <span class="sd">        mask : array_like</span>
 <span class="sd">            Mask to apply (T/P if polarized, T-only if not)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        m : array_like</span>
+<span class="sd">            Input map multiplied by mask.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*=</span> <span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -2030,7 +2101,8 @@
 <span class="sd">        Arguments</span>
 <span class="sd">        ---------</span>
 <span class="sd">        m : array_like</span>
-<span class="sd">            Masked input map for which Alms are computed.</span>
+<span class="sd">            Masked input map for which spherical harmonic alms are</span>
+<span class="sd">            computed.</span>
 <span class="sd">        pol : bool</span>
 <span class="sd">            If None, this is set using the value with which the object</span>
 <span class="sd">            was initialized.</span>
@@ -2039,7 +2111,7 @@
 <span class="sd">        -------</span>
 <span class="sd">        alms : array_like</span>
 <span class="sd">            Alms for the input map, computed using the equivalent of</span>
-<span class="sd">            ``healpy.map2alm(m, lmax, pol=self.pol, use_weights=True)``.</span>
+<span class="sd">            ``healpy.map2alm (m, lmax, pol=self.pol, use_weights=True)``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
 
@@ -2057,13 +2129,13 @@
 <span class="sd">            Masked alms for map1</span>
 <span class="sd">        m2 : array_like</span>
 <span class="sd">            Masked alms for map2</span>
-<span class="sd">        lmin : int</span>
+<span class="sd">        lmin : int, default: 2</span>
 <span class="sd">            The minimum ell bin to include in the output Cls.  All ell</span>
 <span class="sd">            bins below this are nulled out.</span>
 <span class="sd">        lmax : int</span>
 <span class="sd">            The maximum ell bin to compute.  If None, this is set to the</span>
 <span class="sd">            lmax value with which the class was initialized.</span>
-<span class="sd">        symmetric : bool</span>
+<span class="sd">        symmetric : bool, default: True</span>
 <span class="sd">            If True, the average cross spectrum of (m1-x-m2 + m2-x-m1) / 2.</span>
 <span class="sd">            is computed.</span>
 
@@ -2095,7 +2167,7 @@
 <span class="sd">        apply_gcorr : bool</span>
 <span class="sd">            If True, a correction factor is applied to the g (mode counting)</span>
 <span class="sd">            matrix.  The correction factor should have been pre-computed for</span>
-<span class="sd">            each map tag.</span>
+<span class="sd">            each map tag using independent scripts in the code package.</span>
 <span class="sd">        reload_gcorr : bool</span>
 <span class="sd">            If True, reload the gcorr file from the masks directory. Useful when</span>
 <span class="sd">            iteratively solving for the correction terms.</span>
@@ -2109,13 +2181,13 @@
 <span class="sd">        This method is called at the &#39;masks&#39; checkpoint, loads or saves a</span>
 <span class="sd">        data dictionary with the following keys:</span>
 
-<span class="sd">           wls : (num_map_corr, num_pol_mask_corr, lmax + 1)</span>
+<span class="sd">         wls: shape (num_map_corr, num_pol_mask_corr, lmax + 1)</span>
 <span class="sd">               mask1-x-mask2 mask cross spectra for every mask pair</span>
-<span class="sd">           fsky, w1, w2, w4 : (num_map_corr, num_pol_mask_corr)</span>
+<span class="sd">         fsky, w1, w2, w4: shape (num_map_corr, num_pol_mask_corr)</span>
 <span class="sd">               sky fraction and weighted modes per mask product</span>
-<span class="sd">           gmat : (num_maps * num_pol_mask_corr, ) * 2</span>
+<span class="sd">         gmat: shape (num_maps * num_pol_mask_corr, ) * 2</span>
 <span class="sd">               mode-counting matrix, computed from</span>
-<span class="sd">                   g = fsky * w2 ** 2 / w4</span>
+<span class="sd">                g = fsky * w2 ** 2 / w4</span>
 
 <span class="sd">        Where the dimensions of each item are determined from:</span>
 
@@ -2229,6 +2301,9 @@
         <span class="n">cache</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 
         <span class="k">def</span> <span class="nf">process_index</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            A internal convenience function computes/loads alms from/to cache for each mask idx.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
             <span class="k">if</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">cache</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
 
@@ -2329,10 +2404,10 @@
 <span class="sd">        method with the appropriate file selection options.</span>
 
 <span class="sd">        If only one dataset is selected, spectra are computed for every</span>
-<span class="sd">        combination of pairs of data maps.  This results in N * (N + 1) / 2</span>
-<span class="sd">        cross spectra for N maps.  A unique mask is used for each input map.</span>
+<span class="sd">        combination of pairs of data maps. This results in N * (N + 1) / 2</span>
+<span class="sd">        cross spectra for N maps. A unique mask is used for each input map.</span>
 
-<span class="sd">        If two datasets are selected, then sum and difference cross-spectra are</span>
+<span class="sd">        If two datasets are selected for a null test, then sum and difference cross-spectra are</span>
 <span class="sd">        computed by summing and differencing the two datasets.  A unique mask is</span>
 <span class="sd">        used for each map in the first dataset, and the same mask is applied to</span>
 <span class="sd">        the corresponding map in the second dataset, so that both halves are</span>
@@ -2351,8 +2426,8 @@
 <span class="sd">            original map tags in the data set.</span>
 <span class="sd">        sub_planck : bool</span>
 <span class="sd">            If True, subtract reobserved Planck from maps. Properly uses half</span>
-<span class="sd">            missions so no Planck autos are used. Useful for removing expected</span>
-<span class="sd">            signal residuals from null tests.</span>
+<span class="sd">            missions so no Planck auto correlations are introduced. Useful for</span>
+<span class="sd">            removing expected signal residuals from null tests.</span>
 <span class="sd">        sub_hm_noise : bool</span>
 <span class="sd">            If True, subtract average of Planck ffp10 noise crosses to debias</span>
 <span class="sd">            template-cleaned spectra.</span>
@@ -2422,6 +2497,9 @@
             <span class="n">save_attrs</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;cls_planck&quot;</span><span class="p">]</span>
 
         <span class="k">def</span> <span class="nf">apply_template</span><span class="p">():</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Internal data processing function to have scaled foreground template subtracted from data map.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
             <span class="n">cls_clean</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;cls_data_clean&quot;</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">())</span>
 
             <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">specs</span><span class="p">:</span>
@@ -2452,6 +2530,9 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">template_cleaned</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="k">def</span> <span class="nf">subtract_planck_maps</span><span class="p">():</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Internal data processing function to have planck maps subtracted from data map, useful for null tests</span>
+<span class="sd">            &quot;&quot;&quot;</span>
             <span class="n">cls_data_sub</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;cls_data_sub&quot;</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">())</span>
             <span class="k">if</span> <span class="n">null_run</span><span class="p">:</span>
                 <span class="n">cls_data_sub_null</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;cls_data_sub_null&quot;</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">())</span>
@@ -2538,8 +2619,11 @@
 
         <span class="n">cache</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 
-        <span class="c1"># convenience function</span>
         <span class="k">def</span> <span class="nf">process_index</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            A internal convenience function computes/loads alms from/to cache for each data map idx,</span>
+<span class="sd">            or data map pair for null tests.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
             <span class="k">if</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">cache</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
 
@@ -2685,13 +2769,12 @@
         <span class="n">transfer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">do_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">sims_add_alms</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">lmin</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
         <span class="n">qb_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute average signal and noise spectra for a given</span>
-<span class="sd">        ensemble of maps.  The same procedure that is used for computing</span>
-<span class="sd">        data cross spectra is used for each realization in the sim</span>
+<span class="sd">        ensemble of sim maps.  The same procedure that is used for c</span>
+<span class="sd">        omputing data cross spectra is used for each realization in the sim</span>
 <span class="sd">        ensemble, and only the average spectra for all realizations</span>
 <span class="sd">        are stored.</span>
 
@@ -2702,21 +2785,21 @@
 <span class="sd">        ---------</span>
 <span class="sd">        ensemble_mean : bool</span>
 <span class="sd">            If true, the mean signal + noise spectrum is used in place</span>
-<span class="sd">            of input data.  This is useful for testing the behavior of</span>
+<span class="sd">            of input data. This is useful for testing the behavior of</span>
 <span class="sd">            the estimator and mapmaker independently of the data.</span>
 <span class="sd">        ensemble_median : bool</span>
 <span class="sd">            If true, the median signal + noise spectrum is used in place</span>
 <span class="sd">            of input data.  This is useful for testing the behavior of</span>
 <span class="sd">            the estimator and mapmaker independently of the data.</span>
 <span class="sd">        sim_index : int</span>
-<span class="sd">            If not None, substitute the sim_index S+N alms for the observed alms</span>
+<span class="sd">            If not None, substitute the sim_index S+N alms for the data alms</span>
 <span class="sd">        sims_add_alms : bool</span>
 <span class="sd">            If True and sim_index is not None, add sim alms instead of sim Cls</span>
 <span class="sd">            to include signal and noise correlations</span>
 <span class="sd">        qb_file : string</span>
 <span class="sd">            Pointer to a bandpowers.npz file in the output directory. If used</span>
 <span class="sd">            in sim_index mode, the noise sim read from disk will be corrected</span>
-<span class="sd">            by the residual qb values stored in qb_file.</span>
+<span class="sd">            by the residual qb values stored in qb_file. Useful for noise rescaling.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
@@ -2782,10 +2865,10 @@
         <span class="n">sims_attr</span><span class="p">[</span><span class="s2">&quot;signal_files_sim2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">signal_files_sim2</span> <span class="k">if</span> <span class="n">null_run</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="n">sims_attr</span><span class="p">[</span><span class="s2">&quot;foreground_files2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">foreground_files2</span> <span class="k">if</span> <span class="n">null_run</span> <span class="k">else</span> <span class="kc">None</span>
 
-        <span class="c1"># convenience functions</span>
         <span class="k">def</span> <span class="nf">process_index</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">files2</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">idx2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">qbf</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Compute alms of masked input map</span>
+<span class="sd">            Internal processing function to compute alms for masked sim map,</span>
+<span class="sd">            or sim map pair for null tests.</span>
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="k">if</span> <span class="n">cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">cache</span> <span class="o">=</span> <span class="p">{}</span>
@@ -2851,7 +2934,7 @@
 
         <span class="k">def</span> <span class="nf">process_files</span><span class="p">():</span>
             <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Compute cross spectra</span>
+<span class="sd">            Function to compute cross spectra for ensemble of files and then save in place.</span>
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="n">sig_field</span> <span class="o">=</span> <span class="s2">&quot;cls_signal&quot;</span>
             <span class="n">sig_null_field</span> <span class="o">=</span> <span class="s2">&quot;cls_signal_null&quot;</span>
@@ -3097,6 +3180,9 @@
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nxs1_null_field</span><span class="p">,</span> <span class="n">cls_null_nxs1</span><span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">check_options</span><span class="p">():</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Check for data options and calls process_files() to compute cross spectra.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
             <span class="k">if</span> <span class="n">ensemble_mean</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Substitute signal + noise for observed spectrum&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">specs</span><span class="p">:</span>
@@ -3336,8 +3422,41 @@
 <span class="sd">        from usual noise directory. Templates read read from</span>
 <span class="sd">        templates_fake_data_template/halfmission-1.</span>
 
-<span class="sd">        This function doesn&#39;t write anything to disk. It just constructs</span>
-<span class="sd">        the maps and computes the Cls and replaces data cls with them</span>
+<span class="sd">        This function doesn&#39;t write anything to disk unless save_data=True.</span>
+<span class="sd">        It just constructs the maps and computes the Cls and replaces data</span>
+<span class="sd">        cls with them. Useful for doing sim runs with template subtraction.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        fake_data_r : float</span>
+<span class="sd">            Tensor-to-scalar ratio to use for CMB sims as scalar + r * tensor.</span>
+<span class="sd">        fake_data_template : str</span>
+<span class="sd">            If not None, add halfmission-1 template in this directory scaled by</span>
+<span class="sd">            alpha to fake data maps</span>
+<span class="sd">        sim_index : int</span>
+<span class="sd">            Index of sim maps to use for CMB, noise, and template noise</span>
+<span class="sd">            simulations.</span>
+<span class="sd">        template_alpha : dict</span>
+<span class="sd">            Dictionary of (map_tag, alpha scaling) values.</span>
+<span class="sd">        noise_type_sim : str</span>
+<span class="sd">            The variant of noise sims to use for the fake data map.</span>
+<span class="sd">        do_noise : bool</span>
+<span class="sd">            If true, use sim_index to set noise seed. If false, always use seed</span>
+<span class="sd">            0. Useful for sims isolating effects of varying CMB only or template</span>
+<span class="sd">            noise only.</span>
+<span class="sd">        do_signal : bool</span>
+<span class="sd">            If true, use sim_index to set CMB seed. If false, always use seed</span>
+<span class="sd">            0. Useful for sims isolating effects of varying noise only or</span>
+<span class="sd">            template noise only.</span>
+<span class="sd">        save_data : bool</span>
+<span class="sd">            If true, save data_xcorr file to disk for fake data.</span>
+<span class="sd">        sub_hm_noise : bool</span>
+<span class="sd">            If True, subtract average of Planck ffp10 noise crosses to debias</span>
+<span class="sd">            template-cleaned spectra</span>
+<span class="sd">        qb_file : str</span>
+<span class="sd">            Pointer to a bandpowers.npz file in the output directory.</span>
+<span class="sd">            The noise sim read from disk will be corrected by the residual qb</span>
+<span class="sd">            values stored in qb_file.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
 
@@ -3381,8 +3500,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Fake data r: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fake_data_r</span><span class="p">),</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">process_index</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
-            <span class="c1"># create the fake map for each map in map_files,</span>
-            <span class="c1"># compute alms for that and templates</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            create the fake map for each map in map_files,</span>
+<span class="sd">            them compute alms for that and templates.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
             <span class="k">if</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">cache</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
@@ -3568,6 +3689,10 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">cls_data</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls1</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
 
         <span class="k">def</span> <span class="nf">apply_template</span><span class="p">():</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            In place, subtract the scaled template cross terms from the data</span>
+<span class="sd">            pseudo-spectra.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
             <span class="n">cls_clean</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;cls_data_clean&quot;</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">())</span>
 
             <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">specs</span><span class="p">:</span>
@@ -3621,7 +3746,7 @@
 <div class="viewcode-block" id="XFaster.get_masked_template_noise"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_masked_template_noise">[docs]</a>    <span class="k">def</span> <span class="nf">get_masked_template_noise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">template_type</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute hm1, hm2, and hm1xhm2 template noise spectra from</span>
-<span class="sd">        sim ensemble</span>
+<span class="sd">        sim ensemble.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
@@ -3631,6 +3756,12 @@
 <span class="sd">            cls_tnoise_hm1 : &lt;same shape as cls_data&gt;</span>
 <span class="sd">            cls_tnoise_hm2 : &lt;same shape as cls_data&gt;</span>
 <span class="sd">            cls_tnoise_hm1xhm2 : &lt;same shape as cls_data&gt;</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        template_type : str</span>
+<span class="sd">            Tag of the template maps directory (noise files in</span>
+<span class="sd">            template_noise_&lt;template_type&gt;).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">mask_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_files</span>
         <span class="n">map_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_tags</span>
@@ -3648,7 +3779,7 @@
         <span class="c1"># convenience functions</span>
         <span class="k">def</span> <span class="nf">process_index</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">idx2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Compute alms of masked input map</span>
+<span class="sd">            Compute alms of masked input map.</span>
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="k">if</span> <span class="n">cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">cache</span> <span class="o">=</span> <span class="p">{}</span>
@@ -3680,7 +3811,7 @@
 
         <span class="k">def</span> <span class="nf">process_files</span><span class="p">():</span>
             <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Compute cross spectra</span>
+<span class="sd">            Compute cross spectra.</span>
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="n">hm1_field</span> <span class="o">=</span> <span class="s2">&quot;cls_tnoise_hm1&quot;</span>
             <span class="n">hm2_field</span> <span class="o">=</span> <span class="s2">&quot;cls_tnoise_hm2&quot;</span>
@@ -3780,8 +3911,8 @@
 <span class="sd">        This method is called at the &#39;kernels&#39; checkpoint and loads or saves</span>
 <span class="sd">        the following data keys to disk:</span>
 
-<span class="sd">            kern, pkern, mkern, xkern : (num_mask_corr, lmax+1, 2*lmax+1)</span>
-<span class="sd">                Temperature and polarization kernels</span>
+<span class="sd">        kern, pkern, mkern, xkern : shape (num_mask_corr, lmax+1, 2*lmax+1)</span>
+<span class="sd">        Temperature and polarization kernels</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">window_lmax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -3933,6 +4064,8 @@
 <span class="sd">            and ``r`` is None and ``flat`` is False, will search for a spectrum</span>
 <span class="sd">            stored in</span>
 <span class="sd">            ``signal_&lt;signal_transfer_type&gt;/spec_signal_&lt;signal_transfer_type&gt;.dat``.</span>
+<span class="sd">        save : bool</span>
+<span class="sd">            If True, save signal shape dict to disk.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -4400,6 +4533,9 @@
 <span class="sd">            If supplied, the kernels are computed only for the given map tag</span>
 <span class="sd">            (or cross if map_tag is map_tag1:map_tag2).</span>
 <span class="sd">            Otherwise, it is computed for all maps and crosses.</span>
+<span class="sd">        transfer_run : bool</span>
+<span class="sd">            If True, set transfer function to 1 to solve for transfer function</span>
+<span class="sd">            qbs.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -5389,6 +5525,10 @@
 <span class="sd">            If supplied, the noise spectrum is applied to the model spectrum.</span>
 <span class="sd">        cls_debias : OrderedDict</span>
 <span class="sd">            If supplied, the debias spectrum is subtracted from the input.</span>
+<span class="sd">        cls_model : OrderedDict</span>
+<span class="sd">            Unbinned model spectrum computed from cbl</span>
+<span class="sd">        cond_noise : float</span>
+<span class="sd">            The level of regularizing noise to add to EE and BB diagonals.</span>
 <span class="sd">        cond_criteria : float</span>
 <span class="sd">            The maximum condition number allowed for Dmat1 to be acceptable</span>
 <span class="sd">            for taking its inverse.</span>
@@ -5396,12 +5536,25 @@
 <span class="sd">            If True, return the likelihood for the given input bandpowers, shapes</span>
 <span class="sd">            and data spectra.  Otherwise, computes output bandpowers and the fisher</span>
 <span class="sd">            covariance for a NR iteration.</span>
+<span class="sd">        like_lmin : int</span>
+<span class="sd">            The minimum ell value to be included in the likelihood calculation</span>
+<span class="sd">        like_lmax : int</span>
+<span class="sd">            The maximum ell value to be included in the likelihood calculation</span>
+<span class="sd">        delta_beta_prior : float</span>
+<span class="sd">            The width of the prior on the additive change from beta_ref. If you</span>
+<span class="sd">            don&#39;t want the code to fit for a spectral index different</span>
+<span class="sd">            from beta_ref, set this to be a very small value (O(1e-10)).</span>
+<span class="sd">        null_first_cmb : bool</span>
+<span class="sd">            Keep first CMB bandpowers fixed to input shape (qb=1).</span>
 <span class="sd">        use_precalc : bool</span>
 <span class="sd">            If True, load pre-calculated terms stored from a previous iteration,</span>
 <span class="sd">            and store for a future iteration.  Otherwise, all calculations are</span>
 <span class="sd">            repeated.</span>
 <span class="sd">        windows : bool</span>
 <span class="sd">            If True, return W_bl window functions for each CMB qb.</span>
+<span class="sd">        inv_fish : array_like</span>
+<span class="sd">            Inverse Fisher matrix. If provided, don&#39;t need to recompute. Useful</span>
+<span class="sd">            if just getting bandpower window functions.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -5794,6 +5947,14 @@
 <span class="sd">        save_iters : bool</span>
 <span class="sd">            If True, the output data from each Fisher iteration are stored</span>
 <span class="sd">            in an individual npz file.</span>
+<span class="sd">        null_first_cmb : bool</span>
+<span class="sd">            Keep first CMB bandpowers fixed to input shape (qb=1).</span>
+<span class="sd">        delta_beta_prior : float</span>
+<span class="sd">            The width of the prior on the additive change from beta_ref. If you</span>
+<span class="sd">            don&#39;t want the code to fit for a spectral index different</span>
+<span class="sd">            from beta_ref, set this to be a very small value (O(1e-10)).</span>
+<span class="sd">        cond_noise : float</span>
+<span class="sd">            The level of regularizing noise to add to EE and BB diagonals.</span>
 <span class="sd">        cond_criteria : float</span>
 <span class="sd">            The maximum condition number allowed for Dmat1 to be acceptable</span>
 <span class="sd">            for taking its inverse.</span>
@@ -6208,7 +6369,8 @@
                             <span class="c1"># use max likelihood qb&#39;s qb2cb to convert qb-&gt;cb</span>
                             <span class="k">if</span> <span class="s2">&quot;res&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stag</span><span class="p">:</span>
                                 <span class="n">cb_arr</span><span class="p">[</span><span class="n">iq</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span>
-                                    <span class="s2">&quot;ij,j-&gt;i&quot;</span><span class="p">,</span> <span class="n">qb2cb</span><span class="p">[</span><span class="n">stag</span><span class="p">],</span> <span class="n">qb1</span><span class="p">[</span><span class="n">stag</span><span class="p">])[</span><span class="n">ibin</span><span class="p">]</span>
+                                    <span class="s2">&quot;ij,j-&gt;i&quot;</span><span class="p">,</span> <span class="n">qb2cb</span><span class="p">[</span><span class="n">stag</span><span class="p">],</span> <span class="n">qb1</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span>
+                                <span class="p">)[</span><span class="n">ibin</span><span class="p">]</span>
                             <span class="k">try</span><span class="p">:</span>
                                 <span class="n">like</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_calc</span><span class="p">(</span>
                                     <span class="n">qb1</span><span class="p">,</span>
@@ -6455,11 +6617,19 @@
 <span class="sd">        save_iters : bool</span>
 <span class="sd">            If True, the output data from each Fisher iteration are stored</span>
 <span class="sd">            in an individual npz file.</span>
-<span class="sd">        return_cls : bool</span>
-<span class="sd">            If True, return C_ls rather than D_ls</span>
+<span class="sd">        delta_beta_prior : float</span>
+<span class="sd">            The width of the prior on the additive change from beta_ref. If you</span>
+<span class="sd">            don&#39;t want the code to fit for a spectral index different</span>
+<span class="sd">            from beta_ref, set this to be a very small value (O(1e-10)).</span>
+<span class="sd">        cond_noise : float</span>
+<span class="sd">            The level of regularizing noise to add to EE and BB diagonals.</span>
 <span class="sd">        cond_criteria : float</span>
 <span class="sd">            The maximum condition number allowed for Dmat1 to be acceptable</span>
 <span class="sd">            for taking its inverse.</span>
+<span class="sd">        null_first_cmb : bool</span>
+<span class="sd">            Keep first CMB bandpowers fixed to input shape (qb=1).</span>
+<span class="sd">        return_cls : bool</span>
+<span class="sd">            If True, return C_ls rather than D_ls</span>
 <span class="sd">        like_profiles : bool</span>
 <span class="sd">            If True, compute profile likelihoods for each qb, leaving all</span>
 <span class="sd">            others fixed at their maximum likelihood values.  Profiles are</span>
@@ -6594,9 +6764,23 @@
 <span class="sd">            corresponding to the given map, rather over all possible</span>
 <span class="sd">            combinations of map-map cross-spectra.  The input qb&#39;s and inv_fish</span>
 <span class="sd">            must have been computed with the same option.</span>
+<span class="sd">        null_first_cmb : bool</span>
+<span class="sd">            Keep first CMB bandpowers fixed to input shape (qb=1).</span>
+<span class="sd">        lmin : int</span>
+<span class="sd">            The minimum ell value to be included in the likelihood calculation</span>
+<span class="sd">        lmax : int</span>
+<span class="sd">            The maximum ell value to be included in the likelihood calculation</span>
 <span class="sd">        mcmc : bool</span>
-<span class="sd">            If True, sample the likelihood using an MCMC sampler.  Remaining options</span>
-<span class="sd">            determine parameter space and sampler configuration.</span>
+<span class="sd">            If True, sample the likelihood using an MCMC sampler.  Remaining</span>
+<span class="sd">            options determine parameter space and sampler configuration.</span>
+<span class="sd">        alpha_tags : list of strings</span>
+<span class="sd">            List of map tags from which foreground template maps should be</span>
+<span class="sd">            subtracted.  These should be the original map tags, not</span>
+<span class="sd">            those generated for chunk sets.</span>
+<span class="sd">        beam_tags : list of strings</span>
+<span class="sd">            List of map tags from which beam error envelopes should be</span>
+<span class="sd">            marginalized over. These should be the original map tags, not</span>
+<span class="sd">            those generated for chunk sets.</span>
 <span class="sd">        r_prior : 2-list or None</span>
 <span class="sd">            Prior upper and lower bound on tensor to scalar ratio.  If None, the</span>
 <span class="sd">            fiducial shape spectrum is assumed, and the r parameter space is not</span>
@@ -6624,7 +6808,10 @@
 <span class="sd">        num_walkers : int</span>
 <span class="sd">            Number of unique walkers with which to sample the parameter space.</span>
 <span class="sd">        num_steps : int</span>
-<span class="sd">            Number of steps each walker should take in sampling the parameter space.</span>
+<span class="sd">            Maximum number of steps each walker can take in sampling the</span>
+<span class="sd">            parameter space.</span>
+<span class="sd">        converge_criteria : float</span>
+<span class="sd">            Convergence criteria for likelihood MCMC chains</span>
 <span class="sd">        reset_backend : bool</span>
 <span class="sd">            If True, clear the backend buffer before sampling.  If False,</span>
 <span class="sd">            samples are appended to the existing buffer.  If not supplied,</span>

@@ -208,14 +208,17 @@
     <span class="n">signal_transfer_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">signal_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">signal_transfer_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">signal_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">noise_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">foreground_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">model_r</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">data_root2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">data_subset2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">residual_fit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">foreground_fit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">bin_width_fg</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-    <span class="n">res_specs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">bin_width_res</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+    <span class="n">res_specs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">weighted_bins</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">ensemble_mean</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">ensemble_median</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -243,9 +246,6 @@
     <span class="n">ref_freq</span><span class="o">=</span><span class="mf">359.7</span><span class="p">,</span>
     <span class="n">beta_ref</span><span class="o">=</span><span class="mf">1.54</span><span class="p">,</span>
     <span class="n">delta_beta_prior</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-    <span class="n">noise_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">signal_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">foreground_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">template_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">template_alpha_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;95&quot;</span><span class="p">,</span> <span class="s2">&quot;150&quot;</span><span class="p">],</span>
     <span class="n">template_alpha</span><span class="o">=</span><span class="p">[</span><span class="mf">0.015</span><span class="p">,</span> <span class="mf">0.043</span><span class="p">],</span>
@@ -280,7 +280,7 @@
 
 <span class="sd">    Arguments</span>
 <span class="sd">    ---------</span>
-<span class="sd">    config : string</span>
+<span class="sd">    config : str</span>
 <span class="sd">        Configuration file. If path doesn&#39;t exist, assumed</span>
 <span class="sd">        to be in xfaster/config/&lt;config&gt;</span>
 <span class="sd">    pol : bool</span>
@@ -295,75 +295,88 @@
 <span class="sd">        Minimum ell for which to compute spectra.</span>
 <span class="sd">    lmax : int</span>
 <span class="sd">        Maximum ell for which to compute spectra.</span>
-<span class="sd">    weighted_bins : bool</span>
-<span class="sd">        If True, use an lfac-weighted binning operator to construct Cbls.</span>
-<span class="sd">        By default, a flat binning operator is used.</span>
 <span class="sd">    multi_map : bool</span>
 <span class="sd">        If True, compute all cross-spectra between maps</span>
 <span class="sd">    likelihood : bool</span>
 <span class="sd">        If True, compute the r likelihood</span>
 <span class="sd">    mcmc : bool</span>
 <span class="sd">        If True, sample the r likelihood using an MCMC sampler</span>
-<span class="sd">    output_root : string</span>
+<span class="sd">    output_root : str</span>
 <span class="sd">        Directory in which to store output files</span>
-<span class="sd">    output_tag : string</span>
+<span class="sd">    output_tag : str</span>
 <span class="sd">        File tag for output files</span>
-<span class="sd">    data_root : string</span>
+<span class="sd">    data_root : str</span>
 <span class="sd">        Root directory where all input files are stored</span>
-<span class="sd">    data_subset : string</span>
+<span class="sd">    data_subset : str</span>
 <span class="sd">        The subset of the data maps to include from each data split</span>
 <span class="sd">        Must be a glob-parseable string</span>
-<span class="sd">    signal_subset : string</span>
+<span class="sd">    signal_subset : str</span>
 <span class="sd">        The subset of the signal sims to include</span>
 <span class="sd">        Must be a glob-parseable string</span>
-<span class="sd">    noise_subset : string</span>
+<span class="sd">    noise_subset : str</span>
 <span class="sd">        The subset of the noise sims to include</span>
 <span class="sd">        Must be a glob-parseable string</span>
-<span class="sd">    data_type : string</span>
-<span class="sd">        The data type to use</span>
-<span class="sd">    noise_type : string</span>
-<span class="sd">        The variant of noise sims to use</span>
-<span class="sd">    noise_type_sim : string</span>
-<span class="sd">        The variant of noise sims to use for sim_index fake data map.</span>
-<span class="sd">        This enables having a different noise sim ensemble to use for</span>
-<span class="sd">        sim_index run than the ensemble from which the noise is computed.</span>
-<span class="sd">    mask_type : string</span>
+<span class="sd">    mask_type : str</span>
 <span class="sd">        The variant of mask to use</span>
-<span class="sd">    signal_type : string</span>
+<span class="sd">    data_type : str</span>
+<span class="sd">        The data type to use</span>
+<span class="sd">    noise_type : str</span>
+<span class="sd">        The variant of noise sims to use</span>
+<span class="sd">    signal_type : str</span>
 <span class="sd">        The variant of signal sims to use</span>
-<span class="sd">    signal_type_sim : string</span>
-<span class="sd">        The variant of signal sims to use for sim_index face data map.</span>
-<span class="sd">        This enables having a different noise sim ensemble to use for</span>
-<span class="sd">        sim_index run than the ensemble from which the signal is computed.</span>
-<span class="sd">    signal_transfer_type : string</span>
+<span class="sd">    signal_transfer_type : str</span>
 <span class="sd">        The variant of signal sims to use for transfer function</span>
-<span class="sd">    signal_spec : string</span>
+<span class="sd">    signal_spec : str</span>
 <span class="sd">        The spectrum data file to use for estimating bandpowers.  If not</span>
 <span class="sd">        supplied, will search for ``spec_signal_&lt;signal_type&gt;.dat`` in the signal</span>
 <span class="sd">        sim directory.</span>
-<span class="sd">    signal_transfer_spec : string</span>
+<span class="sd">    signal_transfer_spec : str</span>
 <span class="sd">        The spectrum data file used to generate signal sims.  If not</span>
 <span class="sd">        supplied, will search for ``spec_signal_&lt;signal_type&gt;.dat`` in the</span>
 <span class="sd">        transfer signal sim directory. Used for computing transfer functions.</span>
+<span class="sd">    signal_type_sim : str</span>
+<span class="sd">        The variant of signal sims to use for sim_index face data map.</span>
+<span class="sd">        This enables having a different noise sim ensemble to use for</span>
+<span class="sd">        sim_index run than the ensemble from which the signal is computed.</span>
+<span class="sd">    noise_type_sim : str</span>
+<span class="sd">        The variant of noise sims to use for sim_index fake data map.</span>
+<span class="sd">        This enables having a different noise sim ensemble to use for</span>
+<span class="sd">        sim_index run than the ensemble from which the noise is computed.</span>
+<span class="sd">    foreground_type_sim : str</span>
+<span class="sd">        Tag for directory (foreground_&lt;foreground_type_sim&gt;) where foreground</span>
+<span class="sd">        sims are that should be added to the signal and noise sims</span>
+<span class="sd">        when running in sim_index mode. Note: the same foreground sim</span>
+<span class="sd">        map is used for each sim_index, despite signal and noise sims</span>
+<span class="sd">        changing.</span>
 <span class="sd">    model_r : float</span>
 <span class="sd">        The ``r`` value to use to compute a spectrum for estimating bandpowers.</span>
 <span class="sd">        Overrides ``signal_spec``.</span>
-<span class="sd">    data_root2, data_subset2 : string</span>
-<span class="sd">        If either of these is set, XFaster performs a null test between these</span>
-<span class="sd">        two data halves.</span>
+<span class="sd">    data_root2 : str</span>
+<span class="sd">        Path for second set of maps for null test. If set, XFaster performs a</span>
+<span class="sd">        null test between data_root and data_root2.</span>
+<span class="sd">    data_subset2 : str</span>
+<span class="sd">        The subset of the data maps to include from each data split for the</span>
+<span class="sd">        second half of a null split.</span>
 <span class="sd">    residual_fit : bool</span>
 <span class="sd">        True is residual shape is being fit to the power. The residual shape</span>
 <span class="sd">        can be split into a number of bins -&gt; nbins_res. The residual bins can</span>
 <span class="sd">        be marginalised over in the final output.</span>
 <span class="sd">    foreground_fit : bool</span>
 <span class="sd">        Include foreground residuals in the residual bins to be fit</span>
+<span class="sd">    bin_width_fg : int or array_like of 6 ints</span>
+<span class="sd">        Width of each ell bin for each of the six output foreground spectra</span>
+<span class="sd">        (TT, EE, BB, TE, EB, TB).  EE/BB bins should be the same</span>
+<span class="sd">        in order to handle mixing correctly.</span>
+<span class="sd">    bin_width_res : int</span>
+<span class="sd">        Width of each bin to use for residual noise fitting</span>
 <span class="sd">    res_specs : list of strings</span>
 <span class="sd">        Spectra to include in noise residual fitting.  List values can be any of</span>
 <span class="sd">        the cross spectra TT, EE, BB, TE, EB, TB, or EEBB for fitting EE and BB</span>
 <span class="sd">        residuals simultaneously.  If not supplied, this defaults to EEBB for</span>
 <span class="sd">        polarized maps, or TT for unpolarized maps.</span>
-<span class="sd">    bin_width_res : int</span>
-<span class="sd">        Width of each bin to use for residual noise fitting</span>
+<span class="sd">    weighted_bins : bool</span>
+<span class="sd">        If True, use an lfac-weighted binning operator to construct Cbls.</span>
+<span class="sd">        By default, a flat binning operator is used.</span>
 <span class="sd">    ensemble_mean : bool</span>
 <span class="sd">        If True, substitute S+N ensemble means for Cls to test biasing</span>
 <span class="sd">    ensemble_median : bool</span>
@@ -380,7 +393,7 @@
 <span class="sd">        The maximum number of iterations</span>
 <span class="sd">    tbeb : bool</span>
 <span class="sd">        If True, compute TB/EB spectra.</span>
-<span class="sd">    null_bb_xfer : bool</span>
+<span class="sd">    fix_bb_xfer : bool</span>
 <span class="sd">        If True, after transfer functions have been calculated, impose</span>
 <span class="sd">        the BB xfer is exactly equal to the EE transfer.</span>
 <span class="sd">    window_lmax : int</span>
@@ -403,16 +416,16 @@
 <span class="sd">    save_iters : bool</span>
 <span class="sd">        If True, store the output of each Fisher iteration, in addition to</span>
 <span class="sd">        the end result.</span>
-<span class="sd">    verbose : string</span>
+<span class="sd">    verbose : str</span>
 <span class="sd">        Logging verbosity level.  If True, defaults to &#39;notice&#39;.</span>
 <span class="sd">    debug : bool</span>
 <span class="sd">        Store extra data in output files for debugging.</span>
-<span class="sd">    checkpoint : string</span>
+<span class="sd">    checkpoint : str</span>
 <span class="sd">        If supplied, re-compute all steps of the algorithm from this point</span>
 <span class="sd">        forward.  Valid checkpoints are {checkpoints}</span>
 <span class="sd">    add_log : bool</span>
 <span class="sd">        If True, write log output to a file instead of to STDOUT.</span>
-<span class="sd">        The log will be in ``&lt;output_root&gt;/run_&lt;output_tag&gt;.log``.</span>
+<span class="sd">        The log will be in ``&lt;output_root&gt;/xfaster-&lt;output_tag&gt;.log``.</span>
 <span class="sd">        This option is useful for logging to file for jobs that</span>
 <span class="sd">        are run directly (rather than submitted).</span>
 <span class="sd">    cond_noise : float</span>
@@ -422,12 +435,6 @@
 <span class="sd">        will be added to covariance to condition it.</span>
 <span class="sd">    null_first_cmb : bool</span>
 <span class="sd">        Keep first CMB bandpowers fixed to input shape (qb=1).</span>
-<span class="sd">    foreground_fit: bool</span>
-<span class="sd">        Fit for a dust component. Only for multi(freq)-map runs</span>
-<span class="sd">    bin_width_fg : int or array_like of 6 ints</span>
-<span class="sd">        Width of each ell bin for each of the six output foreground spectra</span>
-<span class="sd">        (TT, EE, BB, TE, EB, TB).  EE/BB bins should be the same</span>
-<span class="sd">        in order to handle mixing correctly.</span>
 <span class="sd">    ref_freq : float</span>
 <span class="sd">        In GHz, reference frequency for dust model. Dust bandpowers output</span>
 <span class="sd">        will be at this reference frequency.</span>
@@ -439,13 +446,7 @@
 <span class="sd">        The width of the prior on the additive change from beta_ref. If you</span>
 <span class="sd">        don&#39;t want the code to fit for a spectral index different</span>
 <span class="sd">        from beta_ref, set this to be a very small value (O(1e-10)).</span>
-<span class="sd">    foreground_type_sim : string</span>
-<span class="sd">        Tag for directory (foreground_&lt;foreground_type_sim&gt;) where foreground</span>
-<span class="sd">        sims are that should be added to the signal and noise sims</span>
-<span class="sd">        when running in sim_index mode. Note: the same foreground sim</span>
-<span class="sd">        map is used for each sim_index, despite signal and noise sims</span>
-<span class="sd">        changing.</span>
-<span class="sd">    template_type : string</span>
+<span class="sd">    template_type : str</span>
 <span class="sd">        Tag for directory (templates_&lt;template_type&gt;) containing templates</span>
 <span class="sd">        (e.g. a foreground model) to be scaled by a scalar value per</span>
 <span class="sd">        map tag and subtracted from the data. The directory is assumed</span>
@@ -474,10 +475,47 @@
 <span class="sd">        If not None, path to gcorr file. Otherwise, use file labeled</span>
 <span class="sd">        mask_map_&lt;tag&gt;_gcorr.npy in mask directory for signal, or</span>
 <span class="sd">        mask_map_&lt;tag&gt;_gcorr_null.npy for nulls.</span>
-<span class="sd">    qb_file : string</span>
+<span class="sd">    qb_file : str</span>
 <span class="sd">        Pointer to a bandpowers.npz file in the output directory. If used</span>
 <span class="sd">        in sim_index mode, the noise sim read from disk will be corrected</span>
 <span class="sd">        by the residual qb values stored in qb_file.</span>
+<span class="sd">    like_alpha_tags : list of strings</span>
+<span class="sd">        List of map tags from which foreground template maps should be</span>
+<span class="sd">        subtracted and fit in the likelihood.</span>
+<span class="sd">    alpha_prior: list of floats</span>
+<span class="sd">        Flat prior edges for allowed alpha values in the likelihood.</span>
+<span class="sd">        Set to None to not fit for alpha values in the likelihood.</span>
+<span class="sd">    r_prior: list of floats</span>
+<span class="sd">        Flat prior edges for allowed r values in the likelihood.</span>
+<span class="sd">    res_prior: list of floats</span>
+<span class="sd">        Flat prior edges for allowed qb residual values in the likelihood.</span>
+<span class="sd">        Set to None to not fit for residual qb values in the likelihood.</span>
+<span class="sd">    like_beam_tags : list of strings</span>
+<span class="sd">        List of map tags from which beam error fields are read in to be</span>
+<span class="sd">        fit for in the likelihood.</span>
+<span class="sd">    beam_prior: list of floats</span>
+<span class="sd">        Gaussian prior mean and number of strandard deviations for beam error.</span>
+<span class="sd">        This Gaussian is applied as a prior in fitting for beam error in the</span>
+<span class="sd">        likelihood. Set to None to not fit for beam error.</span>
+<span class="sd">    betad_prior : list of floats</span>
+<span class="sd">        Gaussian prior on dust index different from ref beta.</span>
+<span class="sd">        Should be [0, sig] for [mean 0, width sig] gaussian.</span>
+<span class="sd">        Set to None to not fit for betad in the likelihood.</span>
+<span class="sd">    dust_amp_prior: list of floats</span>
+<span class="sd">        Flat prior edges on dust amplitude (rel to Planck 353 ref).</span>
+<span class="sd">        Set to None to not fit for dust_amp in the likelihood.</span>
+<span class="sd">    dust_ellind_prior: list of floats</span>
+<span class="sd">        Gaussian prior on dust ell index different from reference, -2.28.</span>
+<span class="sd">        Should be [0, sig] for [mean 0, width sig] gaussian).</span>
+<span class="sd">        Set to None to not fit for dust_ellind in the likelihood.</span>
+<span class="sd">    mcmc_walkers : int</span>
+<span class="sd">        Number of MCMC walkers to use in the likelihood</span>
+<span class="sd">    like_converge_criteria : float</span>
+<span class="sd">        Convergence criteria for likelihood MCMC chains</span>
+<span class="sd">    bp_tag : str</span>
+<span class="sd">        Tag to append to bandpowers output file</span>
+<span class="sd">    like_tag : str</span>
+<span class="sd">        Tag to append to likelihood output file</span>
 <span class="sd">    sub_planck : bool</span>
 <span class="sd">        If True, subtract reobserved Planck from maps. Properly uses half</span>
 <span class="sd">        missions so no Planck autos are used. Useful for removing expected</span>
@@ -695,8 +733,9 @@
     <span class="p">)</span>
 
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing mask cross-spectra and weights...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-    <span class="n">X</span><span class="o">.</span><span class="n">get_mask_weights</span><span class="p">(</span><span class="n">apply_gcorr</span><span class="o">=</span><span class="n">apply_gcorr</span><span class="p">,</span> <span class="n">reload_gcorr</span><span class="o">=</span><span class="n">reload_gcorr</span><span class="p">,</span>
-                       <span class="n">gcorr_file</span><span class="o">=</span><span class="n">gcorr_file</span><span class="p">)</span>
+    <span class="n">X</span><span class="o">.</span><span class="n">get_mask_weights</span><span class="p">(</span>
+        <span class="n">apply_gcorr</span><span class="o">=</span><span class="n">apply_gcorr</span><span class="p">,</span> <span class="n">reload_gcorr</span><span class="o">=</span><span class="n">reload_gcorr</span><span class="p">,</span> <span class="n">gcorr_file</span><span class="o">=</span><span class="n">gcorr_file</span>
+    <span class="p">)</span>
 
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing kernels...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
     <span class="n">X</span><span class="o">.</span><span class="n">get_kernels</span><span class="p">(</span><span class="n">window_lmax</span><span class="o">=</span><span class="n">window_lmax</span><span class="p">)</span>
@@ -927,8 +966,25 @@
     <span class="n">defaults</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;add_log&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="n">rem_args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">defaults</span><span class="p">)</span>
 
-    <span class="c1"># helper function for populating command line arguments</span>
     <span class="k">def</span> <span class="nf">add_arg</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">short</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Helper function for populating command line arguments. Wrapper</span>
+<span class="sd">        for ArgumentParser.add_argument.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        P : argument parser instance</span>
+<span class="sd">        name : str</span>
+<span class="sd">            Name of argument to add</span>
+<span class="sd">        argtype : str</span>
+<span class="sd">            Data type of argument</span>
+<span class="sd">        default : arb</span>
+<span class="sd">            Default value of the argument</span>
+<span class="sd">        short : str</span>
+<span class="sd">            Shortened name of argument</span>
+<span class="sd">        help : str</span>
+<span class="sd">            Description of argument</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
         <span class="n">argname</span> <span class="o">=</span> <span class="s2">&quot;--</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">))</span>
@@ -1574,6 +1630,7 @@
 <div class="viewcode-block" id="XFasterJobGroup.set_job_options"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.XFasterJobGroup.set_job_options">[docs]</a>    <span class="k">def</span> <span class="nf">set_job_options</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">output</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">workdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">cput</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">wallt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">ppn</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
@@ -1586,12 +1643,61 @@
         <span class="n">job_prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">test</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">pbs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">workdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">dep_afterok</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">exclude</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parse options that control the job script, rather than xfaster.</span>
+<span class="sd">        Passed to batch_tools.batch_sub.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        output : string, optional</span>
+<span class="sd">            Path for output scheduler files, in a logs subdirectory.</span>
+<span class="sd">            If None, use output_root. Overrided by workdir.</span>
+<span class="sd">        workdir : string, optional</span>
+<span class="sd">            If not None, path to output scheduler files. Overrides output.</span>
+<span class="sd">        cput : string or float or datetime.timedelta, optional</span>
+<span class="sd">            Amount of CPU time requested.</span>
+<span class="sd">            String values should be in the format HH:MM:SS, e.g. &#39;10:00:00&#39;.</span>
+<span class="sd">            Numerical values are interpreted as a number of hours.</span>
+<span class="sd">        wallt : string or float or datetime.timedelta, optional</span>
+<span class="sd">            Amount of wall clock time requested.</span>
+<span class="sd">            String values should be in the format HH:MM:SS, e.g. &#39;10:00:00&#39;.</span>
+<span class="sd">            Numerical values are interpreted as a number of hours.</span>
+<span class="sd">        ppn : int, optional</span>
+<span class="sd">            Numper of processes per node</span>
+<span class="sd">        nodes : int or string, optional</span>
+<span class="sd">            Number of nodes to use in job</span>
+<span class="sd">            If a string, will be passed as-is to PBS -l node= resource</span>
+<span class="sd">            If using SLURM and a string, will overwrite node_list if None</span>
+<span class="sd">        mem : float or string, optional</span>
+<span class="sd">            Amount of memory to request for the job. float values in GB.</span>
+<span class="sd">            Or pass a string (eg &#39;4gb&#39;) to use directly.</span>
+<span class="sd">        env_script : string, optional</span>
+<span class="sd">            Path to script to source during job script preamble</span>
+<span class="sd">            For loading modules, setting environment variables, etc</span>
+<span class="sd">        omp_threads : int, optional</span>
+<span class="sd">            Number of OpenMP threads to use per process</span>
+<span class="sd">        nice : int, optional</span>
+<span class="sd">            Adjust scheduling priority (SLURM only). Range from -5000 (highest</span>
+<span class="sd">            priority) to 5000 (lowest priority).</span>
+<span class="sd">            Note: actual submitted --nice value is 5000 higher, since negative</span>
+<span class="sd">            values require special privilege.</span>
+<span class="sd">        queue : string, optional</span>
+<span class="sd">            The name of the queue to which to submit jobs</span>
+<span class="sd">        job_prefix : string, optional</span>
+<span class="sd">            The name of the job. Default: xfaster</span>
+<span class="sd">        test : bool</span>
+<span class="sd">            If True, only print out the job submission script, don&#39;t submit it.</span>
+<span class="sd">        pbs : bool</span>
+<span class="sd">            If True, use pbs scheduler. Else, use slurm.</span>
+<span class="sd">        dep_afterok : string or list of strings</span>
+<span class="sd">            Dependency. Job ID (or IDs) on which to wait for successful completion,</span>
+<span class="sd">            before starting this job</span>
+<span class="sd">        exclude : string or list of strings</span>
+<span class="sd">            List of nodes that will be excluded for job. SLURM-only.</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># XFaster runs faster with OMP and does not use MPI</span>
@@ -1660,9 +1766,16 @@
 <span class="sd">        ---------</span>
 <span class="sd">        group_by : int, optional</span>
 <span class="sd">            Group xfaster calls into jobs with this many calls each.</span>
+<span class="sd">        verbose : bool, optional</span>
+<span class="sd">            Print the working directory, and the job ID if submitted successfully.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        job_ids : list of strings</span>
+<span class="sd">            The IDs of the submitted jobs</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">job_list</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;No unimap jobs have been added.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;No xfaster jobs have been added.&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">group_by</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">group_by</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job_list</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">kwargs</span><span class="p">:</span>

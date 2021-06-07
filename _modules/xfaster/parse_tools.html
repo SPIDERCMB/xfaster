@@ -162,7 +162,8 @@
            <div itemprop="articleBody">
             
   <h1>Source code for xfaster.parse_tools</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span></span><span class="sd">&quot;&quot;&quot; Module for parsing intermediate and output XFaster files. &quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
@@ -189,8 +190,8 @@
 
 <div class="viewcode-block" id="corr_index"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.corr_index">[docs]</a><span class="k">def</span> <span class="nf">corr_index</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This gets the index of the auto spectrum when getting all</span>
-<span class="sd">    pairwise combinations of n maps</span>
+<span class="sd">    Gets the index of the auto spectrum when getting all</span>
+<span class="sd">    pairwise combinations of n maps.</span>
 
 <span class="sd">    Arguments</span>
 <span class="sd">    ---------</span>
@@ -210,6 +211,16 @@
 <div class="viewcode-block" id="num_maps"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.num_maps">[docs]</a><span class="k">def</span> <span class="nf">num_maps</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns how many maps there are if there are n total cross spectra.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    n : int</span>
+<span class="sd">        Number of cross spectra.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    nmaps : int</span>
+<span class="sd">        Number of maps.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">8</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span></div>
 
@@ -217,6 +228,16 @@
 <div class="viewcode-block" id="num_corr"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.num_corr">[docs]</a><span class="k">def</span> <span class="nf">num_corr</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns how many cross spectra there are if there are n total maps.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    n : int</span>
+<span class="sd">        Number of maps.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    nxspec : int</span>
+<span class="sd">        Number of cross spectra.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">n</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span></div>
 
@@ -225,6 +246,17 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    If map tags are repeated (eg, two 150 maps in different chunk</span>
 <span class="sd">    subdirectories), return a list modifying them with an index</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    tags : list of strings</span>
+<span class="sd">        List of original map tags.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    new_tags : list of strings</span>
+<span class="sd">        List of map tags where repeated tags are modified to be</span>
+<span class="sd">        &lt;tag&gt;_&lt;index&gt;, with unique indices.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">tags</span><span class="p">))</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">tags</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">tags</span>
@@ -252,6 +284,21 @@
 <span class="sd">    is True.  If ``index`` is a list, then it should be a list the same length as</span>
 <span class="sd">    ``tags``, and the tuple is populated by indexing into ``index`` using the two</span>
 <span class="sd">    indices of the tags in the original tag list.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    tags : list of strings</span>
+<span class="sd">        Map tags from which to construct cross-spectrum keys like &quot;tag1:tag2&quot;.</span>
+<span class="sd">    index : bool</span>
+<span class="sd">        If True, make values in dictionary the indices of the map tags, rather</span>
+<span class="sd">        than the tags themselves.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pairs : OrderedDict</span>
+<span class="sd">        Dictionary whose keys are pairs of tags in the format &quot;tag1:tag2&quot; and</span>
+<span class="sd">        whose values are a tuple of the two tags used to construct the key, or</span>
+<span class="sd">        their indices, if index=True.</span>
 
 <span class="sd">    Example</span>
 <span class="sd">    -------</span>
@@ -281,6 +328,16 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Recursively decode key or value bytestrings in a dictionary.</span>
 <span class="sd">    Useful when loading a bytes-encoded numpy archive file from disk.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    d : dict</span>
+<span class="sd">        Dictionary to decode.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    d2 : dict</span>
+<span class="sd">        Bytestring-decoded dictionary.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
@@ -301,6 +358,16 @@
 <span class="sd">    Load and decode a numpy archive file from disk.</span>
 
 <span class="sd">    Backward compatible with python2 data files.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    args, kwargs : key/value pairs</span>
+<span class="sd">        Passed to np.load.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    out : dict</span>
+<span class="sd">        Dictionary of info from numpy archive file</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
         <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;encoding&quot;</span><span class="p">,</span> <span class="s2">&quot;latin1&quot;</span><span class="p">)</span>
@@ -328,6 +395,16 @@
 <span class="sd">    Load a pickle file from the given filename.</span>
 <span class="sd">    Ensure that the file is open in mode &#39;rb&#39; (required for python3), and</span>
 <span class="sd">    that the encoding is set to &#39;latin1&#39; in python3.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    filename : str</span>
+<span class="sd">        Path to pickled output file to read.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f : dict</span>
+<span class="sd">        Unpickled file.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">pickle</span>
 
@@ -358,6 +435,11 @@
 <span class="sd">        Either the path to an npz file on disk or a loaded npz dict.</span>
 <span class="sd">    field : str</span>
 <span class="sd">        Which key in data to return as a dictionary.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    data[field] : arb</span>
+<span class="sd">        The value in the ```data`` dictionary for key ``field``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">load_compat</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
@@ -391,6 +473,22 @@
 
 <span class="sd">    If not all items are the same shape, eg, for qb, or if flatten=True,</span>
 <span class="sd">    flatten everything into a vector</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    d : dict</span>
+<span class="sd">        Dictionary to transform into an array.</span>
+<span class="sd">    out : array</span>
+<span class="sd">        If not None, the starting array onto which to stack the arrays</span>
+<span class="sd">        contained in dictionary d.</span>
+<span class="sd">    flatten : bool</span>
+<span class="sd">        If True, return flattened vector instead of array.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    out : array</span>
+<span class="sd">        The array containing stacked elements of the arrays contained in</span>
+<span class="sd">        dictionary ``d``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">d</span>
@@ -416,6 +514,19 @@
 <span class="sd">    Requires that the length of the array is the sum of the lengths of the</span>
 <span class="sd">    arrays in each entry of ref_dict.  The other dimensions of the input</span>
 <span class="sd">    array and reference dict can differ.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    arr : array</span>
+<span class="sd">        Input array to be transformed into dictionary.</span>
+<span class="sd">    ref_dict : dict</span>
+<span class="sd">        Reference dictionary containing the keys used to construct the output</span>
+<span class="sd">        dictionary.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    out : dict</span>
+<span class="sd">        Dictionary of values from arr keyed with keys from ref_dict.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">out</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
     <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
@@ -431,6 +542,16 @@
 <span class="sd">    Construct a dictionary of (start, stop) indices that correspond to the</span>
 <span class="sd">    location of each sub-array when the dict is converted to a single array</span>
 <span class="sd">    using ``dict_to_arr``.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    d : dict</span>
+<span class="sd">        Input dictionary.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    index : dict</span>
+<span class="sd">        Dictionary containing location of sub-arrays corresponding to keys.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -468,6 +589,17 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return the matrix indices of the given spectrum within a 3x3 matrix.  If</span>
 <span class="sd">    ``spec`` is None, return a dictionary of such indices keyed by spectrum.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    spec : str</span>
+<span class="sd">        Which spectrum to return index for. If None, return dict of all.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    index : dict or list</span>
+<span class="sd">        Dictionary of indices if spec in None, or list of indices if spec is</span>
+<span class="sd">        provided.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">inds</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
         <span class="p">[</span>
@@ -489,6 +621,19 @@
 <span class="sd">    Return a mask for extracting spectrum terms from a matrix of shape (3 *</span>
 <span class="sd">    nmaps, 3 * nmaps).  If ``spec`` is None, returns a dictionary of masks keyed</span>
 <span class="sd">    by spectrum.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    spec : str</span>
+<span class="sd">        Which spectrum to return mask for. If None, return dict of all masks.</span>
+<span class="sd">    nmaps : int</span>
+<span class="sd">        Number of maps used for the cross-spectrum analysis.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    spec_mask : dict or arr</span>
+<span class="sd">        Dictionary of masks if spec in None, or (3 * nmaps, 3 * nmaps) array</span>
+<span class="sd">        that is 1 in elements corresponding to spec if spec is provided.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">spec_mask</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
 
@@ -509,6 +654,16 @@
 <span class="sd">    Take a dmat dictionary and return the right shaped Dmat matrix:</span>
 <span class="sd">    (Nmaps * 3, Nmaps * 3, lmax + 1) if pol else</span>
 <span class="sd">    (Nmaps, Nmaps, lmax + 1)</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    dmat_dict : dict</span>
+<span class="sd">        Dictionary containing the model covariance terms.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Dmat : arr</span>
+<span class="sd">        Dmat total model covariance matrix.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">nmaps</span> <span class="o">=</span> <span class="n">num_maps</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dmat_dict</span><span class="p">))</span>
 
@@ -549,8 +704,19 @@
 <span class="sd">    (Nmaps * 3, Nmaps * 3, nbins_cmb+nbins_fg+nbins_res, lmax + 1) if pol</span>
 <span class="sd">    else first two dimensions are Nmaps.</span>
 
-<span class="sd">    If gmat is given, the terms in the resulting matrix are multiplied by the</span>
-<span class="sd">    appriopriate mode density term.</span>
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    dsdqb_dict : dict</span>
+<span class="sd">        Dictionary containing the terms for the derivative of the signal</span>
+<span class="sd">        model, S, w.r.t. the qb parameters.</span>
+<span class="sd">    bin_def : dict</span>
+<span class="sd">        Dictionary containing the bin edges for each qb value fit.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dsdqb_mat : arr</span>
+<span class="sd">        Signal derivative matrix in the expected shape for matrix multiplication</span>
+<span class="sd">        in the Fisher iteration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># get the unique map tags in order from the keys map1:map2</span>
     <span class="n">mtags</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">dsdqb_dict</span><span class="p">[</span><span class="s2">&quot;cmb&quot;</span><span class="p">]]</span>
@@ -626,7 +792,15 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Load a .npz data file from disk and parse all the fields it contains.</span>
 
-<span class="sd">    Returns a dictionary of parsed fields.</span>
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    filename : str</span>
+<span class="sd">        Path to file to parse.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ret : dict</span>
+<span class="sd">        Dictionary of parsed fields.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">load_compat</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>

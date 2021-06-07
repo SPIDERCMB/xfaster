@@ -166,7 +166,6 @@
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;wigner3j&quot;</span><span class="p">,</span>
@@ -177,37 +176,57 @@
 
 
 <span class="k">def</span> <span class="nf">blackbody</span><span class="p">(</span><span class="n">nu</span><span class="p">,</span> <span class="n">ref_freq</span><span class="o">=</span><span class="mf">353.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The ratio of the blackbody function for dust at frequency nu</span>
+<span class="sd">    over the value for reference frequency ref_freq</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    nu : float</span>
+<span class="sd">        Frequency in GHz.</span>
+<span class="sd">    ref_freq : float</span>
+<span class="sd">        Reference frequency in GHz.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    blackbody_ratio : float</span>
+<span class="sd">        B(nu, T_dust) / B(nu_ref, T_dust)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">k</span> <span class="o">=</span> <span class="mf">1.38064852e-23</span>  <span class="c1"># Boltzmann constant</span>
     <span class="n">h</span> <span class="o">=</span> <span class="mf">6.626070040e-34</span>  <span class="c1"># Planck constant</span>
     <span class="n">T</span> <span class="o">=</span> <span class="mf">19.6</span>
     <span class="n">nu_ref</span> <span class="o">=</span> <span class="n">ref_freq</span> <span class="o">*</span> <span class="mf">1.0e9</span>
-    <span class="c1"># T = 2.725 #Cmb BB temp in K</span>
-    <span class="n">nu</span> <span class="o">*=</span> <span class="mf">1.0e9</span>  <span class="c1"># Ghz</span>
+    <span class="n">nu</span> <span class="o">*=</span> <span class="mf">1.0e9</span>  <span class="c1"># GHz -&gt; Hz</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">nu</span> <span class="o">/</span> <span class="n">k</span> <span class="o">/</span> <span class="n">T</span>
     <span class="n">x_ref</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">nu_ref</span> <span class="o">/</span> <span class="n">k</span> <span class="o">/</span> <span class="n">T</span>
     <span class="k">return</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">/</span> <span class="n">x_ref</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x_ref</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">rj2cmb</span><span class="p">(</span><span class="n">nu_in</span><span class="p">,</span> <span class="n">ccorr</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">rj2cmb</span><span class="p">(</span><span class="n">nu_in</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    planck_cc_gnu = {101: 1.30575, 141: 1.6835, 220: 3.2257, 359: 14.1835}</span>
-<span class="sd">    if ccorr:</span>
-<span class="sd">        if np.isscalar(nu_in):</span>
-<span class="sd">            for f, g in planck_cc_gnu.items():</span>
-<span class="sd">                if int(nu_in) == int(f):</span>
-<span class="sd">                    return g</span>
+<span class="sd">    Conversion from Rayleigh-Jeans units to CMB temperature units</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    nu_in : float</span>
+<span class="sd">        Frequency in GHz.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    cal_fac : float</span>
+<span class="sd">        Number by which to multiply a RJ temperature to get a CMB temp</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">k</span> <span class="o">=</span> <span class="mf">1.38064852e-23</span>  <span class="c1"># Boltzmann constant</span>
     <span class="n">h</span> <span class="o">=</span> <span class="mf">6.626070040e-34</span>  <span class="c1"># Planck constant</span>
     <span class="n">T</span> <span class="o">=</span> <span class="mf">2.72548</span>  <span class="c1"># Cmb BB temp in K</span>
-    <span class="n">nu</span> <span class="o">=</span> <span class="n">nu_in</span> <span class="o">*</span> <span class="mf">1.0e9</span>  <span class="c1"># Ghz</span>
+    <span class="n">nu</span> <span class="o">=</span> <span class="n">nu_in</span> <span class="o">*</span> <span class="mf">1.0e9</span>  <span class="c1"># GHz -&gt; Hz</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">nu</span> <span class="o">/</span> <span class="n">k</span> <span class="o">/</span> <span class="n">T</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
 
 
 <div class="viewcode-block" id="scale_dust"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_tools.scale_dust">[docs]</a><span class="k">def</span> <span class="nf">scale_dust</span><span class="p">(</span><span class="n">freq0</span><span class="p">,</span> <span class="n">freq1</span><span class="p">,</span> <span class="n">ref_freq</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">delta_beta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">deriv</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Get the factor by which you must dividide the cross spectrum from maps of</span>
+<span class="sd">    Get the factor by which you must multiply the cross spectrum from maps of</span>
 <span class="sd">    frequencies freq0 and freq1 to match the dust power at ref_freq given</span>
 <span class="sd">    spectra index beta.</span>
 
@@ -216,6 +235,32 @@
 
 <span class="sd">    Otherwise if delta_beta is given, return the scale factor adjusted</span>
 <span class="sd">    for a linearized offset delta_beta from the reference beta.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    freq0 : float</span>
+<span class="sd">        Frequency of map0 in GHz.</span>
+<span class="sd">    freq1 : float</span>
+<span class="sd">        Frequency of map1 in GHz.</span>
+<span class="sd">    ref_freq : float</span>
+<span class="sd">        Reference frequency from which to compute relative scaling in GHz.</span>
+<span class="sd">    beta : float</span>
+<span class="sd">        Dust spectral index.</span>
+<span class="sd">    delta_beta : float</span>
+<span class="sd">        Difference from beta-- scaling computed as a first order Taylor</span>
+<span class="sd">        expansion from original beta-scaling.</span>
+<span class="sd">    deriv : bool</span>
+<span class="sd">        If true, return the frequency scaling at the reference beta, along with</span>
+<span class="sd">        the first derivative w.r.t. beta at the reference beta.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    freq_scale : float</span>
+<span class="sd">        The relative scaling factor for the dust cross spectrum-- multiply by</span>
+<span class="sd">        this number to get the dust spectrum at the reference frequency</span>
+<span class="sd">    -- or --</span>
+<span class="sd">    freq_scale, deriv : floats</span>
+<span class="sd">        The relative scaling factor and its derivative</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">freq_scale</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">rj2cmb</span><span class="p">(</span><span class="n">freq0</span><span class="p">)</span>
@@ -240,7 +285,7 @@
 <span class="sd">    Wigner 3j symbols computed for all valid values of ``L``, as in:</span>
 
 <span class="sd">    .. math::</span>
-<span class="sd">    </span>
+
 <span class="sd">        \begin{pmatrix}</span>
 <span class="sd">         \ell_2 &amp; \ell_3 &amp; L \\</span>
 <span class="sd">         m_2 &amp; m_3 &amp; 0 \\</span>
