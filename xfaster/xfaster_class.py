@@ -3791,9 +3791,6 @@ class XFaster(object):
         if not self.null_run and "fg_tt" in self.bin_def:
             specs.append("fg")
 
-        if component == "fg":
-            specs = ["fg"]
-
         nspecs = len(specs)
 
         if save:
@@ -3920,6 +3917,9 @@ class XFaster(object):
                         masked = True
                 if not masked:
                     cls_shape[csk] *= 1.0e-12
+
+        if component == "fg":
+            cls_shape = {"fg": cls_shape["fg"]}
 
         if save:
             self.cls_shape = cls_shape
@@ -4584,7 +4584,7 @@ class XFaster(object):
                 bin_things(comp, d, md)
 
         return cbl
-    
+
     def bin_cl_template_tmat(
         self,
         cls_shape=None,
@@ -4695,7 +4695,7 @@ class XFaster(object):
                     mstag = stag + "_mix"
                     cbl.setdefault(mstag, OrderedDict())
                 bd = self.bin_def[stag]
-                #bw = self.bin_weights[stag]
+                # bw = self.bin_weights[stag]
                 for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
                     if beam_error:
                         cbl[mstag][xname] = OrderedDict(
@@ -4703,7 +4703,7 @@ class XFaster(object):
                         )
                     else:
                         cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
-                    
+
                     if spec in ["ee", "bb"]:
                         if beam_error:
                             cbl[mstag][xname] = OrderedDict(
@@ -4717,28 +4717,28 @@ class XFaster(object):
                         if beam_error:
                             for k in beam_keys:
                                 cbl[stag][xname][k][idx, ls] = binup(
-                                    d[k][si, xi], left, right #, weight
+                                    d[k][si, xi], left, right  # , weight
                                 )
-                            #cbl[stag][xname]["b1"][idx, ls] = binup(
+                            # cbl[stag][xname]["b1"][idx, ls] = binup(
                             #    d_b1[:, si, xi], left, right
-                            #)
+                            # )
                         else:
                             cbl[stag][xname][idx, ls] = binup(
-                                d[si, xi], left, right #, weights
+                                d[si, xi], left, right  # , weights
                             )
                         if spec in ["ee", "bb"]:
                             if beam_error:
                                 for k in beam_keys:
                                     cbl[mstag][xname][k][idx, ls] = binup(
-                                        md[k][si - 1, xi], left, right#, weights
+                                        md[k][si - 1, xi], left, right  # , weights
                                     )
-                
-                                    #cbl[mstag][xname]["b1"][idx, ls] = binup(
+
+                                    # cbl[mstag][xname]["b1"][idx, ls] = binup(
                                     #    md_b1[:, si - 1, xi], left, right
-                                    #)
+                                    # )
                             else:
                                 cbl[mstag][xname][idx, ls] = binup(
-                                    md[si - 1, xi], left, right#, weights
+                                    md[si - 1, xi], left, right  # , weights
                                 )
 
         for comp in comps:
@@ -4757,9 +4757,9 @@ class XFaster(object):
                     self.md = np.multiply(
                         self.md_fg, s_arr, out=getattr(self, "md", None)
                     )
-                    #bin_things(
+                    # bin_things(
                     #    comp, self.d, self.md, None, None, None, None, None, None
-                    #)
+                    # )
                 else:
                     for k in beam_keys:
                         if not hasattr(self, "d"):
@@ -4767,9 +4767,9 @@ class XFaster(object):
                             self.md = OrderedDict([(k, None) for k in beam_keys])
                         self.d[k] = np.multiply(self.d_fg[k], s_arr, out=self.d[k])
                         self.md[k] = np.multiply(self.md_fg[k], s_arr, out=self.md[k])
-                    #self.d_b1 = np.multiply(
+                    # self.d_b1 = np.multiply(
                     #    self.d_fg_b1, s_arr, out=getattr(self, "d_b1", None)
-                    #)
+                    # )
                 bin_things(comp, self.d, self.md)
             else:
                 kshape = [nspec, nxmap, self.lmax - 1, lmax_kern + 1]
@@ -4779,10 +4779,10 @@ class XFaster(object):
 
                 # because transfer matrix includes flbl2, combine those, just store
                 # xfermat * binned shape
-          
+
                 fbs_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
-                
-                # for compute d of non-fg with beam error  
+
+                # for compute d of non-fg with beam error
                 if beam_error:
                     b_arr = {k: np.zeros(shape) for k in beam_keys}
 
@@ -4792,7 +4792,7 @@ class XFaster(object):
                         mstag = None
                         if comp != "res" and spec in ["ee", "bb"]:
                             mstag = stag + "_mix"
-                        
+
                         if "res" in comp:
                             s0, s1 = spec
                             res_tags = {
@@ -4831,7 +4831,7 @@ class XFaster(object):
                                     cbl[stag][xname][idx, lls] = np.copy(cl1[lls])
 
                             continue
-                        
+
                         if beam_error:
                             b_arr["b1"][si, xi] = beam_error[spec][tag1]
                             b_arr["b2"][si, xi] = beam_error[spec][tag2]
@@ -4862,7 +4862,7 @@ class XFaster(object):
                     else:
                         s_arr = np.zeros(nbins_transfer * len(specs))
                         for si, spec in enumerate(specs):
-                            s_spec = cls_shape["cmb_{}".format(spec)][: lk]
+                            s_spec = cls_shape["cmb_{}".format(spec)][:lk]
                             if self.weighted_bins:
                                 s_spec = stats.binned_statistic(
                                     ell, lfac * s_spec, bins=transfer_bins
@@ -4893,7 +4893,6 @@ class XFaster(object):
                             k_arr[si, xi] = (
                                 self.pkern[xname][ls] - self.mkern[xname][ls]
                             )[:, : lmax_kern + 1]
-            
 
                 # need last 3 dims of kernel to match other arrays
                 k_arr = np.transpose(k_arr, axes=[2, 0, 1, 3])
@@ -4912,7 +4911,7 @@ class XFaster(object):
                     md_b3 = None
                 else:
                     # why not include error here
-                    
+
                     d = None
                     md = None
                     """
@@ -6392,7 +6391,8 @@ class XFaster(object):
                             # use max likelihood qb's qb2cb to convert qb->cb
                             if "res" not in stag:
                                 cb_arr[iq] = np.einsum(
-                                    "ij,j->i", qb2cb[stag], qb1[stag])[ibin]
+                                    "ij,j->i", qb2cb[stag], qb1[stag]
+                                )[ibin]
                             try:
                                 like = self.fisher_calc(
                                     qb1,
@@ -6763,62 +6763,62 @@ class XFaster(object):
         converge_criteria=0.01,
         reset_backend=None,
         file_tag=None,
-        use_xfer_mat=True  
+        use_xfer_mat=True,
     ):
         """
-        Explore the likelihood, optionally with an MCMC sampler.
+         Explore the likelihood, optionally with an MCMC sampler.
 
-        Arguments
-        ---------
-        qb : OrderedDict
-            Bandpower parameters previously computed by Fisher iteration.
-        inv_fish : array_like
-            Inverse Fisher matrix computed with the input qb's.
-        map_tag : string
-            If not None, then the likelihood is sampled using the spectra
-            corresponding to the given map, rather over all possible
-            combinations of map-map cross-spectra.  The input qb's and inv_fish
-            must have been computed with the same option.
-        mcmc : bool
-            If True, sample the likelihood using an MCMC sampler.  Remaining options
-            determine parameter space and sampler configuration.
-        r_prior : 2-list or None
-            Prior upper and lower bound on tensor to scalar ratio.  If None, the
-            fiducial shape spectrum is assumed, and the r parameter space is not
-            varied.
-        alpha_prior : 2-list or None
-            Prior upper and lower bound on template coefficients.  If None, the
-            alpha parameter space is not varied.
-        res_prior : 2-list or none
-            Prior upper and lower bound on residual qbs.  If None, the
-            res parameter space is not varied.
-        beam_prior : 2-list or none
-            Prior mean and width of gaussian width on beam error (when
-            multiplied by beam error envelope).  If None, the
-            beam parameter space is not varied.
-        betad_prior : 2-list or none
-            Prior mean and width of gaussian width on dust spectral index.
-            If None, the dust index parameter space is not varied.
-        dust_amp_prior : 2-list or none
-            Prior upper and lower bound on dust amplitude.
-            If None, the dust amp parameter space is not varied.
-        dust_ellind_prior : 2-list or none
-            Prior mean and width of Gaussian prior on difference in dust ell
-            power law index. If None, don't vary from reference if fitting dust
-            power spectrum model.
-        num_walkers : int
-            Number of unique walkers with which to sample the parameter space.
-        num_steps : int
-            Number of steps each walker should take in sampling the parameter space.
-        reset_backend : bool
-            If True, clear the backend buffer before sampling.  If False,
-            samples are appended to the existing buffer.  If not supplied,
-            set to True if the checkpoint has been forced to be rerun.
-        file_tag : string
-            If supplied, appended to the likelihood filename.
-       use_xfer_mat : bool
-            If True, use transfer matrix to construct model spectrum. If false, use
-            transfer function XFaster computes
+         Arguments
+         ---------
+         qb : OrderedDict
+             Bandpower parameters previously computed by Fisher iteration.
+         inv_fish : array_like
+             Inverse Fisher matrix computed with the input qb's.
+         map_tag : string
+             If not None, then the likelihood is sampled using the spectra
+             corresponding to the given map, rather over all possible
+             combinations of map-map cross-spectra.  The input qb's and inv_fish
+             must have been computed with the same option.
+         mcmc : bool
+             If True, sample the likelihood using an MCMC sampler.  Remaining options
+             determine parameter space and sampler configuration.
+         r_prior : 2-list or None
+             Prior upper and lower bound on tensor to scalar ratio.  If None, the
+             fiducial shape spectrum is assumed, and the r parameter space is not
+             varied.
+         alpha_prior : 2-list or None
+             Prior upper and lower bound on template coefficients.  If None, the
+             alpha parameter space is not varied.
+         res_prior : 2-list or none
+             Prior upper and lower bound on residual qbs.  If None, the
+             res parameter space is not varied.
+         beam_prior : 2-list or none
+             Prior mean and width of gaussian width on beam error (when
+             multiplied by beam error envelope).  If None, the
+             beam parameter space is not varied.
+         betad_prior : 2-list or none
+             Prior mean and width of gaussian width on dust spectral index.
+             If None, the dust index parameter space is not varied.
+         dust_amp_prior : 2-list or none
+             Prior upper and lower bound on dust amplitude.
+             If None, the dust amp parameter space is not varied.
+         dust_ellind_prior : 2-list or none
+             Prior mean and width of Gaussian prior on difference in dust ell
+             power law index. If None, don't vary from reference if fitting dust
+             power spectrum model.
+         num_walkers : int
+             Number of unique walkers with which to sample the parameter space.
+         num_steps : int
+             Number of steps each walker should take in sampling the parameter space.
+         reset_backend : bool
+             If True, clear the backend buffer before sampling.  If False,
+             samples are appended to the existing buffer.  If not supplied,
+             set to True if the checkpoint has been forced to be rerun.
+         file_tag : string
+             If supplied, appended to the likelihood filename.
+        use_xfer_mat : bool
+             If True, use transfer matrix to construct model spectrum. If false, use
+             transfer function XFaster computes
         """
 
         for x in [
@@ -6895,6 +6895,9 @@ class XFaster(object):
             "dust_amp_prior": dust_amp_prior,
             "dust_ellind_prior": dust_ellind_prior,
         }
+
+        self.log("Priors: {}".format(priors), "debug")
+
         # priors on quantities that affect Dmat_obs or gmat (precalculated)
         obs_priors = [alpha_prior]
 
@@ -6919,14 +6922,14 @@ class XFaster(object):
             lmax=lmax,
             use_xfer_mat=use_xfer_mat,
         )
-    
+
         if use_xfer_mat:
             bin_cl_template = self.bin_cl_template_tmat
             self.lmax = 308
             self.lmin = 8
         else:
             bin_cl_template = self.bin_cl_template
-    
+
         if mcmc and reset_backend is None:
             ret = self.load_data(
                 save_name,
