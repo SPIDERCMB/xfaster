@@ -44,14 +44,17 @@ def xfaster_run(
     signal_transfer_type=None,
     signal_spec=None,
     signal_transfer_spec=None,
+    signal_type_sim=None,
+    noise_type_sim=None,
+    foreground_type_sim=None,
     model_r=None,
     data_root2=None,
     data_subset2=None,
     residual_fit=True,
     foreground_fit=False,
     bin_width_fg=30,
-    res_specs=None,
     bin_width_res=25,
+    res_specs=None,
     weighted_bins=False,
     ensemble_mean=False,
     ensemble_median=False,
@@ -79,9 +82,6 @@ def xfaster_run(
     ref_freq=359.7,
     beta_ref=1.54,
     delta_beta_prior=0.5,
-    noise_type_sim=None,
-    signal_type_sim=None,
-    foreground_type_sim=None,
     template_type=None,
     template_alpha_tags=["95", "150"],
     template_alpha=[0.015, 0.043],
@@ -117,7 +117,7 @@ def xfaster_run(
 
     Arguments
     ---------
-    config : string
+    config : str
         Configuration file. If path doesn't exist, assumed
         to be in xfaster/config/<config>
     pol : bool
@@ -132,75 +132,88 @@ def xfaster_run(
         Minimum ell for which to compute spectra.
     lmax : int
         Maximum ell for which to compute spectra.
-    weighted_bins : bool
-        If True, use an lfac-weighted binning operator to construct Cbls.
-        By default, a flat binning operator is used.
     multi_map : bool
         If True, compute all cross-spectra between maps
     likelihood : bool
         If True, compute the r likelihood
     mcmc : bool
         If True, sample the r likelihood using an MCMC sampler
-    output_root : string
+    output_root : str
         Directory in which to store output files
-    output_tag : string
+    output_tag : str
         File tag for output files
-    data_root : string
+    data_root : str
         Root directory where all input files are stored
-    data_subset : string
+    data_subset : str
         The subset of the data maps to include from each data split
         Must be a glob-parseable string
-    signal_subset : string
+    signal_subset : str
         The subset of the signal sims to include
         Must be a glob-parseable string
-    noise_subset : string
+    noise_subset : str
         The subset of the noise sims to include
         Must be a glob-parseable string
-    data_type : string
-        The data type to use
-    noise_type : string
-        The variant of noise sims to use
-    noise_type_sim : string
-        The variant of noise sims to use for sim_index fake data map.
-        This enables having a different noise sim ensemble to use for
-        sim_index run than the ensemble from which the noise is computed.
-    mask_type : string
+    mask_type : str
         The variant of mask to use
-    signal_type : string
+    data_type : str
+        The data type to use
+    noise_type : str
+        The variant of noise sims to use
+    signal_type : str
         The variant of signal sims to use
-    signal_type_sim : string
-        The variant of signal sims to use for sim_index face data map.
-        This enables having a different noise sim ensemble to use for
-        sim_index run than the ensemble from which the signal is computed.
-    signal_transfer_type : string
+    signal_transfer_type : str
         The variant of signal sims to use for transfer function
-    signal_spec : string
+    signal_spec : str
         The spectrum data file to use for estimating bandpowers.  If not
         supplied, will search for ``spec_signal_<signal_type>.dat`` in the signal
         sim directory.
-    signal_transfer_spec : string
+    signal_transfer_spec : str
         The spectrum data file used to generate signal sims.  If not
         supplied, will search for ``spec_signal_<signal_type>.dat`` in the
         transfer signal sim directory. Used for computing transfer functions.
+    signal_type_sim : str
+        The variant of signal sims to use for sim_index face data map.
+        This enables having a different noise sim ensemble to use for
+        sim_index run than the ensemble from which the signal is computed.
+    noise_type_sim : str
+        The variant of noise sims to use for sim_index fake data map.
+        This enables having a different noise sim ensemble to use for
+        sim_index run than the ensemble from which the noise is computed.
+    foreground_type_sim : str
+        Tag for directory (foreground_<foreground_type_sim>) where foreground
+        sims are that should be added to the signal and noise sims
+        when running in sim_index mode. Note: the same foreground sim
+        map is used for each sim_index, despite signal and noise sims
+        changing.
     model_r : float
         The ``r`` value to use to compute a spectrum for estimating bandpowers.
         Overrides ``signal_spec``.
-    data_root2, data_subset2 : string
-        If either of these is set, XFaster performs a null test between these
-        two data halves.
+    data_root2 : str
+        Path for second set of maps for null test. If set, XFaster performs a
+        null test between data_root and data_root2.
+    data_subset2 : str
+        The subset of the data maps to include from each data split for the
+        second half of a null split.
     residual_fit : bool
         True is residual shape is being fit to the power. The residual shape
         can be split into a number of bins -> nbins_res. The residual bins can
         be marginalised over in the final output.
     foreground_fit : bool
         Include foreground residuals in the residual bins to be fit
+    bin_width_fg : int or array_like of 6 ints
+        Width of each ell bin for each of the six output foreground spectra
+        (TT, EE, BB, TE, EB, TB).  EE/BB bins should be the same
+        in order to handle mixing correctly.
+    bin_width_res : int
+        Width of each bin to use for residual noise fitting
     res_specs : list of strings
         Spectra to include in noise residual fitting.  List values can be any of
         the cross spectra TT, EE, BB, TE, EB, TB, or EEBB for fitting EE and BB
         residuals simultaneously.  If not supplied, this defaults to EEBB for
         polarized maps, or TT for unpolarized maps.
-    bin_width_res : int
-        Width of each bin to use for residual noise fitting
+    weighted_bins : bool
+        If True, use an lfac-weighted binning operator to construct Cbls.
+        By default, a flat binning operator is used.
     ensemble_mean : bool
         If True, substitute S+N ensemble means for Cls to test biasing
     ensemble_median : bool
@@ -217,7 +230,7 @@ def xfaster_run(
         The maximum number of iterations
     tbeb : bool
         If True, compute TB/EB spectra.
-    null_bb_xfer : bool
+    fix_bb_xfer : bool
         If True, after transfer functions have been calculated, impose
         the BB xfer is exactly equal to the EE transfer.
     window_lmax : int
@@ -240,16 +253,16 @@ def xfaster_run(
     save_iters : bool
         If True, store the output of each Fisher iteration, in addition to
         the end result.
-    verbose : string
+    verbose : str
         Logging verbosity level.  If True, defaults to 'notice'.
     debug : bool
         Store extra data in output files for debugging.
-    checkpoint : string
+    checkpoint : str
         If supplied, re-compute all steps of the algorithm from this point
         forward.  Valid checkpoints are {checkpoints}
     add_log : bool
         If True, write log output to a file instead of to STDOUT.
-        The log will be in ``<output_root>/run_<output_tag>.log``.
+        The log will be in ``<output_root>/xfaster-<output_tag>.log``.
         This option is useful for logging to file for jobs that
         are run directly (rather than submitted).
     cond_noise : float
@@ -259,12 +272,6 @@ def xfaster_run(
         will be added to covariance to condition it.
     null_first_cmb : bool
         Keep first CMB bandpowers fixed to input shape (qb=1).
-    foreground_fit: bool
-        Fit for a dust component. Only for multi(freq)-map runs
-    bin_width_fg : int or array_like of 6 ints
-        Width of each ell bin for each of the six output foreground spectra
-        (TT, EE, BB, TE, EB, TB).  EE/BB bins should be the same
-        in order to handle mixing correctly.
     ref_freq : float
         In GHz, reference frequency for dust model. Dust bandpowers output
         will be at this reference frequency.
@@ -276,13 +283,7 @@ def xfaster_run(
         The width of the prior on the additive change from beta_ref. If you
         don't want the code to fit for a spectral index different
         from beta_ref, set this to be a very small value (O(1e-10)).
-    foreground_type_sim : string
-        Tag for directory (foreground_<foreground_type_sim>) where foreground
-        sims are that should be added to the signal and noise sims
-        when running in sim_index mode. Note: the same foreground sim
-        map is used for each sim_index, despite signal and noise sims
-        changing.
-    template_type : string
+    template_type : str
         Tag for directory (templates_<template_type>) containing templates
         (e.g. a foreground model) to be scaled by a scalar value per
         map tag and subtracted from the data. The directory is assumed
@@ -311,10 +312,47 @@ def xfaster_run(
         If not None, path to gcorr file. Otherwise, use file labeled
         mask_map_<tag>_gcorr.npy in mask directory for signal, or
         mask_map_<tag>_gcorr_null.npy for nulls.
-    qb_file : string
+    qb_file : str
         Pointer to a bandpowers.npz file in the output directory. If used
         in sim_index mode, the noise sim read from disk will be corrected
         by the residual qb values stored in qb_file.
+    like_alpha_tags : list of strings
+        List of map tags from which foreground template maps should be
+        subtracted and fit in the likelihood.
+    alpha_prior: list of floats
+        Flat prior edges for allowed alpha values in the likelihood.
+        Set to None to not fit for alpha values in the likelihood.
+    r_prior: list of floats
+        Flat prior edges for allowed r values in the likelihood.
+    res_prior: list of floats
+        Flat prior edges for allowed qb residual values in the likelihood.
+        Set to None to not fit for residual qb values in the likelihood.
+    like_beam_tags : list of strings
+        List of map tags from which beam error fields are read in to be
+        fit for in the likelihood.
+    beam_prior: list of floats
+        Gaussian prior mean and number of strandard deviations for beam error.
+        This Gaussian is applied as a prior in fitting for beam error in the
+        likelihood. Set to None to not fit for beam error.
+    betad_prior : list of floats
+        Gaussian prior on dust index different from ref beta.
+        Should be [0, sig] for [mean 0, width sig] gaussian.
+        Set to None to not fit for betad in the likelihood.
+    dust_amp_prior: list of floats
+        Flat prior edges on dust amplitude (rel to Planck 353 ref).
+        Set to None to not fit for dust_amp in the likelihood.
+    dust_ellind_prior: list of floats
+        Gaussian prior on dust ell index different from reference, -2.28.
+        Should be [0, sig] for [mean 0, width sig] gaussian).
+        Set to None to not fit for dust_ellind in the likelihood.
+    mcmc_walkers : int
+        Number of MCMC walkers to use in the likelihood
+    like_converge_criteria : float
+        Convergence criteria for likelihood MCMC chains
+    bp_tag : str
+        Tag to append to bandpowers output file
+    like_tag : str
+        Tag to append to likelihood output file
     sub_planck : bool
         If True, subtract reobserved Planck from maps. Properly uses half
         missions so no Planck autos are used. Useful for removing expected
@@ -536,8 +574,9 @@ def xfaster_run(
     )
 
     X.log("Computing mask cross-spectra and weights...", "notice")
-    X.get_mask_weights(apply_gcorr=apply_gcorr, reload_gcorr=reload_gcorr,
-                       gcorr_file=gcorr_file)
+    X.get_mask_weights(
+        apply_gcorr=apply_gcorr, reload_gcorr=reload_gcorr, gcorr_file=gcorr_file
+    )
 
     X.log("Computing kernels...", "notice")
     X.get_kernels(window_lmax=window_lmax)
@@ -768,8 +807,25 @@ def xfaster_parse(args=None, test=False):
     defaults.pop("add_log", None)
     rem_args = list(defaults)
 
-    # helper function for populating command line arguments
     def add_arg(P, name, argtype=None, default=None, short=None, help=None, **kwargs):
+        """
+        Helper function for populating command line arguments. Wrapper
+        for ArgumentParser.add_argument.
+
+        Arguments
+        ---------
+        P : argument parser instance
+        name : str
+            Name of argument to add
+        argtype : str
+            Data type of argument
+        default : arb
+            Default value of the argument
+        short : str
+            Shortened name of argument
+        help : str
+            Description of argument
+        """
 
         name = name.replace("-", "_")
         argname = "--{}".format(name.replace("_", "-"))
@@ -1421,6 +1477,7 @@ class XFasterJobGroup(object):
     def set_job_options(
         self,
         output=None,
+        workdir=None,
         cput=None,
         wallt=None,
         ppn=8,
@@ -1433,12 +1490,61 @@ class XFasterJobGroup(object):
         job_prefix=None,
         test=False,
         pbs=False,
-        workdir=None,
         dep_afterok=None,
         exclude=None,
     ):
         """
         Parse options that control the job script, rather than xfaster.
+        Passed to batch_tools.batch_sub.
+
+        Arguments
+        ---------
+        output : string, optional
+            Path for output scheduler files, in a logs subdirectory.
+            If None, use output_root. Overrided by workdir.
+        workdir : string, optional
+            If not None, path to output scheduler files. Overrides output.
+        cput : string or float or datetime.timedelta, optional
+            Amount of CPU time requested.
+            String values should be in the format HH:MM:SS, e.g. '10:00:00'.
+            Numerical values are interpreted as a number of hours.
+        wallt : string or float or datetime.timedelta, optional
+            Amount of wall clock time requested.
+            String values should be in the format HH:MM:SS, e.g. '10:00:00'.
+            Numerical values are interpreted as a number of hours.
+        ppn : int, optional
+            Numper of processes per node
+        nodes : int or string, optional
+            Number of nodes to use in job
+            If a string, will be passed as-is to PBS -l node= resource
+            If using SLURM and a string, will overwrite node_list if None
+        mem : float or string, optional
+            Amount of memory to request for the job. float values in GB.
+            Or pass a string (eg '4gb') to use directly.
+        env_script : string, optional
+            Path to script to source during job script preamble
+            For loading modules, setting environment variables, etc
+        omp_threads : int, optional
+            Number of OpenMP threads to use per process
+        nice : int, optional
+            Adjust scheduling priority (SLURM only). Range from -5000 (highest
+            priority) to 5000 (lowest priority).
+            Note: actual submitted --nice value is 5000 higher, since negative
+            values require special privilege.
+        queue : string, optional
+            The name of the queue to which to submit jobs
+        job_prefix : string, optional
+            The name of the job. Default: xfaster
+        test : bool
+            If True, only print out the job submission script, don't submit it.
+        pbs : bool
+            If True, use pbs scheduler. Else, use slurm.
+        dep_afterok : string or list of strings
+            Dependency. Job ID (or IDs) on which to wait for successful completion,
+            before starting this job
+        exclude : string or list of strings
+            List of nodes that will be excluded for job. SLURM-only.
+
         """
 
         # XFaster runs faster with OMP and does not use MPI
@@ -1507,9 +1613,16 @@ class XFasterJobGroup(object):
         ---------
         group_by : int, optional
             Group xfaster calls into jobs with this many calls each.
+        verbose : bool, optional
+            Print the working directory, and the job ID if submitted successfully.
+
+        Returns
+        -------
+        job_ids : list of strings
+            The IDs of the submitted jobs
         """
         if not self.job_list:
-            raise RuntimeError("No unimap jobs have been added.")
+            raise RuntimeError("No xfaster jobs have been added.")
         if group_by is None:
             group_by = len(self.job_list)
         if kwargs:

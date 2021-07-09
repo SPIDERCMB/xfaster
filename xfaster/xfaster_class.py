@@ -160,7 +160,7 @@ class XFaster(object):
         debug=False,
         checkpoint=None,
         add_log=False,
-        ref_freq=353.0,
+        ref_freq=359.7,
         beta_ref=1.54,
     ):
         """
@@ -169,6 +169,9 @@ class XFaster(object):
 
         Arguments
         ---------
+        config : string
+            Configuration file. If path doesn't exist, assumed
+            to be in xfaster/config/<config>
         lmax : int
             The maximum multipole for which spectra are computed
         pol : bool
@@ -193,6 +196,13 @@ class XFaster(object):
         add_log : bool
             If True, write log output to a file instead of to STDOUT.
             The log will be in ``<output_root>/run_<output_tag>.log``.
+        ref_freq : float
+            In GHz, reference frequency for dust model. Dust bandpowers output
+            will be at this reference frequency.
+        beta_ref : float
+            The spectral index of the dust model. This is a fixed value, with
+            an additive deviation from this value fit for in foreground fitting
+            mode.
         """
         # verbosity
         self.init_log(
@@ -281,7 +291,13 @@ class XFaster(object):
         transfer function in a joint analysis.  If not supplied, it is assumed
         that a transfer function should be computed for every tag in
         "frequencies".
+
+        Arguments
+        ----------
+        filename : str
+            Path to config file
         """
+
         # Load map configuration file
         assert os.path.exists(filename), "Missing config file {}".format(filename)
         self.config_root = os.path.dirname(os.path.abspath(filename))
@@ -380,6 +396,11 @@ class XFaster(object):
         def logger_notice(self, msg, *args, **kwargs):
             """
             Log a message with severity "NOTICE".
+
+            Arguments
+            ---------
+            msg : str
+                Log message
             """
             if self.isEnabledFor(logging.NOTICE):
                 self._log(logging.NOTICE, msg, args, **kwargs)
@@ -389,6 +410,11 @@ class XFaster(object):
         def root_notice(msg, *args, **kwargs):
             """
             Log a message with severity "NOTICE" on the root logger.
+
+            Arguments
+            ---------
+            msg : str
+                Log message
             """
             if len(logging.root.handlers) == 0:
                 logging.basicConfig()
@@ -430,6 +456,8 @@ class XFaster(object):
 
         Arguments
         ---------
+        message : str
+            Log message
         level : string, default : None
             Logging level.  Must be one of "critical", "error", "warning",
             "notice", "info", "debug", "all".  If not supplied, "all" is assumed.
@@ -443,7 +471,12 @@ class XFaster(object):
 
     def warn(self, message):
         """
-        Log a warning message
+        Log a warning message.
+
+        Arguments
+        ---------
+        message : str
+            Warning log message
         """
 
         warnings.warn(message, XFasterWarning, stacklevel=2)
@@ -840,10 +873,10 @@ class XFaster(object):
         signal_subset="*",
         noise_subset="*",
         data_type="raw",
-        noise_type="stationary",
+        noise_type="gaussian",
         noise_type_sim=None,
-        mask_type="hitsmask_tailored",
-        signal_type="r0p03",
+        mask_type="rectangle",
+        signal_type="synfast",
         signal_type_sim=None,
         signal_transfer_type=None,
         data_root2=None,
@@ -858,10 +891,8 @@ class XFaster(object):
             <data_root>
                 -> data_<data_type>
                     -> full
-                        -> map_x1.fits
+                        -> map_<tag>.fits
                         ...
-                        -> map_150.fits
-                        -> map_90.fits
                     -> 1of4 (same filenames as full)
                     -> 2of4 ('')
                     -> 3of4 ('')
@@ -869,19 +900,16 @@ class XFaster(object):
                 -> signal_<signal_type>
                    -> spec_signal_<signal_type>.dat
                    -> full
-                      -> map_x1_0000.fits
+                      -> map_<tag>_####.fits
                       ...
-                      -> map_90_####.fits
                    -> 1of4 (same filenames as full)
                    -> 2of4 (same filenames as full)
                    -> 3of4 (same filenames as full)
                    -> 4of4 (same filenames as full)
                 -> noise_<noise_type> (same filenames as signal_<signal_type>)
                 -> masks_<mask_type>
-                    -> mask_map_x1.fits
+                    -> mask_map_<tag>.fits
                     ...
-                    -> mask_map_90.fits
-                    -> mask_map_150.fits
                 -> foreground_<foreground_type_sim>
                     (same filenames as signal_<signal_type>)
                 -> templates_<template_type>
@@ -894,7 +922,7 @@ class XFaster(object):
                       (same filenames as data_<data_type>)
                    -> halfmission-2
                       (same filenames as data_<data_type>)
-            <data_root2>
+            <data_root2> (If provided, same structure as data_root)
                 ...
 
         Arguments
@@ -922,30 +950,30 @@ class XFaster(object):
             to use. For example, for all, use ``'*'``. For the first 300 sims,
             use ``'0[0-2]*'``.
         data_type : string
-            The type of data to use.
+            The type of data to use, default: "raw"
         noise_type: string
-            The variant of noise simulation to use, e.g. 'stationary',
-            'variable', etc.  The directory should contain the same number
+            The variant of noise simulation to use, e.g. 'gaussian',
+            'stationary', etc.  The directory should contain the same number
             of simulations for each map tag.
         noise_type_sim : string
             The variant of noise sims to use for sim_index fake data map.
             This enables having a different noise sim ensemble to use for
             sim_index run than the ensemble from which the noise is computed.
         mask_type : string
-            The variant of mask to use, e.g. 'hitsmask', etc.
-            XXX: for the time being we assume a mask per file tag,
-            rather than a mask per file in ``data_<data_type>``.
+            The variant of mask to use, e.g. 'rectangle', etc.
+            We assume a mask per file tag in the mask_<mask_type> folder,
+            corresponding to the files in data.
         signal_type : string
             The variant of signal simulation to use, typically identified
-            by the input spectrum model used to generate it, e.g 'r0p03'.
-        signal_type_sim :string
+            by the input spectrum model used to generate it, e.g 'synfast'.
+        signal_type_sim : string
             The variant of signal sims to use for sim_index fake data map.
             This enables having a different noise sim ensemble to use for
             sim_index run than the ensemble from which the signal is computed.
         signal_transfer_type : string
             The variant of signal simulation to use for transfer function
             calculation, typically identified by the input spectrum model
-            used to generate it, e.g 'r0p03'. This directory may also contain
+            used to generate it, e.g 'synfast'. This directory may also contain
             a copy of the input spectrum, to make sure that the correct
             spectrum is used to compute the transfer function.
         data_root2, data_subset2 : string
@@ -1022,7 +1050,14 @@ class XFaster(object):
 
         def get_template_files(fs, template_type):
             """
-            Update options for template cleaning
+            Update options for template cleaning. Internal to get_files.
+
+            Arguments
+            ---------
+            fs : dict
+                Dictionary of file options
+            template_type : str
+                Tag for template files
             """
             # no template fitting for null runs
             if fs["null_run"]:
@@ -1140,7 +1175,14 @@ class XFaster(object):
 
         def get_planck_files(fs, sub_planck=False):
             """
-            Update options for planck subtraction
+            Update options for planck subtraction. Internal to get_files.
+
+            Arguments
+            ---------
+            fs : dict
+                Dictionary of file options
+            sub_planck : bool
+                If true, get Planck map files to be subtracted from data
             """
             if not sub_planck:
                 fs["planck_root1_hm1"] = None
@@ -1513,11 +1555,11 @@ class XFaster(object):
             Use this argument when storing output data in a loop over
             input maps.
         iter_index : int
-            If supplied, the name is appended with '_iter<iter_index>'
+            If supplied, the name is appended with '_iter<iter_index>'.
         extra_tag : string
             If supplied the extra tag is appended to the name as is.
         bp_opts : bool
-            If True, the output filename is constructed  by checking the
+            If True, the output filename is constructed by checking the
             following list  of options used in constructing bandpowers:
             ensemble_mean, ensemble_median, sim_index, template_cleaned,
             weighted_bins, signal_type_sim, noise_type_sim
@@ -1581,12 +1623,12 @@ class XFaster(object):
         **file_opts
     ):
         """
-        Load xfaster data from an output npz file on disk.
+        Load xfaster data from an output.npz file on disk.
 
         This method is called throughout the code at various checkpoints.  If
         the data exist on disk, they are loaded and returned.  If the data are
-        missing or otherwise incompatible, they are recomputed by the calling
-        method, and trigger all subsequent data to also be recomputed.  Data
+        missing or otherwise incompatible, they are recomputed by the corresponding
+         calling method, and trigger all subsequent data to also be recomputed.  Data
         handling is described in the ``Notes`` section for methods that use this
         functionality.
 
@@ -1607,7 +1649,7 @@ class XFaster(object):
             step are recomputed.
         to_attrs : bool or list of bools or strings
             If True, all items in ``fields`` are stored as attributes of the
-            parent object.  If A list of booleans, must have the same length
+            parent object. If A list of booleans, must have the same length
             as ``fields``; any field for which this list item is True is then
             stored as an attribute of the object.  If any list item is a string,
             then the corresponding field is stored as an attribute with this
@@ -1618,6 +1660,17 @@ class XFaster(object):
         shape_ref : string
             The reference field whose shape is checked against ``shape``.
             If None and ``shape`` is set, use the first field in ``fields``.
+        alt_name : string
+            Alternative to ``name`` argument that will be read if file matching
+            ``name`` doesn't exist.
+        value_ref : dict
+            Dictionary of reference values that is checked if simply loading a
+            file from disk instead of recomputing-- forces rerun of checkpoints
+            if loaded dictionary differs from value_ref.
+        optional : list of strings
+            Fields that, if missing from the data loaded from disk, will not
+            trigger force rerunning of any checkpoints.
+
 
         Remaining options are passed to ``get_filename`` for constructing the
         output file path.
@@ -1761,7 +1814,7 @@ class XFaster(object):
 
     def save_data(self, name, from_attrs=[], **data):
         """
-        Save xfaster data to an output npz file on disk.
+        Save xfaster data to an output .npz file on disk.
 
         Arguments
         ---------
@@ -1778,7 +1831,10 @@ class XFaster(object):
             Load the dataset corresponding to this iteration index.
             See ``get_filename`` for documentation.
         bp_opts : bool
-            Format output bandpowers file.  See ``get_filename`` for documentation.
+            Format output bandpowers file.  See ``get_filename`` for
+            documentation.
+        extra_tag : str
+             Tag to add to file name.
 
         Any remaining keyword arguments are added to the output dictionary.
 
@@ -1814,6 +1870,16 @@ class XFaster(object):
         Save a configuration file for the current run on disk.
         This method is used by ``xfaster_run`` to store the config
         in ``<output_root>/config_<output_tag>.txt``.
+
+        Arguments
+        ---------
+        cfg : XFasterConfig or RawConfigParser object
+            Config object containing all relevant arguments to save to disk.
+
+        Returns
+        -------
+        filename : str
+            Name of the config file saved to disk.
         """
         filename = self.get_filename("config", ext=".txt")
         if filename is None:
@@ -1851,6 +1917,11 @@ class XFaster(object):
             This array is modified in place.
         mask : array_like
             Mask to apply (T/P if polarized, T-only if not)
+
+        Returns
+        -------
+        m : array_like
+            Input map multiplied by mask.
         """
 
         m[0] *= mask[0]
@@ -1866,7 +1937,8 @@ class XFaster(object):
         Arguments
         ---------
         m : array_like
-            Masked input map for which Alms are computed.
+            Masked input map for which spherical harmonic alms are
+            computed.
         pol : bool
             If None, this is set using the value with which the object
             was initialized.
@@ -1875,7 +1947,7 @@ class XFaster(object):
         -------
         alms : array_like
             Alms for the input map, computed using the equivalent of
-            ``healpy.map2alm(m, lmax, pol=self.pol, use_weights=True)``.
+            ``healpy.map2alm (m, lmax, pol=self.pol, use_weights=True)``.
         """
         import healpy as hp
 
@@ -1893,13 +1965,13 @@ class XFaster(object):
             Masked alms for map1
         m2 : array_like
             Masked alms for map2
-        lmin : int
+        lmin : int, default: 2
             The minimum ell bin to include in the output Cls.  All ell
             bins below this are nulled out.
         lmax : int
             The maximum ell bin to compute.  If None, this is set to the
             lmax value with which the class was initialized.
-        symmetric : bool
+        symmetric : bool, default: True
             If True, the average cross spectrum of (m1-x-m2 + m2-x-m1) / 2.
             is computed.
 
@@ -1931,7 +2003,7 @@ class XFaster(object):
         apply_gcorr : bool
             If True, a correction factor is applied to the g (mode counting)
             matrix.  The correction factor should have been pre-computed for
-            each map tag.
+            each map tag using independent scripts in the code package.
         reload_gcorr : bool
             If True, reload the gcorr file from the masks directory. Useful when
             iteratively solving for the correction terms.
@@ -1945,13 +2017,13 @@ class XFaster(object):
         This method is called at the 'masks' checkpoint, loads or saves a
         data dictionary with the following keys:
 
-           wls : (num_map_corr, num_pol_mask_corr, lmax + 1)
+         wls: shape (num_map_corr, num_pol_mask_corr, lmax + 1)
                mask1-x-mask2 mask cross spectra for every mask pair
-           fsky, w1, w2, w4 : (num_map_corr, num_pol_mask_corr)
+         fsky, w1, w2, w4: shape (num_map_corr, num_pol_mask_corr)
                sky fraction and weighted modes per mask product
-           gmat : (num_maps * num_pol_mask_corr, ) * 2
+         gmat: shape (num_maps * num_pol_mask_corr, ) * 2
                mode-counting matrix, computed from
-                   g = fsky * w2 ** 2 / w4
+                g = fsky * w2 ** 2 / w4
 
         Where the dimensions of each item are determined from:
 
@@ -2065,6 +2137,9 @@ class XFaster(object):
         cache = dict()
 
         def process_index(idx):
+            """
+            A internal convenience function computes/loads alms from/to cache for each mask idx.
+            """
             if idx in cache:
                 return cache[idx]
 
@@ -2165,10 +2240,10 @@ class XFaster(object):
         method with the appropriate file selection options.
 
         If only one dataset is selected, spectra are computed for every
-        combination of pairs of data maps.  This results in N * (N + 1) / 2
-        cross spectra for N maps.  A unique mask is used for each input map.
+        combination of pairs of data maps. This results in N * (N + 1) / 2
+        cross spectra for N maps. A unique mask is used for each input map.
 
-        If two datasets are selected, then sum and difference cross-spectra are
+        If two datasets are selected for a null test, then sum and difference cross-spectra are
         computed by summing and differencing the two datasets.  A unique mask is
         used for each map in the first dataset, and the same mask is applied to
         the corresponding map in the second dataset, so that both halves are
@@ -2187,8 +2262,8 @@ class XFaster(object):
             original map tags in the data set.
         sub_planck : bool
             If True, subtract reobserved Planck from maps. Properly uses half
-            missions so no Planck autos are used. Useful for removing expected
-            signal residuals from null tests.
+            missions so no Planck auto correlations are introduced. Useful for
+            removing expected signal residuals from null tests.
         sub_hm_noise : bool
             If True, subtract average of Planck ffp10 noise crosses to debias
             template-cleaned spectra.
@@ -2258,6 +2333,9 @@ class XFaster(object):
             save_attrs += ["cls_planck"]
 
         def apply_template():
+            """
+            Internal data processing function to have scaled foreground template subtracted from data map.
+            """
             cls_clean = getattr(self, "cls_data_clean", OrderedDict())
 
             for spec in self.specs:
@@ -2288,6 +2366,9 @@ class XFaster(object):
             self.template_cleaned = True
 
         def subtract_planck_maps():
+            """
+            Internal data processing function to have planck maps subtracted from data map, useful for null tests
+            """
             cls_data_sub = getattr(self, "cls_data_sub", OrderedDict())
             if null_run:
                 cls_data_sub_null = getattr(self, "cls_data_sub_null", OrderedDict())
@@ -2374,8 +2455,11 @@ class XFaster(object):
 
         cache = dict()
 
-        # convenience function
         def process_index(idx):
+            """
+            A internal convenience function computes/loads alms from/to cache for each data map idx,
+            or data map pair for null tests.
+            """
             if idx in cache:
                 return cache[idx]
 
@@ -2521,13 +2605,12 @@ class XFaster(object):
         transfer=False,
         do_noise=True,
         sims_add_alms=True,
-        lmin=2,
         qb_file=None,
     ):
         """
         Compute average signal and noise spectra for a given
-        ensemble of maps.  The same procedure that is used for computing
-        data cross spectra is used for each realization in the sim
+        ensemble of sim maps.  The same procedure that is used for c
+        omputing data cross spectra is used for each realization in the sim
         ensemble, and only the average spectra for all realizations
         are stored.
 
@@ -2538,21 +2621,21 @@ class XFaster(object):
         ---------
         ensemble_mean : bool
             If true, the mean signal + noise spectrum is used in place
-            of input data.  This is useful for testing the behavior of
+            of input data. This is useful for testing the behavior of
             the estimator and mapmaker independently of the data.
         ensemble_median : bool
             If true, the median signal + noise spectrum is used in place
             of input data.  This is useful for testing the behavior of
             the estimator and mapmaker independently of the data.
         sim_index : int
-            If not None, substitute the sim_index S+N alms for the observed alms
+            If not None, substitute the sim_index S+N alms for the data alms
         sims_add_alms : bool
             If True and sim_index is not None, add sim alms instead of sim Cls
             to include signal and noise correlations
         qb_file : string
             Pointer to a bandpowers.npz file in the output directory. If used
             in sim_index mode, the noise sim read from disk will be corrected
-            by the residual qb values stored in qb_file.
+            by the residual qb values stored in qb_file. Useful for noise rescaling.
 
         Notes
         -----
@@ -2618,10 +2701,10 @@ class XFaster(object):
         sims_attr["signal_files_sim2"] = self.signal_files_sim2 if null_run else None
         sims_attr["foreground_files2"] = self.foreground_files2 if null_run else None
 
-        # convenience functions
         def process_index(files, files2, idx, idx2=None, cache=None, qbf=None):
             """
-            Compute alms of masked input map
+            Internal processing function to compute alms for masked sim map,
+            or sim map pair for null tests.
             """
             if cache is None:
                 cache = {}
@@ -2687,7 +2770,7 @@ class XFaster(object):
 
         def process_files():
             """
-            Compute cross spectra
+            Function to compute cross spectra for ensemble of files and then save in place.
             """
             sig_field = "cls_signal"
             sig_null_field = "cls_signal_null"
@@ -2933,6 +3016,9 @@ class XFaster(object):
             setattr(self, nxs1_null_field, cls_null_nxs1)
 
         def check_options():
+            """
+            Check for data options and calls process_files() to compute cross spectra.
+            """
             if ensemble_mean:
                 self.log("Substitute signal + noise for observed spectrum", "notice")
                 for spec in self.specs:
@@ -3172,8 +3258,41 @@ class XFaster(object):
         from usual noise directory. Templates read read from
         templates_fake_data_template/halfmission-1.
 
-        This function doesn't write anything to disk. It just constructs
-        the maps and computes the Cls and replaces data cls with them
+        This function doesn't write anything to disk unless save_data=True.
+        It just constructs the maps and computes the Cls and replaces data
+        cls with them. Useful for doing sim runs with template subtraction.
+
+        Arguments
+        ---------
+        fake_data_r : float
+            Tensor-to-scalar ratio to use for CMB sims as scalar + r * tensor.
+        fake_data_template : str
+            If not None, add halfmission-1 template in this directory scaled by
+            alpha to fake data maps
+        sim_index : int
+            Index of sim maps to use for CMB, noise, and template noise
+            simulations.
+        template_alpha : dict
+            Dictionary of (map_tag, alpha scaling) values.
+        noise_type_sim : str
+            The variant of noise sims to use for the fake data map.
+        do_noise : bool
+            If true, use sim_index to set noise seed. If false, always use seed
+            0. Useful for sims isolating effects of varying CMB only or template
+            noise only.
+        do_signal : bool
+            If true, use sim_index to set CMB seed. If false, always use seed
+            0. Useful for sims isolating effects of varying noise only or
+            template noise only.
+        save_data : bool
+            If true, save data_xcorr file to disk for fake data.
+        sub_hm_noise : bool
+            If True, subtract average of Planck ffp10 noise crosses to debias
+            template-cleaned spectra
+        qb_file : str
+            Pointer to a bandpowers.npz file in the output directory.
+            The noise sim read from disk will be corrected by the residual qb
+            values stored in qb_file.
         """
         import healpy as hp
 
@@ -3217,8 +3336,10 @@ class XFaster(object):
         self.log("Fake data r: {}".format(fake_data_r), "notice")
 
         def process_index(idx):
-            # create the fake map for each map in map_files,
-            # compute alms for that and templates
+            """
+            create the fake map for each map in map_files,
+            them compute alms for that and templates.
+            """
             if idx in cache:
                 return cache[idx]
             self.log(
@@ -3404,6 +3525,10 @@ class XFaster(object):
                 self.cls_data[spec][xname] = cls1[s]
 
         def apply_template():
+            """
+            In place, subtract the scaled template cross terms from the data
+            pseudo-spectra.
+            """
             cls_clean = getattr(self, "cls_data_clean", OrderedDict())
 
             for spec in self.specs:
@@ -3457,7 +3582,7 @@ class XFaster(object):
     def get_masked_template_noise(self, template_type):
         """
         Compute hm1, hm2, and hm1xhm2 template noise spectra from
-        sim ensemble
+        sim ensemble.
 
         Notes
         -----
@@ -3467,6 +3592,12 @@ class XFaster(object):
             cls_tnoise_hm1 : <same shape as cls_data>
             cls_tnoise_hm2 : <same shape as cls_data>
             cls_tnoise_hm1xhm2 : <same shape as cls_data>
+
+        Arguments
+        ---------
+        template_type : str
+            Tag of the template maps directory (noise files in
+            template_noise_<template_type>).
         """
         mask_files = self.mask_files
         map_tags = self.map_tags
@@ -3484,7 +3615,7 @@ class XFaster(object):
         # convenience functions
         def process_index(files, idx, idx2=None, cache=None):
             """
-            Compute alms of masked input map
+            Compute alms of masked input map.
             """
             if cache is None:
                 cache = {}
@@ -3516,7 +3647,7 @@ class XFaster(object):
 
         def process_files():
             """
-            Compute cross spectra
+            Compute cross spectra.
             """
             hm1_field = "cls_tnoise_hm1"
             hm2_field = "cls_tnoise_hm2"
@@ -3616,8 +3747,8 @@ class XFaster(object):
         This method is called at the 'kernels' checkpoint and loads or saves
         the following data keys to disk:
 
-            kern, pkern, mkern, xkern : (num_mask_corr, lmax+1, 2*lmax+1)
-                Temperature and polarization kernels
+        kern, pkern, mkern, xkern : shape (num_mask_corr, lmax+1, 2*lmax+1)
+        Temperature and polarization kernels
         """
 
         if window_lmax is None:
@@ -3769,6 +3900,8 @@ class XFaster(object):
             and ``r`` is None and ``flat`` is False, will search for a spectrum
             stored in
             ``signal_<signal_transfer_type>/spec_signal_<signal_transfer_type>.dat``.
+        save : bool
+            If True, save signal shape dict to disk.
 
         Returns
         -------
@@ -4236,6 +4369,9 @@ class XFaster(object):
             If supplied, the kernels are computed only for the given map tag
             (or cross if map_tag is map_tag1:map_tag2).
             Otherwise, it is computed for all maps and crosses.
+        transfer_run : bool
+            If True, set transfer function to 1 to solve for transfer function
+            qbs.
 
         Returns
         -------
@@ -5572,6 +5708,10 @@ class XFaster(object):
             If supplied, the noise spectrum is applied to the model spectrum.
         cls_debias : OrderedDict
             If supplied, the debias spectrum is subtracted from the input.
+        cls_model : OrderedDict
+            Unbinned model spectrum computed from cbl
+        cond_noise : float
+            The level of regularizing noise to add to EE and BB diagonals.
         cond_criteria : float
             The maximum condition number allowed for Dmat1 to be acceptable
             for taking its inverse.
@@ -5579,12 +5719,25 @@ class XFaster(object):
             If True, return the likelihood for the given input bandpowers, shapes
             and data spectra.  Otherwise, computes output bandpowers and the fisher
             covariance for a NR iteration.
+        like_lmin : int
+            The minimum ell value to be included in the likelihood calculation
+        like_lmax : int
+            The maximum ell value to be included in the likelihood calculation
+        delta_beta_prior : float
+            The width of the prior on the additive change from beta_ref. If you
+            don't want the code to fit for a spectral index different
+            from beta_ref, set this to be a very small value (O(1e-10)).
+        null_first_cmb : bool
+            Keep first CMB bandpowers fixed to input shape (qb=1).
         use_precalc : bool
             If True, load pre-calculated terms stored from a previous iteration,
             and store for a future iteration.  Otherwise, all calculations are
             repeated.
         windows : bool
             If True, return W_bl window functions for each CMB qb.
+        inv_fish : array_like
+            Inverse Fisher matrix. If provided, don't need to recompute. Useful
+            if just getting bandpower window functions.
 
         Returns
         -------
@@ -5977,6 +6130,14 @@ class XFaster(object):
         save_iters : bool
             If True, the output data from each Fisher iteration are stored
             in an individual npz file.
+        null_first_cmb : bool
+            Keep first CMB bandpowers fixed to input shape (qb=1).
+        delta_beta_prior : float
+            The width of the prior on the additive change from beta_ref. If you
+            don't want the code to fit for a spectral index different
+            from beta_ref, set this to be a very small value (O(1e-10)).
+        cond_noise : float
+            The level of regularizing noise to add to EE and BB diagonals.
         cond_criteria : float
             The maximum condition number allowed for Dmat1 to be acceptable
             for taking its inverse.
@@ -6639,11 +6800,19 @@ class XFaster(object):
         save_iters : bool
             If True, the output data from each Fisher iteration are stored
             in an individual npz file.
-        return_cls : bool
-            If True, return C_ls rather than D_ls
+        delta_beta_prior : float
+            The width of the prior on the additive change from beta_ref. If you
+            don't want the code to fit for a spectral index different
+            from beta_ref, set this to be a very small value (O(1e-10)).
+        cond_noise : float
+            The level of regularizing noise to add to EE and BB diagonals.
         cond_criteria : float
             The maximum condition number allowed for Dmat1 to be acceptable
             for taking its inverse.
+        null_first_cmb : bool
+            Keep first CMB bandpowers fixed to input shape (qb=1).
+        return_cls : bool
+            If True, return C_ls rather than D_ls
         like_profiles : bool
             If True, compute profile likelihoods for each qb, leaving all
             others fixed at their maximum likelihood values.  Profiles are
@@ -6766,56 +6935,73 @@ class XFaster(object):
         use_xfer_mat=True,
     ):
         """
-         Explore the likelihood, optionally with an MCMC sampler.
+        Explore the likelihood, optionally with an MCMC sampler.
 
-         Arguments
-         ---------
-         qb : OrderedDict
-             Bandpower parameters previously computed by Fisher iteration.
-         inv_fish : array_like
-             Inverse Fisher matrix computed with the input qb's.
-         map_tag : string
-             If not None, then the likelihood is sampled using the spectra
-             corresponding to the given map, rather over all possible
-             combinations of map-map cross-spectra.  The input qb's and inv_fish
-             must have been computed with the same option.
-         mcmc : bool
-             If True, sample the likelihood using an MCMC sampler.  Remaining options
-             determine parameter space and sampler configuration.
-         r_prior : 2-list or None
-             Prior upper and lower bound on tensor to scalar ratio.  If None, the
-             fiducial shape spectrum is assumed, and the r parameter space is not
-             varied.
-         alpha_prior : 2-list or None
-             Prior upper and lower bound on template coefficients.  If None, the
-             alpha parameter space is not varied.
-         res_prior : 2-list or none
-             Prior upper and lower bound on residual qbs.  If None, the
-             res parameter space is not varied.
-         beam_prior : 2-list or none
-             Prior mean and width of gaussian width on beam error (when
-             multiplied by beam error envelope).  If None, the
-             beam parameter space is not varied.
-         betad_prior : 2-list or none
-             Prior mean and width of gaussian width on dust spectral index.
-             If None, the dust index parameter space is not varied.
-         dust_amp_prior : 2-list or none
-             Prior upper and lower bound on dust amplitude.
-             If None, the dust amp parameter space is not varied.
-         dust_ellind_prior : 2-list or none
-             Prior mean and width of Gaussian prior on difference in dust ell
-             power law index. If None, don't vary from reference if fitting dust
-             power spectrum model.
-         num_walkers : int
-             Number of unique walkers with which to sample the parameter space.
-         num_steps : int
-             Number of steps each walker should take in sampling the parameter space.
-         reset_backend : bool
-             If True, clear the backend buffer before sampling.  If False,
-             samples are appended to the existing buffer.  If not supplied,
-             set to True if the checkpoint has been forced to be rerun.
-         file_tag : string
-             If supplied, appended to the likelihood filename.
+        Arguments
+        ---------
+        qb : OrderedDict
+            Bandpower parameters previously computed by Fisher iteration.
+        inv_fish : array_like
+            Inverse Fisher matrix computed with the input qb's.
+        map_tag : string
+            If not None, then the likelihood is sampled using the spectra
+            corresponding to the given map, rather over all possible
+            combinations of map-map cross-spectra.  The input qb's and inv_fish
+            must have been computed with the same option.
+        null_first_cmb : bool
+            Keep first CMB bandpowers fixed to input shape (qb=1).
+        lmin : int
+            The minimum ell value to be included in the likelihood calculation
+        lmax : int
+            The maximum ell value to be included in the likelihood calculation
+        mcmc : bool
+            If True, sample the likelihood using an MCMC sampler.  Remaining
+            options determine parameter space and sampler configuration.
+        alpha_tags : list of strings
+            List of map tags from which foreground template maps should be
+            subtracted.  These should be the original map tags, not
+            those generated for chunk sets.
+        beam_tags : list of strings
+            List of map tags from which beam error envelopes should be
+            marginalized over. These should be the original map tags, not
+            those generated for chunk sets.
+        r_prior : 2-list or None
+            Prior upper and lower bound on tensor to scalar ratio.  If None, the
+            fiducial shape spectrum is assumed, and the r parameter space is not
+            varied.
+        alpha_prior : 2-list or None
+            Prior upper and lower bound on template coefficients.  If None, the
+            alpha parameter space is not varied.
+        res_prior : 2-list or none
+            Prior upper and lower bound on residual qbs.  If None, the
+            res parameter space is not varied.
+        beam_prior : 2-list or none
+            Prior mean and width of gaussian width on beam error (when
+            multiplied by beam error envelope).  If None, the
+            beam parameter space is not varied.
+        betad_prior : 2-list or none
+            Prior mean and width of gaussian width on dust spectral index.
+            If None, the dust index parameter space is not varied.
+        dust_amp_prior : 2-list or none
+            Prior upper and lower bound on dust amplitude.
+            If None, the dust amp parameter space is not varied.
+        dust_ellind_prior : 2-list or none
+            Prior mean and width of Gaussian prior on difference in dust ell
+            power law index. If None, don't vary from reference if fitting dust
+            power spectrum model.
+        num_walkers : int
+            Number of unique walkers with which to sample the parameter space.
+        num_steps : int
+            Maximum number of steps each walker can take in sampling the
+            parameter space.
+        converge_criteria : float
+            Convergence criteria for likelihood MCMC chains
+        reset_backend : bool
+            If True, clear the backend buffer before sampling.  If False,
+            samples are appended to the existing buffer.  If not supplied,
+            set to True if the checkpoint has been forced to be rerun.
+        file_tag : string
+            If supplied, appended to the likelihood filename.
         use_xfer_mat : bool
              If True, use transfer matrix to construct model spectrum. If false, use
              transfer function XFaster computes
