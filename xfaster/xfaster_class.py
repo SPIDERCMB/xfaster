@@ -4756,14 +4756,16 @@ class XFaster(object):
         cbl : dict of arrays (num_bins, 2, lmax + 1)
             The Cbl matrix, indexed by component and spectrum, then by map
             cross, e.g. `cbl['cmb_tt']['map1:map2']`
-            E/B mixing terms are stored in elements `cbl[:, 1, :]`,
-            and unmixed terms are stored in elements `cbl[:, 0, :]`.
+            E/B mixing terms are stored in elements ``cbl['cmb_ee_mix']`` and
+            ``cbl['cmb_bb_mix']``, and unmixed terms are stored in elements
+            ``cbl['cmb_ee']`` and ``cbl['cmb_bb']``.
         """
         if cls_shape is None:
             cls_shape = self.cls_shape
 
         from spider_analysis import si
 
+        # Need to update this to use ell-by-ell anafast transfer matrix
         T = nsi.TransferMatrix()
 
         map_pairs = None
@@ -4781,6 +4783,7 @@ class XFaster(object):
 
         specs = list(self.specs)
 
+        # This will need to change for ell-by-ell transfer matrix
         transfer_bins = np.arange(
             8, 8 + 25 * 13, 25
         )  # change this once transfer matrix adds lowest bin!
@@ -4813,12 +4816,9 @@ class XFaster(object):
             cls_nxs1 = self.cls_nxs1_null if self.null_run else self.cls_nxs1
 
         ell = np.arange(lmax_kern + 1)
-        lfac = ell * (ell + 1) / 2.0 / np.pi
-        if self.weighted_bins:
-            lfac_binned = stats.binned_statistic(ell, lfac, bins=transfer_bins)[0]
 
-        def binup(d, left, right):
-            return (d[..., left:right]).sum(axis=-1)
+        def binup(d, left, right, weights):
+            return (d[..., left:right] * weights).sum(axis=-1)
 
         def bin_things(comp, d, md):
             if "res" in comp:
@@ -4831,7 +4831,7 @@ class XFaster(object):
                     mstag = stag + "_mix"
                     cbl.setdefault(mstag, OrderedDict())
                 bd = self.bin_def[stag]
-                # bw = self.bin_weights[stag]
+                bw = self.bin_weights[stag]
                 for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
                     if beam_error:
                         cbl[mstag][xname] = OrderedDict(
@@ -4849,32 +4849,25 @@ class XFaster(object):
                             cbl[mstag][xname] = np.zeros((len(bd), lmax + 1))
 
                     # integrate per bin
-                    for idx, (left, right) in enumerate(bd):
+                    for idx, ((left, right), weights) in enumerate(zip(bd, bw)):
                         if beam_error:
                             for k in beam_keys:
                                 cbl[stag][xname][k][idx, ls] = binup(
-                                    d[k][si, xi], left, right  # , weight
+                                    d[k][si, xi], left, right, weights
                                 )
-                            # cbl[stag][xname]["b1"][idx, ls] = binup(
-                            #    d_b1[:, si, xi], left, right
-                            # )
                         else:
                             cbl[stag][xname][idx, ls] = binup(
-                                d[si, xi], left, right  # , weights
+                                d[si, xi], left, right, weights
                             )
                         if spec in ["ee", "bb"]:
                             if beam_error:
                                 for k in beam_keys:
                                     cbl[mstag][xname][k][idx, ls] = binup(
-                                        md[k][si - 1, xi], left, right  # , weights
+                                        md[k][si - 1, xi], left, right, weights
                                     )
-
-                                    # cbl[mstag][xname]["b1"][idx, ls] = binup(
-                                    #    md_b1[:, si - 1, xi], left, right
-                                    # )
                             else:
                                 cbl[mstag][xname][idx, ls] = binup(
-                                    md[si - 1, xi], left, right  # , weights
+                                    md[si - 1, xi], left, right, weights
                                 )
 
         for comp in comps:
@@ -4882,7 +4875,7 @@ class XFaster(object):
             # except for res is weird so don't do it for that.
             # need n_xname x n_spec x ell
             nspec = len(specs)
-            nxmap = len(map_pairs.items())
+            nxmap = len(map_pairs)
             if comp == "fg" and fg_ell_ind != 0:
                 s_arr = (ell / 80.0) ** fg_ell_ind
                 s_arr[0] = 0
@@ -4892,10 +4885,6 @@ class XFaster(object):
                     self.d = np.multiply(self.d_fg, s_arr, out=getattr(self, "d", None))
                     self.md = np.multiply(
                         self.md_fg, s_arr, out=getattr(self, "md", None)
-                    )
-                    # bin_things(
-                    #    comp, self.d, self.md, None, None, None, None, None, None
-                    # )
                 else:
                     for k in beam_keys:
                         if not hasattr(self, "d"):
@@ -4903,10 +4892,8 @@ class XFaster(object):
                             self.md = OrderedDict([(k, None) for k in beam_keys])
                         self.d[k] = np.multiply(self.d_fg[k], s_arr, out=self.d[k])
                         self.md[k] = np.multiply(self.md_fg[k], s_arr, out=self.md[k])
-                    # self.d_b1 = np.multiply(
-                    #    self.d_fg_b1, s_arr, out=getattr(self, "d_b1", None)
-                    # )
                 bin_things(comp, self.d, self.md)
+
             else:
                 kshape = [nspec, nxmap, self.lmax - 1, lmax_kern + 1]
                 mkshape = [2] + kshape[1:]
@@ -4917,10 +4904,6 @@ class XFaster(object):
                 # xfermat * binned shape
 
                 fbs_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
-
-                # for compute d of non-fg with beam error
-                if beam_error:
-                    b_arr = {k: np.zeros(shape) for k in beam_keys}
 
                 for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
                     for si, spec in enumerate(specs):
@@ -4984,30 +4967,12 @@ class XFaster(object):
                         # single foreground spectrum
                         s_arr = cls_shape["fg"][lk] * (ell / 80.0) ** fg_ell_ind
                         s_arr[0] = 0
-                        if self.weighted_bins:
-                            s_arr = stats.binned_statistic(
-                                ell, lfac * s_arr, bins=transfer_bins
-                            )[0]
-                            s_arr /= lfac_binned
-                        else:
-                            s_arr = stats.binned_statistic(
-                                ell, s_arr, bins=transfer_bins
-                            )[0]
                         # repeat for all specs
                         s_arr = np.tile(s_arr, len(specs))
                     else:
                         s_arr = np.zeros(nbins_transfer * len(specs))
                         for si, spec in enumerate(specs):
                             s_spec = cls_shape["cmb_{}".format(spec)][:lk]
-                            if self.weighted_bins:
-                                s_spec = stats.binned_statistic(
-                                    ell, lfac * s_spec, bins=transfer_bins
-                                )[0]
-                                s_spec /= lfac_binned
-                            else:
-                                s_spec = stats.binned_statistic(
-                                    ell, s_spec, bins=transfer_bins
-                                )[0]
                             s_arr[
                                 si * nbins_transfer : (si + 1) * nbins_transfer
                             ] = s_spec
@@ -5065,7 +5030,7 @@ class XFaster(object):
                         self.md_fg_b2 = md_b2
                         self.md_fg_b3 = md_b3
                     """
-                bin_things(comp, d, md, d_b1, d_b2, d_b3, md_b1, md_b2, md_b3)
+                bin_things(comp, d, md)
         return cbl
 
     def get_model_spectra(
