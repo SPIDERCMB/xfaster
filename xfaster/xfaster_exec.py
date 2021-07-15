@@ -87,6 +87,8 @@ def xfaster_run(
     template_type=None,
     template_alpha_tags=["95", "150"],
     template_alpha=[0.015, 0.043],
+    template_noise_type=None,
+    template_type_sim=None,
     subtract_template_noise=True,
     return_cls=False,
     apply_gcorr=False,
@@ -183,9 +185,7 @@ def xfaster_run(
     foreground_type_sim : str
         Tag for directory (foreground_<foreground_type_sim>) where foreground
         sims are that should be added to the signal and noise sims
-        when running in sim_index mode. Note: the same foreground sim
-        map is used for each sim_index, despite signal and noise sims
-        changing.
+        when running in sim_index mode.
     model_r : float
         The ``r`` value to use to compute a spectrum for estimating bandpowers.
         Overrides ``signal_spec``.
@@ -301,6 +301,15 @@ def xfaster_run(
     template_alpha : list of floats
         Scalar to be applied to template map for subtraction from each of the
         data with tags in the list ``template_alpha_tags``.
+    template_noise_type : string
+        Tag for directory containing template noise sims to be averaged and
+        scaled similarly to the templates themselves.  These averaged sims
+        are used to debias template cross spectra due to correlations in the
+        way the noise ensembles are constructed.
+    template_type_sim : string
+        Tag for directory containing foreground templates, to be scaled by a
+        scalar value per map tag and added to the simulated data.  The directory
+        contains one template per map tag.
     subtract_template_noise : bool
         If True, subtract average of Planck ffp10 noise crosses to debias
         template-cleaned spectra
@@ -442,6 +451,8 @@ def xfaster_run(
         data_subset2=data_subset2,
         foreground_type_sim=foreground_type_sim,
         template_type=template_type,
+        template_noise_type=template_noise_type,
+        template_type_sim=template_type_sim,
         subtract_planck_signal=subtract_planck_signal,
         subtract_template_noise=subtract_template_noise,
     )
@@ -1198,6 +1209,17 @@ def xfaster_parse(args=None, test=False):
             "template_alpha_tags",
             nargs="+",
             help="Map tags for which to apply foreground template subtraction",
+        )
+        add_arg(
+            G,
+            "template_noise_type",
+            help="Template type to use for template noise subtraction",
+        )
+        add_arg(
+            G,
+            "template_type_sim",
+            help="Template type to use for foreground templates to include "
+            "in data simulations",
         )
         add_arg(
             G,

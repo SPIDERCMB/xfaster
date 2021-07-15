@@ -295,8 +295,20 @@ def load_and_parse(filename, check_version=True):
 
     # backward compatibility
     if version == 1:
+        if "raw_root" in data:
+            data.pop("raw_root")
+            data.pop("raw_files")
+
         if "foreground_type" in data:
             data["foreground_type_sim"] = data.pop("foreground_type")
+        if "foreground_root" in data:
+            data["foreground_root_sim"] = data.pop("foreground_root")
+            data["foreground_files_sim"] = data.pop("foreground_files")
+        if "foreground_root2" in data:
+            data["foreground_root_sim2"] = data.pop("foreground_root2")
+            data["foreground_files_sim2"] = data.pop("foreground_files2")
+        if "num_foreground" in data:
+            data["num_foreground_sim"] = data.pop("num_foreground")
 
         if "clean_type" in data:
             data["data_type"] = data.pop("clean_type")
@@ -354,6 +366,22 @@ def load_and_parse(filename, check_version=True):
             cls_template_noise["hm2:hm2"] = data.pop("cls_tnoise_hm2")
             cls_template_noise["hm1:hm2"] = data.pop("cls_tnoise_hm1xhm2")
             data["cls_template_noise"] = cls_template_noise
+
+        if "template_files" in data:
+            if "template_type_sim" not in data:
+                for k1, k2 in [
+                    ("template_type", "template_type_sim"),
+                    ("template_root", "template_root_sim"),
+                    ("template_root2", "template_root_sim2"),
+                    ("template_files", "template_files_sim"),
+                    ("template_files2", "template_files_sim2"),
+                    ("num_template", "num_template_sim"),
+                ]:
+                    if k1 in data:
+                        data[k2] = data[k1]
+
+            if "template_noise_type" not in data:
+                data["template_noise_type"] = data["template_type"]
 
         # update data version in memory
         data["data_version"] = version = dv
