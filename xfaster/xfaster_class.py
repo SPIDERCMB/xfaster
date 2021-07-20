@@ -337,8 +337,10 @@ class XFaster(object):
                     v = os.path.join(self.config_root, v)
                 assert os.path.exists(v), "Missing beam product file {}".format(v)
                 self.beam_product = pt.load_compat(v)
-                beam_set = set(self.beam_product)
-                assert tagset >= beam_set, "Unknown tags in beam product"
+                # Only use the fields in the beam product we need
+                for btag in list(self.beam_product.keys()):
+                    if btag not in tagset:
+                        self.beam_product.pop(btag)
             else:
                 self.beam_product = {}
 
@@ -349,7 +351,10 @@ class XFaster(object):
                 assert os.path.exists(v), "Missing beam error product file {}".format(v)
                 self.beam_error_product = pt.load_compat(v)
                 beam_set = set(self.beam_error_product)
-                assert tagset >= beam_set, "Unknown tags in beam error product"
+                # Only use the fields in the beam product we need
+                for btag in list(self.beam_error_product.keys()):
+                    if btag not in tagset:
+                        self.beam_error_product.pop(btag)
             else:
                 self.beam_error_product = {}
         else:
