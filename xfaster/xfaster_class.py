@@ -385,6 +385,7 @@ class XFaster(object):
             for ftag in list(self.fit_transfer.keys()):
                 if ftag not in tagset:
                     self.fit_transfer.pop(ftag)
+            assert tagset == set(self.fit_transfer), "Missing tags in [transfer]"
         else:
             # assume true for all tags otherwise
             self.fit_transfer = {k: True for k in self.dict_freqs}
