@@ -482,14 +482,20 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">fwhm</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="n">k</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">getfloat</span><span class="p">(</span><span class="s2">&quot;fwhm&quot;</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="o">/</span> <span class="mf">60.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;fwhm&quot;</span><span class="p">]</span>
             <span class="p">}</span>
-            <span class="k">assert</span> <span class="n">tagset</span> <span class="o">&gt;=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fwhm</span><span class="p">),</span> <span class="s2">&quot;Unknown tags in [fwhm]&quot;</span>
+            <span class="c1"># Only use the FWHM for fields in tagset</span>
+            <span class="k">for</span> <span class="n">ftag</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fwhm</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="n">ftag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tagset</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fwhm</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">ftag</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fwhm</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="c1"># beam fwhm error for each tag, if not supplied in beam_error_product</span>
         <span class="k">if</span> <span class="s2">&quot;fwhm_err&quot;</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fwhm_err</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">getfloat</span><span class="p">(</span><span class="s2">&quot;fwhm_err&quot;</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;fwhm_err&quot;</span><span class="p">]}</span>
-            <span class="k">assert</span> <span class="n">tagset</span> <span class="o">&gt;=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fwhm_err</span><span class="p">),</span> <span class="s2">&quot;Unknown tags in [fwhm_err]&quot;</span>
+            <span class="c1"># Only use the FWHM for fields in tagset</span>
+            <span class="k">for</span> <span class="n">ftag</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fwhm_err</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="n">ftag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tagset</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fwhm_err</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">ftag</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fwhm_err</span> <span class="o">=</span> <span class="p">{}</span>
 
@@ -501,8 +507,10 @@
                     <span class="n">v</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_root</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
                 <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="s2">&quot;Missing beam product file </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">beam_product</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">load_compat</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
-                <span class="n">beam_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_product</span><span class="p">)</span>
-                <span class="k">assert</span> <span class="n">tagset</span> <span class="o">&gt;=</span> <span class="n">beam_set</span><span class="p">,</span> <span class="s2">&quot;Unknown tags in beam product&quot;</span>
+                <span class="c1"># Only use the fields in the beam product we need</span>
+                <span class="k">for</span> <span class="n">btag</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_product</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                    <span class="k">if</span> <span class="n">btag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tagset</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">beam_product</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">btag</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">beam_product</span> <span class="o">=</span> <span class="p">{}</span>
 
@@ -512,8 +520,10 @@
                     <span class="n">v</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_root</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
                 <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="s2">&quot;Missing beam error product file </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">beam_error_product</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">load_compat</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
-                <span class="n">beam_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_error_product</span><span class="p">)</span>
-                <span class="k">assert</span> <span class="n">tagset</span> <span class="o">&gt;=</span> <span class="n">beam_set</span><span class="p">,</span> <span class="s2">&quot;Unknown tags in beam error product&quot;</span>
+                <span class="c1"># Only use the fields in the beam product we need</span>
+                <span class="k">for</span> <span class="n">btag</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beam_error_product</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                    <span class="k">if</span> <span class="n">btag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tagset</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">beam_error_product</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">btag</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">beam_error_product</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">else</span><span class="p">:</span>
@@ -535,6 +545,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">fit_transfer</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="n">k</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="s2">&quot;transfer&quot;</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;transfer&quot;</span><span class="p">]</span>
             <span class="p">}</span>
+            <span class="c1"># Remove any fields not needed</span>
+            <span class="k">for</span> <span class="n">ftag</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_transfer</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="n">ftag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tagset</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fit_transfer</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">ftag</span><span class="p">)</span>
             <span class="k">assert</span> <span class="n">tagset</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_transfer</span><span class="p">),</span> <span class="s2">&quot;Missing tags in [transfer]&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># assume true for all tags otherwise</span>
