@@ -318,14 +318,20 @@ class XFaster(object):
             self.fwhm = {
                 k: np.radians(cfg.getfloat("fwhm", k) / 60.0) for k in cfg["fwhm"]
             }
-            assert tagset >= set(self.fwhm), "Unknown tags in [fwhm]"
+            # Only use the FWHM for fields in tagset
+            for ftag in list(self.fwhm.keys()):
+                if ftag not in tagset:
+                    self.fwhm.pop(ftag)
         else:
             self.fwhm = {}
 
         # beam fwhm error for each tag, if not supplied in beam_error_product
         if "fwhm_err" in cfg:
             self.fwhm_err = {k: cfg.getfloat("fwhm_err", k) for k in cfg["fwhm_err"]}
-            assert tagset >= set(self.fwhm_err), "Unknown tags in [fwhm_err]"
+            # Only use the FWHM for fields in tagset
+            for ftag in list(self.fwhm_err.keys()):
+                if ftag not in tagset:
+                    self.fwhm_err.pop(ftag)
         else:
             self.fwhm_err = {}
 
@@ -350,7 +356,6 @@ class XFaster(object):
                     v = os.path.join(self.config_root, v)
                 assert os.path.exists(v), "Missing beam error product file {}".format(v)
                 self.beam_error_product = pt.load_compat(v)
-                beam_set = set(self.beam_error_product)
                 # Only use the fields in the beam product we need
                 for btag in list(self.beam_error_product.keys()):
                     if btag not in tagset:
@@ -376,7 +381,10 @@ class XFaster(object):
             self.fit_transfer = {
                 k: cfg.getboolean("transfer", k) for k in cfg["transfer"]
             }
-            assert tagset == set(self.fit_transfer), "Missing tags in [transfer]"
+            # Remove any fields not needed
+            for ftag in list(self.fit_transfer.keys()):
+                if ftag not in tagset:
+                    self.fit_transfer.pop(ftag)
         else:
             # assume true for all tags otherwise
             self.fit_transfer = {k: True for k in self.dict_freqs}
