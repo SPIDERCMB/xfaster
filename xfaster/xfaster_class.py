@@ -315,23 +315,15 @@ class XFaster(object):
         # beam fwhm for each tag, if not supplied in beam_product
         # converted from arcmin to radians
         if "fwhm" in cfg:
-            self.fwhm = {
-                k: np.radians(cfg.getfloat("fwhm", k) / 60.0) for k in cfg["fwhm"]
-            }
-            # Only use the FWHM for fields in tagset
-            for ftag in list(self.fwhm.keys()):
-                if ftag not in tagset:
-                    self.fwhm.pop(ftag)
+            tags = [k for k in self.dict_freqs if cfg.has_option("fwhm", k)]
+            self.fwhm = {k: np.radians(cfg.getfloat("fwhm", k) / 60.0) for k in tags}
         else:
             self.fwhm = {}
 
         # beam fwhm error for each tag, if not supplied in beam_error_product
         if "fwhm_err" in cfg:
-            self.fwhm_err = {k: cfg.getfloat("fwhm_err", k) for k in cfg["fwhm_err"]}
-            # Only use the FWHM for fields in tagset
-            for ftag in list(self.fwhm_err.keys()):
-                if ftag not in tagset:
-                    self.fwhm_err.pop(ftag)
+            tags = [k for k in self.dict_freqs if cfg.has_option("fwhm_err", k)]
+            self.fwhm_err = {k: cfg.getfloat("fwhm_err", k) for k in tags}
         else:
             self.fwhm_err = {}
 
@@ -344,9 +336,8 @@ class XFaster(object):
                 assert os.path.exists(v), "Missing beam product file {}".format(v)
                 self.beam_product = pt.load_compat(v)
                 # Only use the fields in the beam product we need
-                for btag in list(self.beam_product.keys()):
-                    if btag not in tagset:
-                        self.beam_product.pop(btag)
+                for btag in set(self.beam_product) - tagset:
+                    self.beam_product.pop(btag)
             else:
                 self.beam_product = {}
 
@@ -357,9 +348,8 @@ class XFaster(object):
                 assert os.path.exists(v), "Missing beam error product file {}".format(v)
                 self.beam_error_product = pt.load_compat(v)
                 # Only use the fields in the beam product we need
-                for btag in list(self.beam_error_product.keys()):
-                    if btag not in tagset:
-                        self.beam_error_product.pop(btag)
+                for btag in set(self.beam_error_product) - tagset:
+                    self.beam_error_product.pop(btag)
             else:
                 self.beam_error_product = {}
         else:
@@ -378,13 +368,8 @@ class XFaster(object):
 
         # fit for the transfer function for each tag?
         if "transfer" in cfg:
-            self.fit_transfer = {
-                k: cfg.getboolean("transfer", k) for k in cfg["transfer"]
-            }
-            # Remove any fields not needed
-            for ftag in list(self.fit_transfer.keys()):
-                if ftag not in tagset:
-                    self.fit_transfer.pop(ftag)
+            tags = [k for k in self.dict_freqs if cfg.has_option("transfer", k)]
+            self.fit_transfer = {k: cfg.getboolean("transfer", k) for k in tags}
             assert tagset == set(self.fit_transfer), "Missing tags in [transfer]"
         else:
             # assume true for all tags otherwise
