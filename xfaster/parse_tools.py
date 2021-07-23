@@ -310,6 +310,11 @@ def load_and_parse(filename, check_version=True):
         if "num_foreground" in data:
             data["num_foreground_sim"] = data.pop("num_foreground")
 
+        for k in ["signal_type", "noise_type"]:
+            ks = "{}_sim".format(k)
+            if k in data and ks in data and data[ks] is None:
+                data[ks] = data[k]
+
         if "clean_type" in data:
             data["data_type"] = data.pop("clean_type")
 

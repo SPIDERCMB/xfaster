@@ -910,7 +910,7 @@ class XFaster(object):
                 for suff in ["", "2"] if null_run else [""]:
                     fs.update(
                         self._get_sim_files(
-                            name, root, suffix="_sim", data_suffix=suff, fs=fs
+                            name, root, suffix="_sim" + suff, data_suffix=suff, fs=fs
                         )
                     )
 
