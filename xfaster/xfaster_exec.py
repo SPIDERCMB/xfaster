@@ -91,7 +91,7 @@ def xfaster_run(
     reload_gcorr=False,
     gcorr_file=None,
     qb_file=None,
-    like_alpha_tags=["95", "150"],
+    like_alpha_tags=None,
     alpha_prior=[-np.inf, np.inf],
     r_prior=[-np.inf, np.inf],
     res_prior=None,
@@ -317,7 +317,8 @@ def xfaster_run(
         by the residual qb values stored in qb_file.
     like_alpha_tags : list of strings
         List of map tags from which foreground template maps should be
-        subtracted and fit in the likelihood.
+        subtracted and fit in the likelihood. If None, defaults to
+        template_alpha_tags.
     alpha_prior: list of floats
         Flat prior edges for allowed alpha values in the likelihood.
         Set to None to not fit for alpha values in the likelihood.
@@ -388,6 +389,9 @@ def xfaster_run(
             ),
             xfc.XFasterWarning,
         )
+
+    if like_alpha_tags is None:
+        like_alpha_tags = template_alpha_tags
 
     if len(template_alpha_tags) != len(template_alpha):
         raise ValueError(
