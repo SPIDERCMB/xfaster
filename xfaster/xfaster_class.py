@@ -2023,8 +2023,8 @@ class XFaster(object):
             iteratively solving for the correction terms.
         gcorr_file : str
             If not None, path to gcorr file. Otherwise, use file labeled
-            mask_map_<tag>_gcorr.npy in mask directory for signal, or
-            mask_map_<tag>_gcorr_null.npy for nulls.
+            mask_map_<tag>_gcorr.npz in mask directory for signal, or
+            mask_map_<tag>_gcorr_null.npz for nulls.
 
         Notes
         -----
@@ -2063,7 +2063,7 @@ class XFaster(object):
             alt_name="data_xcorr",
         )
 
-        def process_gcorr(gcorr_file):
+        def process_gcorr(gcorr_file_in):
             if not hasattr(self, "gcorr"):
                 self.gcorr = None
             if apply_gcorr and self.gcorr is None:
@@ -2076,14 +2076,18 @@ class XFaster(object):
                 if not reload_gcorr and tag in self.gcorr:
                     continue
 
-                if gcorr_file is None:
+                if gcorr_file_in is None:
                     if self.null_run:
                         gcorr_file = mfile.replace(".fits", "_gcorr_null.npz")
                     else:
                         gcorr_file = mfile.replace(".fits", "_gcorr.npz")
+                else:
+                    gcorr_file = gcorr_file_in
+
                 if not os.path.exists(gcorr_file):
                     self.warn("G correction file {} not found".format(gcorr_file))
                     continue
+
                 gdata = pt.load_and_parse(gcorr_file)
                 gcorr = gdata["gcorr"]
                 for k, g in gcorr.items():
