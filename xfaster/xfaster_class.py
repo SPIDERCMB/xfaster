@@ -1800,6 +1800,12 @@ class XFaster(object):
             if value_ref is not None:
                 for k in [field, attr]:
                     vref = value_ref.pop(k, "undef")
+                    # turn it into an array if possible to compare
+                    try:
+                        vref = pt.dict_to_arr(vref)
+                    except:
+                        pass
+
                     if not vref == "undef" and np.any(v != vref):
                         self.warn(
                             "{}: Field {} has value {}, expected {}".format(
