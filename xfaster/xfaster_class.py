@@ -6680,6 +6680,13 @@ class XFaster(object):
             If supplied, appended to the likelihood filename.
         """
 
+        # Check if OMP threads > 1. It actually slows the code way down to have
+        # more threads. Break instead.
+        assert os.getenv("OMP_NUM_THREADS") in [
+            None,
+            "1",
+        ], "OMP threads must be set to 1 for likelihood"
+
         for x in [
             r_prior,
             alpha_prior,
