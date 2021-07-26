@@ -388,6 +388,9 @@ def load_and_parse(filename, check_version=True):
             if "template_noise_type" not in data:
                 data["template_noise_type"] = data["template_type"]
 
+        if "fix_bb_xfer" in data:
+            data["fix_bb_transfer"] = data.pop("fix_bb_xfer")
+
         # update data version in memory
         data["data_version"] = version = dv
 
@@ -678,6 +681,8 @@ def dict_to_dsdqb_mat(dsdqb_dict, bin_def):
             if "_" in rem:
                 specs, tag = rem.split("_", 1)
                 xname = "{0}:{0}".format(tag)
+                if xname not in map_pairs:
+                    continue
                 pairs = {xname: map_pairs[xname]}
                 if specs == "eebb":
                     specs = ["ee", "bb"]
