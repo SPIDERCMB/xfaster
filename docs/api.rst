@@ -34,9 +34,9 @@ xfaster_exec
   The module containing the master function that performs all the algorithm steps in order, and optionally
   submits the job to a grid system
 
-xfaster_tools
+spec_tools
 -------------
-.. automodule:: xfaster.xfaster_tools
+.. automodule:: xfaster.spec_tools
   :members:
   :undoc-members:
 
