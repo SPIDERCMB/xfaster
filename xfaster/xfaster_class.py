@@ -500,7 +500,35 @@ class XFaster(object):
         self, name, root=None, subset="*", suffix="", data_suffix="", fs=None
     ):
         """
-        Convenience function for finding all matching sims per map
+        Convenience function for finding all matching sims per map.  Used
+        internally in ``get_files`` for selecting appropriate subsets of
+        simulation files.
+
+        Arguments
+        ---------
+        name : str
+            Type of simulation files to collect (signal, noise, foreground,
+            template)
+        root : str
+            Root of the simulation file tree, relative to data_root.  If not
+            supplied, the returned set of variables are set to null values.
+        subset : str
+            Data subset to search for.  See ``get_files`` for details.
+        suffix : str
+            Suffix to apply to the output variables, e.g. "_sim" or "_sim2".
+        data_suffix : str
+            Suffix to apply to corresponding data variables to search for
+            matching files, e.g. "2".
+        fs : dict
+            Dictionary of file options to search for the appropriate data
+            variables to check for consistency.  If not supplied, checks
+            for the corresponding attributes of the calling object.
+
+        Returns
+        -------
+        opts : dict
+            Dictionary of sim file options, with the following keys:
+            <name>_root<suffix>, <name>_files<suffix>, num_<name><suffix>.
         """
         if root is None:
             return {
