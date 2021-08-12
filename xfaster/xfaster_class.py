@@ -898,6 +898,7 @@ class XFaster(object):
         foreground_type_sim=None,
         template_type=None,
         sub_planck=False,
+        sub_hm_noise=False,
     ):
         """
         Find all files for the given data root.  The data structure is::
@@ -1012,6 +1013,9 @@ class XFaster(object):
             missions so no Planck autos are used. Useful for removing expected
             signal residuals from null tests. Maps are expected to be in
             reobs_planck directory
+        sub_hm_noise : bool
+            If True, subtract average of Planck ffp10 noise crosses to debias
+            template-cleaned spectra
 
         Returns
         -------
@@ -1125,18 +1129,22 @@ class XFaster(object):
                         if not os.path.exists(nfile):
                             raise OSError("Missing hm-{} template for {}".format(hm, f))
                         tfiles.append(nfile)
-                        nfiles = sorted(
-                            glob.glob(
-                                f.replace(fs["map_root"], tnroot).replace(
-                                    ".fits", "_*.fits"
+                        if sub_hm_noise:
+                            nfiles = sorted(
+                                glob.glob(
+                                    f.replace(fs["map_root"], tnroot).replace(
+                                        ".fits", "_*.fits"
+                                    )
                                 )
                             )
-                        )
-                        if not len(nfiles):
-                            raise OSError(
-                                "Missing hm-{} template noise for {}".format(hm, f)
-                            )
-                        tnfiles.append(nfiles)
+                            if not len(nfiles):
+                                raise OSError(
+                                    "Missing hm-{} template noise for {}".format(hm, f)
+                                )
+                            tnfiles.append(nfiles)
+                        else:
+                            nfiles = []
+
                         if num_template_noise is not None:
                             if len(nfiles) != num_template_noise:
                                 raise OSError(
@@ -1163,12 +1171,13 @@ class XFaster(object):
                     ),
                     "info",
                 )
-                self.log(
-                    "Found {} template noise files in {}".format(
-                        fs["num_template_noise"], fs["template_noise_root"]
-                    ),
-                    "info",
-                )
+                if sub_hm_noise:
+                    self.log(
+                        "Found {} template noise files in {}".format(
+                            fs["num_template_noise"], fs["template_noise_root"]
+                        ),
+                        "info",
+                    )
                 self.log("Template files: {}".format(fs["template_files"]), "debug")
 
             fields = [
@@ -2256,6 +2265,7 @@ class XFaster(object):
         template_alpha=None,
         sub_planck=False,
         sub_hm_noise=True,
+        temp_specs=None,
     ):
         """
         Compute cross spectra of the data maps.
@@ -2291,6 +2301,8 @@ class XFaster(object):
         sub_hm_noise : bool
             If True, subtract average of Planck ffp10 noise crosses to debias
             template-cleaned spectra.
+        temp_specs : list
+            Which spectra to use for alpha in the likelihood.
 
         Notes
         -----
@@ -2315,6 +2327,9 @@ class XFaster(object):
         data_shape = self.data_shape
         null_run = self.null_run
         map_files2 = self.map_files2 if null_run else None
+
+        if temp_specs is None:
+            temp_specs = ["ee", "bb", "te", "eb", "tb"]
 
         # ensure dictionary
         if template_alpha is None:
@@ -2362,7 +2377,7 @@ class XFaster(object):
             """
             cls_clean = getattr(self, "cls_data_clean", OrderedDict())
 
-            for spec in self.specs:
+            for spec in set(self.specs) & set(temp_specs):
                 cls_clean[spec] = copy.deepcopy(self.cls_data[spec])
                 if spec not in self.cls_template:
                     continue
@@ -6609,6 +6624,9 @@ class XFaster(object):
         converge_criteria=0.01,
         reset_backend=None,
         file_tag=None,
+        sub_hm_noise=False,
+        r_specs=["ee", "bb"],
+        temp_specs=["ee", "bb", "eb"],
     ):
         """
         Explore the likelihood, optionally with an MCMC sampler.
@@ -6678,6 +6696,13 @@ class XFaster(object):
             set to True if the checkpoint has been forced to be rerun.
         file_tag : string
             If supplied, appended to the likelihood filename.
+        sub_hm_noise : bool
+            If True, subtract average of Planck ffp10 noise crosses to debias
+            template-cleaned spectra
+        r_specs : list
+            Which spectra to use in the r likelihood.
+        temp_specs : list
+            Which spectra to use for alpha in the likelihood.
         """
 
         # Check if OMP threads > 1. It actually slows the code way down to have
@@ -6698,6 +6723,9 @@ class XFaster(object):
         ]:
             if x is not None:
                 x[:] = [float(x[0]), float(x[1])]
+
+        r_specs = [x.lower() for x in r_specs]
+        temp_specs = [x.lower() for x in temp_specs]
 
         save_name = "like_mcmc"
         if not mcmc:
@@ -6997,7 +7025,11 @@ class XFaster(object):
             if alpha is None:
                 clsi = cls_input
             else:
-                self.get_masked_data(template_alpha=OrderedDict(zip(alpha_tags, alpha)))
+                self.get_masked_data(
+                    template_alpha=OrderedDict(zip(alpha_tags, alpha)),
+                    sub_hm_noise=sub_hm_noise,
+                    temp_specs=temp_specs,
+                )
                 clsi = self.get_data_spectra(do_noise=False)
 
             if beam is not None:
@@ -7018,7 +7050,7 @@ class XFaster(object):
             if r is not None:
                 for stag, d in cls_model0.items():
                     comp, spec = stag.split("_", 1)
-                    if spec not in ["ee", "bb"] or comp not in ["cmb", "total"]:
+                    if spec not in r_specs or comp not in ["cmb", "total"]:
                         continue
                     ctag = "cmb_{}".format(spec)
                     for xname, dd in d.items():
@@ -7040,7 +7072,7 @@ class XFaster(object):
             elif beam is not None:
                 for stag, d in cls_model0.items():
                     comp, spec = stag.split("_", 1)
-                    if spec not in ["ee", "bb"] or comp not in ["cmb", "total"]:
+                    if spec not in r_specs or comp not in ["cmb", "total"]:
                         continue
                     ctag = "cmb_{}".format(spec)
                     for xname, dd in d.items():
