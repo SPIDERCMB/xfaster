@@ -3957,7 +3957,7 @@ class XFaster(object):
                 specs.remove("eb")
             if "tb" in specs:
                 specs.remove("tb")
-        tbeb = "eb" in specs and "tb" in specs
+        tbeb = "eb" in specs and "tb" in specs and r is None
         specs = ["cmb_{}".format(spec) for spec in specs]
 
         if not self.null_run and "fg_tt" in self.bin_def:
@@ -4063,12 +4063,16 @@ class XFaster(object):
                     cls_shape[spec] = np.append([0, 0], d[: ltmp - 2])
 
         # EB and TB flat l^2 * C_l
-        if self.pol and tbeb and (flat is None or flat is False):
-            tbeb_flat = np.abs(cls_shape["cmb_bb"][100]) * ellfac[100] * 1e-4
-            tbeb_flat = np.ones_like(cls_shape["cmb_bb"]) * tbeb_flat
-            tbeb_flat[:2] = 0
-            cls_shape["cmb_eb"] = np.copy(tbeb_flat)
-            cls_shape["cmb_tb"] = np.copy(tbeb_flat)
+        if self.pol:
+            if tbeb and (flat is None or flat is False):
+                tbeb_flat = np.abs(cls_shape["cmb_bb"][100]) * ellfac[100] * 1e-4
+                tbeb_flat = np.ones_like(cls_shape["cmb_bb"]) * tbeb_flat
+                tbeb_flat[:2] = 0
+                cls_shape["cmb_eb"] = np.copy(tbeb_flat)
+                cls_shape["cmb_tb"] = np.copy(tbeb_flat)
+            elif not tbeb:
+                cls_shape["cmb_eb"] = np.zeros_like(ell, dtype=float)
+                cls_shape["cmb_tb"] = np.zeros_like(ell, dtype=float)
 
         if "fg" in specs:
             # From Planck LIV EE dust
