@@ -13,6 +13,9 @@ jobs:
     steps:
     - name: Checkout github repo
       uses: actions/checkout@v2
+    - name: Install compilers
+      run: |
+        apt-get update -y && apt-get install -y g++ && apt-get install -y gfortran
     - name: Upgrade pip
       run: |
         pip install --upgrade pip
@@ -31,7 +34,7 @@ jobs:
     # Standard drop-in approach that should work for most people.
     - uses: ammaraskar/sphinx-action@master
       with:
-        pre-build-command: "apt-get update -y && apt-get install -y g++ && apt-get install -y gfortran && apt-get install -y pandoc"
+        pre-build-command: "apt-get install -y pandoc"
         docs-folder: "docs/"
     # Create an artifact of the html output.
     - uses: actions/upload-artifact@v2
