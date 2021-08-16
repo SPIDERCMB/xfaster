@@ -665,7 +665,7 @@ class XFaster(object):
             # XXX Do this smarter
             mask_files = [
                 os.path.join(mask_root, "mask_map_{}.fits".format(tag))
-                for tag in map_tags
+                for tag in map_tags_orig
             ]
         for f in mask_files:
             if not os.path.exists(f):
@@ -994,7 +994,7 @@ class XFaster(object):
             def find_templates(tname, troot, hm, ensemble=False, suffix=""):
                 tkey = "{}_type{}".format(tname, suffix)
                 nkey = "num_{}{}".format(tname, suffix)
-                ttype = locals()[tkey]
+                ttype = g[tkey]
                 if tkey not in fs:
                     fs[tkey] = ttype
 

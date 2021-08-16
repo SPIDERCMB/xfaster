@@ -1430,10 +1430,10 @@ def xfaster_parse(args=None, test=False):
 
     # fix arguments meant to be empty
     for k, v in vars(args).items():
-        if not np.isscalar(v) and len(v) == 1:
-            v = v[0]
         if str(v).lower().strip() == "none":
             setattr(args, k, None)
+        elif not np.isscalar(v) and len(v) == 1:
+            v = v[0]
 
     # test mode
     if args.mode != "submit":
