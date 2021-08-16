@@ -70,6 +70,8 @@ def xfaster_run(
     like_profiles=False,
     like_profile_sigma=3.0,
     like_profile_points=100,
+    like_r_specs=["EE", "BB"],
+    like_temp_specs=["EE", "BB", "EB"],
     pixwin=True,
     save_iters=False,
     verbose="notice",
@@ -91,7 +93,7 @@ def xfaster_run(
     reload_gcorr=False,
     gcorr_file=None,
     qb_file=None,
-    like_alpha_tags=["95", "150"],
+    like_alpha_tags=None,
     alpha_prior=[-np.inf, np.inf],
     r_prior=[-np.inf, np.inf],
     res_prior=None,
@@ -248,6 +250,10 @@ def xfaster_run(
         Range in units of 1sigma over which to compute profile likelihoods
     like_profile_points : int
         Number of points to sample along the likelihood profile
+    like_r_specs : list
+        Which spectra to use in the r likelihood.
+    like_temp_specs : list
+        Which spectra to use for alpha in the likelihood.
     pixwin : bool
         If True, apply pixel window functions to beam windows.
     save_iters : bool
@@ -318,7 +324,8 @@ def xfaster_run(
         by the residual qb values stored in qb_file.
     like_alpha_tags : list of strings
         List of map tags from which foreground template maps should be
-        subtracted and fit in the likelihood.
+        subtracted and fit in the likelihood. If None, defaults to
+        template_alpha_tags.
     alpha_prior: list of floats
         Flat prior edges for allowed alpha values in the likelihood.
         Set to None to not fit for alpha values in the likelihood.
@@ -393,6 +400,9 @@ def xfaster_run(
             xfc.XFasterWarning,
         )
 
+    if like_alpha_tags is None:
+        like_alpha_tags = template_alpha_tags
+
     if len(template_alpha_tags) != len(template_alpha):
         raise ValueError(
             "template_alpha_tags and template_alpha must be the same length"
@@ -440,6 +450,7 @@ def xfaster_run(
         foreground_type_sim=foreground_type_sim,
         template_type=template_type,
         sub_planck=sub_planck,
+        sub_hm_noise=sub_hm_noise,
     )
     config_vars.update(file_opts, "File Options")
 
@@ -537,6 +548,8 @@ def xfaster_run(
         mcmc=mcmc,
         lmin=like_lmin,
         lmax=like_lmax,
+        r_specs=like_r_specs,
+        temp_specs=like_temp_specs,
         null_first_cmb=null_first_cmb,
         alpha_tags=like_alpha_tags,
         alpha_prior=alpha_prior,
@@ -550,11 +563,13 @@ def xfaster_run(
         num_walkers=mcmc_walkers,
         converge_criteria=like_converge_criteria,
         file_tag=like_tag,
-        use_xfer_mat=use_xfer_mat,
+        sub_hm_noise=sub_hm_noise,
     )
     config_vars.update(like_opts, "Likelihood Estimation Options")
     config_vars.remove_option("XFaster General", "like_lmin")
     config_vars.remove_option("XFaster General", "like_lmax")
+    config_vars.remove_option("XFaster General", "like_r_specs")
+    config_vars.remove_option("XFaster General", "like_temp_specs")
     config_vars.remove_option("XFaster General", "mcmc_walkers")
     config_vars.remove_option("XFaster General", "like_converge_criteria")
     config_vars.remove_option("XFaster General", "like_tag")
@@ -613,7 +628,7 @@ def xfaster_run(
         weighted_bins=weighted_bins,
     )
 
-    if template_type is not None:
+    if template_type is not None and sub_hm_noise:
         X.log("Computing template noise ensemble averages...", "notice")
         X.get_masked_template_noise(template_type)
 
@@ -1099,6 +1114,20 @@ def xfaster_parse(args=None, test=False):
         )
         add_arg(
             G,
+            "like_r_specs",
+            nargs="+",
+            help="Which spectra to use in the r likelihood calculation",
+            choices=["TT", "EE", "BB", "TE", "EB", "TB"],
+        )
+        add_arg(
+            G,
+            "like_temp_specs",
+            nargs="+",
+            help="Which spectra to use in the alpha likelihood calculation",
+            choices=["TT", "EE", "BB", "TE", "EB", "TB"],
+        )
+        add_arg(
+            G,
             "like_profile_sigma",
             argtype=float,
             help="Range in units of 1sigma over which to compute profile likelihoods",
@@ -1439,6 +1468,8 @@ class XFasterJobGroup(object):
                     "like_beam_tags",
                     "beam_prior",
                     "res_prior",
+                    "like_r_specs",
+                    "like_temp_specs",
                     "betad_prior",
                     "dust_amp_prior",
                     "dust_ellind_prior",
