@@ -56,10 +56,6 @@ def xfaster_run(
     bin_width_res=25,
     res_specs=None,
     weighted_bins=False,
-    ensemble_mean=False,
-    ensemble_median=False,
-    sim_index=None,
-    sims_add_alms=True,
     converge_criteria=0.005,
     iter_max=200,
     tbeb=False,
@@ -89,12 +85,15 @@ def xfaster_run(
     template_alpha=[0.015, 0.043],
     template_noise_type=None,
     template_type_sim=None,
+    template_alpha_tags_sim=None,
+    template_alpha_sim=None,
     subtract_template_noise=True,
     return_cls=False,
     apply_gcorr=False,
     reload_gcorr=False,
     gcorr_file=None,
     qb_file=None,
+    qb_file_sim=None,
     like_alpha_tags=None,
     alpha_prior=[-np.inf, np.inf],
     r_prior=[-np.inf, np.inf],
@@ -109,11 +108,16 @@ def xfaster_run(
     bp_tag=None,
     like_tag=None,
     subtract_planck_signal=False,
-    fake_data_r=None,
-    fake_data_template=None,
-    do_fake_signal=True,
-    do_fake_noise=True,
-    save_fake_data=False,
+    ensemble_mean=False,
+    ensemble_median=False,
+    sim_data=False,
+    sim_data_components=["signal", "noise", "foreground"],
+    sim_data_r=None,
+    sim_index_signal=None,
+    sim_index_noise=None,
+    sim_index_foreground=None,
+    sim_index_default=0,
+    save_sim_data=False,
 ):
     """
     Main function for running the XFaster algorithm.
@@ -215,15 +219,6 @@ def xfaster_run(
     weighted_bins : bool
         If True, use an lfac-weighted binning operator to construct Cbls.
         By default, a flat binning operator is used.
-    ensemble_mean : bool
-        If True, substitute S+N ensemble means for Cls to test biasing
-    ensemble_median : bool
-        If True, substitute S+N ensemble median for Cls to test biasing
-    sim_index : int
-        If not None, substitute the sim_index S+N map for observed Cls
-    sims_add_alms : bool
-        If True and sim_index is not None, add sim alms instead of sim Cls
-        to include signal and noise correlations
     converge_criteria : float
         The maximum fractional change in qb to signal convergence and
         end iteration
@@ -310,6 +305,15 @@ def xfaster_run(
         Tag for directory containing foreground templates, to be scaled by a
         scalar value per map tag and added to the simulated data.  The directory
         contains one template per map tag.
+    template_alpha_tags_sim : list of str
+        List of map tags to which foreground template maps should be added, if
+        the template component is included in ``sim_data_components``.  These
+        should be the original map tags, not those generated for chunk sets.
+        If None, use the same values as `template_alpha_tags`.
+    template_alpha_sim : list of floats
+        Scalar to be applied to template map for addition to each of the
+        simulated data maps with tags in the list ``template_alpha_tags``.
+        If None, use the same values as `template_alpha`.
     subtract_template_noise : bool
         If True, subtract average of Planck ffp10 noise crosses to debias
         template-cleaned spectra
@@ -327,9 +331,13 @@ def xfaster_run(
         mask_map_<tag>_gcorr.npy in mask directory for signal, or
         mask_map_<tag>_gcorr_null.npy for nulls.
     qb_file : str
-        Pointer to a bandpowers.npz file in the output directory. If used
-        in sim_index mode, the noise sim read from disk will be corrected
-        by the residual qb values stored in qb_file.
+        If not None, Pointer to a bandpowers.npz file in the output directory,
+        to correct the noise ensemble by an appropriate set of residual ``qb``
+        values.
+    qb_file_sim : str
+        If not None, pointer to a bandpowers.npz file in the output directory,
+        to correct the noise component of the simulated data by an appropriate
+        set of residual ``qb`` values.
     like_alpha_tags : list of strings
         List of map tags from which foreground template maps should be
         subtracted and fit in the likelihood. If None, defaults to
@@ -372,20 +380,34 @@ def xfaster_run(
         If True, subtract reobserved Planck from maps. Properly uses half
         missions so no Planck autos are used. Useful for removing expected
         signal residuals from null tests.
-    fake_data_r : float
-        If not None, construct a fake data map from scalar + r* tensor
-        signal maps + noise + alpha*template, where signal and noise maps
-        use the sim_index options, and alpha and template options are given
-        by their respective options
-    fake_data_template : str
-        If not None, add halfmission-1 template in this directory scaled by
-        alpha to fake data maps
-    do_fake_signal : bool
-        If true, use sim_index to set signal seed. If false, always use seed 0.
-    do_fake_noise : bool
-        If true, use sim_index to set noise seed. If false, always use seed 0.
-    save_fake_data : bool
-        If true, save data_xcorr file to disk for fake data.
+    ensemble_mean : bool
+        If True, substitute S+N ensemble means for Cls to test for bias
+        in the estimator.
+    ensemble_median : bool
+        If True, substitute S+N ensemble median for Cls to test for bias
+        in the estimator.
+    sim_data : bool
+        If True, construct simulated data spectra using the options below.
+    sim_data_components : list of strings
+        List of components to include in simulated data.  May include signal,
+        noise, and either foreground or template components.
+    sim_data_r : float
+        If not None, construct the signal component of the simulated data by
+        selecting the appropriate index from an ensemble of scalar and tensor
+        maps, such that the signal component is ``scalar + r * tensor``.  This
+        assumes that the tensor simulations are constructed with ``nt=0``, so
+        that the linear relationship holds.
+    sim_index_signal : int
+    sim_index_noise : int
+    sim_index_foreground : int
+        Sim index to use for each component that is included in
+        ``sim_data_components``.  If None or < 0, takes the value of
+        ``sim_index_default``.
+    sim_index_default : int
+        Default sim index to use for any component with index < 0 or None
+        in ``sim_index_<comp>``.
+    save_sim_data : bool
+        If True, save data_xcorr file to disk for simulated data.
     """
     from . import __version__ as version
 
@@ -394,23 +416,34 @@ def xfaster_run(
     cpu_start = cpu_time()
     time_start = time.time()
 
-    if foreground_type_sim is not None and sim_index is None:
-        warnings.warn(
-            "Ignoring argument foreground_type_sim={} for non sim index run".format(
-                foreground_type_sim
-            ),
-            xfc.XFasterWarning,
-        )
-
     if like_alpha_tags is None:
         like_alpha_tags = template_alpha_tags
 
+    if template_alpha_tags is None:
+        template_alpha_tags = []
+        template_alpha = []
     if len(template_alpha_tags) != len(template_alpha):
         raise ValueError(
             "template_alpha_tags and template_alpha must be the same length"
         )
     template_alpha = dict(zip(template_alpha_tags, template_alpha))
     del template_alpha_tags
+
+    if template_alpha_tags_sim is None:
+        template_alpha_sim = None
+    else:
+        if len(template_alpha_tags_sim) != len(template_alpha_sim):
+            raise ValueError(
+                "template_alpha_tags_sim and template_alpha_sim must be the same length"
+            )
+        template_alpha_sim = dict(zip(template_alpha_tags_sim, template_alpha_sim))
+    del template_alpha_tags_sim
+
+    sim_index = {}
+    for k in ["default", "signal", "noise", "foreground"]:
+        v = locals().pop("sim_index_{}".format(k))
+        if v is not None and v >= 0:
+            sim_index[k] = v
 
     # initialize config file
     config_vars = xfc.XFasterConfig(locals(), "XFaster General")
@@ -445,7 +478,7 @@ def xfaster_run(
         noise_type_sim=noise_type_sim,
         mask_type=mask_type,
         signal_type=signal_type,
-        signal_type_sim=signal_type_sim,
+        signal_type_sim=signal_type_sim if sim_data_r is None else "r",
         signal_transfer_type=signal_transfer_type,
         data_root2=data_root2,
         data_subset2=data_subset2,
@@ -462,6 +495,28 @@ def xfaster_run(
     file_vars = X.get_files(**file_opts)
     config_vars.update(file_vars, "File Settings")
 
+    data_opts = dict(
+        template_alpha=template_alpha,
+        subtract_planck_signal=subtract_planck_signal,
+        subtract_template_noise=subtract_template_noise,
+        ensemble_mean=ensemble_mean,
+        ensemble_median=ensemble_median,
+        sim=sim_data,
+        components=None if not sim_data else sim_data_components,
+        index=None if not sim_data else sim_index,
+        r=sim_data_r,
+        qb_file=qb_file_sim,
+        template_alpha_sim=template_alpha_sim,
+        save_sim=save_sim_data,
+    )
+    config_vars.update(data_opts, "Data Options")
+    config_vars.remove_option("XFaster General", "sim_data")
+    config_vars.remove_option("XFaster General", "sim_data_components")
+    config_vars.remove_option("XFaster General", "sim_data_r")
+    config_vars.remove_option("XFaster General", "sim_index")
+    config_vars.remove_option("XFaster General", "qb_file_sim")
+    config_vars.remove_option("XFaster General", "save_sim_data")
+
     beam_opts = dict(pixwin=pixwin)
     config_vars.update(beam_opts, "Beam Options")
 
@@ -474,10 +529,6 @@ def xfaster_run(
         tbeb=tbeb,
         fix_bb_transfer=fix_bb_transfer,
         window_lmax=window_lmax,
-        ensemble_mean=ensemble_mean,
-        ensemble_median=ensemble_median,
-        sim_index=sim_index,
-        sims_add_alms=sims_add_alms,
         signal_spec=signal_spec,
         signal_transfer_spec=signal_transfer_spec,
         model_r=model_r,
@@ -495,22 +546,16 @@ def xfaster_run(
         apply_gcorr=apply_gcorr,
         reload_gcorr=reload_gcorr,
         gcorr_file=gcorr_file,
+        qb_file=qb_file,
         like_profiles=like_profiles,
         like_profile_sigma=like_profile_sigma,
         like_profile_points=like_profile_points,
-        qb_file=qb_file,
-        template_alpha=template_alpha,
-        subtract_template_noise=subtract_template_noise,
         file_tag=bp_tag,
     )
     config_vars.update(spec_opts, "Spectrum Estimation Options")
     config_vars.remove_option("XFaster General", "like_profile_sigma")
     config_vars.remove_option("XFaster General", "like_profile_points")
     config_vars.remove_option("XFaster General", "bp_tag")
-    spec_opts.pop("ensemble_mean")
-    spec_opts.pop("ensemble_median")
-    spec_opts.pop("sim_index")
-    spec_opts.pop("sims_add_alms")
     spec_opts.pop("window_lmax")
     spec_opts.pop("lmin")
     spec_opts.pop("bin_width")
@@ -525,12 +570,10 @@ def xfaster_run(
     spec_opts.pop("signal_spec")
     spec_opts.pop("signal_transfer_spec")
     spec_opts.pop("model_r")
-    spec_opts.pop("qb_file")
-    spec_opts.pop("template_alpha")
-    spec_opts.pop("subtract_template_noise")
     spec_opts.pop("apply_gcorr")
     spec_opts.pop("reload_gcorr")
     spec_opts.pop("gcorr_file")
+    spec_opts.pop("qb_file")
     bandpwr_opts = spec_opts.copy()
     spec_opts.pop("file_tag")
 
@@ -601,13 +644,9 @@ def xfaster_run(
     X.get_kernels(window_lmax=window_lmax)
 
     X.log("Computing sim ensemble averages for transfer function...", "notice")
-    if signal_transfer_type in [signal_type, None]:
-        # Do all the sims at once to also get the S+N sim ensemble average
-        do_noise = True
-    else:
-        do_noise = False
-    # for transfer
-    X.get_masked_sims(transfer=True, do_noise=do_noise)
+    # Do all the sims at once to also get the S+N sim ensemble average
+    do_noise = signal_transfer_type in [signal_type, None]
+    X.get_masked_sims(transfer=True, do_noise=do_noise, qb_file=qb_file)
 
     X.log("Computing beam window functions...", "notice")
     X.get_beams(**beam_opts)
@@ -632,44 +671,16 @@ def xfaster_run(
         weighted_bins=weighted_bins,
     )
 
-    if template_type is not None and subtract_template_noise:
-        X.log("Computing template noise ensemble averages...", "notice")
-        X.get_masked_template_noise()
-
-    X.log("Computing masked data cross-spectra...", "notice")
-    X.get_masked_data(
-        template_alpha=template_alpha,
-        subtract_planck_signal=subtract_planck_signal,
-        subtract_template_noise=subtract_template_noise,
-    )
-
     X.log("Computing sim ensemble averages...", "notice")
-    if fake_data_r is not None:
-        sim_index_sim = None
-    else:
-        sim_index_sim = sim_index
-    X.get_masked_sims(
-        ensemble_mean=ensemble_mean,
-        ensemble_median=ensemble_median,
-        sim_index=sim_index_sim,
-        sims_add_alms=sims_add_alms,
-        qb_file=qb_file,
+    X.get_masked_sims(qb_file=qb_file)
+
+    X.log(
+        "Computing masked {} cross-spectra...".format(
+            "simulated data" if sim_data else "data"
+        ),
+        "notice",
     )
-    if fake_data_r is not None:
-        X.log("Replacing data with fake data...", "notice")
-        X.force_rerun["bandpowers"] = True
-        X.get_masked_fake_data(
-            fake_data_r=fake_data_r,
-            fake_data_template=fake_data_template,
-            sim_index=sim_index,
-            template_alpha=template_alpha,
-            noise_type=noise_type,
-            do_signal=do_fake_signal,
-            do_noise=do_fake_noise,
-            save_data=save_fake_data,
-            subtract_template_noise=subtract_template_noise,
-            qb_file=qb_file,
-        )
+    X.get_masked_data(**data_opts)
 
     X.log("Computing spectra...", "notice")
 
@@ -1055,23 +1066,6 @@ def xfaster_parse(args=None, test=False):
             "weighted_bins",
             help="Use lfac-weighted binning operator to construct Cbls",
         )
-        E = G.add_mutually_exclusive_group()
-        add_arg(
-            E,
-            "ensemble_mean",
-            help="Substitute S+N ensemble means for Cls to test biasing",
-        )
-        add_arg(
-            E,
-            "ensemble_median",
-            help="Substitute S+N ensemble medians for Cls to test biasing",
-        )
-        add_arg(
-            G,
-            "sim_index",
-            argtype=int,
-            help="Substitute sim_index map S+N for observed Cls",
-        )
         add_arg(
             G,
             "qb_file",
@@ -1080,10 +1074,10 @@ def xfaster_parse(args=None, test=False):
         )
         add_arg(
             G,
-            "sims_add_alms",
-            argtype=bool,
-            help="If True and sim_index is not None, add sim alms instead "
-            "of sim Cls to include signal and noise correlations ",
+            "qb_file_sim",
+            argtype=str,
+            help="File from which to get residual qbs to modify noise Cls "
+            "for simulated data",
         )
         add_arg(
             G,
@@ -1192,7 +1186,9 @@ def xfaster_parse(args=None, test=False):
             help="The width of the prior on the additive deviation from beta_ref",
         )
         add_arg(
-            G, "foreground_type_sim", help="Foreground sim variant to use for sim_index"
+            G,
+            "foreground_type_sim",
+            help="Foreground sim variant to use for sim_index",
         )
         add_arg(
             G, "template_type", help="Template type to use for template subtraction"
@@ -1220,6 +1216,19 @@ def xfaster_parse(args=None, test=False):
             "template_type_sim",
             help="Template type to use for foreground templates to include "
             "in data simulations",
+        )
+        add_arg(
+            G,
+            "template_alpha_sim",
+            nargs="+",
+            argtype=float,
+            help="Scaling values to use for foreground templates added to simulated data",
+        )
+        add_arg(
+            G,
+            "template_alpha_tags_sim",
+            nargs="+",
+            help="Map tags for which to add foreground templates to simulated data",
         )
         add_arg(
             G,
@@ -1252,26 +1261,71 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "bp_tag", help="Append tag to bandpowers output file")
         add_arg(G, "like_tag", help="Append tag to likelihood output files")
         add_arg(
-            G, "subtract_planck_signal", argtype=bool, help="Subtract Planck maps from data maps"
+            G,
+            "subtract_planck_signal",
+            argtype=bool,
+            help="Subtract Planck maps from data maps",
+        )
+        E = G.add_mutually_exclusive_group()
+        add_arg(
+            E,
+            "ensemble_mean",
+            help="Substitute S+N ensemble means for data Cls to test biasing",
+        )
+        add_arg(
+            E,
+            "ensemble_median",
+            help="Substitute S+N ensemble medians for data Cls to test biasing",
         )
         add_arg(
             G,
-            "fake_data_r",
+            "sim_data",
+            help="Substitute simulated components for data Cls.  Select components "
+            "using --sim-data-components",
+        )
+        add_arg(
+            G,
+            "sim_data_components",
+            nargs="+",
+            choices=["signal", "noise", "foreground", "template"],
+            help="Components to include in simulated data",
+        )
+        add_arg(
+            G,
+            "sim_data_r",
             argtype=float,
-            help="Construct fake data with tensor map scaled by this r",
+            help="Construct simulated data with the signal component "
+            "constructed from a scalar map and a tensor map scaled by this r",
         )
         add_arg(
             G,
-            "fake_data_template",
-            help="Add halfmission-1 map from this directory scaled by alpha"
-            " to fake data map",
+            "sim_index_default",
+            argtype=int,
+            help="Default sim index to use for simulated data components",
         )
         add_arg(
-            G, "do_fake_signal", argtype=bool, help="Vary sim index for fake signal"
+            G,
+            "sim_index_signal",
+            argtype=int,
+            help="Sim index to use for the signal component.  If not set, the "
+            "value of --sim-index-default is used",
         )
-        add_arg(G, "do_fake_noise", argtype=bool, help="Vary sim index for fake noise")
         add_arg(
-            G, "save_fake_data", argtype=bool, help="Save fake data data_xcorr file"
+            G,
+            "sim_index_noise",
+            argtype=int,
+            help="Sim index to use for the noise component.  If not set, the "
+            "value of --sim-index-default is used",
+        )
+        add_arg(
+            G,
+            "sim_index_foreground",
+            argtype=int,
+            help="Sim index to use for the foreground component.  If not set, the "
+            "value of --sim-index-default is used",
+        )
+        add_arg(
+            G, "save_sim_data", argtype=bool, help="Save simulated data data_xcorr file"
         )
 
         # submit args

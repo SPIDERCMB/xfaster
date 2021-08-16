@@ -42,7 +42,6 @@ xfaster_opts = {
     "bin_width_res": 100,
     # spectrum
     "ensemble_mean": False,
-    "sim_index": None,
     "tbeb": True,
     "converge_criteria": 0.005,
     "iter_max": 200,
