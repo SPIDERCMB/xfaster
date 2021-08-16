@@ -1219,7 +1219,7 @@ class XFaster(object):
             fs2 = self._get_files(data_root2, data_subset2, suffix="2", **opts)
 
             # make sure map tags match
-            if not all(fs["map_tags"] == fs2["map_tags2"]):
+            if not fs["map_tags"] == fs2["map_tags2"]:
                 raise RuntimeError(
                     "Found tags2 {}, expected {}".format(
                         fs2["map_tags2"], fs["map_tags"]
