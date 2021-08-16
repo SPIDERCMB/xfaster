@@ -1064,9 +1064,11 @@ class XFaster(object):
                 else:
                     suff = "2" if hm == "2" else ""
                     fs.update(
-                        "template_noise_root{}".format(suff): None,
-                        "template_noise_files{}".format(suff): None,
-                        "num_template_noise": None,
+                        {
+                            "template_noise_root{}".format(suff): None,
+                            "template_noise_files{}".format(suff): None,
+                            "num_template_noise": None,
+                        }
                     )
                 find_templates(
                     "template",
