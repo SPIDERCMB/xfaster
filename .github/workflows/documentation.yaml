@@ -21,7 +21,7 @@ jobs:
       with:
         path: ~/.cache/pip
         # Look to see if there is a cache hit for the corresponding requirements file
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
           ${{ runner.os }}-
@@ -31,7 +31,7 @@ jobs:
     # Standard drop-in approach that should work for most people.
     - uses: ammaraskar/sphinx-action@master
       with:
-        pre-build-command: "apt-get update -y && apt-get install --reinstall build-essential && apt-get install -y g++ && apt-get install -y gfortran && apt-get install -y pandoc"
+        pre-build-command: "apt-get update -y && apt-get install --reinstall build-essential && apt-get install -y g++ && apt-get install -y gfortran && apt-get install -y pandoc && pip install --upgrade pip"
         docs-folder: "docs/"
     # Create an artifact of the html output.
     - uses: actions/upload-artifact@v2
