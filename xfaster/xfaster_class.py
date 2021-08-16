@@ -497,7 +497,14 @@ class XFaster(object):
                 handler.release()
 
     def _get_sim_files(
-        self, name, root=None, subset="*", suffix="", data_suffix="", fs=None
+        self,
+        name,
+        root=None,
+        subset="*",
+        suffix="",
+        data_suffix="",
+        match_count=True,
+        fs=None,
     ):
         """
         Convenience function for finding all matching sims per map.  Used
@@ -519,6 +526,10 @@ class XFaster(object):
         data_suffix : str
             Suffix to apply to corresponding data variables to search for
             matching files, e.g. "2".
+        match_count : bool
+            If True, make sure that the number of files found matches those
+            counted previously for the same dataset.  If False, stores the
+            minimum number of files found.
         fs : dict
             Dictionary of file options to search for the appropriate data
             variables to check for consistency.  If not supplied, checks
@@ -563,16 +574,18 @@ class XFaster(object):
             if num_files is None:
                 num_files = nfiles
             elif num_files != nfiles:
-                raise OSError(
-                    "Found {} {} sims for map {}, expected {}".format(
-                        nfiles, name, f, num_files
+                if match_count:
+                    raise OSError(
+                        "Found {} {} sims for map {}, expected {}".format(
+                            nfiles, name, f, num_files
+                        )
                     )
-                )
+                elif nfiles < num_files:
+                    num_files = nfiles
 
             all_files.append(files)
 
-        all_files = np.asarray(all_files)
-
+        all_files = np.asarray([f[:num_files] for f in all_files])
         self.log("Found {} {} sims in {}".format(num_files, name, root), "info")
         self.log(
             "First {} sim files: {}".format(name, all_files[:, 0].tolist()), "debug"
@@ -938,7 +951,12 @@ class XFaster(object):
                 for suff in ["", "2"] if null_run else [""]:
                     fs.update(
                         self._get_sim_files(
-                            name, root, suffix="_sim" + suff, data_suffix=suff, fs=fs
+                            name,
+                            root,
+                            suffix="_sim" + suff,
+                            data_suffix=suff,
+                            match_count=False,
+                            fs=fs,
                         )
                     )
 
@@ -2280,7 +2298,9 @@ class XFaster(object):
                 index = index.copy()
             default_index = index.pop("default", 0)
             sim_type = {}
-            if (null_run or self.template_type_sim is None) and "template" in components:
+            if (
+                null_run or self.template_type_sim is None
+            ) and "template" in components:
                 components.remove("template")
             for comp in ["signal", "noise", "foreground", "template"]:
                 if comp not in components:
@@ -2307,7 +2327,8 @@ class XFaster(object):
                     else:
                         template_alpha_sim = OrderedDict(
                             [
-                                (k, v) for k, v in template_alpha_sim.items()
+                                (k, v)
+                                for k, v in template_alpha_sim.items()
                                 if k in self.map_tags_orig
                             ]
                         )
@@ -2974,8 +2995,7 @@ class XFaster(object):
                     if null_run:
                         quants += [[cls_null_noise, cls_null1_noise]]
                         quants += [
-                            [cls_null_res[k], cls_null1_res[k]]
-                            for k in cls_null_res
+                            [cls_null_res[k], cls_null1_res[k]] for k in cls_null_res
                         ]
                 if isim < nsim_min:
                     quants += [[cls_tot, cls1t]]
