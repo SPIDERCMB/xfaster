@@ -1446,9 +1446,9 @@ class XFaster(object):
 
         name = [name]
         if data_opts or bp_opts:
-            if self.ensemble_mean:
+            if getattr(self, "ensemble_mean", False):
                 name += ["sim_mean"]
-            elif self.ensemble_median:
+            elif getattr(self, "ensemble_median", False):
                 name += ["sim_median"]
             else:
                 if getattr(self, "sim_type", None) is not None:
@@ -2577,7 +2577,7 @@ class XFaster(object):
 
             self.log("Computing Alms for map {}/{}".format(idx + 1, num_maps), "all")
 
-            mask = self.get_mask(mask_files[idx])
+            mask = self.get_mask(self.mask_files[idx])
             m_alms = get_map_alms(idx)
             mn_alms = None
 
@@ -2707,7 +2707,9 @@ class XFaster(object):
         else:
             self.planck_subtracted = False
 
-        return self.save_data(save_name, from_attrs=save_attrs)
+        return self.save_data(
+            save_name, from_attrs=save_attrs, extra_tag="xcorr", data_opts=True
+        )
 
     def get_masked_sims(self, transfer=False, do_noise=True, qb_file=None):
         """
@@ -3448,7 +3450,7 @@ class XFaster(object):
                 tbeb_flat[:2] = 0
                 cls_shape["cmb_eb"] = np.copy(tbeb_flat)
                 cls_shape["cmb_tb"] = np.copy(tbeb_flat)
-            elif not tbeb:
+            elif not tbeb and not transfer:
                 cls_shape["cmb_eb"] = np.zeros_like(ell, dtype=float)
                 cls_shape["cmb_tb"] = np.zeros_like(ell, dtype=float)
 
@@ -5228,10 +5230,11 @@ class XFaster(object):
         separate files with the same name (and different index).
         """
 
-        save_name = "transfer" if transfer_run else "bandpowers"
-
         if transfer_run:
             null_first_cmb = False
+            save_name = "transfer_wbins" if self.weighted_bins else "transfer"
+        else:
+            save_name = "bandpowers"
 
         # previous fqb iterations to monitor convergence and adjust conditioning
         prev_fqb = []
@@ -5630,7 +5633,7 @@ class XFaster(object):
             self.warn(msg)
 
         return self.save_data(
-            save_name, map_tag=map_tag, bp_opts=True, extra_tag=file_tag, **out
+            save_name, map_tag=map_tag, bp_opts=not transfer_run, extra_tag=file_tag, **out
         )
 
     def get_transfer(
