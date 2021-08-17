@@ -151,17 +151,12 @@ class XFaster(object):
     def __init__(
         self,
         config,
-        lmax=500,
-        pol=True,
-        pol_mask=True,
         output_root=None,
         output_tag=None,
         verbose="notice",
         debug=False,
         checkpoint=None,
         add_log=False,
-        ref_freq=359.7,
-        beta_ref=1.54,
     ):
         """
         Initialize an XFaster instance for computing binned power spectra
@@ -172,13 +167,6 @@ class XFaster(object):
         config : string
             Configuration file. If path doesn't exist, assumed
             to be in xfaster/config/<config>
-        lmax : int
-            The maximum multipole for which spectra are computed
-        pol : bool
-            If True, polarized spectra are computed from the input maps
-        pol_mask : bool
-            If True, two independent masks are applied to every map:
-            one for T maps and one for Q/U maps.
         output_root : string
             Path to data output directory
         output_tag : string
@@ -196,13 +184,6 @@ class XFaster(object):
         add_log : bool
             If True, write log output to a file instead of to STDOUT.
             The log will be in ``<output_root>/run_<output_tag>.log``.
-        ref_freq : float
-            In GHz, reference frequency for dust model. Dust bandpowers output
-            will be at this reference frequency.
-        beta_ref : float
-            The spectral index of the dust model. This is a fixed value, with
-            an additive deviation from this value fit for in foreground fitting
-            mode.
         """
         # verbosity
         self.init_log(
@@ -211,17 +192,6 @@ class XFaster(object):
         )
 
         self.debug = debug
-        self.lmax = lmax
-        self.pol = pol
-        self.pol_dim = 3 if self.pol else 1
-        self.pol_mask = pol_mask if self.pol else False
-
-        self.ref_freq = ref_freq
-        self.beta_ref = beta_ref
-
-        # XXX Fix this
-        # Priors on frequency spectral index
-        self.delta_beta_fix = 1.0e-8
 
         # map tag configuration
         self.load_map_config(config)
@@ -1223,14 +1193,6 @@ class XFaster(object):
         # find all map files
         fs = self._get_files(data_root, data_subset, **opts)
         fs.update(null_run=null_run, **opts)
-        # count all the things
-        fs["num_corr"] = pt.num_corr(fs["num_maps"])
-        fs["num_spec"] = pt.num_corr(3 if self.pol else 1)
-        fs["num_spec_mask"] = pt.num_corr(2 if self.pol_mask else 1)
-        fs["num_kern"] = fs["num_corr"]
-        fs["data_shape"] = (fs["num_corr"] * fs["num_spec"], self.lmax + 1)
-        fs["mask_shape"] = (fs["num_corr"] * fs["num_spec_mask"], self.lmax + 1)
-        fs["kern_shape"] = (fs["num_kern"] * (self.lmax + 1), 2 * self.lmax + 1)
 
         if null_run:
             # find all map files for null tests
@@ -3629,15 +3591,18 @@ class XFaster(object):
 
     def get_bin_def(
         self,
-        bin_width=25,
         lmin=2,
+        lmax=500,
+        pol=True,
+        pol_mask=True,
         tbeb=False,
-        foreground_fit=False,
-        bin_width_fg=25,
+        bin_width=25,
+        weighted_bins=False,
         residual_fit=False,
         res_specs=None,
         bin_width_res=25,
-        weighted_bins=False,
+        foreground_fit=False,
+        bin_width_fg=25,
     ):
         """
         Construct the bin definition array that defines the bins for each output
@@ -3645,25 +3610,27 @@ class XFaster(object):
 
         Arguments
         ---------
+        lmin : int
+            Minimum ell for binned spectra
+        lmax : int
+            The maximum multipole for which spectra are computed
+        pol : bool
+            If True, polarized spectra are computed from the input maps
+        pol_mask : bool
+            If True, two independent masks are applied to every map:
+            one for T maps and one for Q/U maps.
+        tbeb : bool
+            If True, EB and TB bins are constructed so that these spectra are
+            computed by the estimator.  Otherwise, these spectra are fixed at
+            zero.
         bin_width : int or list of ints
             Width of each spectrum bin.  If a scalar, the same width is applied
             to all cross spectra.  Otherwise, must be a list of up to six
             elements, listing bin widths for the spectra in the order (TT, EE,
             BB, TE, EB, TB).
-        lmin : int
-            Minimum ell for binned spectra
-        tbeb : bool
-            If True, EB and TB bins are constructed so that these spectra are
-            computed by the estimator.  Otherwise, these spectra are fixed at
-            zero.
-        foreground_fit : bool
-            If True, construct bin definitions for foreground components as
-            well.
-        bin_width_fg : int or list of ints
-            Width of each foreground spectrum bin.  If a scalar, the same width
-            is applied to all cross spectra.  Otherwise, must be a list of up to
-            six elements, listing bin widths for the spectra in the order (TT,
-            EE, BB, TE, EB, TB).
+        weighted_bins : bool
+            If True, use an lfac-weighted binning operator to construct Cbls.
+            By default, a flat binning operator is used.
         residual_fit : bool
             If True, fit for (compute bandpower amplitudes for) several wide
             bins of excess noise.
@@ -3677,9 +3644,14 @@ class XFaster(object):
             is applied to all spectra for all cross spectra.  Otherwise, must
             be a list of up to nspec * nmaps elements, listing bin widths for
             each of the spectra in ``res_specs`` in order, then ordered by map.
-        weighted_bins : bool
-            If True, use an lfac-weighted binning operator to construct Cbls.
-            By default, a flat binning operator is used.
+        foreground_fit : bool
+            If True, construct bin definitions for foreground components as
+            well.
+        bin_width_fg : int or list of ints
+            Width of each foreground spectrum bin.  If a scalar, the same width
+            is applied to all cross spectra.  Otherwise, must be a list of up to
+            six elements, listing bin widths for the spectra in the order (TT,
+            EE, BB, TE, EB, TB).
 
         Returns
         -------
@@ -3688,6 +3660,20 @@ class XFaster(object):
             that defines the left and right edges for each bin of the
             corresponding spectrum.
         """
+        self.lmax = lmax
+        self.pol = pol
+        self.pol_dim = 3 if self.pol else 1
+        self.pol_mask = pol_mask if self.pol else False
+
+        # count all the things
+        self.num_corr = pt.num_corr(self.num_maps)
+        self.num_spec = pt.num_corr(3 if self.pol else 1)
+        self.num_spec_mask = pt.num_corr(2 if self.pol_mask else 1)
+        self.num_kern = self.num_corr
+        self.data_shape = (self.num_corr * self.num_spec, self.lmax + 1)
+        self.mask_shape = (self.num_corr * self.num_spec_mask, self.lmax + 1)
+        self.kern_shape = (self.num_kern * (self.lmax + 1), 2 * self.lmax + 1)
+
         npol = (6 if tbeb else 4) if self.pol else 1
         specs = ["tt", "ee", "bb", "te", "eb", "tb"][:npol]
 
@@ -5802,15 +5788,6 @@ class XFaster(object):
                         )
                         success = False
 
-            # fix the BB transfer function to EE, if desired
-            if fix_bb_transfer:
-                qb["cmb_bb"] = qb["cmb_ee"]
-
-            # fix TB/EB transfer functions
-            if len(self.specs) > 4:
-                qb["cmb_eb"] = np.sqrt(np.abs(qb["cmb_ee"] * qb["cmb_bb"]))
-                qb["cmb_tb"] = np.sqrt(np.abs(qb["cmb_tt"] * qb["cmb_bb"]))
-
             for stag, qbdat in qb.items():
                 self.qb_transfer[stag][m0] = qbdat
 
@@ -5839,6 +5816,8 @@ class XFaster(object):
         iter_max=200,
         return_qb=False,
         save_iters=False,
+        ref_freq=359.7,
+        beta_ref=1.54,
         delta_beta_prior=None,
         cond_noise=None,
         cond_criteria=None,
@@ -5874,6 +5853,13 @@ class XFaster(object):
         save_iters : bool
             If True, the output data from each Fisher iteration are stored
             in an individual npz file.
+        ref_freq : float
+            In GHz, reference frequency for dust model. Dust bandpowers output
+            will be at this reference frequency.
+        beta_ref : float
+            The spectral index of the dust model. This is a fixed value, with
+            an additive deviation from this value fit for in foreground fitting
+            mode.
         delta_beta_prior : float
             The width of the prior on the additive change from beta_ref. If you
             don't want the code to fit for a spectral index different
@@ -5928,12 +5914,20 @@ class XFaster(object):
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
         )
+
+        # foreground fitting
         if "fg_tt" in self.bin_def:
+            # reference frequency and spectral index
+            self.ref_freq = ref_freq
+            self.beta_ref = beta_ref
+            # priors on frequency spectral index
+            self.delta_beta_fix = 1.0e-8
             opts.update(
                 delta_beta_prior=delta_beta_prior,
                 ref_freq=self.ref_freq,
                 beta_ref=self.beta_ref,
             )
+
         if self.template_cleaned:
             opts.update(template_alpha=self.template_alpha)
         self.return_cls = return_cls
