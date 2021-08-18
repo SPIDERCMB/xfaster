@@ -714,7 +714,7 @@ class XFaster(object):
         template_type=None,
         template_noise_type=None,
         template_type_sim=None,
-        subtract_planck_signal=False,
+        subtract_reference_signal=False,
         subtract_template_noise=False,
     ):
         """
@@ -745,14 +745,14 @@ class XFaster(object):
                 -> foreground_<foreground_type_sim>
                     (same filenames as signal_<signal_type>)
                 -> templates_<template_type>
-                   -> halfmission-1
+                   -> template1
                       (same filenames as data_<data_type>)
-                   -> halfmission-2
+                   -> template2
                       (same filenames as data_<data_type>)
-                -> reobs_planck (if subtract_planck_signal=True)
-                   -> halfmission-1
+                -> reobs_reference (if subtract_reference_signal=True)
+                   -> reference1
                       (same filenames as data_<data_type>)
-                   -> halfmission-2
+                   -> reference2
                       (same filenames as data_<data_type>)
             <data_root2> (If provided, same structure as data_root)
                 ...
@@ -836,14 +836,17 @@ class XFaster(object):
             Tag for directory containing foreground templates, to be scaled by a
             scalar value per map tag and added to the simulated data.  The
             directory contains one template per map tag.
-        subtract_planck_signal : bool
-            If True, subtract reobserved Planck from maps. Properly uses half
-            missions so no Planck autos are used. Useful for removing expected
-            signal residuals from null tests. Maps are expected to be in
-            reobs_planck directory
+        subtract_reference_signal : bool
+            If True, subtract a reobserved reference signal from each data map.
+            The reference signal maps should be two datasets with uncorrelated
+            noise, such as Planck half-mission maps.  This option is used for
+            removing expected signal residuals from null tests.
         subtract_template_noise : bool
-            If True, subtract average of Planck ffp10 noise crosses to debias
-            template-cleaned spectra
+            If True, subtract average of cross spectra of an ensemble of noise
+            realizations corresponding to each template map, to debias
+            template-cleaned spectra.  Typically, this would be a noise model
+            based on the Planck FFP10 ensemble for each half-mission foreground
+            template.
 
         Returns
         -------
@@ -979,7 +982,7 @@ class XFaster(object):
                     setattr(self, k, v)
                 return
 
-            def find_templates(tname, troot, hm, ensemble=False, suffix=""):
+            def find_templates(tname, troot, grp, ensemble=False, suffix=""):
                 tkey = "{}_type{}".format(tname, suffix)
                 nkey = "num_{}{}".format(tname, suffix)
                 ttype = g[tkey]
@@ -987,8 +990,8 @@ class XFaster(object):
                     fs[tkey] = ttype
 
                 nfiles = None
-                suffix = suffix + (hm if hm == "2" else "")
-                root = os.path.join(fs["data_root"], troot, "halfmission-{}".format(hm))
+                suffix = suffix + (grp if grp == "2" else "")
+                root = os.path.join(fs["data_root"], troot, "template{}".format(grp))
 
                 files = []
                 for f in fs["map_files"]:
@@ -999,7 +1002,7 @@ class XFaster(object):
                         nfiles1 = len(tf)
                         if not nfiles1:
                             raise OSError(
-                                "Missing hm-{} {} files for {}".format(hm, tname, f)
+                                "Missing temp{} {} files for {}".format(grp, tname, f)
                             )
                         if nfiles is None:
                             nfiles = nfiles1
@@ -1011,7 +1014,7 @@ class XFaster(object):
                             )
                     elif not os.path.exists(tf):
                         raise OSError(
-                            "Missing hm-{} {} file for {}".format(hm, tname, f)
+                            "Missing temp{} {} file for {}".format(grp, tname, f)
                         )
 
                     files.append(tf)
@@ -1040,13 +1043,13 @@ class XFaster(object):
 
                 self.log("Found {} templates in {}".format(nfiles, root), "info")
 
-            for hm in ["1", "2"]:
-                find_templates("template", "templates_{}".format(template_type), hm)
+            for grp in ["1", "2"]:
+                find_templates("template", "templates_{}".format(template_type), grp)
                 if subtract_template_noise:
                     find_templates(
                         "template_noise",
                         "templates_noise_{}".format(template_noise_type),
-                        hm,
+                        grp,
                         ensemble=True,
                     )
                 else:
@@ -1061,74 +1064,74 @@ class XFaster(object):
                 find_templates(
                     "template",
                     "templates_{}".format(template_type_sim),
-                    hm,
+                    grp,
                     suffix="_sim",
                 )
 
             return True
 
-        def get_planck_files(fs):
+        def get_reference_files(fs):
             """
-            Update options for planck subtraction. Internal to get_files.
+            Update options for reference signal subtraction. Internal to get_files.
 
             Arguments
             ---------
             fs : dict
                 Dictionary of file options
             """
-            if subtract_planck_signal and fs.get("planck_root", None) is not None:
+            if subtract_reference_signal and fs.get("reference_root", None) is not None:
                 return
 
-            if not subtract_planck_signal:
-                for k in ["planck_root", "planck_files", "num_planck"]:
+            if not subtract_reference_signal:
+                for k in ["reference_root", "reference_files", "num_reference"]:
                     fs[k] = 0 if k.startswith("num_") else None
                     setattr(self, k, fs[k])
                 return
 
-            planck_root = {}
-            planck_files = {}
-            num_planck = 0
+            reference_root = {}
+            reference_files = {}
+            num_reference = 0
             for null_split in ["a", "b"]:
                 if null_split == "a":
                     suff = ""
                 else:
                     suff = 2
-                for hm in ["1", "2"]:
-                    pgrp = "hm{}{}".format(hm, null_split)
+                for grp in ["1", "2"]:
+                    pgrp = "ref{}{}".format(grp, null_split)
                     proot = os.path.join(
                         fs["data_root{}".format(suff)],
-                        "reobs_planck",
-                        "halfmission-{}".format(hm),
+                        "reobs_reference",
+                        "reference{}".format(hm),
                     )
                     pfiles = []
                     for f in fs["map_files{}".format(suff)]:
                         nfile = f.replace(fs["map_root{}".format(suff)], proot)
                         if not os.path.exists(nfile):
-                            raise OSError("Missing hm-{} map for {}".format(hm, f))
+                            raise OSError("Missing ref{} map for {}".format(grp, f))
                         pfiles.append(nfile)
-                    if num_planck == 0:
-                        num_planck = len(pfiles)
-                    elif len(pfiles) != num_planck:
+                    if num_reference == 0:
+                        num_reference = len(pfiles)
+                    elif len(pfiles) != num_reference:
                         raise OSError(
-                            "Found {} files for planck group {}, expected {}".format(
-                                len(pfiles), pgrp, num_planck
+                            "Found {} files for reference group {}, expected {}".format(
+                                len(pfiles), pgrp, num_reference
                             )
                         )
                     pfiles = np.asarray(pfiles)
-                    planck_root[pgrp] = proot
-                    planck_files[pgrp] = pfiles
+                    reference_root[pgrp] = proot
+                    reference_files[pgrp] = pfiles
 
                     self.log(
-                        "Found {} planck maps in {}".format(
-                            num_planck,
-                            planck_root[pgrp],
+                        "Found {} reference maps in {}".format(
+                            num_reference,
+                            reference_root[pgrp],
                         ),
                         "info",
                     )
-                    self.log("Planck files: {}".format(pfiles), "debug")
+                    self.log("Reference files: {}".format(pfiles), "debug")
 
             loc = locals()
-            for k in ["planck_root", "planck_files", "num_planck"]:
+            for k in ["reference_root", "reference_files", "num_reference"]:
                 fs[k] = loc[k]
                 setattr(self, k, fs[k])
 
@@ -1136,7 +1139,7 @@ class XFaster(object):
 
         def update_files(fs):
             ret1 = get_template_files(fs)
-            ret2 = get_planck_files(fs)
+            ret2 = get_reference_files(fs)
             ret3 = get_sim_data_files(fs)
             return ret1 or ret2 or ret3
 
@@ -1148,9 +1151,9 @@ class XFaster(object):
         if template_type is not None:
             alt_name = save_name
             save_name = "{}_clean_{}".format(save_name, template_type)
-        if subtract_planck_signal:
+        if subtract_reference_signal:
             alt_name = save_name
-            save_name = "{}_planck_sub".format(save_name)
+            save_name = "{}_ref_sub".format(save_name)
         # load file info from disk
         ret = self.load_data(
             save_name, "files", to_attrs=True, value_ref=ref_opts, alt_name=alt_name
@@ -1222,7 +1225,7 @@ class XFaster(object):
             # we're doing a null test
             fs.update(**fs2)
 
-        # update templates, planck and simulated data files
+        # update templates, reference and simulated data files
         update_files(fs)
 
         # store and return settings dictionary
@@ -1392,7 +1395,7 @@ class XFaster(object):
             If True, the output filename is constructed by checking the
             following list of options used in constructing data cross-spectra:
             ensemble_mean, ensemble_median, sim_index, sim_type, data_type,
-            template_cleaned, planck_subtracted.
+            template_cleaned, reference_subtracted.
         bp_opts : bool
             If True, also check the following attributes (in addition to those
             checked if ``data_opts`` is True): weighted_bins, return_cls.
@@ -1428,8 +1431,8 @@ class XFaster(object):
                     name += [self.data_type]
                 if getattr(self, "template_cleaned", False):
                     name += ["clean", self.template_type]
-                if getattr(self, "planck_subtracted", False):
-                    name += ["planck_sub"]
+                if getattr(self, "reference_subtracted", False):
+                    name += ["ref_sub"]
         if bp_opts:
             if self.weighted_bins:
                 name += ["wbins"]
@@ -2112,7 +2115,7 @@ class XFaster(object):
     def get_masked_data(
         self,
         template_alpha=None,
-        subtract_planck_signal=False,
+        subtract_reference_signal=False,
         subtract_template_noise=True,
         template_specs=None,
         ensemble_mean=False,
@@ -2155,13 +2158,16 @@ class XFaster(object):
             Dictionary of template scaling factors to apply to foreground
             templates to be subtracted from the data.  Keys should match
             original map tags in the data set.
-        subtract_planck_signal : bool
-            If True, subtract reobserved Planck from maps. Properly uses half
-            missions so no Planck auto correlations are introduced. Useful for
+        subtract_reference_signal : bool
+            If True, subtract a reobserved reference signal from each data map.
+            The reference signal maps should be two datasets with uncorrelated
+            noise, such as Planck half-mission maps.  This option is used for
             removing expected signal residuals from null tests.
         subtract_template_noise : bool
-            If True, subtract average of Planck ffp10 noise crosses to debias
-            template-cleaned spectra.
+            If True, subtract average of cross spectra of an ensemble of noise
+            realizations corresponding to each template map, to debias
+            template-cleaned spectra.  Typically, this would be a noise model based
+            on the Planck FFP10 ensemble for each half-mission foreground template.
         template_specs : list
             Which spectra to use for alpha in the likelihood.
         ensemble_mean : bool
@@ -2307,17 +2313,17 @@ class XFaster(object):
         template_fit = False
         if null_run:
             save_attrs += ["cls_data_null"]
-            if subtract_planck_signal:
-                save_attrs += ["cls_data_sub_null", "cls_planck_null"]
+            if subtract_reference_signal:
+                save_attrs += ["cls_data_sub_null", "cls_ref_null"]
         elif any([x is not None for x in template_alpha.values()]):
             template_fit = True
             self.template_cleaned = True
             save_attrs += ["cls_data_clean", "cls_template", "template_alpha"]
         else:
             subtract_template_noise = False
-        if subtract_planck_signal:
-            self.planck_subtracted = True
-            save_attrs += ["cls_data_sub", "cls_planck"]
+        if subtract_reference_signal:
+            self.reference_subtracted = True
+            save_attrs += ["cls_data_sub", "cls_ref"]
         if sim:
             if template_alpha_sim:
                 self.template_alpha_sim = template_alpha_sim
@@ -2353,16 +2359,16 @@ class XFaster(object):
                             d += alphas[0] * alphas[1] * t3
                             # subtract average template noise spectrum to debias
                             if subtract_template_noise:
-                                n = cls_template_noise["hm1:hm2"][spec][xname]
+                                n = cls_template_noise["temp1:temp2"][spec][xname]
                                 d -= alphas[0] * alphas[1] * n
 
             self.cls_data_clean = cls_clean
             self.template_alpha = template_alpha
             self.template_cleaned = True
 
-        def subtract_planck_maps():
+        def subtract_reference_maps():
             """
-            Internal data processing function to have planck maps subtracted from data map, useful for null tests
+            Internal data processing function to have reference maps subtracted from data map, useful for null tests
             """
             cls_data_sub = getattr(self, "cls_data_sub", OrderedDict())
             if null_run:
@@ -2371,20 +2377,20 @@ class XFaster(object):
             for spec in self.specs:
                 cls_data_sub[spec] = copy.deepcopy(self.cls_data[spec])
                 for xname, d in cls_data_sub[spec].items():
-                    t1, t2, t3 = self.cls_planck[spec][xname]
+                    t1, t2, t3 = self.cls_ref[spec][xname]
                     d += -t1 - t2 + t3
 
                 # do null specs
                 if null_run:
                     cls_data_sub_null[spec] = copy.deepcopy(self.cls_data_null[spec])
                     for xname, d in cls_data_sub_null[spec].items():
-                        t1, t2, t3 = self.cls_planck_null[spec][xname]
+                        t1, t2, t3 = self.cls_ref_null[spec][xname]
                         d += -t1 - t2 + t3
 
             self.cls_data_sub = cls_data_sub
             if null_run:
                 self.cls_data_sub_null = cls_data_sub_null
-            self.planck_subtracted = True
+            self.reference_subtracted = True
 
         # change template subtraction coefficients for pre-loaded data
         if all([hasattr(self, attr) for attr in save_attrs]):
@@ -2409,11 +2415,11 @@ class XFaster(object):
                 extra_tag="xcorr",
             )
             if ret is not None:
-                self.planck_subtracted = False
+                self.reference_subtracted = False
                 self.template_cleaned = False
                 if null_run:
-                    if subtract_planck_signal and not self.planck_subtracted:
-                        subtract_planck_maps()
+                    if subtract_reference_signal and not self.reference_subtracted:
+                        subtract_reference_maps()
                     return ret
                 if all([x is None for x in template_alpha.values()]):
                     self.template_cleaned = False
@@ -2434,13 +2440,13 @@ class XFaster(object):
             cls_tmp = OrderedDict()
             template_files = list(zip(self.template_files, self.template_files2))
 
-        # set up planck subtraction
-        cls_planck = None
-        if subtract_planck_signal:
-            cls_planck = OrderedDict()
-            cls_planck_null = OrderedDict() if null_run else None
-            planck_files_split = list(
-                zip(self.planck_files[x] for x in ["hm1a", "hm2a", "hm1b", "hm2b"])
+        # set up reference subtraction
+        cls_ref = None
+        if subtract_reference_signal:
+            cls_ref = OrderedDict()
+            cls_ref_null = OrderedDict() if null_run else None
+            reference_files_split = list(
+                zip(self.reference_files[x] for x in ["ref1a", "ref2a", "ref1b", "ref2b"])
             )
 
         # set up noise residuals
@@ -2551,18 +2557,18 @@ class XFaster(object):
                 m_alms, mn_alms = (m_alms + m2_alms) / 2.0, (m_alms - m2_alms) / 2.0
                 del m2_alms
 
-                if subtract_planck_signal:
-                    # cache raw data alms and planck alms together
-                    mp1hm1, mp1hm2, mp2hm1, mp2hm2 = (
+                if subtract_reference_signal:
+                    # cache raw data alms and reference alms together
+                    mp1ref1, mp1ref2, mp2ref1, mp2ref2 = (
                         self.map2alm(self.apply_mask(self.get_map(f), mask), self.pol)
-                        for f in planck_files_split[idx]
+                        for f in reference_files_split[idx]
                     )
-                    m_alms_hm1 = (mp1hm1 + mp2hm1) / 2.0
-                    m_alms_hm2 = (mp1hm2 + mp2hm2) / 2.0
-                    mn_alms_hm1 = (mp1hm1 - mp2hm1) / 2.0
-                    mn_alms_hm2 = (mp1hm2 - mp2hm2) / 2.0
-                    m_alms = (m_alms, m_alms_hm1, m_alms_hm2)
-                    mn_alms = (mn_alms, mn_alms_hm1, mn_alms_hm2)
+                    m_alms_ref1 = (mp1ref1 + mp2ref1) / 2.0
+                    m_alms_ref2 = (mp1ref2 + mp2ref2) / 2.0
+                    mn_alms_ref1 = (mp1ref1 - mp2ref1) / 2.0
+                    mn_alms_ref2 = (mp1ref2 - mp2ref2) / 2.0
+                    m_alms = (m_alms, m_alms_ref1, m_alms_ref2)
+                    mn_alms = (mn_alms, mn_alms_ref1, mn_alms_ref2)
 
             elif template_fit:
                 # cache raw data alms and template alms together
@@ -2616,9 +2622,9 @@ class XFaster(object):
 
                 for s, spec in enumerate(self.specs):
                     # apply template to TE/TB but not TT
-                    if not subtract_planck_signal and spec == "tt":
+                    if not subtract_reference_signal and spec == "tt":
                         continue
-                    cls_dict = cls_planck if subtract_planck_signal else cls_tmp
+                    cls_dict = cls_ref if subtract_reference_signal else cls_tmp
                     cls_dict = cls_dict.setdefault(spec, OrderedDict())
                     cls_dict[xname] = (t1[s], t2[s], t3[s])
 
@@ -2639,7 +2645,7 @@ class XFaster(object):
                     ) / 2.0
 
                     for s, spec in enumerate(self.specs):
-                        cls_dict = cls_planck_null.setdefault(spec, OrderedDict())
+                        cls_dict = cls_ref_null.setdefault(spec, OrderedDict())
                         cls_dict[xname] = (t1[s], t2[s], t3[s])
 
             else:
@@ -2662,12 +2668,12 @@ class XFaster(object):
         else:
             self.template_cleaned = False
 
-        if subtract_planck_signal:
-            self.cls_planck = cls_planck
-            self.cls_planck_null = cls_planck_null
-            subtract_planck_maps()
+        if subtract_reference_signal:
+            self.cls_ref = cls_ref
+            self.cls_ref_null = cls_ref_null
+            subtract_reference_maps()
         else:
-            self.planck_subtracted = False
+            self.reference_subtracted = False
 
         return self.save_data(
             save_name, from_attrs=save_attrs, extra_tag="xcorr", data_opts=True
@@ -3018,7 +3024,7 @@ class XFaster(object):
         -------
         cls_template_noise : OrderedDict
             Dictionary of template noise spectra averaged over all sims, containing
-            the following keys: ["hm1:hm1", "hm2:hm2", "hm1:hm2"].  Each entry
+            the following keys: ["temp1:temp1", "temp2:temp2", "temp1:temp2"].  Each entry
             has the same shape structure as the ``cls_data`` attribute.
 
         Notes
@@ -3050,7 +3056,7 @@ class XFaster(object):
             return ret["cls_template_noise"]
 
         cls_template_noise = OrderedDict()
-        for k in ["hm1:hm1", "hm2:hm2", "hm1:hm2"]:
+        for k in ["temp1:temp1", "temp2:temp2", "temp1:temp2"]:
             cls_template_noise[k] = OrderedDict()
 
         cache = dict()
@@ -3058,7 +3064,7 @@ class XFaster(object):
         # convenience functions
         def process_index(idx, isim):
             """
-            Compute alms of masked HM1 and HM2 template noise sims
+            Compute alms of masked temp1 and temp2 template noise sims
             """
             if idx in cache:
                 return cache[idx]
@@ -3090,14 +3096,14 @@ class XFaster(object):
                     ),
                     "debug",
                 )
-                hm1i, hm2i = process_index(idx, isim)
-                hm1j, hm2j = process_index(jdx, isim)
+                temp1i, temp2i = process_index(idx, isim)
+                temp1j, temp2j = process_index(jdx, isim)
 
                 cls1 = OrderedDict()
-                cls1["hm1:hm1"] = self.alm2cl(hm1i, hm1j)
-                cls1["hm2:hm2"] = self.alm2cl(hm2i, hm2j)
-                cls1["hm1:hm2"] = 0.5 * (
-                    self.alm2cl(hm1i, hm2j) + self.alm2cl(hm2i, hm1j)
+                cls1["temp1:temp1"] = self.alm2cl(temp1i, temp1j)
+                cls1["temp2:temp2"] = self.alm2cl(temp2i, temp2j)
+                cls1["temp1:temp2"] = 0.5 * (
+                    self.alm2cl(temp1i, temp2j) + self.alm2cl(temp2i, temp1j)
                 )
 
                 for q0, q1 in [(cls_template_noise[k], cls1[k]) for k in cls1]:
@@ -4384,7 +4390,7 @@ class XFaster(object):
         if transfer_run:
             obs_quant = self.cls_signal
         elif self.null_run:
-            if self.planck_subtracted:
+            if self.reference_subtracted:
                 obs_quant = self.cls_data_sub_null
             else:
                 obs_quant = self.cls_data_null
@@ -4414,8 +4420,8 @@ class XFaster(object):
                 debias[spec] = OrderedDict()
                 for xname in map_pairs:
                     nell[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
-                    if self.planck_subtracted:
-                        # signal term already subtracted with planck maps
+                    if self.reference_subtracted:
+                        # signal term already subtracted with reference maps
                         debias[spec][xname] = np.copy(self.cls_noise_null[spec][xname])
                     else:
                         debias[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
@@ -6073,8 +6079,11 @@ class XFaster(object):
         file_tag : string
             If supplied, appended to the likelihood filename.
         subtract_template_noise : bool
-            If True, subtract average of Planck ffp10 noise crosses to debias
-            template-cleaned spectra
+            If True, subtract average of cross spectra of an ensemble of noise
+            realizations corresponding to each template map, to debias
+            template-cleaned spectra.  Typically, this would be a noise model
+            based on the Planck FFP10 ensemble for each half-mission foreground
+            template.
         r_specs : list
             Which spectra to use in the r likelihood.
         template_specs : list

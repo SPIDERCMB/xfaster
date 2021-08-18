@@ -68,7 +68,7 @@ def xfaster_run(
     template_alpha_tags_sim=None,
     template_alpha_sim=None,
     subtract_template_noise=True,
-    subtract_planck_signal=False,
+    subtract_reference_signal=False,
     ensemble_mean=False,
     ensemble_median=False,
     sim_data=False,
@@ -199,7 +199,7 @@ def xfaster_run(
         Tag for directory (templates_<template_type>) containing templates
         (e.g. a foreground model) to be scaled by a scalar value per
         map tag and subtracted from the data. The directory is assumed
-        to contain halfmission-1 and halfmission-2 subdirectories, each
+        to contain reference1 and reference2 subdirectories, each
         containing one template per map tag.
     template_noise_type : string
         Tag for directory containing template noise sims to be averaged and
@@ -259,12 +259,15 @@ def xfaster_run(
         simulated data maps with tags in the list ``template_alpha_tags``.
         If None, use the same values as `template_alpha`.
     subtract_template_noise : bool
-        If True, subtract average of Planck ffp10 noise crosses to debias
-        template-cleaned spectra
-    subtract_planck_signal : bool
-        If True, subtract reobserved Planck from maps. Properly uses half
-        missions so no Planck autos are used. Useful for removing expected
-        signal residuals from null tests.
+        If True, subtract average of cross spectra of an ensemble of noise
+        realizations corresponding to each template map, to debias
+        template-cleaned spectra.  Typically, this would be a noise model based
+        on the Planck FFP10 ensemble for each half-mission foreground template.
+    subtract_reference_signal : bool
+        If True, subtract a reobserved reference signal from each data map.
+        The reference signal maps should be two datasets with uncorrelated noise,
+        such as Planck half-mission maps.  This option is used for removing
+        expected signal residuals from null tests.
     ensemble_mean : bool
         If True, substitute S+N ensemble means for Cls to test for bias
         in the estimator.
@@ -343,7 +346,7 @@ def xfaster_run(
     null_first_cmb : bool
         If True, keep first CMB bandpowers fixed to input shape (qb=1).
     qb_file : str
-        If not None, Pointer to a bandpowers.npz file in the output directory,
+        If not None, pointer to a bandpowers.npz file in the output directory,
         to correct the noise ensemble by an appropriate set of residual ``qb``
         values.
     signal_spec : str
@@ -419,7 +422,7 @@ def xfaster_run(
         Should be [0, sig] for [mean 0, width sig] gaussian.
         Set to None to not fit for betad in the likelihood.
     dust_amp_prior: list of floats
-        Flat prior edges on dust amplitude (rel to Planck 353 ref).
+        Flat prior edges on dust amplitude (relative to Planck 353 ref).
         Set to None to not fit for dust_amp in the likelihood.
     dust_ellind_prior: list of floats
         Gaussian prior on dust ell index different from reference, -2.28.
@@ -504,7 +507,7 @@ def xfaster_run(
         template_type=template_type,
         template_noise_type=template_noise_type,
         template_type_sim=template_type_sim,
-        subtract_planck_signal=subtract_planck_signal,
+        subtract_reference_signal=subtract_reference_signal,
         subtract_template_noise=subtract_template_noise,
     )
     config_vars.update(file_opts, "File Options")
@@ -541,7 +544,7 @@ def xfaster_run(
 
     data_opts = dict(
         template_alpha=template_alpha,
-        subtract_planck_signal=subtract_planck_signal,
+        subtract_reference_signal=subtract_reference_signal,
         subtract_template_noise=subtract_template_noise,
         ensemble_mean=ensemble_mean,
         ensemble_median=ensemble_median,
@@ -1014,7 +1017,7 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "template_alpha_sim", nargs="+", argtype=float)
         add_arg(G, "subtract_template_noise")
         add_arg(G, "qb_file_sim", argtype=str)
-        add_arg(G, "subtract_planck_signal")
+        add_arg(G, "subtract_reference_signal")
         E = G.add_mutually_exclusive_group()
         add_arg(E, "ensemble_mean")
         add_arg(E, "ensemble_median")

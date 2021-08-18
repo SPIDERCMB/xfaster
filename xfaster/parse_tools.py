@@ -319,26 +319,26 @@ def load_and_parse(filename, check_version=True):
             data["data_type"] = data.pop("clean_type")
 
         if "planck_root1_hm1" in data:
-            planck_root = {
-                "hm1a": data.pop("planck_root1_hm1"),
-                "hm1b": data.pop("planck_root2_hm1"),
-                "hm2a": data.pop("planck_root1_hm2"),
-                "hm2b": data.pop("planck_root2_hm2"),
+            ref_root = {
+                "ref1a": data.pop("planck_root1_hm1"),
+                "ref1b": data.pop("planck_root2_hm1"),
+                "ref2a": data.pop("planck_root1_hm2"),
+                "ref2b": data.pop("planck_root2_hm2"),
             }
-            if all([x is None for x in planck_root.values()]):
-                planck_root = None
+            if all([x is None for x in ref_root.values()]):
+                ref_root = None
 
-            planck_files = {
+            ref_files = {
                 "hm1a": data.pop("planck_files1_hm1"),
                 "hm1b": data.pop("planck_files2_hm1"),
                 "hm2a": data.pop("planck_files1_hm2"),
                 "hm2b": data.pop("planck_files2_hm2"),
             }
-            if all([x is None for x in planck_files.values()]):
-                planck_files = None
+            if all([x is None for x in ref_files.values()]):
+                ref_files = None
 
-            data["planck_root"] = planck_root
-            data["planck_files"] = planck_files
+            data["reference_root"] = ref_root
+            data["reference_files"] = ref_files
 
         if "cls_noise0" in data:
             cls_res = OrderedDict()
@@ -367,9 +367,9 @@ def load_and_parse(filename, check_version=True):
 
         if "cls_tnoise_hm1" in data:
             cls_template_noise = OrderedDict()
-            cls_template_noise["hm1:hm1"] = data.pop("cls_tnoise_hm1")
-            cls_template_noise["hm2:hm2"] = data.pop("cls_tnoise_hm2")
-            cls_template_noise["hm1:hm2"] = data.pop("cls_tnoise_hm1xhm2")
+            cls_template_noise["temp1:temp1"] = data.pop("cls_tnoise_hm1")
+            cls_template_noise["temp2:temp2"] = data.pop("cls_tnoise_hm2")
+            cls_template_noise["temp1:temp2"] = data.pop("cls_tnoise_hm1xhm2")
             data["cls_template_noise"] = cls_template_noise
 
         if "template_files" in data:
