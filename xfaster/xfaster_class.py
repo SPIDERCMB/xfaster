@@ -3080,7 +3080,7 @@ class XFaster(object):
 
             m_alms = []
             for f in [x[idx][isim] for x in map_files]:
-                m = self.get_map(filename)
+                m = self.get_map(f)
                 self.apply_mask(m, mask)
                 m_alms.append(self.map2alm(m, self.pol))
 
@@ -3107,8 +3107,8 @@ class XFaster(object):
                 )
 
                 for q0, q1 in [(cls_template_noise[k], cls1[k]) for k in cls1]:
-                    dd = q0.setdefault(spec, OrderedDict())
                     for s, spec in enumerate(self.specs):
+                        dd = q0.setdefault(spec, OrderedDict())
                         if xname not in dd:
                             dd[xname] = np.zeros_like(q1[s])
                         d = dd[xname]
