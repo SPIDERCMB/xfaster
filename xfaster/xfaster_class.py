@@ -5802,6 +5802,11 @@ class XFaster(object):
                         )
                         success = False
 
+            # Set EB/TB qb transfers to geometric means of components
+            if len(self.specs) > 4:
+                qb["cmb_eb"] = np.sqrt(np.abs(qb["cmb_ee"] * qb["cmb_bb"]))
+                qb["cmb_tb"] = np.sqrt(np.abs(qb["cmb_tt"] * qb["cmb_bb"]))
+
             for stag, qbdat in qb.items():
                 self.qb_transfer[stag][m0] = qbdat
 
