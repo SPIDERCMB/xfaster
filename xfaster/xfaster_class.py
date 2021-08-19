@@ -2801,10 +2801,11 @@ class XFaster(object):
         ### Noise iteration from res fit fields
         cls_res = OrderedDict() if do_noise else None
         cls_null_res = OrderedDict() if null_run and do_noise else None
-        for k in ["nxn0", "nxn1", "sxn0", "sxn1", "nxs0", "nxs1"]:
-            cls_res[k] = OrderedDict()
-            if null_run:
-                cls_null_res[k] = OrderedDict()
+        if do_noise:
+            for k in ["nxn0", "nxn1", "sxn0", "sxn1", "nxs0", "nxs1"]:
+                cls_res[k] = OrderedDict()
+                if null_run:
+                    cls_null_res[k] = OrderedDict()
 
         if num_noise != 0:
             nsim_min = min([num_signal, num_noise])
