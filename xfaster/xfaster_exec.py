@@ -1314,6 +1314,7 @@ class XFasterJobGroup(object):
                     "betad_prior",
                     "dust_amp_prior",
                     "dust_ellind_prior",
+                    "sim_data_components",
                 ]:
                     if np.isscalar(v):
                         v = [v]
