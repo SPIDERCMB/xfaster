@@ -74,7 +74,7 @@ def xfaster_run(
     sim_data=False,
     sim_data_components=["signal", "noise", "foreground"],
     sim_data_r=None,
-    qb_file_sim=None,
+    qb_file_data=None,
     sim_index_signal=None,
     sim_index_noise=None,
     sim_index_foreground=None,
@@ -97,7 +97,7 @@ def xfaster_run(
     return_cls=False,
     fix_bb_transfer=False,
     null_first_cmb=False,
-    qb_file=None,
+    qb_file_sim=None,
     signal_spec=None,
     signal_transfer_spec=None,
     model_r=None,
@@ -288,7 +288,7 @@ def xfaster_run(
         maps, such that the signal component is ``scalar + r * tensor``.  This
         assumes that the tensor simulations are constructed with ``nt=0``, so
         that the linear relationship holds.
-    qb_file_sim : str
+    qb_file_data : str
         If not None, pointer to a bandpowers.npz file in the output directory,
         to correct the noise component of the simulated data by an appropriate
         set of residual ``qb`` values.
@@ -348,7 +348,7 @@ def xfaster_run(
         BB transfer function is exactly equal to the EE transfer function.
     null_first_cmb : bool
         If True, keep first CMB bandpowers fixed to input shape (qb=1).
-    qb_file : str
+    qb_file_sim : str
         If not None, pointer to a bandpowers.npz file in the output directory,
         to correct the noise ensemble by an appropriate set of residual ``qb``
         values.
@@ -555,7 +555,7 @@ def xfaster_run(
         components=None if not sim_data else sim_data_components,
         index=None if not sim_data else sim_index,
         r=sim_data_r,
-        qb_file=qb_file_sim,
+        qb_file=qb_file_data,
         template_alpha_sim=template_alpha_sim,
         save_sim=save_sim_data,
     )
@@ -564,7 +564,7 @@ def xfaster_run(
     config_vars.remove_option("XFaster General", "sim_data_components")
     config_vars.remove_option("XFaster General", "sim_data_r")
     config_vars.remove_option("XFaster General", "sim_index")
-    config_vars.remove_option("XFaster General", "qb_file_sim")
+    config_vars.remove_option("XFaster General", "qb_file_data")
     config_vars.remove_option("XFaster General", "save_sim_data")
 
     kernel_opts = dict(
@@ -592,7 +592,7 @@ def xfaster_run(
         cond_criteria=cond_criteria,
         null_first_cmb=null_first_cmb,
         return_cls=return_cls,
-        qb_file=qb_file,
+        qb_file=qb_file_sim,
         like_profiles=like_profiles,
         like_profile_sigma=like_profile_sigma,
         like_profile_points=like_profile_points,
@@ -600,6 +600,7 @@ def xfaster_run(
     )
     config_vars.update(spec_opts, "Spectrum Estimation Options")
     config_vars.remove_option("XFaster General", "bandpower_tag")
+    config_vars.remove_option("XFaster General", "qb_file_sim")
     spec_opts.pop("multi_map")
     spec_opts.pop("signal_spec")
     spec_opts.pop("signal_transfer_spec")
@@ -672,7 +673,7 @@ def xfaster_run(
     X.log("Computing sim ensemble averages for transfer function...", "notice")
     # Do all the sims at once to also get the S+N sim ensemble average
     do_noise = signal_transfer_type in [signal_type, None]
-    X.get_masked_sims(transfer=True, do_noise=do_noise, qb_file=qb_file)
+    X.get_masked_sims(transfer=True, do_noise=do_noise, qb_file=qb_file_sim)
 
     X.log("Computing beam window functions...", "notice")
     X.get_beams(pixwin=pixwin)
@@ -684,7 +685,7 @@ def xfaster_run(
     X.get_transfer(**transfer_opts)
 
     X.log("Computing sim ensemble averages...", "notice")
-    X.get_masked_sims(qb_file=qb_file)
+    X.get_masked_sims(qb_file=qb_file_sim)
 
     X.log(
         "Computing masked {} cross-spectra...".format(
@@ -1019,7 +1020,7 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "template_alpha_tags_sim", nargs="+", metavar="TAG")
         add_arg(G, "template_alpha_sim", nargs="+", argtype=float)
         add_arg(G, "subtract_template_noise")
-        add_arg(G, "qb_file_sim", argtype=str)
+        add_arg(G, "qb_file_data")
         add_arg(G, "subtract_reference_signal")
         E = G.add_mutually_exclusive_group()
         add_arg(E, "ensemble_mean")
@@ -1059,7 +1060,7 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "return_cls")
         add_arg(G, "fix_bb_transfer")
         add_arg(G, "null_first_cmb")
-        add_arg(G, "qb_file")
+        add_arg(G, "qb_file_sim")
         E = G.add_mutually_exclusive_group()
         add_arg(E, "signal_spec")
         add_arg(E, "model_r")
