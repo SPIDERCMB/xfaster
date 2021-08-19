@@ -3686,9 +3686,9 @@ class XFaster(object):
         npol = (6 if tbeb else 4) if self.pol else 1
         specs = ["tt", "ee", "bb", "te", "eb", "tb"][:npol]
 
-        if np.isscalar(bin_width):
+        if np.isscalar(bin_width) or len(bin_width) == 1:
             bin_width = [bin_width] * npol
-        bin_width = np.asarray(bin_width)[:npol]
+        bin_width = np.asarray(bin_width).ravel()[:npol]
 
         bwerr = "EE and BB must have the same bin width (for mixing)"
         if self.pol and bin_width[1] != bin_width[2]:
@@ -3707,9 +3707,9 @@ class XFaster(object):
         # Do the same for foreground bins
         nbins_fg = 0
         if foreground_fit:
-            if np.isscalar(bin_width_fg):
+            if np.isscalar(bin_width_fg) or len(bin_width_fg) == 1:
                 bin_width_fg = [bin_width_fg] * npol
-            bin_width_fg = np.asarray(bin_width_fg)[:npol]
+            bin_width_fg = np.asarray(bin_width_fg).ravel()[:npol]
 
             if self.pol and bin_width_fg[1] != bin_width_fg[2]:
                 raise ValueError("Foreground {}".format(bwerr))
@@ -3732,11 +3732,11 @@ class XFaster(object):
             res_specs = [s.lower() for s in res_specs]
             nmap = len(self.map_tags)
             nspecr = len(res_specs) * nmap
-            if np.isscalar(bin_width_res):
+            if np.isscalar(bin_width_res) or len(bin_width_res) == 1:
                 bin_width_res = [bin_width_res] * nspecr
             elif len(bin_width_res) == nspecr // nmap:
                 bin_width_res = np.array([bin_width_res] * nmap).ravel()
-            bin_width_res = np.asarray(bin_width_res)[:nspecr].reshape(nmap, -1)
+            bin_width_res = np.asarray(bin_width_res).ravel()[:nspecr].reshape(nmap, -1)
 
             for tag, bws in zip(self.map_tags, bin_width_res):
                 if self.pol and "ee" in res_specs and "bb" in res_specs:

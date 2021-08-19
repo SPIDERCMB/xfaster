@@ -25,9 +25,6 @@ __all__ = [
 def xfaster_run(
     # common options
     config="config_example.ini",
-    lmax=500,
-    pol=True,
-    pol_mask=True,
     output_root=None,
     output_tag=None,
     verbose="notice",
@@ -53,9 +50,12 @@ def xfaster_run(
     template_noise_type=None,
     template_type_sim=None,
     # binning options
-    bin_width=25,
     lmin=2,
+    lmax=500,
+    pol=True,
+    pol_mask=True,
     tbeb=False,
+    bin_width=25,
     weighted_bins=False,
     residual_fit=True,
     bin_width_res=25,
@@ -229,8 +229,11 @@ def xfaster_run(
         By default, a flat binning operator is used.
     residual_fit : bool
         If True, include noise residual bins in the estimator.
-    bin_width_res : int
-        Width of each bin to use for residual noise fitting
+    bin_width_res : int or array_like of ints
+        Width of each residual spectrum bin.  If a scalar, the same width is
+        applied to all spectra for all cross spectra.  Otherwise, must be a list
+        of up to nspec * nmaps elements, listing bin widths for each of the
+        spectra in ``res_specs`` in order, then ordered by map.
     res_specs : list of strings
         Spectra to include in noise residual fitting.  List values can be any of
         the cross spectra TT, EE, BB, TE, EB, TB, or EEBB for fitting EE and BB
@@ -950,9 +953,6 @@ def xfaster_parse(args=None, test=False):
         # common options
         G = PP.add_argument_group("common options")
         add_arg(G, "config", required=True)
-        add_arg(G, "lmax")
-        add_arg(G, "pol", help="Ignore polarization")
-        add_arg(G, "pol_mask", help="Use the same mask for Q/U maps as for T maps")
         add_arg(G, "output_root", default=os.getcwd())
         add_arg(G, "output_tag")
         add_arg(
@@ -993,12 +993,15 @@ def xfaster_parse(args=None, test=False):
 
         # binning options
         G = PP.add_argument_group("binning options")
-        add_arg(G, "bin_width")  # XXX
         add_arg(G, "lmin")
+        add_arg(G, "lmax")
+        add_arg(G, "pol", help="Ignore polarization")
+        add_arg(G, "pol_mask", help="Use the same mask for Q/U maps as for T maps")
         add_arg(G, "tbeb")
+        add_arg(G, "bin_width", nargs="+")
         add_arg(G, "weighted_bins")
         add_arg(G, "residual_fit")
-        add_arg(G, "bin_width_res")
+        add_arg(G, "bin_width_res", nargs="+")
         add_arg(
             G,
             "res_specs",
@@ -1007,7 +1010,7 @@ def xfaster_parse(args=None, test=False):
             metavar="SPEC",
         )
         add_arg(G, "foreground_fit")
-        add_arg(G, "bin_width_fg")
+        add_arg(G, "bin_width_fg", nargs="+")
 
         # data options
         G = PP.add_argument_group("data options")
