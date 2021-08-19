@@ -2678,9 +2678,10 @@ class XFaster(object):
         else:
             self.reference_subtracted = False
 
-        return self.save_data(
-            save_name, from_attrs=save_attrs, extra_tag="xcorr", data_opts=True
-        )
+        if not sim or save_sim:
+            return self.save_data(
+                save_name, from_attrs=save_attrs, extra_tag="xcorr", data_opts=True
+            )
 
     def get_masked_sims(self, transfer=False, do_noise=True, qb_file=None):
         """
