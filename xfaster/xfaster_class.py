@@ -2240,7 +2240,7 @@ class XFaster(object):
         null_run = self.null_run
 
         if template_specs is None:
-            template_specs = ["ee", "bb", "te", "eb", "tb"]
+            template_specs = self.specs
 
         # ensure dictionary
         if template_alpha is None or null_run or self.template_type is None:
@@ -2336,7 +2336,7 @@ class XFaster(object):
             """
             if subtract_template_noise:
                 if getattr(self, "cls_template_noise", None) is None:
-                    cls_template_noise = self.get_masked_template_noise()
+                    self.cls_template_noise = self.get_masked_template_noise()
 
             cls_clean = getattr(self, "cls_data_clean", OrderedDict())
 
@@ -2360,7 +2360,7 @@ class XFaster(object):
                             d += alphas[0] * alphas[1] * t3
                             # subtract average template noise spectrum to debias
                             if subtract_template_noise:
-                                n = cls_template_noise["temp1:temp2"][spec][xname]
+                                n = self.cls_template_noise["temp1:temp2"][spec][xname]
                                 d -= alphas[0] * alphas[1] * n
 
             self.cls_data_clean = cls_clean
