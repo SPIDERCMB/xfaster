@@ -2108,7 +2108,7 @@ class XFaster(object):
             if map_tag not in rls:
                 rls[map_tag] = OrderedDict()
             for spec in specs:
-                rls[map_tag] = rl
+                rls[map_tag][spec] = rl
 
         return rls
 
@@ -2233,6 +2233,7 @@ class XFaster(object):
                (map1a-map1b)-x-(map2a-map2b) difference cross spectra
                for every map pair, if computing a null test
         """
+        import healpy as hp
 
         num_maps = self.num_maps
         data_shape = self.data_shape
@@ -2456,7 +2457,6 @@ class XFaster(object):
         rls = OrderedDict()
         if sim and qb_file is not None:
             rls = self.get_noise_residuals(qb_file)
-
         # convenience functions
         def get_map_file(attr, idx, suffix=""):
             files = getattr(self, "{}{}".format(attr, suffix))
