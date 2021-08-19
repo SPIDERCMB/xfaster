@@ -2446,7 +2446,10 @@ class XFaster(object):
             cls_ref = OrderedDict()
             cls_ref_null = OrderedDict() if null_run else None
             reference_files_split = list(
-                zip(self.reference_files[x] for x in ["ref1a", "ref2a", "ref1b", "ref2b"])
+                zip(
+                    self.reference_files[x]
+                    for x in ["ref1a", "ref2a", "ref1b", "ref2b"]
+                )
             )
 
         # set up noise residuals
@@ -5625,7 +5628,11 @@ class XFaster(object):
             self.warn(msg)
 
         return self.save_data(
-            save_name, map_tag=map_tag, bp_opts=not transfer_run, extra_tag=file_tag, **out
+            save_name,
+            map_tag=map_tag,
+            bp_opts=not transfer_run,
+            extra_tag=file_tag,
+            **out
         )
 
     def get_transfer(
@@ -5710,9 +5717,8 @@ class XFaster(object):
             for spec in self.specs:
                 stag = "cmb_{}".format(spec)
                 transfer[spec] = OrderedDict()
-                qbs = qb_transfer[stag]
                 bd = bin_def[stag]
-                for m0, qb in qbs.items():
+                for m0 in self.map_tags:
                     if spec == "bb" and fix_bb_transfer:
                         transfer[spec][m0] = transfer["ee"][m0]
                     elif spec in ["tb", "eb"]:
@@ -5721,7 +5727,9 @@ class XFaster(object):
                             np.abs(transfer[speca][m0] * transfer[specb][m0])
                         )
                     else:
-                        transfer[spec][m0] = pt.expand_qb(qb, bd, self.lmax + 1)
+                        transfer[spec][m0] = pt.expand_qb(
+                            qb_transfer[stag][m0], bd, self.lmax + 1
+                        )
             return transfer
 
         if ret is not None:
