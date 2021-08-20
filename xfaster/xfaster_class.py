@@ -2457,6 +2457,7 @@ class XFaster(object):
         rls = OrderedDict()
         if sim and qb_file is not None:
             rls = self.get_noise_residuals(qb_file)
+
         # convenience functions
         def get_map_file(attr, idx, suffix=""):
             files = getattr(self, "{}{}".format(attr, suffix))
