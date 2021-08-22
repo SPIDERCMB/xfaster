@@ -4763,10 +4763,10 @@ class XFaster(object):
         if cls_shape is None:
             cls_shape = self.cls_shape
 
-        from spider_analysis import si
-
+        #from spider_analysis import nsi
         # Need to update this to use ell-by-ell anafast transfer matrix
-        T = nsi.TransferMatrix()
+        #T = nsi.TransferMatrix()
+        # updated to anafast ll xfermat, no need nsi. 
 
         map_pairs = None
         if map_tag is not None:
@@ -4784,9 +4784,11 @@ class XFaster(object):
         specs = list(self.specs)
 
         # This will need to change for ell-by-ell transfer matrix
-        transfer_bins = np.arange(
-            8, 8 + 25 * 13, 25
-        )  # change this once transfer matrix adds lowest bin!
+        #transfer_bins = np.arange(
+        #    8, 8 + 25 * 13, 25
+        #)  # change this once transfer matrix adds lowest bin!
+        transfer_bins = np.arange(5, 301, 25)
+        
         nbins_transfer = len(transfer_bins) - 1
         lmin = min(transfer_bins)
         lmax = max(transfer_bins)
@@ -4883,8 +4885,7 @@ class XFaster(object):
                     # don't create a new object in memory each time
                     # use last one's space to save runtime
                     self.d = np.multiply(self.d_fg, s_arr, out=getattr(self, "d", None))
-                    self.md = np.multiply(
-                        self.md_fg, s_arr, out=getattr(self, "md", None)
+                    self.md = np.multiply(self.md_fg, s_arr, out=getattr(self, "md", None))
                 else:
                     for k in beam_keys:
                         if not hasattr(self, "d"):
@@ -4958,9 +4959,21 @@ class XFaster(object):
                                 b_arr["b1"][si, xi] * b_arr["b2"][si, xi]
                             )
 
-                    xfermat = T.get(
-                        self.map_reobs_freqs[tag1], self.map_reobs_freqs[tag1]
-                    )
+                    # updating to anafast ll transfer matrix, no need nsi
+                    #xfermat = T.get(
+                    #    self.map_reobs_freqs[tag1], self.map_reobs_freqs[tag1]
+                    #)
+                    
+                    # loading anafast ll transfer matrix
+                    ll_xfermat_dir = "/data/vyluu/anafast_matrix_blocks"
+                    ll_xfermat_fn = "{:s}x{:s}_{:s}_to_{:s}_block.dat".format(
+                            self.map_reobs_freqs[tag1],
+                            self.map_reobs_freqs[tag2],
+                            specs[0],
+                            specs[1]
+                            )
+                    xfermat = np.loadtxt(os.path.join(ll_xfermat_dir, ll_xfermat_fn))
+                    xfermat = xfermat[5:301]
 
                     # use correct shape spectrum
                     if comp == "fg":
