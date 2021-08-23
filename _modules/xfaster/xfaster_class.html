@@ -1062,6 +1062,7 @@
         <span class="n">foreground_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">template_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">sub_planck</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">sub_hm_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Find all files for the given data root.  The data structure is::</span>
@@ -1176,6 +1177,9 @@
 <span class="sd">            missions so no Planck autos are used. Useful for removing expected</span>
 <span class="sd">            signal residuals from null tests. Maps are expected to be in</span>
 <span class="sd">            reobs_planck directory</span>
+<span class="sd">        sub_hm_noise : bool</span>
+<span class="sd">            If True, subtract average of Planck ffp10 noise crosses to debias</span>
+<span class="sd">            template-cleaned spectra</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1289,18 +1293,22 @@
                         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">nfile</span><span class="p">):</span>
                             <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="s2">&quot;Missing hm-</span><span class="si">{}</span><span class="s2"> template for </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hm</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span>
                         <span class="n">tfiles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nfile</span><span class="p">)</span>
-                        <span class="n">nfiles</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
-                            <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span>
-                                <span class="n">f</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">fs</span><span class="p">[</span><span class="s2">&quot;map_root&quot;</span><span class="p">],</span> <span class="n">tnroot</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
-                                    <span class="s2">&quot;.fits&quot;</span><span class="p">,</span> <span class="s2">&quot;_*.fits&quot;</span>
+                        <span class="k">if</span> <span class="n">sub_hm_noise</span><span class="p">:</span>
+                            <span class="n">nfiles</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                                <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span>
+                                    <span class="n">f</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">fs</span><span class="p">[</span><span class="s2">&quot;map_root&quot;</span><span class="p">],</span> <span class="n">tnroot</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+                                        <span class="s2">&quot;.fits&quot;</span><span class="p">,</span> <span class="s2">&quot;_*.fits&quot;</span>
+                                    <span class="p">)</span>
                                 <span class="p">)</span>
                             <span class="p">)</span>
-                        <span class="p">)</span>
-                        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">nfiles</span><span class="p">):</span>
-                            <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span>
-                                <span class="s2">&quot;Missing hm-</span><span class="si">{}</span><span class="s2"> template noise for </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hm</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
-                            <span class="p">)</span>
-                        <span class="n">tnfiles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nfiles</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">nfiles</span><span class="p">):</span>
+                                <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span>
+                                    <span class="s2">&quot;Missing hm-</span><span class="si">{}</span><span class="s2"> template noise for </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hm</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+                                <span class="p">)</span>
+                            <span class="n">tnfiles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nfiles</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">nfiles</span> <span class="o">=</span> <span class="p">[]</span>
+
                         <span class="k">if</span> <span class="n">num_template_noise</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nfiles</span><span class="p">)</span> <span class="o">!=</span> <span class="n">num_template_noise</span><span class="p">:</span>
                                 <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span>
@@ -1327,12 +1335,13 @@
                     <span class="p">),</span>
                     <span class="s2">&quot;info&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
-                    <span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2"> template noise files in </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">fs</span><span class="p">[</span><span class="s2">&quot;num_template_noise&quot;</span><span class="p">],</span> <span class="n">fs</span><span class="p">[</span><span class="s2">&quot;template_noise_root&quot;</span><span class="p">]</span>
-                    <span class="p">),</span>
-                    <span class="s2">&quot;info&quot;</span><span class="p">,</span>
-                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">sub_hm_noise</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                        <span class="s2">&quot;Found </span><span class="si">{}</span><span class="s2"> template noise files in </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="n">fs</span><span class="p">[</span><span class="s2">&quot;num_template_noise&quot;</span><span class="p">],</span> <span class="n">fs</span><span class="p">[</span><span class="s2">&quot;template_noise_root&quot;</span><span class="p">]</span>
+                        <span class="p">),</span>
+                        <span class="s2">&quot;info&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Template files: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fs</span><span class="p">[</span><span class="s2">&quot;template_files&quot;</span><span class="p">]),</span> <span class="s2">&quot;debug&quot;</span><span class="p">)</span>
 
             <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span>
@@ -1964,6 +1973,12 @@
             <span class="k">if</span> <span class="n">value_ref</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="n">field</span><span class="p">,</span> <span class="n">attr</span><span class="p">]:</span>
                     <span class="n">vref</span> <span class="o">=</span> <span class="n">value_ref</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="s2">&quot;undef&quot;</span><span class="p">)</span>
+                    <span class="c1"># turn it into an array if possible to compare</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">vref</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">dict_to_arr</span><span class="p">(</span><span class="n">vref</span><span class="p">)</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="k">pass</span>
+
                     <span class="k">if</span> <span class="ow">not</span> <span class="n">vref</span> <span class="o">==</span> <span class="s2">&quot;undef&quot;</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">v</span> <span class="o">!=</span> <span class="n">vref</span><span class="p">):</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
                             <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">: Field </span><span class="si">{}</span><span class="s2"> has value </span><span class="si">{}</span><span class="s2">, expected </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -2187,8 +2202,8 @@
 <span class="sd">            iteratively solving for the correction terms.</span>
 <span class="sd">        gcorr_file : str</span>
 <span class="sd">            If not None, path to gcorr file. Otherwise, use file labeled</span>
-<span class="sd">            mask_map_&lt;tag&gt;_gcorr.npy in mask directory for signal, or</span>
-<span class="sd">            mask_map_&lt;tag&gt;_gcorr_null.npy for nulls.</span>
+<span class="sd">            mask_map_&lt;tag&gt;_gcorr.npz in mask directory for signal, or</span>
+<span class="sd">            mask_map_&lt;tag&gt;_gcorr_null.npz for nulls.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
@@ -2227,7 +2242,7 @@
             <span class="n">alt_name</span><span class="o">=</span><span class="s2">&quot;data_xcorr&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">process_gcorr</span><span class="p">(</span><span class="n">gcorr_file</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">process_gcorr</span><span class="p">(</span><span class="n">gcorr_file_in</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;gcorr&quot;</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">gcorr</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">if</span> <span class="n">apply_gcorr</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">gcorr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -2240,14 +2255,18 @@
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">reload_gcorr</span> <span class="ow">and</span> <span class="n">tag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">gcorr</span><span class="p">:</span>
                     <span class="k">continue</span>
 
-                <span class="k">if</span> <span class="n">gcorr_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">gcorr_file_in</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_run</span><span class="p">:</span>
                         <span class="n">gcorr_file</span> <span class="o">=</span> <span class="n">mfile</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.fits&quot;</span><span class="p">,</span> <span class="s2">&quot;_gcorr_null.npz&quot;</span><span class="p">)</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">gcorr_file</span> <span class="o">=</span> <span class="n">mfile</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.fits&quot;</span><span class="p">,</span> <span class="s2">&quot;_gcorr.npz&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">gcorr_file</span> <span class="o">=</span> <span class="n">gcorr_file_in</span>
+
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">gcorr_file</span><span class="p">):</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;G correction file </span><span class="si">{}</span><span class="s2"> not found&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">gcorr_file</span><span class="p">))</span>
                     <span class="k">continue</span>
+
                 <span class="n">gdata</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">load_and_parse</span><span class="p">(</span><span class="n">gcorr_file</span><span class="p">)</span>
                 <span class="n">gcorr</span> <span class="o">=</span> <span class="n">gdata</span><span class="p">[</span><span class="s2">&quot;gcorr&quot;</span><span class="p">]</span>
                 <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">gcorr</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -2410,6 +2429,7 @@
         <span class="n">template_alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">sub_planck</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">sub_hm_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">temp_specs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute cross spectra of the data maps.</span>
@@ -2445,6 +2465,8 @@
 <span class="sd">        sub_hm_noise : bool</span>
 <span class="sd">            If True, subtract average of Planck ffp10 noise crosses to debias</span>
 <span class="sd">            template-cleaned spectra.</span>
+<span class="sd">        temp_specs : list</span>
+<span class="sd">            Which spectra to use for alpha in the likelihood.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
@@ -2469,6 +2491,9 @@
         <span class="n">data_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_shape</span>
         <span class="n">null_run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_run</span>
         <span class="n">map_files2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_files2</span> <span class="k">if</span> <span class="n">null_run</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">temp_specs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">temp_specs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">,</span> <span class="s2">&quot;te&quot;</span><span class="p">,</span> <span class="s2">&quot;eb&quot;</span><span class="p">,</span> <span class="s2">&quot;tb&quot;</span><span class="p">]</span>
 
         <span class="c1"># ensure dictionary</span>
         <span class="k">if</span> <span class="n">template_alpha</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -2516,7 +2541,7 @@
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="n">cls_clean</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;cls_data_clean&quot;</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">())</span>
 
-            <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">specs</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">specs</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">temp_specs</span><span class="p">):</span>
                 <span class="n">cls_clean</span><span class="p">[</span><span class="n">spec</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cls_data</span><span class="p">[</span><span class="n">spec</span><span class="p">])</span>
                 <span class="k">if</span> <span class="n">spec</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls_template</span><span class="p">:</span>
                     <span class="k">continue</span>
@@ -4096,7 +4121,7 @@
                 <span class="n">specs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;eb&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="s2">&quot;tb&quot;</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">:</span>
                 <span class="n">specs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;tb&quot;</span><span class="p">)</span>
-        <span class="n">tbeb</span> <span class="o">=</span> <span class="s2">&quot;eb&quot;</span> <span class="ow">in</span> <span class="n">specs</span> <span class="ow">and</span> <span class="s2">&quot;tb&quot;</span> <span class="ow">in</span> <span class="n">specs</span>
+        <span class="n">tbeb</span> <span class="o">=</span> <span class="s2">&quot;eb&quot;</span> <span class="ow">in</span> <span class="n">specs</span> <span class="ow">and</span> <span class="s2">&quot;tb&quot;</span> <span class="ow">in</span> <span class="n">specs</span> <span class="ow">and</span> <span class="n">r</span> <span class="ow">is</span> <span class="kc">None</span>
         <span class="n">specs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cmb_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span> <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_run</span> <span class="ow">and</span> <span class="s2">&quot;fg_tt&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">:</span>
@@ -4202,12 +4227,16 @@
                     <span class="n">cls_shape</span><span class="p">[</span><span class="n">spec</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">d</span><span class="p">[:</span> <span class="n">ltmp</span> <span class="o">-</span> <span class="mi">2</span><span class="p">])</span>
 
         <span class="c1"># EB and TB flat l^2 * C_l</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span> <span class="ow">and</span> <span class="n">tbeb</span> <span class="ow">and</span> <span class="p">(</span><span class="n">flat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">flat</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">):</span>
-            <span class="n">tbeb_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;cmb_bb&quot;</span><span class="p">][</span><span class="mi">100</span><span class="p">])</span> <span class="o">*</span> <span class="n">ellfac</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1e-4</span>
-            <span class="n">tbeb_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;cmb_bb&quot;</span><span class="p">])</span> <span class="o">*</span> <span class="n">tbeb_flat</span>
-            <span class="n">tbeb_flat</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;cmb_eb&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">tbeb_flat</span><span class="p">)</span>
-            <span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;cmb_tb&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">tbeb_flat</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tbeb</span> <span class="ow">and</span> <span class="p">(</span><span class="n">flat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">flat</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">):</span>
+                <span class="n">tbeb_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;cmb_bb&quot;</span><span class="p">][</span><span class="mi">100</span><span class="p">])</span> <span class="o">*</span> <span class="n">ellfac</span><span class="p">[</span><span class="mi">100</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1e-4</span>
+                <span class="n">tbeb_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;cmb_bb&quot;</span><span class="p">])</span> <span class="o">*</span> <span class="n">tbeb_flat</span>
+                <span class="n">tbeb_flat</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;cmb_eb&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">tbeb_flat</span><span class="p">)</span>
+                <span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;cmb_tb&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">tbeb_flat</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">tbeb</span><span class="p">:</span>
+                <span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;cmb_eb&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">ell</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                <span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;cmb_tb&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">ell</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="s2">&quot;fg&quot;</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">:</span>
             <span class="c1"># From Planck LIV EE dust</span>
@@ -6763,6 +6792,9 @@
         <span class="n">converge_criteria</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
         <span class="n">reset_backend</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">file_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">sub_hm_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">r_specs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">],</span>
+        <span class="n">temp_specs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">,</span> <span class="s2">&quot;eb&quot;</span><span class="p">],</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Explore the likelihood, optionally with an MCMC sampler.</span>
@@ -6832,7 +6864,21 @@
 <span class="sd">            set to True if the checkpoint has been forced to be rerun.</span>
 <span class="sd">        file_tag : string</span>
 <span class="sd">            If supplied, appended to the likelihood filename.</span>
+<span class="sd">        sub_hm_noise : bool</span>
+<span class="sd">            If True, subtract average of Planck ffp10 noise crosses to debias</span>
+<span class="sd">            template-cleaned spectra</span>
+<span class="sd">        r_specs : list</span>
+<span class="sd">            Which spectra to use in the r likelihood.</span>
+<span class="sd">        temp_specs : list</span>
+<span class="sd">            Which spectra to use for alpha in the likelihood.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Check if OMP threads &gt; 1. It actually slows the code way down to have</span>
+        <span class="c1"># more threads. Break instead.</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OMP_NUM_THREADS&quot;</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+        <span class="p">],</span> <span class="s2">&quot;OMP threads must be set to 1 for likelihood&quot;</span>
 
         <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span>
             <span class="n">r_prior</span><span class="p">,</span>
@@ -6845,6 +6891,9 @@
         <span class="p">]:</span>
             <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">x</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+
+        <span class="n">r_specs</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">r_specs</span><span class="p">]</span>
+        <span class="n">temp_specs</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">temp_specs</span><span class="p">]</span>
 
         <span class="n">save_name</span> <span class="o">=</span> <span class="s2">&quot;like_mcmc&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">mcmc</span><span class="p">:</span>
@@ -7144,7 +7193,11 @@
             <span class="k">if</span> <span class="n">alpha</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">clsi</span> <span class="o">=</span> <span class="n">cls_input</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">get_masked_data</span><span class="p">(</span><span class="n">template_alpha</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">alpha_tags</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_masked_data</span><span class="p">(</span>
+                    <span class="n">template_alpha</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">alpha_tags</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)),</span>
+                    <span class="n">sub_hm_noise</span><span class="o">=</span><span class="n">sub_hm_noise</span><span class="p">,</span>
+                    <span class="n">temp_specs</span><span class="o">=</span><span class="n">temp_specs</span><span class="p">,</span>
+                <span class="p">)</span>
                 <span class="n">clsi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_data_spectra</span><span class="p">(</span><span class="n">do_noise</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">beam</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -7165,7 +7218,7 @@
             <span class="k">if</span> <span class="n">r</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">stag</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">cls_model0</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                     <span class="n">comp</span><span class="p">,</span> <span class="n">spec</span> <span class="o">=</span> <span class="n">stag</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">spec</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">comp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;cmb&quot;</span><span class="p">,</span> <span class="s2">&quot;total&quot;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">spec</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">r_specs</span> <span class="ow">or</span> <span class="n">comp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;cmb&quot;</span><span class="p">,</span> <span class="s2">&quot;total&quot;</span><span class="p">]:</span>
                         <span class="k">continue</span>
                     <span class="n">ctag</span> <span class="o">=</span> <span class="s2">&quot;cmb_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
                     <span class="k">for</span> <span class="n">xname</span><span class="p">,</span> <span class="n">dd</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -7187,7 +7240,7 @@
             <span class="k">elif</span> <span class="n">beam</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">stag</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">cls_model0</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                     <span class="n">comp</span><span class="p">,</span> <span class="n">spec</span> <span class="o">=</span> <span class="n">stag</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">spec</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">comp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;cmb&quot;</span><span class="p">,</span> <span class="s2">&quot;total&quot;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">spec</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">r_specs</span> <span class="ow">or</span> <span class="n">comp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;cmb&quot;</span><span class="p">,</span> <span class="s2">&quot;total&quot;</span><span class="p">]:</span>
                         <span class="k">continue</span>
                     <span class="n">ctag</span> <span class="o">=</span> <span class="s2">&quot;cmb_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
                     <span class="k">for</span> <span class="n">xname</span><span class="p">,</span> <span class="n">dd</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>

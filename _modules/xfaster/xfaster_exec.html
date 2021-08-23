@@ -234,6 +234,8 @@
     <span class="n">like_profiles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">like_profile_sigma</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>
     <span class="n">like_profile_points</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">like_r_specs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;EE&quot;</span><span class="p">,</span> <span class="s2">&quot;BB&quot;</span><span class="p">],</span>
+    <span class="n">like_temp_specs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;EE&quot;</span><span class="p">,</span> <span class="s2">&quot;BB&quot;</span><span class="p">,</span> <span class="s2">&quot;EB&quot;</span><span class="p">],</span>
     <span class="n">pixwin</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">save_iters</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">verbose</span><span class="o">=</span><span class="s2">&quot;notice&quot;</span><span class="p">,</span>
@@ -255,7 +257,7 @@
     <span class="n">reload_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">gcorr_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">qb_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">like_alpha_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;95&quot;</span><span class="p">,</span> <span class="s2">&quot;150&quot;</span><span class="p">],</span>
+    <span class="n">like_alpha_tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">alpha_prior</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">],</span>
     <span class="n">r_prior</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">],</span>
     <span class="n">res_prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -411,6 +413,10 @@
 <span class="sd">        Range in units of 1sigma over which to compute profile likelihoods</span>
 <span class="sd">    like_profile_points : int</span>
 <span class="sd">        Number of points to sample along the likelihood profile</span>
+<span class="sd">    like_r_specs : list</span>
+<span class="sd">        Which spectra to use in the r likelihood.</span>
+<span class="sd">    like_temp_specs : list</span>
+<span class="sd">        Which spectra to use for alpha in the likelihood.</span>
 <span class="sd">    pixwin : bool</span>
 <span class="sd">        If True, apply pixel window functions to beam windows.</span>
 <span class="sd">    save_iters : bool</span>
@@ -481,7 +487,8 @@
 <span class="sd">        by the residual qb values stored in qb_file.</span>
 <span class="sd">    like_alpha_tags : list of strings</span>
 <span class="sd">        List of map tags from which foreground template maps should be</span>
-<span class="sd">        subtracted and fit in the likelihood.</span>
+<span class="sd">        subtracted and fit in the likelihood. If None, defaults to</span>
+<span class="sd">        template_alpha_tags.</span>
 <span class="sd">    alpha_prior: list of floats</span>
 <span class="sd">        Flat prior edges for allowed alpha values in the likelihood.</span>
 <span class="sd">        Set to None to not fit for alpha values in the likelihood.</span>
@@ -553,6 +560,9 @@
             <span class="n">xfc</span><span class="o">.</span><span class="n">XFasterWarning</span><span class="p">,</span>
         <span class="p">)</span>
 
+    <span class="k">if</span> <span class="n">like_alpha_tags</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">like_alpha_tags</span> <span class="o">=</span> <span class="n">template_alpha_tags</span>
+
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">template_alpha_tags</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">template_alpha</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="s2">&quot;template_alpha_tags and template_alpha must be the same length&quot;</span>
@@ -600,6 +610,7 @@
         <span class="n">foreground_type_sim</span><span class="o">=</span><span class="n">foreground_type_sim</span><span class="p">,</span>
         <span class="n">template_type</span><span class="o">=</span><span class="n">template_type</span><span class="p">,</span>
         <span class="n">sub_planck</span><span class="o">=</span><span class="n">sub_planck</span><span class="p">,</span>
+        <span class="n">sub_hm_noise</span><span class="o">=</span><span class="n">sub_hm_noise</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">file_opts</span><span class="p">,</span> <span class="s2">&quot;File Options&quot;</span><span class="p">)</span>
 
@@ -697,6 +708,8 @@
         <span class="n">mcmc</span><span class="o">=</span><span class="n">mcmc</span><span class="p">,</span>
         <span class="n">lmin</span><span class="o">=</span><span class="n">like_lmin</span><span class="p">,</span>
         <span class="n">lmax</span><span class="o">=</span><span class="n">like_lmax</span><span class="p">,</span>
+        <span class="n">r_specs</span><span class="o">=</span><span class="n">like_r_specs</span><span class="p">,</span>
+        <span class="n">temp_specs</span><span class="o">=</span><span class="n">like_temp_specs</span><span class="p">,</span>
         <span class="n">null_first_cmb</span><span class="o">=</span><span class="n">null_first_cmb</span><span class="p">,</span>
         <span class="n">alpha_tags</span><span class="o">=</span><span class="n">like_alpha_tags</span><span class="p">,</span>
         <span class="n">alpha_prior</span><span class="o">=</span><span class="n">alpha_prior</span><span class="p">,</span>
@@ -710,10 +723,13 @@
         <span class="n">num_walkers</span><span class="o">=</span><span class="n">mcmc_walkers</span><span class="p">,</span>
         <span class="n">converge_criteria</span><span class="o">=</span><span class="n">like_converge_criteria</span><span class="p">,</span>
         <span class="n">file_tag</span><span class="o">=</span><span class="n">like_tag</span><span class="p">,</span>
+        <span class="n">sub_hm_noise</span><span class="o">=</span><span class="n">sub_hm_noise</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">like_opts</span><span class="p">,</span> <span class="s2">&quot;Likelihood Estimation Options&quot;</span><span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;like_lmin&quot;</span><span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;like_lmax&quot;</span><span class="p">)</span>
+    <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;like_r_specs&quot;</span><span class="p">)</span>
+    <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;like_temp_specs&quot;</span><span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;mcmc_walkers&quot;</span><span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;like_converge_criteria&quot;</span><span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;like_tag&quot;</span><span class="p">)</span>
@@ -772,7 +788,7 @@
         <span class="n">weighted_bins</span><span class="o">=</span><span class="n">weighted_bins</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">template_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">template_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">sub_hm_noise</span><span class="p">:</span>
         <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing template noise ensemble averages...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
         <span class="n">X</span><span class="o">.</span><span class="n">get_masked_template_noise</span><span class="p">(</span><span class="n">template_type</span><span class="p">)</span>
 
@@ -1252,6 +1268,20 @@
         <span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span>
             <span class="n">G</span><span class="p">,</span>
+            <span class="s2">&quot;like_r_specs&quot;</span><span class="p">,</span>
+            <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Which spectra to use in the r likelihood calculation&quot;</span><span class="p">,</span>
+            <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;TT&quot;</span><span class="p">,</span> <span class="s2">&quot;EE&quot;</span><span class="p">,</span> <span class="s2">&quot;BB&quot;</span><span class="p">,</span> <span class="s2">&quot;TE&quot;</span><span class="p">,</span> <span class="s2">&quot;EB&quot;</span><span class="p">,</span> <span class="s2">&quot;TB&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span>
+            <span class="n">G</span><span class="p">,</span>
+            <span class="s2">&quot;like_temp_specs&quot;</span><span class="p">,</span>
+            <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+            <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Which spectra to use in the alpha likelihood calculation&quot;</span><span class="p">,</span>
+            <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;TT&quot;</span><span class="p">,</span> <span class="s2">&quot;EE&quot;</span><span class="p">,</span> <span class="s2">&quot;BB&quot;</span><span class="p">,</span> <span class="s2">&quot;TE&quot;</span><span class="p">,</span> <span class="s2">&quot;EB&quot;</span><span class="p">,</span> <span class="s2">&quot;TB&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span>
+            <span class="n">G</span><span class="p">,</span>
             <span class="s2">&quot;like_profile_sigma&quot;</span><span class="p">,</span>
             <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
             <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Range in units of 1sigma over which to compute profile likelihoods&quot;</span><span class="p">,</span>
@@ -1592,6 +1622,8 @@
                     <span class="s2">&quot;like_beam_tags&quot;</span><span class="p">,</span>
                     <span class="s2">&quot;beam_prior&quot;</span><span class="p">,</span>
                     <span class="s2">&quot;res_prior&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;like_r_specs&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;like_temp_specs&quot;</span><span class="p">,</span>
                     <span class="s2">&quot;betad_prior&quot;</span><span class="p">,</span>
                     <span class="s2">&quot;dust_amp_prior&quot;</span><span class="p">,</span>
                     <span class="s2">&quot;dust_ellind_prior&quot;</span><span class="p">,</span>
