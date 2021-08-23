@@ -540,7 +540,7 @@ class XFaster(object):
             )
             nfiles = len(files)
             if not nfiles:
-                raise OSError("Missing {} signal sims for {}".format(name, f))
+                raise OSError("Missing {} sims for {}".format(name, f))
             if num_files is None:
                 num_files = nfiles
             elif num_files != nfiles:
