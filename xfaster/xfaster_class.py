@@ -1472,7 +1472,7 @@ class XFaster(object):
         This method is called throughout the code at various checkpoints.  If
         the data exist on disk, they are loaded and returned.  If the data are
         missing or otherwise incompatible, they are recomputed by the corresponding
-         calling method, and trigger all subsequent data to also be recomputed.  Data
+        calling method, and trigger all subsequent data to also be recomputed.  Data
         handling is described in the ``Notes`` section for methods that use this
         functionality.
 
@@ -1867,20 +1867,12 @@ class XFaster(object):
         This method is called at the 'masks' checkpoint, loads or saves a
         data dictionary with the following keys:
 
-         wls: shape (num_map_corr, num_pol_mask_corr, lmax + 1)
-               mask1-x-mask2 mask cross spectra for every mask pair
-         fsky, w1, w2, w4: shape (num_map_corr, num_pol_mask_corr)
-               sky fraction and weighted modes per mask product
-         gmat: shape (num_maps * num_pol_mask_corr, ) * 2
-               mode-counting matrix, computed from
-                g = fsky * w2 ** 2 / w4
-
-        Where the dimensions of each item are determined from:
-
-           num_map_corr : Nmap * (Nmap + 1) / 2
-               number of map-map correlations
-           num_pol_mask_corr : 3 (TT, TP, PP) if pol else 1 (TT)
-               number of mask spectrum correlations
+            wls:
+                mask1-x-mask2 mask cross spectra for every mask pair
+            fsky, w1, w2, w4:
+                sky fraction and weighted modes per mask product
+            gmat:
+                mode-counting matrix, computed from ``g = fsky * w2 ** 2 / w4``
         """
 
         mask_files = self.mask_files
@@ -2222,16 +2214,23 @@ class XFaster(object):
         Notes
         -----
         This method is called at the 'data' checkpoint, loads or saves a data
-        dictionary with the following keys:
+        dictionary with the following spectra:
 
-           cls_data : OrderedDict
-               map1-x-map2 cross spectra for every map pair. This contains the
-               sum cross spectra if constructing a null test, or the
-               template-subtracted cross spectra if ``template_alpha`` is
-               supplied.
-           cls_data_null : OrderedDict
-               (map1a-map1b)-x-(map2a-map2b) difference cross spectra
-               for every map pair, if computing a null test
+            cls_data:
+                map1-x-map2 cross spectra for every map pair. This contains the
+                sum cross spectra if constructing a null test.
+            cls_data_clean:
+                template_subtracted spectra, if ``template_alpha`` is supplied.
+            cls_template:
+                template cross spectra necessary to rebuild the
+                template-subtracted data when the ``template_alpha`` parameter
+                is changed.
+            cls_data_null:
+                (map1a-map1b)-x-(map2a-map2b) difference cross spectra for every
+                map pair, if computing a null test
+            cls_ref, cls_ref_null:
+                reference cross spectra, if ``subtract_reference_signal`` is
+                True.
         """
         import healpy as hp
 
@@ -2696,6 +2695,14 @@ class XFaster(object):
 
         Arguments
         ---------
+        transfer : bool
+            If True, use the signal ensemble corresponding to
+            `signal_transfer_type`.  Otherwise, uses the standard `signal_type`
+            ensemble.
+        do_noise : bool
+            If True, include noise spectra in the output, as long as
+            `noise_type` is supplied.  Otherwise, only the signal component is
+            computed.
         qb_file : string
             Pointer to a bandpowers.npz file in the output directory, used
             to correct the ensemble mean noise spectrum by the appropriate
@@ -2704,16 +2711,23 @@ class XFaster(object):
         Notes
         -----
         This method is called at the 'sims' checkpoint, and loads or saves
-        a data dictionary with the following entries::
+        a data dictionary with the following keys:
 
-            cls_signal : <same shape as cls_data>
-            cls_signal_null : <same as cls_data>
-                Average signal spectra (sum and difference if computing
-                a null test).
-            cls_noise : <same shape as cls_data>
-            cls_noise_null : <same as cls_data>
-                Average null spectra (sum and difference if computing
-                a null test).
+            cls_signal, cls_signal_null:
+                Mean signal spectra
+            cls_noise, cls_noise_null:
+                Mean noise spectra
+            cls_sim, cls_sim_null:
+                Mean signal+noise spectra
+            cls_med, cls_med_null:
+                Median signal+noise spectra
+            cls_res, cls_res_null:
+                NxN, SxN and NxS spectra for computing noise residuals
+
+        For null tests, difference spectra of the two null halves are stored
+        in the corresponding `*_null` keys, and summed spectra are stored
+        in the normal keys.  Note that these differ from standard non-null
+        spectra by a factor of 2.
         """
         import healpy as hp
 
@@ -3140,8 +3154,12 @@ class XFaster(object):
         This method is called at the 'kernels' checkpoint and loads or saves
         the following data keys to disk:
 
-        kern, pkern, mkern, xkern : shape (num_mask_corr, lmax+1, 2*lmax+1)
-        Temperature and polarization kernels
+            kern:
+                temperature kernel
+            pkern, mkern:
+                + and - polarization kernels
+            xkern:
+                temperature/polarization cross term kernel
         """
 
         if window_lmax is None:
@@ -5677,14 +5695,14 @@ class XFaster(object):
         This method is called at the 'transfer' checkpoint, and loads or saves
         a data dictionary named 'transfer_all' with the following entries:
 
-            nbins : int
+            nbins:
                 number of bins
-            bin_def : (nbins, 3)
-                bin definition array (see ``get_bin_def``)
-            qb_transfer : (num_maps, nbins)
-                binned transfer function for each map
-            transfer : (num_maps, nbins, lmax + 1)
-                ell-by-ell transfer function for each map
+            bin_def:
+                bin definition dictionary (see ``get_bin_def``)
+            qb_transfer:
+                binned transfer function for each map and spectrum component
+            transfer:
+                ell-by-ell transfer function for each map and spectrum component
 
         Additionally the final output of ``fisher_iterate`` is stored
         in a dictionary called ``transfer_map<idx>`` for each map.
@@ -6008,8 +6026,8 @@ class XFaster(object):
         lmin=33,
         lmax=250,
         mcmc=True,
-        alpha_tags=["95", "150"],
-        beam_tags=["95", "150"],
+        alpha_tags="all",
+        beam_tags="all",
         r_prior=[0, np.inf],
         alpha_prior=[0, np.inf],
         res_prior=None,
@@ -6052,11 +6070,16 @@ class XFaster(object):
         alpha_tags : list of strings
             List of map tags from which foreground template maps should be
             subtracted.  These should be the original map tags, not
-            those generated for chunk sets.
+            those generated for chunk sets.  If "all", then all map tags
+            used in the template subtraction are included, as determined by
+            the keys in the `template_alpha` attribute.  If None, then the alpha
+            parameters are not included in the likelihood.
         beam_tags : list of strings
             List of map tags from which beam error envelopes should be
             marginalized over. These should be the original map tags, not
-            those generated for chunk sets.
+            those generated for chunk sets.  If "all", then all available map
+            tags in the dataset are included.  If None, then the beam error
+            parameters are not included in the likelihood.
         r_prior : 2-list or None
             Prior upper and lower bound on tensor to scalar ratio.  If None, the
             fiducial shape spectrum is assumed, and the r parameter space is not
@@ -6149,6 +6172,10 @@ class XFaster(object):
             alpha_prior = None
 
         # count alpha parameters to fit
+        if alpha_tags is None:
+            alpha_tags = []
+        elif alpha_tags == "all":
+            alpha_tags = list(self.template_alpha) if self.template_alpha else []
         alpha_tags = [x for x in alpha_tags if x in self.map_tags_orig]
         if not len(alpha_tags):
             alpha_prior = None
@@ -6158,6 +6185,10 @@ class XFaster(object):
             num_alpha = len(alpha_tags)
 
         # count beam parameters to fit
+        if beam_tags is None:
+            beam_tags = []
+        elif beam_tags == "all":
+            beam_tags = list(self.map_tags_orig)
         beam_tags = [x for x in beam_tags if x in self.map_tags_orig]
         if not len(beam_tags):
             beam_prior = None

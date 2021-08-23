@@ -63,8 +63,8 @@ def xfaster_run(
     foreground_fit=False,
     bin_width_fg=30,
     # data options
-    template_alpha_tags=["95", "150"],
-    template_alpha=[0.015, 0.043],
+    template_alpha_tags=None,
+    template_alpha=None,
     template_alpha_tags_sim=None,
     template_alpha_sim=None,
     subtract_template_noise=True,
@@ -117,11 +117,11 @@ def xfaster_run(
     like_lmax=250,
     like_r_specs=["EE", "BB"],
     like_template_specs=["EE", "BB", "EB"],
-    like_alpha_tags=None,
+    like_alpha_tags="all",
     alpha_prior=[-np.inf, np.inf],
     r_prior=[-np.inf, np.inf],
     res_prior=None,
-    like_beam_tags=["95", "150"],
+    like_beam_tags="all",
     beam_prior=None,
     betad_prior=None,
     dust_amp_prior=None,
@@ -403,8 +403,9 @@ def xfaster_run(
         Which spectra to use for alpha in the likelihood.
     like_alpha_tags : list of strings
         List of map tags from which foreground template maps should be
-        subtracted and fit in the likelihood. If None, defaults to
-        template_alpha_tags.
+        subtracted and fit in the likelihood. If "all", defaults to
+        template_alpha_tags.  If None, alpha fitting in the likelihood is
+        disabled.
     alpha_prior: list of floats
         Flat prior edges for allowed alpha values in the likelihood.
         Set to None to not fit for alpha values in the likelihood.
@@ -415,7 +416,9 @@ def xfaster_run(
         Set to None to not fit for residual qb values in the likelihood.
     like_beam_tags : list of strings
         List of map tags from which beam error fields are read in to be
-        fit for in the likelihood.
+        fit for in the likelihood.  If "all", then all available map tags
+        in the dataset are included.  If None, then beam error fitting
+        in the likelihood is disabled.
     beam_prior: list of floats
         Gaussian prior mean and number of strandard deviations for beam error.
         This Gaussian is applied as a prior in fitting for beam error in the
@@ -440,9 +443,6 @@ def xfaster_run(
     cpu_time = getattr(time, "process_time", getattr(time, "clock", time.time))
     cpu_start = cpu_time()
     time_start = time.time()
-
-    if like_alpha_tags is None:
-        like_alpha_tags = all_opts["like_alpha_tags"] = template_alpha_tags
 
     if template_alpha_tags is None:
         template_alpha_tags = []
@@ -472,6 +472,18 @@ def xfaster_run(
         if v is not None and v >= 0:
             sim_index[k] = v
     all_opts["sim_index"] = sim_index
+
+    if like_alpha_tags is None:
+        like_alpha_tags = []
+    elif len(like_alpha_tags) == 1 and like_alpha_tags[0] == "all":
+        like_alpha_tags = "all"
+    all_opts["like_alpha_tags"] = like_alpha_tags
+
+    if like_beam_tags is None:
+        like_beam_tags = []
+    elif len(like_beam_tags) == 1 and like_beam_tags[0] == "all":
+        like_beam_tags = "all"
+    all_opts["like_beam_tags"] = like_beam_tags
 
     # initialize config file
     config_vars = xfc.XFasterConfig(all_opts, "XFaster General")
