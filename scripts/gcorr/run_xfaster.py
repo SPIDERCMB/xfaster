@@ -67,8 +67,10 @@ tags = g_cfg["gcorr_opts"]["map_tags"].split(",")
 # null tests should use noise sims. signal shouldn't.
 if null:
     opts["noise_type"] = g_cfg["xfaster_opts"]["noise_type"]
+    opts["sim_data_components"] = ["signal", "noise"]
 else:
     opts["noise_type"] = None
+    opts["sim_data_components"] = ["signal"]
 
 opts["output_root"] = os.path.join(g_cfg["gcorr_opts"]["output_root"], args.output)
 
@@ -80,6 +82,7 @@ opts["checkpoint"] = args.check_point
 seeds = list(range(args.first, args.first + args.num))
 
 for tag in tags:
+    opts["sim_data"] = True
     opts["output_tag"] = tag
     opts["gcorr_file"] = os.path.abspath(
         os.path.join(
@@ -99,7 +102,7 @@ for tag in tags:
         opts.update(**submit_opts)
 
     for s in seeds:
-        opts["sim_index"] = s
+        opts["sim_index_default"] = s
         if args.submit:
             xf.xfaster_submit(**opts)
         else:

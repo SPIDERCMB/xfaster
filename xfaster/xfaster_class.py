@@ -2525,7 +2525,7 @@ class XFaster(object):
             self.apply_mask(m, mask)
             m_alms = self.map2alm(m, self.pol)
 
-            if sim:
+            if sim and "noise" in sim_type:
                 # add noise residuals
                 if rls1 is not None:
                     self.apply_mask(mn, mask)
