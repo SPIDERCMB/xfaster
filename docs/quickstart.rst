@@ -75,9 +75,11 @@ The code requires a certain directory structure for your input maps:
     [[optional:]]
     ├── foreground_<foreground_type> (same filenames as signal_<signal_type>
     ├── templates_<template_type>
-    │   ├── halfmission-1 (same filenames as data_<data_type>)
-    │   ├── halfmission-2 (same filenames as data_<data_type>)
-    └── reobs_planck (same filenames as templates_<template_type>, used if sub_planck=True for null tests)
+    │   ├── template1 (same filenames as data_<data_type>)
+    │   ├── template2 (same filenames as data_<data_type>)
+    └── reobs_reference (used if subtract_reference_signal=True for null tests)
+        ├── reference1 (same filenames as data_<data_type>)
+        └── reference2 (same filenames as data_<data_type>)
 
 The required types of maps are data, signal simulations, noise simulations, and masks.
 Each map should have a tag, which is used consistently across these different map types.
@@ -179,13 +181,12 @@ This script is also in the repo: `xfaster/example/plot_outputs.py <https://githu
     import numpy as np
     import matplotlib.pyplot as plt
     import xfaster as xf
-    from xfaster import spec_tools as st
 
     # First, load up inputs to our sims so we can check how well they're recovered
     # (bearing in mind, this is a single sim, so noise fluctuations and sample
     # variance will cause scatter.
     r_in = 1.0
-    Dls_in = st.get_camb_cl(r=r_in, lmax=500, lfac=True)
+    Dls_in = xf.get_camb_cl(r=r_in, lmax=500, lfac=True)
     Fl_in = np.loadtxt("maps_example/transfer_example.txt")
 
     # load up bandpowers file, where most of the useful stuff is stored
