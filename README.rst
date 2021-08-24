@@ -9,7 +9,7 @@ intended to be generically useful for modern CMB observatories.
 
 An accompanying paper describing the algorithm can be found here: https://arxiv.org/abs/2104.01172
 
-Documentation (improvements in progress) can be found here: https://annegambrel.github.io/xfaster/
+Documentation (improvements in progress) can be found here: https://SPIDER-CMB.github.io/xfaster/
 
 xfaster:
     python package
