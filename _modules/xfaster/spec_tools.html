@@ -1,0 +1,429 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>xfaster.spec_tools &mdash; xfaster 0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"TeX": {"equationNumbers": {"autoNumber": "AMS", "useLabelIds": true}}, "tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> xfaster
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../algorithm.html">Algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/XFaster_Tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">xfaster</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>xfaster.spec_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for xfaster.spec_tools</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;wigner3j&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_camb_cl&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;scale_dust&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">blackbody</span><span class="p">(</span><span class="n">nu</span><span class="p">,</span> <span class="n">ref_freq</span><span class="o">=</span><span class="mf">353.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The ratio of the blackbody function for dust at frequency nu</span>
+<span class="sd">    over the value for reference frequency ref_freq</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    nu : float</span>
+<span class="sd">        Frequency in GHz.</span>
+<span class="sd">    ref_freq : float</span>
+<span class="sd">        Reference frequency in GHz.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    blackbody_ratio : float</span>
+<span class="sd">        B(nu, T_dust) / B(nu_ref, T_dust)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="mf">1.38064852e-23</span>  <span class="c1"># Boltzmann constant</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="mf">6.626070040e-34</span>  <span class="c1"># Planck constant</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="mf">19.6</span>
+    <span class="n">nu_ref</span> <span class="o">=</span> <span class="n">ref_freq</span> <span class="o">*</span> <span class="mf">1.0e9</span>
+    <span class="n">nu</span> <span class="o">*=</span> <span class="mf">1.0e9</span>  <span class="c1"># GHz -&gt; Hz</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">nu</span> <span class="o">/</span> <span class="n">k</span> <span class="o">/</span> <span class="n">T</span>
+    <span class="n">x_ref</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">nu_ref</span> <span class="o">/</span> <span class="n">k</span> <span class="o">/</span> <span class="n">T</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">/</span> <span class="n">x_ref</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x_ref</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">rj2cmb</span><span class="p">(</span><span class="n">nu_in</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Conversion from Rayleigh-Jeans units to CMB temperature units</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    nu_in : float</span>
+<span class="sd">        Frequency in GHz.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    cal_fac : float</span>
+<span class="sd">        Number by which to multiply a RJ temperature to get a CMB temp</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="mf">1.38064852e-23</span>  <span class="c1"># Boltzmann constant</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="mf">6.626070040e-34</span>  <span class="c1"># Planck constant</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="mf">2.72548</span>  <span class="c1"># Cmb BB temp in K</span>
+    <span class="n">nu</span> <span class="o">=</span> <span class="n">nu_in</span> <span class="o">*</span> <span class="mf">1.0e9</span>  <span class="c1"># GHz -&gt; Hz</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">nu</span> <span class="o">/</span> <span class="n">k</span> <span class="o">/</span> <span class="n">T</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="scale_dust"><a class="viewcode-back" href="../../api.html#xfaster.spec_tools.scale_dust">[docs]</a><span class="k">def</span> <span class="nf">scale_dust</span><span class="p">(</span><span class="n">freq0</span><span class="p">,</span> <span class="n">freq1</span><span class="p">,</span> <span class="n">ref_freq</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">delta_beta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">deriv</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the factor by which you must multiply the cross spectrum from maps of</span>
+<span class="sd">    frequencies freq0 and freq1 to match the dust power at ref_freq given</span>
+<span class="sd">    spectra index beta.</span>
+
+<span class="sd">    If deriv is True, return the frequency scaling at the reference beta,</span>
+<span class="sd">    and the first derivative w.r.t. beta.</span>
+
+<span class="sd">    Otherwise if delta_beta is given, return the scale factor adjusted</span>
+<span class="sd">    for a linearized offset delta_beta from the reference beta.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    freq0 : float</span>
+<span class="sd">        Frequency of map0 in GHz.</span>
+<span class="sd">    freq1 : float</span>
+<span class="sd">        Frequency of map1 in GHz.</span>
+<span class="sd">    ref_freq : float</span>
+<span class="sd">        Reference frequency from which to compute relative scaling in GHz.</span>
+<span class="sd">    beta : float</span>
+<span class="sd">        Dust spectral index.</span>
+<span class="sd">    delta_beta : float</span>
+<span class="sd">        Difference from beta-- scaling computed as a first order Taylor</span>
+<span class="sd">        expansion from original beta-scaling.</span>
+<span class="sd">    deriv : bool</span>
+<span class="sd">        If true, return the frequency scaling at the reference beta, along with</span>
+<span class="sd">        the first derivative w.r.t. beta at the reference beta.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    freq_scale : float</span>
+<span class="sd">        The relative scaling factor for the dust cross spectrum-- multiply by</span>
+<span class="sd">        this number to get the dust spectrum at the reference frequency</span>
+<span class="sd">    -- or --</span>
+<span class="sd">    freq_scale, deriv : floats</span>
+<span class="sd">        The relative scaling factor and its derivative</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">freq_scale</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">rj2cmb</span><span class="p">(</span><span class="n">freq0</span><span class="p">)</span>
+        <span class="o">*</span> <span class="n">rj2cmb</span><span class="p">(</span><span class="n">freq1</span><span class="p">)</span>
+        <span class="o">/</span> <span class="n">rj2cmb</span><span class="p">(</span><span class="n">ref_freq</span><span class="p">)</span> <span class="o">**</span> <span class="mf">2.0</span>
+        <span class="o">*</span> <span class="n">blackbody</span><span class="p">(</span><span class="n">freq0</span><span class="p">,</span> <span class="n">ref_freq</span><span class="o">=</span><span class="n">ref_freq</span><span class="p">)</span>
+        <span class="o">*</span> <span class="n">blackbody</span><span class="p">(</span><span class="n">freq1</span><span class="p">,</span> <span class="n">ref_freq</span><span class="o">=</span><span class="n">ref_freq</span><span class="p">)</span>
+        <span class="o">*</span> <span class="p">(</span><span class="n">freq0</span> <span class="o">*</span> <span class="n">freq1</span> <span class="o">/</span> <span class="n">ref_freq</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">beta</span> <span class="o">-</span> <span class="mf">2.0</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">deriv</span> <span class="ow">or</span> <span class="n">delta_beta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">freq0</span> <span class="o">*</span> <span class="n">freq1</span> <span class="o">/</span> <span class="n">ref_freq</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">deriv</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">freq_scale</span><span class="p">,</span> <span class="n">freq_scale</span> <span class="o">*</span> <span class="n">delta</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">freq_scale</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">delta</span> <span class="o">*</span> <span class="n">delta_beta</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">freq_scale</span></div>
+
+
+<div class="viewcode-block" id="wigner3j"><a class="viewcode-back" href="../../api.html#xfaster.spec_tools.wigner3j">[docs]</a><span class="k">def</span> <span class="nf">wigner3j</span><span class="p">(</span><span class="n">l2</span><span class="p">,</span> <span class="n">m2</span><span class="p">,</span> <span class="n">l3</span><span class="p">,</span> <span class="n">m3</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wigner 3j symbols computed for all valid values of ``L``, as in:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \begin{pmatrix}</span>
+<span class="sd">         \ell_2 &amp; \ell_3 &amp; L \\</span>
+<span class="sd">         m_2 &amp; m_3 &amp; 0 \\</span>
+<span class="sd">        \end{pmatrix}</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    l2, m2, l3, m3 : int</span>
+<span class="sd">        The ell and m values for which to compute the symbols.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fj : array_like</span>
+<span class="sd">        Array of size ``l2 + l3 + 2``, indexed by ``L``</span>
+<span class="sd">    lmin : int</span>
+<span class="sd">        The minimum value of ``L`` for which ``fj`` is non-zero.</span>
+<span class="sd">    lmax : int</span>
+<span class="sd">        The maximum value of ``L`` for which ``fj`` is non-zero.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">camb</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">camb.mathutils</span> <span class="kn">import</span> <span class="n">threej</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">camb.bispectrum</span> <span class="kn">import</span> <span class="n">threej</span>
+    <span class="n">arr</span> <span class="o">=</span> <span class="n">threej</span><span class="p">(</span><span class="n">l2</span><span class="p">,</span> <span class="n">l3</span><span class="p">,</span> <span class="n">m2</span><span class="p">,</span> <span class="n">m3</span><span class="p">)</span>
+
+    <span class="n">lmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">l2</span> <span class="o">-</span> <span class="n">l3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">m2</span> <span class="o">+</span> <span class="n">m3</span><span class="p">)])</span>
+    <span class="n">lmax</span> <span class="o">=</span> <span class="n">l2</span> <span class="o">+</span> <span class="n">l3</span>
+    <span class="n">fj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">lmax</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">fj</span><span class="p">[</span><span class="n">lmin</span> <span class="p">:</span> <span class="n">lmax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">arr</span>
+    <span class="k">return</span> <span class="n">fj</span><span class="p">,</span> <span class="n">lmin</span><span class="p">,</span> <span class="n">lmax</span></div>
+
+
+<div class="viewcode-block" id="get_camb_cl"><a class="viewcode-back" href="../../api.html#xfaster.spec_tools.get_camb_cl">[docs]</a><span class="k">def</span> <span class="nf">get_camb_cl</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">lmax</span><span class="p">,</span> <span class="n">nt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">lfac</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute camb spectrum with tensors and lensing.</span>
+
+<span class="sd">    Parameter values are from arXiv:1807.06209 Table 1 Plik best fit</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    r : float</span>
+<span class="sd">        Tensor-to-scalar ratio</span>
+<span class="sd">    lmax : int</span>
+<span class="sd">        Maximum ell for which to compute spectra</span>
+<span class="sd">    nt : scalar, optional</span>
+<span class="sd">        Tensor spectral index.  If not supplied, assumes</span>
+<span class="sd">        slow-roll consistency relation.</span>
+<span class="sd">    spec : string, optional</span>
+<span class="sd">        Spectrum component to return.  Can be &#39;total&#39;, &#39;unlensed_total&#39;,</span>
+<span class="sd">        &#39;unlensed_scalar&#39;, &#39;lensed_scalar&#39;, &#39;tensor&#39;, &#39;lens_potential&#39;.</span>
+<span class="sd">    lfac: bool, optional</span>
+<span class="sd">        If True, multiply Cls by ell*(ell+1)/2/pi</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    cls : array_like</span>
+<span class="sd">        Array of spectra of shape (lmax + 1, nspec).</span>
+<span class="sd">        Diagonal ordering (TT, EE, BB, TE).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Set up a new set of parameters for CAMB</span>
+    <span class="kn">import</span> <span class="nn">camb</span>
+
+    <span class="n">pars</span> <span class="o">=</span> <span class="n">camb</span><span class="o">.</span><span class="n">CAMBparams</span><span class="p">()</span>
+
+    <span class="c1"># This function sets up CosmoMC-like settings, with one massive neutrino and</span>
+    <span class="c1"># helium set using BBN consistency</span>
+    <span class="n">pars</span><span class="o">.</span><span class="n">set_cosmology</span><span class="p">(</span>
+        <span class="n">H0</span><span class="o">=</span><span class="mf">67.32</span><span class="p">,</span>
+        <span class="n">ombh2</span><span class="o">=</span><span class="mf">0.022383</span><span class="p">,</span>
+        <span class="n">omch2</span><span class="o">=</span><span class="mf">0.12011</span><span class="p">,</span>
+        <span class="n">mnu</span><span class="o">=</span><span class="mf">0.06</span><span class="p">,</span>
+        <span class="n">omk</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">tau</span><span class="o">=</span><span class="mf">0.0543</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">ln1010As</span> <span class="o">=</span> <span class="mf">3.0448</span>
+
+    <span class="n">pars</span><span class="o">.</span><span class="n">InitPower</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="n">As</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">ln1010As</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1.0e10</span><span class="p">,</span> <span class="n">ns</span><span class="o">=</span><span class="mf">0.96605</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="n">r</span><span class="p">,</span> <span class="n">nt</span><span class="o">=</span><span class="n">nt</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">lmax</span> <span class="o">&lt;</span> <span class="mi">2500</span><span class="p">:</span>
+        <span class="c1"># This results in unacceptable bias. Use higher lmax, then cut it down</span>
+        <span class="n">lmax0</span> <span class="o">=</span> <span class="mi">2500</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">lmax0</span> <span class="o">=</span> <span class="n">lmax</span>
+    <span class="n">pars</span><span class="o">.</span><span class="n">set_for_lmax</span><span class="p">(</span><span class="n">lmax0</span><span class="p">,</span> <span class="n">lens_potential_accuracy</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">pars</span><span class="o">.</span><span class="n">WantTensors</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">pars</span><span class="o">.</span><span class="n">do_lensing</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># calculate results for these parameters</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">camb</span><span class="o">.</span><span class="n">get_results</span><span class="p">(</span><span class="n">pars</span><span class="p">)</span>
+    <span class="n">powers</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">get_cmb_power_spectra</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span> <span class="n">CMB_unit</span><span class="o">=</span><span class="s2">&quot;muK&quot;</span><span class="p">,</span> <span class="n">raw_cl</span><span class="o">=</span><span class="ow">not</span> <span class="n">lfac</span><span class="p">)</span>
+
+    <span class="n">totCL</span> <span class="o">=</span> <span class="n">powers</span><span class="p">[</span><span class="n">spec</span><span class="p">][:</span> <span class="n">lmax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="k">return</span> <span class="n">totCL</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, A. Gambrel, A. Rahlin, C. Contaldi.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

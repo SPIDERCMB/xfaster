@@ -169,7 +169,6 @@
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;parse_data&quot;</span><span class="p">,</span>
     <span class="s2">&quot;dict_to_arr&quot;</span><span class="p">,</span>
     <span class="s2">&quot;arr_to_dict&quot;</span><span class="p">,</span>
     <span class="s2">&quot;unique_tags&quot;</span><span class="p">,</span>
@@ -185,6 +184,7 @@
     <span class="s2">&quot;corr_index&quot;</span><span class="p">,</span>
     <span class="s2">&quot;num_maps&quot;</span><span class="p">,</span>
     <span class="s2">&quot;num_corr&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;expand_qb&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -424,47 +424,146 @@
             <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="parse_data"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.parse_data">[docs]</a><span class="k">def</span> <span class="nf">parse_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
+<div class="viewcode-block" id="load_and_parse"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.load_and_parse">[docs]</a><span class="k">def</span> <span class="nf">load_and_parse</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">check_version</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Look for a field in some data, return as a dictionary with</span>
-<span class="sd">    descriptive keys.</span>
+<span class="sd">    Load a .npz data file from disk and parse all the fields it contains.</span>
+<span class="sd">    Includes handling of backward compatibility to older file versions</span>
+<span class="sd">    on disk.</span>
+
+<span class="sd">    Returns a dictionary of parsed fields.</span>
 
 <span class="sd">    Arguments</span>
 <span class="sd">    ---------</span>
-<span class="sd">    data : str or dict</span>
-<span class="sd">        Either the path to an npz file on disk or a loaded npz dict.</span>
-<span class="sd">    field : str</span>
-<span class="sd">        Which key in data to return as a dictionary.</span>
+<span class="sd">    filename : str</span>
+<span class="sd">        Path to numpy data file on disk.</span>
+<span class="sd">    check_version : bool</span>
+<span class="sd">        If True, check the data file version and apply any necessary</span>
+<span class="sd">        updates to the latest version.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    data[field] : arb</span>
-<span class="sd">        The value in the ```data`` dictionary for key ``field``.</span>
+<span class="sd">    data : dict</span>
+<span class="sd">        Data dictionary loaded from disk.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">load_compat</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">load_compat</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
 
-    <span class="n">version</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_version&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">check_version</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">data</span>
+
     <span class="kn">from</span> <span class="nn">.xfaster_class</span> <span class="kn">import</span> <span class="n">XFaster</span>
 
     <span class="n">dv</span> <span class="o">=</span> <span class="n">XFaster</span><span class="o">.</span><span class="n">data_version</span>
+    <span class="n">version</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_version&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">version</span> <span class="o">==</span> <span class="n">dv</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">data</span>
 
+    <span class="c1"># backward compatibility</span>
     <span class="k">if</span> <span class="n">version</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;raw_root&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;raw_root&quot;</span><span class="p">)</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;raw_files&quot;</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="s2">&quot;foreground_type&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="s2">&quot;foreground_type_sim&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;foreground_type&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;foreground_root&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;foreground_root_sim&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;foreground_root&quot;</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;foreground_files_sim&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;foreground_files&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;foreground_root2&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;foreground_root_sim2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;foreground_root2&quot;</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;foreground_files_sim2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;foreground_files2&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;num_foreground&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;num_foreground_sim&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;num_foreground&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;signal_type&quot;</span><span class="p">,</span> <span class="s2">&quot;noise_type&quot;</span><span class="p">]:</span>
+            <span class="n">ks</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_sim&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">and</span> <span class="n">ks</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="n">ks</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">ks</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
         <span class="k">if</span> <span class="s2">&quot;clean_type&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="s2">&quot;data_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;clean_type&quot;</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="n">field</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s2">&quot;planck_root1_hm1&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">ref_root</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;ref1a&quot;</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;planck_root1_hm1&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;ref1b&quot;</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;planck_root2_hm1&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;ref2a&quot;</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;planck_root1_hm2&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;ref2b&quot;</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;planck_root2_hm2&quot;</span><span class="p">),</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ref_root</span><span class="o">.</span><span class="n">values</span><span class="p">()]):</span>
+                <span class="n">ref_root</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="c1"># add backward-compatibile parsing here if necessary</span>
+            <span class="n">ref_files</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;hm1a&quot;</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;planck_files1_hm1&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;hm1b&quot;</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;planck_files2_hm1&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;hm2a&quot;</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;planck_files1_hm2&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;hm2b&quot;</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;planck_files2_hm2&quot;</span><span class="p">),</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ref_files</span><span class="o">.</span><span class="n">values</span><span class="p">()]):</span>
+                <span class="n">ref_files</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;reference_root&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref_root</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;reference_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref_files</span>
+
+        <span class="k">if</span> <span class="s2">&quot;cls_noise0&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">cls_res</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+            <span class="n">cls_res_null</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;nxn0&quot;</span><span class="p">,</span> <span class="s2">&quot;nxn1&quot;</span><span class="p">,</span> <span class="s2">&quot;nxs0&quot;</span><span class="p">,</span> <span class="s2">&quot;nxs1&quot;</span><span class="p">,</span> <span class="s2">&quot;sxn0&quot;</span><span class="p">,</span> <span class="s2">&quot;sxn1&quot;</span><span class="p">]:</span>
+                <span class="n">kold</span> <span class="o">=</span> <span class="s2">&quot;cls_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;nxn&quot;</span><span class="p">,</span> <span class="s2">&quot;noise&quot;</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kold</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">cls_res</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">kold</span><span class="p">)</span>
+
+                <span class="n">knull</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_null&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">kold</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">knull</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">cls_res_null</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">cls_res_null</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+                    <span class="n">cls_res_null</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">knull</span><span class="p">)</span>
+
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;cls_res&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls_res</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;cls_res_null&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls_res_null</span>
+
+        <span class="k">if</span> <span class="s2">&quot;cbl&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">cbl</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;cbl&quot;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">cbl</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;res0&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;res1&quot;</span><span class="p">):</span>
+                    <span class="n">knew</span> <span class="o">=</span> <span class="s2">&quot;res_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span> <span class="n">k</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+                    <span class="n">cbl</span><span class="p">[</span><span class="n">knew</span><span class="p">]</span> <span class="o">=</span> <span class="n">cbl</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;cls_tnoise_hm1&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">cls_template_noise</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+            <span class="n">cls_template_noise</span><span class="p">[</span><span class="s2">&quot;temp1:temp1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;cls_tnoise_hm1&quot;</span><span class="p">)</span>
+            <span class="n">cls_template_noise</span><span class="p">[</span><span class="s2">&quot;temp2:temp2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;cls_tnoise_hm2&quot;</span><span class="p">)</span>
+            <span class="n">cls_template_noise</span><span class="p">[</span><span class="s2">&quot;temp1:temp2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;cls_tnoise_hm1xhm2&quot;</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;cls_template_noise&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls_template_noise</span>
+
+        <span class="k">if</span> <span class="s2">&quot;template_files&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;template_type_sim&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">k1</span><span class="p">,</span> <span class="n">k2</span> <span class="ow">in</span> <span class="p">[</span>
+                    <span class="p">(</span><span class="s2">&quot;template_type&quot;</span><span class="p">,</span> <span class="s2">&quot;template_type_sim&quot;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;template_root&quot;</span><span class="p">,</span> <span class="s2">&quot;template_root_sim&quot;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;template_root2&quot;</span><span class="p">,</span> <span class="s2">&quot;template_root_sim2&quot;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;template_files&quot;</span><span class="p">,</span> <span class="s2">&quot;template_files_sim&quot;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;template_files2&quot;</span><span class="p">,</span> <span class="s2">&quot;template_files_sim2&quot;</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s2">&quot;num_template&quot;</span><span class="p">,</span> <span class="s2">&quot;num_template_sim&quot;</span><span class="p">),</span>
+                <span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">k1</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                        <span class="n">data</span><span class="p">[</span><span class="n">k2</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">k1</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="s2">&quot;template_noise_type&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="s2">&quot;template_noise_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;template_type&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s2">&quot;fix_bb_xfer&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;fix_bb_transfer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;fix_bb_xfer&quot;</span><span class="p">)</span>
+
+        <span class="c1"># update data version in memory</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;data_version&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">version</span> <span class="o">=</span> <span class="n">dv</span>
+
     <span class="k">if</span> <span class="n">version</span> <span class="o">!=</span> <span class="n">dv</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="s2">&quot;Incompatible data file version.  Found </span><span class="si">{}</span><span class="s2">, expected </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">version</span><span class="p">,</span> <span class="n">dv</span><span class="p">)</span>
         <span class="p">)</span>
 
-    <span class="c1"># if versions match, then data is already stored in the proper format</span>
-    <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="n">field</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">data</span></div>
 
 
 <div class="viewcode-block" id="dict_to_arr"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.dict_to_arr">[docs]</a><span class="k">def</span> <span class="nf">dict_to_arr</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -746,6 +845,8 @@
             <span class="k">if</span> <span class="s2">&quot;_&quot;</span> <span class="ow">in</span> <span class="n">rem</span><span class="p">:</span>
                 <span class="n">specs</span><span class="p">,</span> <span class="n">tag</span> <span class="o">=</span> <span class="n">rem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
                 <span class="n">xname</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">:</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">xname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">map_pairs</span><span class="p">:</span>
+                    <span class="k">continue</span>
                 <span class="n">pairs</span> <span class="o">=</span> <span class="p">{</span><span class="n">xname</span><span class="p">:</span> <span class="n">map_pairs</span><span class="p">[</span><span class="n">xname</span><span class="p">]}</span>
                 <span class="k">if</span> <span class="n">specs</span> <span class="o">==</span> <span class="s2">&quot;eebb&quot;</span><span class="p">:</span>
                     <span class="n">specs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]</span>
@@ -788,25 +889,33 @@
     <span class="k">return</span> <span class="n">dsdqb_mat</span></div>
 
 
-<div class="viewcode-block" id="load_and_parse"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.load_and_parse">[docs]</a><span class="k">def</span> <span class="nf">load_and_parse</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+<div class="viewcode-block" id="expand_qb"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.expand_qb">[docs]</a><span class="k">def</span> <span class="nf">expand_qb</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">bin_def</span><span class="p">,</span> <span class="n">lmax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Load a .npz data file from disk and parse all the fields it contains.</span>
+<span class="sd">    Expand a qb-type array to an ell-by-ell spectrum using bin_def.</span>
 
 <span class="sd">    Arguments</span>
 <span class="sd">    ---------</span>
-<span class="sd">    filename : str</span>
-<span class="sd">        Path to file to parse.</span>
+<span class="sd">    qb : array_like, (nbins,)</span>
+<span class="sd">        Array of bandpower deviations</span>
+<span class="sd">    bin_def : array_like, (nbins, 2)</span>
+<span class="sd">        Array of bin edges for each bin</span>
+<span class="sd">    lmax : int, optional</span>
+<span class="sd">        If supplied, limit the output spectrum to this value.</span>
+<span class="sd">        Otherwise the output spectrum extends to include the last bin.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    ret : dict</span>
-<span class="sd">        Dictionary of parsed fields.</span>
+<span class="sd">    cl : array_like, (lmax + 1,)</span>
+<span class="sd">        Array of expanded bandpowers</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">load_compat</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-    <span class="n">ret</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-        <span class="n">ret</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">parse_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">ret</span></div>
+    <span class="n">lmax</span> <span class="o">=</span> <span class="n">lmax</span> <span class="k">if</span> <span class="n">lmax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">bin_def</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="n">cl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">lmax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bin_def</span><span class="p">):</span>
+        <span class="n">cl</span><span class="p">[</span><span class="n">left</span><span class="p">:</span><span class="n">right</span><span class="p">]</span> <span class="o">=</span> <span class="n">qb</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">cl</span></div>
 </pre></div>
 
            </div>

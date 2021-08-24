@@ -271,9 +271,11 @@ This runs XFaster on the example maps, so you can see the step-by-step process a
 [[optional:]]
 ├── foreground_&lt;foreground_type&gt; (same filenames as signal_&lt;signal_type&gt;
 ├── templates_&lt;template_type&gt;
-│   ├── halfmission-1 (same filenames as data_&lt;data_type&gt;)
-│   ├── halfmission-2 (same filenames as data_&lt;data_type&gt;)
-└── reobs_planck (same filenames as templates_&lt;template_type&gt;, used if sub_planck=True for null tests)
+│   ├── template1 (same filenames as data_&lt;data_type&gt;)
+│   ├── template2 (same filenames as data_&lt;data_type&gt;)
+└── reobs_reference (used if subtract_reference_signal=True for null tests)
+    ├── reference1 (same filenames as data_&lt;data_type&gt;)
+    └── reference2 (same filenames as data_&lt;data_type&gt;)
 </pre></div>
 </div>
 <p>The required types of maps are data, signal simulations, noise simulations, and masks.
@@ -374,13 +376,12 @@ This script is also in the repo: <a class="reference external" href="https://git
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">xfaster</span> <span class="k">as</span> <span class="nn">xf</span>
-<span class="kn">from</span> <span class="nn">xfaster</span> <span class="kn">import</span> <span class="n">xfaster_tools</span> <span class="k">as</span> <span class="n">xft</span>
 
 <span class="c1"># First, load up inputs to our sims so we can check how well they&#39;re recovered</span>
 <span class="c1"># (bearing in mind, this is a single sim, so noise fluctuations and sample</span>
 <span class="c1"># variance will cause scatter.</span>
 <span class="n">r_in</span> <span class="o">=</span> <span class="mf">1.0</span>
-<span class="n">Dls_in</span> <span class="o">=</span> <span class="n">xft</span><span class="o">.</span><span class="n">get_camb_cl</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="n">r_in</span><span class="p">,</span> <span class="n">lmax</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">lfac</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">Dls_in</span> <span class="o">=</span> <span class="n">xf</span><span class="o">.</span><span class="n">get_camb_cl</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="n">r_in</span><span class="p">,</span> <span class="n">lmax</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">lfac</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">Fl_in</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s2">&quot;maps_example/transfer_example.txt&quot;</span><span class="p">)</span>
 
 <span class="c1"># load up bandpowers file, where most of the useful stuff is stored</span>
