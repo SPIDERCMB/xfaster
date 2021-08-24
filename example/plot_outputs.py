@@ -1,13 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import xfaster as xf
-from xfaster import xfaster_tools as xft
 
 # First, load up inputs to our sims so we can check how well they're recovered
 # (bearing in mind, this is a single sim, so noise fluctuations and sample
 # variance will cause scatter.
 r_in = 1.0
-Dls_in = xft.get_camb_cl(r=r_in, lmax=500, lfac=True)
+Dls_in = xf.get_camb_cl(r=r_in, lmax=500, lfac=True)
 Fl_in = np.loadtxt("maps_example/transfer_example.txt")
 
 # load up bandpowers file, where most of the useful stuff is stored

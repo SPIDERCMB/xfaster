@@ -5,7 +5,6 @@ from warnings import warn
 from collections import OrderedDict
 
 __all__ = [
-    "parse_data",
     "dict_to_arr",
     "arr_to_dict",
     "unique_tags",
@@ -21,6 +20,7 @@ __all__ = [
     "corr_index",
     "num_maps",
     "num_corr",
+    "expand_qb",
 ]
 
 
@@ -260,47 +260,146 @@ def load_pickle_compat(filename):
             return pickle.load(f)
 
 
-def parse_data(data, field):
+def load_and_parse(filename, check_version=True):
     """
-    Look for a field in some data, return as a dictionary with
-    descriptive keys.
+    Load a .npz data file from disk and parse all the fields it contains.
+    Includes handling of backward compatibility to older file versions
+    on disk.
+
+    Returns a dictionary of parsed fields.
 
     Arguments
     ---------
-    data : str or dict
-        Either the path to an npz file on disk or a loaded npz dict.
-    field : str
-        Which key in data to return as a dictionary.
+    filename : str
+        Path to numpy data file on disk.
+    check_version : bool
+        If True, check the data file version and apply any necessary
+        updates to the latest version.
 
     Returns
     -------
-    data[field] : arb
-        The value in the ```data`` dictionary for key ``field``.
+    data : dict
+        Data dictionary loaded from disk.
     """
-    if isinstance(data, str):
-        data = load_compat(data)
+    data = load_compat(filename)
 
-    version = data.get("data_version", -1)
+    if not check_version:
+        return data
+
     from .xfaster_class import XFaster
 
     dv = XFaster.data_version
+    version = data.get("data_version", -1)
+    if version == dv:
+        return data
 
+    # backward compatibility
     if version == 1:
+        if "raw_root" in data:
+            data.pop("raw_root")
+            data.pop("raw_files")
+
         if "foreground_type" in data:
             data["foreground_type_sim"] = data.pop("foreground_type")
+        if "foreground_root" in data:
+            data["foreground_root_sim"] = data.pop("foreground_root")
+            data["foreground_files_sim"] = data.pop("foreground_files")
+        if "foreground_root2" in data:
+            data["foreground_root_sim2"] = data.pop("foreground_root2")
+            data["foreground_files_sim2"] = data.pop("foreground_files2")
+        if "num_foreground" in data:
+            data["num_foreground_sim"] = data.pop("num_foreground")
+
+        for k in ["signal_type", "noise_type"]:
+            ks = "{}_sim".format(k)
+            if k in data and ks in data and data[ks] is None:
+                data[ks] = data[k]
+
         if "clean_type" in data:
             data["data_type"] = data.pop("clean_type")
 
-        return data[field]
+        if "planck_root1_hm1" in data:
+            ref_root = {
+                "ref1a": data.pop("planck_root1_hm1"),
+                "ref1b": data.pop("planck_root2_hm1"),
+                "ref2a": data.pop("planck_root1_hm2"),
+                "ref2b": data.pop("planck_root2_hm2"),
+            }
+            if all([x is None for x in ref_root.values()]):
+                ref_root = None
 
-    # add backward-compatibile parsing here if necessary
+            ref_files = {
+                "hm1a": data.pop("planck_files1_hm1"),
+                "hm1b": data.pop("planck_files2_hm1"),
+                "hm2a": data.pop("planck_files1_hm2"),
+                "hm2b": data.pop("planck_files2_hm2"),
+            }
+            if all([x is None for x in ref_files.values()]):
+                ref_files = None
+
+            data["reference_root"] = ref_root
+            data["reference_files"] = ref_files
+
+        if "cls_noise0" in data:
+            cls_res = OrderedDict()
+            cls_res_null = None
+
+            for k in ["nxn0", "nxn1", "nxs0", "nxs1", "sxn0", "sxn1"]:
+                kold = "cls_{}".format(k.replace("nxn", "noise"))
+                if data.get(kold, None) is not None:
+                    cls_res[k] = data.pop(kold)
+
+                knull = "{}_null".format(kold)
+                if data.get(knull, None) is not None:
+                    if cls_res_null is None:
+                        cls_res_null = OrderedDict()
+                    cls_res_null[k] = data.pop(knull)
+
+            data["cls_res"] = cls_res
+            data["cls_res_null"] = cls_res_null
+
+        if "cbl" in data:
+            cbl = data["cbl"]
+            for k in list(cbl):
+                if k.startswith("res0") or k.startswith("res1"):
+                    knew = "res_{}".format(k.split("_")[1], k[3])
+                    cbl[knew] = cbl.pop(k)
+
+        if "cls_tnoise_hm1" in data:
+            cls_template_noise = OrderedDict()
+            cls_template_noise["temp1:temp1"] = data.pop("cls_tnoise_hm1")
+            cls_template_noise["temp2:temp2"] = data.pop("cls_tnoise_hm2")
+            cls_template_noise["temp1:temp2"] = data.pop("cls_tnoise_hm1xhm2")
+            data["cls_template_noise"] = cls_template_noise
+
+        if "template_files" in data:
+            if "template_type_sim" not in data:
+                for k1, k2 in [
+                    ("template_type", "template_type_sim"),
+                    ("template_root", "template_root_sim"),
+                    ("template_root2", "template_root_sim2"),
+                    ("template_files", "template_files_sim"),
+                    ("template_files2", "template_files_sim2"),
+                    ("num_template", "num_template_sim"),
+                ]:
+                    if k1 in data:
+                        data[k2] = data[k1]
+
+            if "template_noise_type" not in data:
+                data["template_noise_type"] = data["template_type"]
+
+        if "fix_bb_xfer" in data:
+            data["fix_bb_transfer"] = data.pop("fix_bb_xfer")
+
+        # update data version in memory
+        data["data_version"] = version = dv
+
     if version != dv:
         raise ValueError(
             "Incompatible data file version.  Found {}, expected {}".format(version, dv)
         )
 
-    # if versions match, then data is already stored in the proper format
-    return data[field]
+    return data
 
 
 def dict_to_arr(d, out=None, flatten=False):
@@ -582,6 +681,8 @@ def dict_to_dsdqb_mat(dsdqb_dict, bin_def):
             if "_" in rem:
                 specs, tag = rem.split("_", 1)
                 xname = "{0}:{0}".format(tag)
+                if xname not in map_pairs:
+                    continue
                 pairs = {xname: map_pairs[xname]}
                 if specs == "eebb":
                     specs = ["ee", "bb"]
@@ -624,22 +725,30 @@ def dict_to_dsdqb_mat(dsdqb_dict, bin_def):
     return dsdqb_mat
 
 
-def load_and_parse(filename):
+def expand_qb(qb, bin_def, lmax=None):
     """
-    Load a .npz data file from disk and parse all the fields it contains.
+    Expand a qb-type array to an ell-by-ell spectrum using bin_def.
 
     Arguments
     ---------
-    filename : str
-        Path to file to parse.
+    qb : array_like, (nbins,)
+        Array of bandpower deviations
+    bin_def : array_like, (nbins, 2)
+        Array of bin edges for each bin
+    lmax : int, optional
+        If supplied, limit the output spectrum to this value.
+        Otherwise the output spectrum extends to include the last bin.
 
     Returns
     -------
-    ret : dict
-        Dictionary of parsed fields.
+    cl : array_like, (lmax + 1,)
+        Array of expanded bandpowers
     """
-    data = load_compat(filename)
-    ret = dict()
-    for k in data:
-        ret[k] = parse_data(data, k)
-    return ret
+    lmax = lmax if lmax is not None else bin_def.max() - 1
+
+    cl = np.zeros(lmax + 1)
+
+    for idx, (left, right) in enumerate(bin_def):
+        cl[left:right] = qb[idx]
+
+    return cl

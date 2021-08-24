@@ -9,7 +9,7 @@ import warnings
 import copy
 import logging
 from collections import OrderedDict
-from . import xfaster_tools as xft
+from . import spec_tools as st
 from . import parse_tools as pt
 from configparser import RawConfigParser
 
@@ -131,9 +131,9 @@ class XFaster(object):
 
     # if starting from KEY, force rerun all steps in VALUES
     checkpoint_tree = {
-        "files": ["masks", "sims", "data"],
-        "masks": ["kernels", "sims_transfer", "sims", "data"],
-        "kernels": ["transfer", "bandpowers"],
+        "files": ["masks"],
+        "masks": ["kernels", "sims_transfer", "sims", "data", "template_noise"],
+        "kernels": ["transfer"],
         "sims_transfer": ["transfer"],
         "shape_transfer": ["transfer"],
         "transfer": ["bandpowers"],
@@ -146,22 +146,17 @@ class XFaster(object):
         "beam_errors": ["likelihood"],
     }
 
-    data_version = 1
+    data_version = 2
 
     def __init__(
         self,
         config,
-        lmax=500,
-        pol=True,
-        pol_mask=True,
         output_root=None,
         output_tag=None,
         verbose="notice",
         debug=False,
         checkpoint=None,
         add_log=False,
-        ref_freq=359.7,
-        beta_ref=1.54,
     ):
         """
         Initialize an XFaster instance for computing binned power spectra
@@ -172,13 +167,6 @@ class XFaster(object):
         config : string
             Configuration file. If path doesn't exist, assumed
             to be in xfaster/config/<config>
-        lmax : int
-            The maximum multipole for which spectra are computed
-        pol : bool
-            If True, polarized spectra are computed from the input maps
-        pol_mask : bool
-            If True, two independent masks are applied to every map:
-            one for T maps and one for Q/U maps.
         output_root : string
             Path to data output directory
         output_tag : string
@@ -196,13 +184,6 @@ class XFaster(object):
         add_log : bool
             If True, write log output to a file instead of to STDOUT.
             The log will be in ``<output_root>/run_<output_tag>.log``.
-        ref_freq : float
-            In GHz, reference frequency for dust model. Dust bandpowers output
-            will be at this reference frequency.
-        beta_ref : float
-            The spectral index of the dust model. This is a fixed value, with
-            an additive deviation from this value fit for in foreground fitting
-            mode.
         """
         # verbosity
         self.init_log(
@@ -211,17 +192,6 @@ class XFaster(object):
         )
 
         self.debug = debug
-        self.lmax = lmax
-        self.pol = pol
-        self.pol_dim = 3 if self.pol else 1
-        self.pol_mask = pol_mask if self.pol else False
-
-        self.ref_freq = ref_freq
-        self.beta_ref = beta_ref
-
-        # XXX Fix this
-        # Priors on frequency spectral index
-        self.delta_beta_fix = 1.0e-8
 
         # map tag configuration
         self.load_map_config(config)
@@ -315,23 +285,15 @@ class XFaster(object):
         # beam fwhm for each tag, if not supplied in beam_product
         # converted from arcmin to radians
         if "fwhm" in cfg:
-            self.fwhm = {
-                k: np.radians(cfg.getfloat("fwhm", k) / 60.0) for k in cfg["fwhm"]
-            }
-            # Only use the FWHM for fields in tagset
-            for ftag in list(self.fwhm.keys()):
-                if ftag not in tagset:
-                    self.fwhm.pop(ftag)
+            tags = [k for k in self.dict_freqs if cfg.has_option("fwhm", k)]
+            self.fwhm = {k: np.radians(cfg.getfloat("fwhm", k) / 60.0) for k in tags}
         else:
             self.fwhm = {}
 
         # beam fwhm error for each tag, if not supplied in beam_error_product
         if "fwhm_err" in cfg:
-            self.fwhm_err = {k: cfg.getfloat("fwhm_err", k) for k in cfg["fwhm_err"]}
-            # Only use the FWHM for fields in tagset
-            for ftag in list(self.fwhm_err.keys()):
-                if ftag not in tagset:
-                    self.fwhm_err.pop(ftag)
+            tags = [k for k in self.dict_freqs if cfg.has_option("fwhm_err", k)]
+            self.fwhm_err = {k: cfg.getfloat("fwhm_err", k) for k in tags}
         else:
             self.fwhm_err = {}
 
@@ -344,9 +306,8 @@ class XFaster(object):
                 assert os.path.exists(v), "Missing beam product file {}".format(v)
                 self.beam_product = pt.load_compat(v)
                 # Only use the fields in the beam product we need
-                for btag in list(self.beam_product.keys()):
-                    if btag not in tagset:
-                        self.beam_product.pop(btag)
+                for btag in set(self.beam_product) - tagset:
+                    self.beam_product.pop(btag)
             else:
                 self.beam_product = {}
 
@@ -357,9 +318,8 @@ class XFaster(object):
                 assert os.path.exists(v), "Missing beam error product file {}".format(v)
                 self.beam_error_product = pt.load_compat(v)
                 # Only use the fields in the beam product we need
-                for btag in list(self.beam_error_product.keys()):
-                    if btag not in tagset:
-                        self.beam_error_product.pop(btag)
+                for btag in set(self.beam_error_product) - tagset:
+                    self.beam_error_product.pop(btag)
             else:
                 self.beam_error_product = {}
         else:
@@ -378,13 +338,8 @@ class XFaster(object):
 
         # fit for the transfer function for each tag?
         if "transfer" in cfg:
-            self.fit_transfer = {
-                k: cfg.getboolean("transfer", k) for k in cfg["transfer"]
-            }
-            # Remove any fields not needed
-            for ftag in list(self.fit_transfer.keys()):
-                if ftag not in tagset:
-                    self.fit_transfer.pop(ftag)
+            tags = [k for k in self.dict_freqs if cfg.has_option("transfer", k)]
+            self.fit_transfer = {k: cfg.getboolean("transfer", k) for k in tags}
             assert tagset == set(self.fit_transfer), "Missing tags in [transfer]"
         else:
             # assume true for all tags otherwise
@@ -511,31 +466,127 @@ class XFaster(object):
             finally:
                 handler.release()
 
+    def _get_sim_files(
+        self,
+        name,
+        root=None,
+        subset="*",
+        suffix="",
+        data_suffix="",
+        match_count=True,
+        fs=None,
+    ):
+        """
+        Convenience function for finding all matching sims per map.  Used
+        internally in ``get_files`` for selecting appropriate subsets of
+        simulation files.
+
+        Arguments
+        ---------
+        name : str
+            Type of simulation files to collect (signal, noise, foreground,
+            template)
+        root : str
+            Root of the simulation file tree, relative to data_root.  If not
+            supplied, the returned set of variables are set to null values.
+        subset : str
+            Data subset to search for.  See ``get_files`` for details.
+        suffix : str
+            Suffix to apply to the output variables, e.g. "_sim" or "_sim2".
+        data_suffix : str
+            Suffix to apply to corresponding data variables to search for
+            matching files, e.g. "2".
+        match_count : bool
+            If True, make sure that the number of files found matches those
+            counted previously for the same dataset.  If False, stores the
+            minimum number of files found.
+        fs : dict
+            Dictionary of file options to search for the appropriate data
+            variables to check for consistency.  If not supplied, checks
+            for the corresponding attributes of the calling object.
+
+        Returns
+        -------
+        opts : dict
+            Dictionary of sim file options, with the following keys:
+            <name>_root<suffix>, <name>_files<suffix>, num_<name><suffix>.
+        """
+        if root is None:
+            return {
+                "{}_root{}".format(name, suffix): None,
+                "{}_files{}".format(name, suffix): None,
+                "num_{}{}".format(name, suffix): 0,
+            }
+
+        if fs is None:
+            data_root = getattr(self, "data_root{}".format(data_suffix))
+            map_root = getattr(self, "map_root{}".format(data_suffix))
+            map_files = getattr(self, "map_files{}".format(data_suffix))
+        else:
+            data_root = fs["data_root{}".format(data_suffix)]
+            map_root = fs["map_root{}".format(data_suffix)]
+            map_files = fs["map_files{}".format(data_suffix)]
+
+        root = os.path.join(data_root, root)
+        num_files = None
+        all_files = []
+        for f in map_files:
+            files = sorted(
+                glob.glob(
+                    f.replace(map_root, root).replace(
+                        ".fits", "_{}.fits".format(subset)
+                    )
+                )
+            )
+            nfiles = len(files)
+            if not nfiles:
+                raise OSError("Missing {} sims for {}".format(name, f))
+            if num_files is None:
+                num_files = nfiles
+            elif num_files != nfiles:
+                if match_count:
+                    raise OSError(
+                        "Found {} {} sims for map {}, expected {}".format(
+                            nfiles, name, f, num_files
+                        )
+                    )
+                elif nfiles < num_files:
+                    num_files = nfiles
+
+            all_files.append(files)
+
+        all_files = np.asarray([f[:num_files] for f in all_files])
+        self.log("Found {} {} sims in {}".format(num_files, name, root), "info")
+        self.log(
+            "First {} sim files: {}".format(name, all_files[:, 0].tolist()), "debug"
+        )
+
+        return {
+            "{}_root{}".format(name, suffix): root,
+            "{}_files{}".format(name, suffix): all_files,
+            "num_{}{}".format(name, suffix): num_files,
+        }
+
     def _get_files(
         self,
         data_root,
         data_subset="full/*0",
-        signal_subset="*",
-        noise_subset="*",
         data_type="raw",
-        noise_type="stationary",
-        noise_type_sim=None,
         mask_type="hitsmask_tailored",
         signal_type="r0p03",
-        signal_type_sim=None,
         signal_transfer_type=None,
-        suffix="",
+        signal_subset="*",
+        noise_type="stationary",
+        noise_subset="*",
+        signal_type_sim=None,
+        noise_type_sim=None,
         foreground_type_sim=None,
-        template_type=None,
-        sub_planck=False,
+        suffix="",
     ):
         """
         Find all files for the given data root.  Internal function, see
         ``get_files`` for a complete docstring.
         """
-
-        if signal_transfer_type is None:
-            signal_transfer_type = signal_type
 
         # regularize data root
         if not os.path.exists(data_root):
@@ -564,247 +615,20 @@ class XFaster(object):
         self.log("Map files: {}".format(map_files), "debug")
         self.log("Map freqs: {}".format(map_freqs), "debug")
 
-        raw_root = None
-        raw_files = None
-        # find all corresponding signal sims
-        signal_root = os.path.join(data_root, "signal_{}".format(signal_type))
-        num_signal = None
-        signal_files = []
-        for f in map_files:
-            sfiles = sorted(
-                glob.glob(
-                    f.replace(map_root, signal_root).replace(
-                        ".fits", "_{}.fits".format(signal_subset)
-                    )
-                )
-            )
-            nsims1 = len(sfiles)
-            if not nsims1:
-                raise OSError("Missing signal sims for {}".format(f))
-            if num_signal is None:
-                num_signal = nsims1
-            else:
-                if nsims1 != num_signal:
-                    raise OSError(
-                        "Found {} signal sims for map {}, expected {}".format(
-                            nsims1, f, num_signal
-                        )
-                    )
-                    num_signal = min(num_signal, nsims1)
-            signal_files.append(sfiles)
-        signal_files = np.asarray([x[:num_signal] for x in signal_files])
-        self.log("Found {} signal sims in {}".format(num_signal, signal_root), "info")
-        self.log(
-            "First signal sim files: {}".format(signal_files[:, 0].tolist()), "debug"
-        )
+        # Also need a list of unique map tags for populating dictionaries
+        # in data structures
+        map_tags_orig = list(map_tags)  # copy
+        map_tags = pt.unique_tags(map_tags)
 
-        # find all corresponding signal transfer function sims
-        signal_transfer_root = os.path.join(
-            data_root, "signal_{}".format(signal_transfer_type)
-        )
-        num_signal_transfer = None
-        signal_transfer_files = []
-        for f in map_files:
-            sfiles = sorted(
-                glob.glob(
-                    f.replace(map_root, signal_transfer_root).replace(
-                        ".fits", "_{}.fits".format(signal_subset)
-                    )
-                )
-            )
-            nsims1 = len(sfiles)
-            if not nsims1:
-                raise OSError("Missing signal sims for {}".format(f))
-            if num_signal_transfer is None:
-                num_signal_transfer = nsims1
-            else:
-                if nsims1 != num_signal_transfer:
-                    raise OSError(
-                        "Found {} signal_transfer sims for map {}, expected {}".format(
-                            nsims1, f, num_signal_transfer
-                        )
-                    )
-                    num_signal_transfer = min(num_signal_transfer, nsims1)
-            signal_transfer_files.append(sfiles)
-        signal_transfer_files = np.asarray(
-            [x[:num_signal_transfer] for x in signal_transfer_files]
-        )
-        self.log(
-            "Found {} signal transfer sims in {}".format(
-                num_signal_transfer, signal_transfer_root
-            ),
-            "info",
-        )
-        self.log(
-            "First signal transfer sim files: {}".format(
-                signal_transfer_files[:, 0].tolist()
-            ),
-            "debug",
-        )
+        # make a list of names corresponding to the order of the cross spectra
+        map_pairs = pt.tag_pairs(map_tags)
+        map_pairs_orig = pt.tag_pairs(map_tags, index=map_tags_orig)
 
-        # find all corresponding noise sims
-        if noise_type is not None:
-            noise_root = os.path.join(data_root, "noise_{}".format(noise_type))
-            num_noise = None
-            noise_files = []
-            for f in map_files:
-                nfiles = sorted(
-                    glob.glob(
-                        f.replace(map_root, noise_root).replace(
-                            ".fits", "_{}.fits".format(noise_subset)
-                        )
-                    )
-                )
-                nsims1 = len(nfiles)
-                if not nsims1:
-                    raise OSError("Missing noise sims for {}".format(f))
-                if num_noise is None:
-                    num_noise = nsims1
-                else:
-                    if nsims1 != num_noise:
-                        raise OSError(
-                            "Found {} noise sims for map {}, expected {}".format(
-                                nsims1, f, num_noise
-                            )
-                        )
-                        num_noise = min(num_noise, nsims1)
-                noise_files.append(nfiles)
-            noise_files = np.asarray([x[:num_noise] for x in noise_files])
-            self.log("Found {} noise sims in {}".format(num_noise, noise_root), "info")
-            self.log(
-                "First noise sim files: {}".format(noise_files[:, 0].tolist()), "debug"
-            )
-        else:
-            noise_root = None
-            noise_files = None
-
-        # find all corresponding noise sims for sim_index run
-        if noise_type_sim is not None:
-            noise_root_sim = os.path.join(data_root, "noise_{}".format(noise_type_sim))
-            num_noise_sim = None
-            noise_files_sim = []
-            for f in map_files:
-                nfiles = sorted(
-                    glob.glob(
-                        f.replace(map_root, noise_root_sim).replace(
-                            ".fits", "_{}.fits".format(noise_subset)
-                        )
-                    )
-                )
-                nsims1 = len(nfiles)
-                if not nsims1:
-                    raise OSError("Missing noise sims for {}".format(f))
-                if num_noise_sim is None:
-                    num_noise_sim = nsims1
-                else:
-                    if nsims1 != num_noise_sim:
-                        raise OSError(
-                            "Found {} noise sims for map {}, expected {}".format(
-                                nsims1, f, num_noise_sim
-                            )
-                        )
-                        num_noise_sim = min(num_noise_sim, nsims1)
-                noise_files_sim.append(nfiles)
-            noise_files_sim = np.asarray(noise_files_sim)
-            self.log(
-                "Found {} noise sims in {}".format(num_noise_sim, noise_root_sim),
-                "info",
-            )
-            self.log(
-                "First noise sim files: {}".format(noise_files_sim[:, 0].tolist()),
-                "debug",
-            )
-        else:
-            noise_root_sim = noise_root
-            noise_files_sim = noise_files
-
-        # find all corresponding signal sims for sim_index run
-        if signal_type_sim is not None:
-            signal_root_sim = os.path.join(
-                data_root, "signal_{}".format(signal_type_sim)
-            )
-            num_signal_sim = None
-            signal_files_sim = []
-            for f in map_files:
-                nfiles = sorted(
-                    glob.glob(
-                        f.replace(map_root, signal_root_sim).replace(
-                            ".fits", "_{}.fits".format(signal_subset)
-                        )
-                    )
-                )
-                nsims1 = len(nfiles)
-                if not nsims1:
-                    raise OSError("Missing signal sims for {}".format(f))
-                if num_signal_sim is None:
-                    num_signal_sim = nsims1
-                else:
-                    if nsims1 != num_signal_sim:
-                        raise OSError(
-                            "Found {} signal sims for map {}, expected {}".format(
-                                nsims1, f, num_signal_sim
-                            )
-                        )
-                        num_signal_sim = min(num_signal_sim, nsims1)
-                signal_files_sim.append(nfiles)
-            signal_files_sim = np.asarray(signal_files_sim)
-            self.log(
-                "Found {} signal sims in {}".format(num_signal_sim, signal_root_sim),
-                "info",
-            )
-            self.log(
-                "First signal sim files: {}".format(signal_files_sim[:, 0].tolist()),
-                "debug",
-            )
-        else:
-            signal_root_sim = signal_root
-            signal_files_sim = signal_files
-
-        # find all corresponding foreground sims for sim_index run
-        if foreground_type_sim is not None:
-            foreground_root = os.path.join(
-                data_root, "foreground_{}".format(foreground_type_sim)
-            )
-            num_foreground_sim = None
-            foreground_files = []
-            for f in map_files:
-                nfiles = sorted(
-                    glob.glob(
-                        f.replace(map_root, foreground_root).replace(".fits", "_*.fits")
-                    )
-                )
-                nsims1 = len(nfiles)
-                if not nsims1:
-                    raise OSError("Missing foreground sims for {}".format(f))
-                if num_foreground_sim is None:
-                    num_foreground_sim = nsims1
-                else:
-                    if nsims1 != num_foreground_sim:
-                        raise OSError(
-                            "Found {} foreground sims for map {}, expected {}".format(
-                                nsims1, f, num_foreground_sim
-                            )
-                        )
-                        num_foreground_sim = min(num_foreground_sim, nsims1)
-                foreground_files.append(nfiles)
-            foreground_files = np.asarray(
-                [x[:num_foreground_sim] for x in foreground_files]
-            )
-            self.log(
-                "Found {} foreground sims in {}".format(
-                    num_foreground_sim, foreground_root
-                ),
-                "info",
-            )
-            self.log(
-                "First foreground sim files: {}".format(
-                    foreground_files[:, 0].tolist()
-                ),
-                "debug",
-            )
-        else:
-            foreground_root = None
-            foreground_files = None
+        # make a dictionary of map freqs for each unique map tag
+        map_freqs_dict = {}
+        for im0, m0 in enumerate(map_tags):
+            map_freqs_dict[m0] = map_freqs[im0]
+        map_freqs = map_freqs_dict
 
         # find all corresponding masks
         if mask_type is None:
@@ -824,7 +648,7 @@ class XFaster(object):
             # XXX Do this smarter
             mask_files = [
                 os.path.join(mask_root, "mask_map_{}.fits".format(tag))
-                for tag in map_tags
+                for tag in map_tags_orig
             ]
         for f in mask_files:
             if not os.path.exists(f):
@@ -832,52 +656,43 @@ class XFaster(object):
         self.log("Found {} masks in {}".format(len(mask_files), mask_root), "info")
         self.log("Mask files: {}".format(mask_files), "debug")
 
-        # Also need a list of unique map tags for populating dictionaries
-        # in data structures
-        map_tags_orig = list(map_tags)  # copy
-        map_tags = pt.unique_tags(map_tags)
+        fs = {
+            "data_root": data_root,
+            "data_subset": data_subset,
+            "map_root": map_root,
+            "map_files": map_files,
+            "num_maps": len(map_files),
+            "map_tags": map_tags,
+            "map_pairs": map_pairs,
+            "map_tags_orig": map_tags_orig,
+            "map_pairs_orig": map_pairs_orig,
+            "map_freqs": map_freqs,
+            "mask_root": mask_root,
+            "mask_files": mask_files,
+        }
 
-        # make a list of names corresponding to the order of the cross spectra
-        map_pairs = pt.tag_pairs(map_tags)
-        map_pairs_orig = pt.tag_pairs(map_tags, index=map_tags_orig)
+        # convenience function
+        def find_sim_files(name, root=None, subset="*"):
+            fs.update(self._get_sim_files(name, root, subset, fs=fs))
 
-        # make a dictionary of map freqs for each unique map tag
-        map_freqs_dict = {}
-        for im0, m0 in enumerate(map_tags):
-            map_freqs_dict[m0] = map_freqs[im0]
-        map_freqs = map_freqs_dict
+        # signal and noise ensembles for building covariance model
+        find_sim_files("signal", "signal_{}".format(signal_type), signal_subset)
+        if noise_type is not None:
+            find_sim_files("noise", "noise_{}".format(noise_type), noise_subset)
+        else:
+            find_sim_files("noise", None)
 
-        fields = [
-            "data_root",
-            "data_subset",
-            "map_root",
-            "map_files",
-            "map_tags",
-            "map_pairs",
-            "map_tags_orig",
-            "map_pairs_orig",
-            "map_freqs",
-            "raw_root",
-            "raw_files",
-            "signal_root",
-            "signal_files",
-            "signal_root_sim",
-            "signal_files_sim",
-            "signal_transfer_root",
-            "signal_transfer_files",
-            "noise_root",
-            "noise_files",
-            "noise_root_sim",
-            "noise_files_sim",
-            "mask_root",
-            "mask_files",
-            "foreground_root",
-            "foreground_files",
-        ]
+        # signal ensembles for transfer function covariance model
+        if signal_transfer_type is None:
+            signal_transfer_type = signal_type
+        find_sim_files(
+            "signal_transfer", "signal_{}".format(signal_transfer_type), signal_subset
+        )
+
+        # apply suffix
         out = dict()
-        local = locals()
-        for f in fields:
-            out[f + suffix] = local[f]
+        for k, v in fs.items():
+            out[k + suffix] = v
         return out
 
     def get_files(
@@ -897,8 +712,10 @@ class XFaster(object):
         data_subset2=None,
         foreground_type_sim=None,
         template_type=None,
-        sub_planck=False,
-        sub_hm_noise=False,
+        template_noise_type=None,
+        template_type_sim=None,
+        subtract_reference_signal=False,
+        subtract_template_noise=False,
     ):
         """
         Find all files for the given data root.  The data structure is::
@@ -928,14 +745,14 @@ class XFaster(object):
                 -> foreground_<foreground_type_sim>
                     (same filenames as signal_<signal_type>)
                 -> templates_<template_type>
-                   -> halfmission-1
+                   -> template1
                       (same filenames as data_<data_type>)
-                   -> halfmission-2
+                   -> template2
                       (same filenames as data_<data_type>)
-                -> reobs_planck (if sub_planck=True)
-                   -> halfmission-1
+                -> reobs_reference (if subtract_reference_signal=True)
+                   -> reference1
                       (same filenames as data_<data_type>)
-                   -> halfmission-2
+                   -> reference2
                       (same filenames as data_<data_type>)
             <data_root2> (If provided, same structure as data_root)
                 ...
@@ -971,7 +788,7 @@ class XFaster(object):
             'stationary', etc.  The directory should contain the same number
             of simulations for each map tag.
         noise_type_sim : string
-            The variant of noise sims to use for sim_index fake data map.
+            The variant of noise sims to use for sim_index simulated data map.
             This enables having a different noise sim ensemble to use for
             sim_index run than the ensemble from which the noise is computed.
         mask_type : string
@@ -982,40 +799,54 @@ class XFaster(object):
             The variant of signal simulation to use, typically identified
             by the input spectrum model used to generate it, e.g 'synfast'.
         signal_type_sim : string
-            The variant of signal sims to use for sim_index fake data map.
-            This enables having a different noise sim ensemble to use for
+            The variant of signal sims to use for sim_index simulated data map.
+            This enables having a different signal sim ensemble to use for
             sim_index run than the ensemble from which the signal is computed.
+            If this is set to 'r', then two signal types are searched:
+            'signal_r0' for a scalar component, and 'signal_r1tens' for a tensor
+            component.  The two maps are linearly combined with a scalar r value
+            to construct a signal map for a simulated dataset.
         signal_transfer_type : string
             The variant of signal simulation to use for transfer function
-            calculation, typically identified by the input spectrum model
-            used to generate it, e.g 'synfast'. This directory may also contain
-            a copy of the input spectrum, to make sure that the correct
-            spectrum is used to compute the transfer function.
+            calculation, typically identified by the input spectrum model used
+            to generate it, e.g 'synfast'. This directory may also contain a
+            copy of the input spectrum, to make sure that the correct spectrum
+            is used to compute the transfer function.
         data_root2, data_subset2 : string
-            The root and subset for a second set of data.
-            If either of these is keywords is supplied, then the two data
-            sets are treated as two halves of a null test.  In this case,
-            XFaster computes the sum and difference spectra for each map
-            tag in order to estimate a null spectrum.
+            The root and subset for a second set of data.  If either of these is
+            keywords is supplied, then the two data sets are treated as two
+            halves of a null test.  In this case, XFaster computes the sum and
+            difference spectra for each map tag in order to estimate a null
+            spectrum.
         foreground_type_sim : string
-            Tag for directory (foreground_<foreground_type_sim>) where foreground
-            sims are that should be added to the signal and noise sims
-            when running in sim_index mode. Note: the same foreground sim
-            map is used for each sim_index, despite signal and noise sims
-            changing.
+            Tag for directory (foreground_<foreground_type_sim>) where
+            foreground sims are that should be added to the signal and noise
+            sims when running in sim_index mode.
         template_type : string
             Tag for directory (templates_<template_type>) containing templates
-            (e.g. a foreground model) to be scaled by a scalar value per
-            map tag and subtracted from the data. The directory contains one
-            template per map tag.
-        sub_planck : bool
-            If True, subtract reobserved Planck from maps. Properly uses half
-            missions so no Planck autos are used. Useful for removing expected
-            signal residuals from null tests. Maps are expected to be in
-            reobs_planck directory
-        sub_hm_noise : bool
-            If True, subtract average of Planck ffp10 noise crosses to debias
-            template-cleaned spectra
+            (e.g. a foreground model) to be scaled by a scalar value per map tag
+            and subtracted from the data. The directory contains one template
+            per map tag.
+        template_noise_type : string
+            Tag for directory containing template noise sims to be averaged and
+            scaled similarly to the templates themselves.  These averaged sims
+            are used to debias template cross spectra due to correlations in the
+            way the noise ensembles are constructed.
+        template_type_sim : string
+            Tag for directory containing foreground templates, to be scaled by a
+            scalar value per map tag and added to the simulated data.  The
+            directory contains one template per map tag.
+        subtract_reference_signal : bool
+            If True, subtract a reobserved reference signal from each data map.
+            The reference signal maps should be two datasets with uncorrelated
+            noise, such as Planck half-mission maps.  This option is used for
+            removing expected signal residuals from null tests.
+        subtract_template_noise : bool
+            If True, subtract average of cross spectra of an ensemble of noise
+            realizations corresponding to each template map, to debias
+            template-cleaned spectra.  Typically, this would be a noise model
+            based on the Planck FFP10 ensemble for each half-mission foreground
+            template.
 
         Returns
         -------
@@ -1036,6 +867,18 @@ class XFaster(object):
             if self.checkpoint == "sims":
                 self.checkpoint = "sims_transfer"
 
+        if signal_type_sim is None:
+            signal_type_sim = signal_type
+
+        if noise_type_sim is None:
+            noise_type_sim = noise_type
+
+        if template_noise_type is None:
+            template_noise_type = template_type
+
+        if template_type_sim is None:
+            template_type_sim = template_type
+
         # one of these must be set to do a null test
         null_run = False
         if data_root2 is not None or data_subset2 is not None:
@@ -1050,23 +893,65 @@ class XFaster(object):
                 )
             null_run = True
 
+        if null_run:
+            template_type = None
+
         opts = dict(
             data_type=data_type,
             noise_type=noise_type,
-            noise_type_sim=noise_type_sim,
             mask_type=mask_type,
             signal_type=signal_type,
-            signal_type_sim=signal_type_sim,
             signal_transfer_type=signal_transfer_type,
             signal_subset=signal_subset,
             noise_subset=noise_subset,
-            foreground_type_sim=foreground_type_sim,
         )
         ref_opts = dict(data_subset=data_subset, **opts)
         if null_run:
             ref_opts.update(data_subset2=data_subset2)
 
-        def get_template_files(fs, template_type):
+        def get_sim_data_files(fs):
+            """
+            Update options for simulated data
+            """
+            types = ["signal_type_sim", "noise_type_sim", "foreground_type_sim"]
+            g = locals()
+            if all([g[k] == fs.get(k, None) for k in types]):
+                return
+
+            fs.update({k: g[k] for k in types})
+
+            def find_sim_files(name, root=None):
+                for suff in ["", "2"] if null_run else [""]:
+                    fs.update(
+                        self._get_sim_files(
+                            name,
+                            root,
+                            suffix="_sim" + suff,
+                            data_suffix=suff,
+                            match_count=False,
+                            fs=fs,
+                        )
+                    )
+
+            if str(signal_type_sim) == "r":
+                find_sim_files("signal", "signal_r0")
+                find_sim_files("tensor", "signal_r1tens")
+            else:
+                find_sim_files("signal", "signal_{}".format(signal_type_sim))
+            if noise_type_sim is not None:
+                find_sim_files("noise", "noise_{}".format(noise_type_sim))
+            else:
+                find_sim_files("noise", None)
+            if foreground_type_sim is not None:
+                find_sim_files(
+                    "foreground", "foreground_{}".format(foreground_type_sim)
+                )
+            else:
+                find_sim_files("foreground", None)
+
+            return True
+
+        def get_template_files(fs):
             """
             Update options for template cleaning. Internal to get_files.
 
@@ -1074,195 +959,189 @@ class XFaster(object):
             ---------
             fs : dict
                 Dictionary of file options
-            template_type : str
-                Tag for template files
             """
-            # no template fitting for null runs
-            if fs["null_run"]:
-                template_type = None
+            types = ["template_type", "template_noise_type", "template_type_sim"]
+            g = locals()
+            if all([k in fs and g[k] == fs[k] for k in types]):
+                return
 
-            if "template_type" in fs:
-                if template_type == fs["template_type"]:
-                    return
-
-            fs["template_type"] = template_type
-
-            # find all corresponding foreground templates
             if template_type is None:
-                fs["template_root"] = None
-                fs["template_root2"] = None
-                fs["template_files"] = None
-                fs["template_files2"] = None
-                fs["template_noise_root"] = None
-                fs["template_noise_root2"] = None
-                fs["template_noise_files"] = None
-                fs["template_noise_files2"] = None
-                fs["num_template"] = 0
-                fs["num_template_noise"] = 0
-            else:
-                num_template_noise = None
-                for hm in ["1", "2"]:
-                    suff = "" if hm == "1" else "2"
-                    troot = os.path.join(
-                        fs["data_root"],
-                        "templates_{}".format(template_type),
-                        "halfmission-{}".format(hm),
-                    )
-                    ### this block is so sims with template type like
-                    # 353_100_gauss_003 can use ensemble in 353_100_gauss
-                    tp = template_type.split("_")
-                    ttype = template_type
-                    if tp[-1].isdigit():
-                        if ttype[-7:] not in ["353_100", "217_100"]:
-                            ttype = "_".join(tp[:-1])
+                fs_temp = {}
+                for name, suff in [
+                    ("template", ""),
+                    ("template_noise", ""),
+                    ("template", "_sim"),
+                ]:
+                    fs_temp["{}_type{}".format(name, suff)] = None
+                    fs_temp["num_{}{}".format(name, suff)] = 0
+                    for suff2 in ["", "2"]:
+                        fs_temp["{}_root{}".format(name, suff + suff2)] = None
+                        fs_temp["{}_files{}".format(name, suff + suff2)] = None
+                fs.update(**fs_temp)
+                for k, v in fs_temp.items():
+                    setattr(self, k, v)
+                return
 
-                    tnroot = os.path.join(
-                        fs["data_root"],
-                        "templates_noise_{}".format(ttype),
-                        "halfmission-{}".format(hm),
-                    )
+            def find_templates(tname, troot, grp, ensemble=False, suffix=""):
+                tkey = "{}_type{}".format(tname, suffix)
+                nkey = "num_{}{}".format(tname, suffix)
+                ttype = g[tkey]
+                if tkey not in fs:
+                    fs[tkey] = ttype
 
-                    tfiles = []
-                    tnfiles = []
-                    for f in fs["map_files"]:
-                        nfile = f.replace(fs["map_root"], troot)
-                        if not os.path.exists(nfile):
-                            raise OSError("Missing hm-{} template for {}".format(hm, f))
-                        tfiles.append(nfile)
-                        if sub_hm_noise:
-                            nfiles = sorted(
-                                glob.glob(
-                                    f.replace(fs["map_root"], tnroot).replace(
-                                        ".fits", "_*.fits"
-                                    )
+                nfiles = None
+                suffix = suffix + (grp if grp == "2" else "")
+                root = os.path.join(fs["data_root"], troot, "template{}".format(grp))
+
+                files = []
+                for f in fs["map_files"]:
+                    tf = f.replace(fs["map_root"], root)
+
+                    if ensemble:
+                        tf = sorted(glob.glob(tf.replace(".fits", "_*.fits")))
+                        nfiles1 = len(tf)
+                        if not nfiles1:
+                            raise OSError(
+                                "Missing temp{} {} files for {}".format(grp, tname, f)
+                            )
+                        if nfiles is None:
+                            nfiles = nfiles1
+                        elif nfiles1 != nfiles:
+                            raise OSError(
+                                "Wrong number of {} sims. Found {} files, expected {}.".format(
+                                    tname, nfiles1, nfiles
                                 )
                             )
-                            if not len(nfiles):
-                                raise OSError(
-                                    "Missing hm-{} template noise for {}".format(hm, f)
-                                )
-                            tnfiles.append(nfiles)
-                        else:
-                            nfiles = []
+                    elif not os.path.exists(tf):
+                        raise OSError(
+                            "Missing temp{} {} file for {}".format(grp, tname, f)
+                        )
 
-                        if num_template_noise is not None:
-                            if len(nfiles) != num_template_noise:
-                                raise OSError(
-                                    "Wrong number of template noise sims.  "
-                                    "Found {} files, expected {}.".format(
-                                        len(nfiles), num_template_noise
-                                    )
-                                )
+                    files.append(tf)
 
-                        num_template_noise = len(nfiles)
+                files = np.asarray(files)
+                if nfiles is None:
+                    nfiles = len(files)
 
-                    tfiles = np.asarray(tfiles)
-                    tnfiles = np.asarray(tnfiles)
-                    fs["template_root{}".format(suff)] = troot
-                    fs["template_files{}".format(suff)] = tfiles
-                    fs["template_noise_root{}".format(suff)] = tnroot
-                    fs["template_noise_files{}".format(suff)] = tnfiles
+                if nkey in fs:
+                    if fs[nkey] != nfiles:
+                        raise OSError(
+                            "Wrong number of {} sims. Found {} files, expected {}.".format(
+                                tname, nfiles, fs[nkey]
+                            )
+                        )
 
-                fs["num_template"] = len(fs["template_files"])
-                fs["num_template_noise"] = num_template_noise
-                self.log(
-                    "Found {} templates in {}".format(
-                        fs["num_template"], fs["template_root"]
-                    ),
-                    "info",
-                )
-                if sub_hm_noise:
-                    self.log(
-                        "Found {} template noise files in {}".format(
-                            fs["num_template_noise"], fs["template_noise_root"]
-                        ),
-                        "info",
+                fs_temp = {
+                    "{}_root{}".format(tname, suffix): root,
+                    "{}_files{}".format(tname, suffix): files,
+                    nkey: nfiles,
+                }
+
+                fs.update(**fs_temp)
+                for k, v in fs_temp.items():
+                    setattr(self, k, v)
+
+                self.log("Found {} templates in {}".format(nfiles, root), "info")
+
+            for grp in ["1", "2"]:
+                find_templates("template", "templates_{}".format(template_type), grp)
+                if subtract_template_noise:
+                    find_templates(
+                        "template_noise",
+                        "templates_noise_{}".format(template_noise_type),
+                        grp,
+                        ensemble=True,
                     )
-                self.log("Template files: {}".format(fs["template_files"]), "debug")
+                else:
+                    suff = "2" if hm == "2" else ""
+                    fs.update(
+                        {
+                            "template_noise_root{}".format(suff): None,
+                            "template_noise_files{}".format(suff): None,
+                            "num_template_noise": None,
+                        }
+                    )
+                find_templates(
+                    "template",
+                    "templates_{}".format(template_type_sim),
+                    grp,
+                    suffix="_sim",
+                )
 
-            fields = [
-                "template_type",
-                "template_root",
-                "template_root2",
-                "template_files",
-                "template_files2",
-                "template_noise_root",
-                "template_noise_root2",
-                "template_noise_files",
-                "template_noise_files2",
-                "num_template",
-                "num_template_noise",
-            ]
-            for k in fields:
-                setattr(self, k, fs[k])
+            return True
 
-        def get_planck_files(fs, sub_planck=False):
+        def get_reference_files(fs):
             """
-            Update options for planck subtraction. Internal to get_files.
+            Update options for reference signal subtraction. Internal to get_files.
 
             Arguments
             ---------
             fs : dict
                 Dictionary of file options
-            sub_planck : bool
-                If true, get Planck map files to be subtracted from data
             """
-            if not sub_planck:
-                fs["planck_root1_hm1"] = None
-                fs["planck_root2_hm1"] = None
-                fs["planck_root1_hm2"] = None
-                fs["planck_root2_hm2"] = None
-                fs["planck_files1_hm1"] = None
-                fs["planck_files2_hm1"] = None
-                fs["planck_files1_hm2"] = None
-                fs["planck_files2_hm2"] = None
-                fs["num_planck"] = 0
-            else:
-                for null_split in [1, 2]:
-                    if null_split == 1:
-                        suff = ""
-                    else:
-                        suff = 2
-                    for hm in ["1", "2"]:
-                        fs["num_planck"] = 0
-                        proot = os.path.join(
-                            fs["data_root{}".format(suff)],
-                            "reobs_planck",
-                            "halfmission-{}".format(hm),
-                        )
-                        pfiles = []
-                        for f in fs["map_files{}".format(suff)]:
-                            nfile = f.replace(fs["map_root{}".format(suff)], proot)
-                            if not os.path.exists(nfile):
-                                raise OSError("Missing hm-{} map for {}".format(hm, f))
-                            pfiles.append(nfile)
-                            fs["num_planck"] += 1
-                        pfiles = np.asarray(pfiles)
-                        fs["planck_root{}_hm{}".format(null_split, hm)] = proot
-                        fs["planck_files{}_hm{}".format(null_split, hm)] = pfiles
+            if subtract_reference_signal and fs.get("reference_root", None) is not None:
+                return
 
-                        self.log(
-                            "Found {} planck maps in {}".format(
-                                fs["num_planck"],
-                                fs["planck_root{}_hm{}".format(null_split, hm)],
-                            ),
-                            "info",
-                        )
-                        self.log("Planck files: {}".format(pfiles), "debug")
+            if not subtract_reference_signal:
+                for k in ["reference_root", "reference_files", "num_reference"]:
+                    fs[k] = 0 if k.startswith("num_") else None
+                    setattr(self, k, fs[k])
+                return
 
-            fields = [
-                "planck_root1_hm1",
-                "planck_root2_hm1",
-                "planck_root1_hm2",
-                "planck_root2_hm2",
-                "planck_files1_hm1",
-                "planck_files2_hm1",
-                "planck_files1_hm2",
-                "planck_files2_hm2",
-                "num_planck",
-            ]
-            for k in fields:
+            reference_root = {}
+            reference_files = {}
+            num_reference = 0
+            for null_split in ["a", "b"]:
+                if null_split == "a":
+                    suff = ""
+                else:
+                    suff = 2
+                for grp in ["1", "2"]:
+                    pgrp = "ref{}{}".format(grp, null_split)
+                    proot = os.path.join(
+                        fs["data_root{}".format(suff)],
+                        "reobs_reference",
+                        "reference{}".format(hm),
+                    )
+                    pfiles = []
+                    for f in fs["map_files{}".format(suff)]:
+                        nfile = f.replace(fs["map_root{}".format(suff)], proot)
+                        if not os.path.exists(nfile):
+                            raise OSError("Missing ref{} map for {}".format(grp, f))
+                        pfiles.append(nfile)
+                    if num_reference == 0:
+                        num_reference = len(pfiles)
+                    elif len(pfiles) != num_reference:
+                        raise OSError(
+                            "Found {} files for reference group {}, expected {}".format(
+                                len(pfiles), pgrp, num_reference
+                            )
+                        )
+                    pfiles = np.asarray(pfiles)
+                    reference_root[pgrp] = proot
+                    reference_files[pgrp] = pfiles
+
+                    self.log(
+                        "Found {} reference maps in {}".format(
+                            num_reference,
+                            reference_root[pgrp],
+                        ),
+                        "info",
+                    )
+                    self.log("Reference files: {}".format(pfiles), "debug")
+
+            loc = locals()
+            for k in ["reference_root", "reference_files", "num_reference"]:
+                fs[k] = loc[k]
                 setattr(self, k, fs[k])
+
+            return True
+
+        def update_files(fs):
+            ret1 = get_template_files(fs)
+            ret2 = get_reference_files(fs)
+            ret3 = get_sim_data_files(fs)
+            return ret1 or ret2 or ret3
 
         save_name = "files"
         alt_name = None
@@ -1272,18 +1151,13 @@ class XFaster(object):
         if template_type is not None:
             alt_name = save_name
             save_name = "{}_clean_{}".format(save_name, template_type)
-        if sub_planck:
+        if subtract_reference_signal:
             alt_name = save_name
-            save_name = "{}_planck_sub".format(save_name)
+            save_name = "{}_ref_sub".format(save_name)
         # load file info from disk
-        if signal_type_sim is not None or noise_type_sim is not None:
-            ret = None
-            save = False
-        else:
-            ret = self.load_data(
-                save_name, "files", to_attrs=True, value_ref=ref_opts, alt_name=alt_name
-            )
-            save = True
+        ret = self.load_data(
+            save_name, "files", to_attrs=True, value_ref=ref_opts, alt_name=alt_name
+        )
         if ret is not None:
             # fix data root
             ret_data_root = ret["data_root"]
@@ -1291,11 +1165,7 @@ class XFaster(object):
             if data_root == ret_data_root and (
                 not null_run or data_root2 == ret_data_root2
             ):
-                if template_type != ret.get("template_type", None):
-                    get_template_files(ret, template_type)
-                    self.save_data(save_name, **ret)
-                if sub_planck and ret.get("planck_root1", None) is None:
-                    get_planck_files(ret, sub_planck)
+                if update_files(ret):
                     self.save_data(save_name, **ret)
                 return ret
 
@@ -1319,110 +1189,49 @@ class XFaster(object):
                     ).reshape(v.shape)
                     setattr(self, k, ret[k])
 
-            if template_type != ret.get("template_type", None):
-                get_template_files(ret, template_type)
-                self.save_data(save_name, **ret)
-
-            if sub_planck and ret.get("planck_root1", None) is None:
-                get_planck_files(ret, sub_planck)
+            if update_files(ret):
                 self.save_data(save_name, **ret)
             return ret
 
         # find all map files
         fs = self._get_files(data_root, data_subset, **opts)
-        fs.update(**opts)
-        # count all the things
-        fs["num_maps"] = len(fs["map_files"])
-        fs["num_signal"] = len(fs["signal_files"][0])
-        fs["num_signal_transfer"] = len(fs["signal_transfer_files"][0])
-        fs["num_noise"] = (
-            len(fs["noise_files"][0]) if fs["noise_files"] is not None else 0
-        )
-        fs["num_noise_sim"] = (
-            len(fs["noise_files_sim"][0]) if fs["noise_files_sim"] is not None else 0
-        )
-        fs["num_signal_sim"] = (
-            len(fs["signal_files_sim"][0]) if fs["signal_files_sim"] is not None else 0
-        )
-        fs["num_foreground"] = (
-            len(fs["foreground_files"][0]) if fs["foreground_files"] is not None else 0
-        )
-        fs["num_corr"] = pt.num_corr(fs["num_maps"])
-        fs["num_spec"] = pt.num_corr(3 if self.pol else 1)
-        fs["num_spec_mask"] = pt.num_corr(2 if self.pol_mask else 1)
-        fs["num_kern"] = fs["num_corr"]
-        fs["data_shape"] = (fs["num_corr"] * fs["num_spec"], self.lmax + 1)
-        fs["mask_shape"] = (fs["num_corr"] * fs["num_spec_mask"], self.lmax + 1)
-        fs["kern_shape"] = (fs["num_kern"] * (self.lmax + 1), 2 * self.lmax + 1)
-        fs["null_run"] = null_run
+        fs.update(null_run=null_run, **opts)
 
         if null_run:
             # find all map files for null tests
             fs2 = self._get_files(data_root2, data_subset2, suffix="2", **opts)
-            # check for matching number of maps
-            n = len(fs2["map_files2"])
-            if n != fs["num_maps"]:
-                raise RuntimeError(
-                    "Found {} map2 files, expected {}".format(n, fs["num_maps"])
-                )
-            # XXX make sure tags match?
 
-            # check for matching number of sims
-            n = len(fs2["signal_files2"][0])
-            if n != fs["num_signal"]:
+            # make sure map tags match
+            if not fs["map_tags"] == fs2["map_tags2"]:
                 raise RuntimeError(
-                    "Found {} signal2 sims, expected {}".format(n, fs["num_signal"])
-                )
-            n = len(fs2["signal_transfer_files2"][0])
-            if n != fs["num_signal_transfer"]:
-                raise RuntimeError(
-                    "Found {} signal2 transfer sims, expected {}".format(
-                        n, fs["num_signal_transfer"]
+                    "Found tags2 {}, expected {}".format(
+                        fs2["map_tags2"], fs["map_tags"]
                     )
                 )
-            if fs["noise_files"] is not None:
-                n = len(fs2["noise_files2"][0])
-                if n != fs["num_noise"]:
+
+            # make sure file counts match
+            for k, v in fs.items():
+                if not k.startswith("num_") or k + "2" not in fs2:
+                    continue
+                v2 = fs2[k + "2"]
+                if v != v2:
+                    ftype = k.split("_", 1)[1]
                     raise RuntimeError(
-                        "Found {} noise2 sims, expected {}".format(n, fs["num_noise"])
+                        "Found {} {}2 files, expected {}".format(v2, ftype, v)
                     )
-            if fs["noise_files_sim"] is not None:
-                n = len(fs2["noise_files_sim2"][0])
-                if n != fs["num_noise_sim"]:
-                    raise RuntimeError(
-                        "Found {} noise_sim2 sims, expected {}".format(
-                            n, fs["num_noise_sim"]
-                        )
-                    )
-            if fs["signal_files_sim"] is not None:
-                n = len(fs2["signal_files_sim2"][0])
-                if n != fs["num_signal_sim"]:
-                    raise RuntimeError(
-                        "Found {} signal_sim2 sims, expected {}".format(
-                            n, fs["num_signal_sim"]
-                        )
-                    )
-            if fs["foreground_files"] is not None:
-                n = len(fs2["foreground_files2"][0])
-                if n != fs["num_foreground"]:
-                    raise RuntimeError(
-                        "Found {} foreground2 sims, expected {}".format(
-                            n, fs["num_foreground"]
-                        )
-                    )
+
             # XXX make sure sim numbers match?
 
             # we're doing a null test
-            fs.update(null_run=True, **fs2)
+            fs.update(**fs2)
 
-        get_template_files(fs, template_type)
-        get_planck_files(fs, sub_planck)
+        # update templates, reference and simulated data files
+        update_files(fs)
 
         # store and return settings dictionary
-        if save:
-            self.save_data(save_name, **fs)
-        for k in list(fs):
-            setattr(self, k, fs[k])
+        self.save_data(save_name, **fs)
+        for k, v in fs.items():
+            setattr(self, k, v)
         return fs
 
     def get_map(self, filename, check_nside=True, cache=False, **kwargs):
@@ -1558,6 +1367,7 @@ class XFaster(object):
         map_tag=None,
         iter_index=None,
         extra_tag=None,
+        data_opts=False,
         bp_opts=False,
     ):
         """
@@ -1581,56 +1391,67 @@ class XFaster(object):
             If supplied, the name is appended with '_iter<iter_index>'.
         extra_tag : string
             If supplied the extra tag is appended to the name as is.
-        bp_opts : bool
+        data_opts : bool
             If True, the output filename is constructed by checking the
-            following list  of options used in constructing bandpowers:
-            ensemble_mean, ensemble_median, sim_index, template_cleaned,
-            weighted_bins, signal_type_sim, noise_type_sim
+            following list of options used in constructing data cross-spectra:
+            ensemble_mean, ensemble_median, sim_index, sim_type, data_type,
+            template_cleaned, reference_subtracted.
+        bp_opts : bool
+            If True, also check the following attributes (in addition to those
+            checked if ``data_opts`` is True): weighted_bins, return_cls.
 
         Returns
         -------
         filename : string
             Output filename as ``<output_root>/<name><ext>``, where
-            <name> can optionally include the map index, iteration index
-            or output tag.
+            <name> is constructed from the above set of options.
         """
         if self.output_root is None:
             return None
 
-        if bp_opts:
-            if self.ensemble_mean:
-                name = "{}_mean".format(name)
-            elif self.ensemble_median:
-                name = "{}_median".format(name)
-            elif self.sim_index is not None:
-                name = "{}_sim{:04d}".format(name, self.sim_index)
-                if self.signal_type_sim:
-                    name = "{}_{}".format(name, self.signal_type_sim)
-                if self.noise_type_sim:
-                    name = "{}_{}".format(name, self.noise_type_sim)
+        name = [name]
+        if data_opts or bp_opts:
+            if getattr(self, "ensemble_mean", False):
+                name += ["sim_mean"]
+            elif getattr(self, "ensemble_median", False):
+                name += ["sim_median"]
             else:
-                if self.data_type != "raw":
-                    name = "{}_{}".format(name, self.data_type)
+                if getattr(self, "sim_type", None) is not None:
+                    name += ["sim"]
+                    for comp in ["signal", "noise", "foreground", "template"]:
+                        if comp not in self.sim_type:
+                            continue
+                        name += [self.sim_type[comp]]
+                        if comp not in self.sim_index:
+                            continue
+                        name += ["{}{:04d}".format(comp[0], self.sim_index[comp])]
+                        if comp == "signal" and "tensor" in self.sim_index:
+                            name += ["t{:04d}".format(sidx["tensor"])]
+                elif self.data_type != "raw":
+                    name += [self.data_type]
                 if getattr(self, "template_cleaned", False):
-                    name = "{}_clean_{}".format(name, self.template_type)
-                if getattr(self, "planck_sub", False):
-                    name = "{}_planck_sub".format(name)
+                    name += ["clean", self.template_type]
+                if getattr(self, "reference_subtracted", False):
+                    name += ["ref_sub"]
+        if bp_opts:
             if self.weighted_bins:
-                name = "{}_wbins".format(name)
+                name += ["wbins"]
             if getattr(self, "return_cls", False):
-                name = "{}_cl".format(name)
+                name += ["cl"]
 
         if map_tag is not None:
-            name = "{}_map_{}".format(name, map_tag)
+            name += ["map", map_tag]
         if iter_index is not None:
-            name = "{}_iter{:03d}".format(name, iter_index)
+            name += ["iter{:03d}".format(iter_index)]
         if extra_tag is not None:
-            name = "{}_{}".format(name, extra_tag)
+            name += [extra_tag]
+        if self.output_tag:
+            name += [self.output_tag]
 
-        tag = "_{}".format(self.output_tag) if self.output_tag else ""
+        name = "_".join(name)
         if not ext.startswith("."):
             ext = ".{}".format(ext)
-        return os.path.join(self.output_root, "{}{}{}".format(name, tag, ext))
+        return os.path.join(self.output_root, "{}{}".format(name, ext))
 
     def load_data(
         self,
@@ -1651,7 +1472,7 @@ class XFaster(object):
         This method is called throughout the code at various checkpoints.  If
         the data exist on disk, they are loaded and returned.  If the data are
         missing or otherwise incompatible, they are recomputed by the corresponding
-         calling method, and trigger all subsequent data to also be recomputed.  Data
+        calling method, and trigger all subsequent data to also be recomputed.  Data
         handling is described in the ``Notes`` section for methods that use this
         functionality.
 
@@ -1877,7 +1698,7 @@ class XFaster(object):
         data["data_version"] = self.data_version
 
         file_opts = {}
-        for opt in ["map_tag", "iter_index", "bp_opts", "extra_tag"]:
+        for opt in ["map_tag", "iter_index", "data_opts", "bp_opts", "extra_tag"]:
             if opt in data:
                 file_opts[opt] = data.pop(opt)
 
@@ -2046,20 +1867,12 @@ class XFaster(object):
         This method is called at the 'masks' checkpoint, loads or saves a
         data dictionary with the following keys:
 
-         wls: shape (num_map_corr, num_pol_mask_corr, lmax + 1)
-               mask1-x-mask2 mask cross spectra for every mask pair
-         fsky, w1, w2, w4: shape (num_map_corr, num_pol_mask_corr)
-               sky fraction and weighted modes per mask product
-         gmat: shape (num_maps * num_pol_mask_corr, ) * 2
-               mode-counting matrix, computed from
-                g = fsky * w2 ** 2 / w4
-
-        Where the dimensions of each item are determined from:
-
-           num_map_corr : Nmap * (Nmap + 1) / 2
-               number of map-map correlations
-           num_pol_mask_corr : 3 (TT, TP, PP) if pol else 1 (TT)
-               number of mask spectrum correlations
+            wls:
+                mask1-x-mask2 mask cross spectra for every mask pair
+            fsky, w1, w2, w4:
+                sky fraction and weighted modes per mask product
+            gmat:
+                mode-counting matrix, computed from ``g = fsky * w2 ** 2 / w4``
         """
 
         mask_files = self.mask_files
@@ -2260,12 +2073,52 @@ class XFaster(object):
 
         return self.save_data(save_name, from_attrs=save_attrs)
 
+    def get_noise_residuals(self, filename):
+        """
+        Return a dictionary of ell-by-ell noise residual spectra from an output
+        bandpowers file, to be applied to noise Alm's using ``healpy.almxfl``.
+        """
+        rls = OrderedDict()
+
+        if not os.path.exists(filename):
+            filename = os.path.join(self.output_root, filename)
+        data = pt.load_and_parse(filename)
+
+        for k, bd in data["bin_def"].items():
+            if not k.startswith("res_"):
+                continue
+            _, specs, map_tag = k.split("_", 2)
+            specs = [x + x for x in np.unique(list(specs))]
+
+            res_qb = np.sqrt(1.0 + data["qb"][k]) - 1.0
+            (bad,) = np.where(np.isnan(res_qb))
+            if len(bad):
+                self.warn("Unphysical residuals fit, nulling {} bins {}".format(k, bad))
+                res_qb[bad] = 0.0
+            rl = pt.expand_qb(res_qb, bd)
+
+            if map_tag not in rls:
+                rls[map_tag] = OrderedDict()
+            for spec in specs:
+                rls[map_tag][spec] = rl
+
+        return rls
+
     def get_masked_data(
         self,
         template_alpha=None,
-        sub_planck=False,
-        sub_hm_noise=True,
-        temp_specs=None,
+        subtract_reference_signal=False,
+        subtract_template_noise=True,
+        template_specs=None,
+        ensemble_mean=False,
+        ensemble_median=False,
+        sim=False,
+        components=["signal", "noise", "foreground"],
+        index=None,
+        r=None,
+        qb_file=None,
+        template_alpha_sim=None,
+        save_sim=False,
     ):
         """
         Compute cross spectra of the data maps.
@@ -2288,96 +2141,205 @@ class XFaster(object):
         with map tags in the dictionary.  Map alms are cached to speed up
         processing, if this method is called repeatedly with different values.
 
+        The remaining options handle subtraction of additional biases from the
+        data, or constructing simulated datasets from sim ensembles.
+
         Arguments
         ---------
         template_alpha : dict
             Dictionary of template scaling factors to apply to foreground
             templates to be subtracted from the data.  Keys should match
             original map tags in the data set.
-        sub_planck : bool
-            If True, subtract reobserved Planck from maps. Properly uses half
-            missions so no Planck auto correlations are introduced. Useful for
+        subtract_reference_signal : bool
+            If True, subtract a reobserved reference signal from each data map.
+            The reference signal maps should be two datasets with uncorrelated
+            noise, such as Planck half-mission maps.  This option is used for
             removing expected signal residuals from null tests.
-        sub_hm_noise : bool
-            If True, subtract average of Planck ffp10 noise crosses to debias
-            template-cleaned spectra.
-        temp_specs : list
+        subtract_template_noise : bool
+            If True, subtract average of cross spectra of an ensemble of noise
+            realizations corresponding to each template map, to debias
+            template-cleaned spectra.  Typically, this would be a noise model based
+            on the Planck FFP10 ensemble for each half-mission foreground template.
+        template_specs : list
             Which spectra to use for alpha in the likelihood.
+        ensemble_mean : bool
+            If True, use the mean of the ``signal_type`` and ``noise_type``
+            ensembles, rather than using maps from the ``data_type`` directory
+            or any other sim options.  This is useful for testing the behavior
+            of the estimator and mapmaker independently of the data.
+        ensemble_median : bool
+            If True, use the median of the ``signal_type`` and ``noise_type``
+            ensembles, rather than using maps from the ``data_type`` directory
+            or any other sim options.  This is useful for testing the behavior
+            of the estimator and mapmaker independently of the data.
+        sim : bool
+            If True, construct simulated data maps using the options below.
+        components : list of strings
+            List of components to include in the simulated data, of signal,
+            noise, foreground or template.
+        index : int or dict
+            If supplied and ``sim`` is True, then simulated data maps are
+            constructed from the appropriate index from the sim ensembles
+            ``signal_type_sim``, ``noise_type_sim`` and/or
+            ``foreground_type_sim``, rather than using maps from the
+            ``data_type`` directory.  If an integer, then the same index is used
+            for all ensembles.  Otherwise, should be a dictionary keyed by
+            component (signal, tensor, noise, foreground).  Additionally, the key
+            ``default`` can be used to indicate the index to use for components
+            that are not explicitly enumerated in the dictionary.  If not
+            supplied, and ``sim`` is True, index 0 is used for all ensembles.
+        r : float
+            If supplied, the simulated signal maps are constructed by combining
+            ``signal_scalar + r * signal_tensor``, where the scalar maps are
+            stored in the directory ``signal_root_sim``, and the tensor maps are
+            stored in the directory ``tensor_root_sim``.  A separate sim index
+            is assumed for the ``signal`` (scalar) ensemble and the ``tensor``
+            ensemble.
+        qb_file : str
+            If supplied and noise is included in ``components``, correct the
+            simulated noise spectra using the noise residuals stored in this
+            file.  Typically, this is the output of a separate data run used to
+            determine the appropriate noise correction.  See
+            ``get_noise_residuals`` for more details.
+        template_alpha_sim : dict
+            Dictionary of template scaling factors to apply to foreground
+            templates to be added to the simulated the data.  Keys should match
+            original map tags in the data set.
+        save_sim : bool
+            If True and constructing a simulated dataset using any of the above
+            sim options, write the simulated dataset to disk using an
+            appropriate ``'data_xcorr.npz'`` filename.  If False, only
+            non-simulated datasets are written to disk.
 
         Notes
         -----
         This method is called at the 'data' checkpoint, loads or saves a data
-        dictionary with the following keys:
+        dictionary with the following spectra:
 
-           cls_data : OrderedDict
-               map1-x-map2 cross spectra for every map pair. This contains the
-               sum cross spectra if constructing a null test, or the
-               template-subtracted cross spectra if ``template_alpha`` is
-               supplied.
-           cls_data_null : OrderedDict
-               (map1a-map1b)-x-(map2a-map2b) difference cross spectra
-               for every map pair, if computing a null test
+            cls_data:
+                map1-x-map2 cross spectra for every map pair. This contains the
+                sum cross spectra if constructing a null test.
+            cls_data_clean:
+                template_subtracted spectra, if ``template_alpha`` is supplied.
+            cls_template:
+                template cross spectra necessary to rebuild the
+                template-subtracted data when the ``template_alpha`` parameter
+                is changed.
+            cls_data_null:
+                (map1a-map1b)-x-(map2a-map2b) difference cross spectra for every
+                map pair, if computing a null test
+            cls_ref, cls_ref_null:
+                reference cross spectra, if ``subtract_reference_signal`` is
+                True.
         """
+        import healpy as hp
 
-        map_tags = self.map_tags
-        map_files = self.map_files
-        mask_files = self.mask_files
-        raw_files = self.raw_files
         num_maps = self.num_maps
         data_shape = self.data_shape
         null_run = self.null_run
-        map_files2 = self.map_files2 if null_run else None
 
-        if temp_specs is None:
-            temp_specs = ["ee", "bb", "te", "eb", "tb"]
+        if template_specs is None:
+            template_specs = self.specs
 
         # ensure dictionary
-        if template_alpha is None:
+        if template_alpha is None or null_run or self.template_type is None:
             template_alpha = OrderedDict()
-        if null_run or self.template_type is None:
-            template_alpha = OrderedDict()
+        else:
+            # ensure tagged by original tags
+            template_alpha = OrderedDict(
+                [(k, v) for k, v in template_alpha.items() if k in self.map_tags_orig]
+            )
 
-        # ensure tagged by original tags
-        template_alpha = OrderedDict(
-            [(k, v) for k, v in template_alpha.items() if k in self.map_tags_orig]
-        )
+        # set sim attributes
+        if ensemble_mean or ensemble_median or not sim:
+            if ensemble_mean:
+                cls_ens = self.cls_sim
+                cls_ens_null = self.cls_sim_null if null_run else None
+            elif ensemble_median:
+                cls_ens = self.cls_med
+                cls_ens_null = self.cls_med_null if null_run else None
+            sim_type = components = index = r = qb_file = template_alpha_sim = None
+        elif sim:
+            if index is None:
+                index = {}
+            else:
+                index = index.copy()
+            default_index = index.pop("default", 0)
+            sim_type = {}
+            if (
+                null_run or self.template_type_sim is None
+            ) and "template" in components:
+                components.remove("template")
+            for comp in ["signal", "noise", "foreground", "template"]:
+                if comp not in components:
+                    if comp == "signal":
+                        r = None
+                    elif comp == "noise":
+                        qb_file = None
+                    elif comp == "template":
+                        template_alpha_sim = None
+                    continue
+                root = getattr(self, "{}_root_sim".format(comp), None)
+                if root is None:
+                    raise ValueError("Missing {} sim files".format(comp))
+                if comp == "signal" and r is not None:
+                    if self.tensor_root_sim is None:
+                        raise ValueError("Missing tensor signal sim files")
+                    sim_type[comp] = "rp{:03d}".format(int(r * 1000))
+                    index.setdefault("tensor", default_index)
+                else:
+                    sim_type[comp] = getattr(self, "{}_type_sim".format(comp))
+                if comp == "template":
+                    if template_alpha_sim is None:
+                        template_alpha_sim = template_alpha
+                    else:
+                        template_alpha_sim = OrderedDict(
+                            [
+                                (k, v)
+                                for k, v in template_alpha_sim.items()
+                                if k in self.map_tags_orig
+                            ]
+                        )
+                else:
+                    index.setdefault(comp, default_index)
+
+        self.ensemble_mean = ensemble_mean
+        self.ensemble_median = ensemble_median
+        self.sim_type = sim_type
+        self.sim_index = index
 
         # Check for output data on disk
         save_attrs = ["cls_data", "nside"]
-
-        if self.data_type == "raw":
-            data_name = "data"
-        else:
-            data_name = "data_{}".format(self.data_type)
-        save_name = "{}_xcorr".format(data_name)
         template_fit = False
-
         if null_run:
             save_attrs += ["cls_data_null"]
-            if sub_planck:
-                save_attrs += ["cls_data_sub_null"]
-                save_attrs += ["cls_planck_null"]
-
+            if subtract_reference_signal:
+                save_attrs += ["cls_data_sub_null", "cls_ref_null"]
         elif any([x is not None for x in template_alpha.values()]):
             template_fit = True
-            save_name = "{}_clean_{}_xcorr".format(data_name, self.template_type)
-            save_attrs += [
-                "cls_data_clean",
-                "cls_template",
-                "template_alpha",
-            ]
-
-        if sub_planck:
-            save_attrs += ["cls_data_sub"]
-            save_attrs += ["cls_planck"]
+            self.template_cleaned = True
+            save_attrs += ["cls_data_clean", "cls_template", "template_alpha"]
+        else:
+            subtract_template_noise = False
+        if subtract_reference_signal:
+            self.reference_subtracted = True
+            save_attrs += ["cls_data_sub", "cls_ref"]
+        if sim:
+            if template_alpha_sim:
+                self.template_alpha_sim = template_alpha_sim
+                save_attrs += ["template_alpha_sim"]
 
         def apply_template():
             """
             Internal data processing function to have scaled foreground template subtracted from data map.
             """
+            if subtract_template_noise:
+                if getattr(self, "cls_template_noise", None) is None:
+                    self.cls_template_noise = self.get_masked_template_noise()
+
             cls_clean = getattr(self, "cls_data_clean", OrderedDict())
 
-            for spec in set(self.specs) & set(temp_specs):
+            for spec in set(self.specs) & set(template_specs):
                 cls_clean[spec] = copy.deepcopy(self.cls_data[spec])
                 if spec not in self.cls_template:
                     continue
@@ -2396,17 +2358,17 @@ class XFaster(object):
                         if alphas[0] is not None:
                             d += alphas[0] * alphas[1] * t3
                             # subtract average template noise spectrum to debias
-                            if sub_hm_noise:
-                                n = self.cls_tnoise_hm1xhm2[spec][xname]
+                            if subtract_template_noise:
+                                n = self.cls_template_noise["temp1:temp2"][spec][xname]
                                 d -= alphas[0] * alphas[1] * n
 
             self.cls_data_clean = cls_clean
             self.template_alpha = template_alpha
             self.template_cleaned = True
 
-        def subtract_planck_maps():
+        def subtract_reference_maps():
             """
-            Internal data processing function to have planck maps subtracted from data map, useful for null tests
+            Internal data processing function to have reference maps subtracted from data map, useful for null tests
             """
             cls_data_sub = getattr(self, "cls_data_sub", OrderedDict())
             if null_run:
@@ -2415,20 +2377,20 @@ class XFaster(object):
             for spec in self.specs:
                 cls_data_sub[spec] = copy.deepcopy(self.cls_data[spec])
                 for xname, d in cls_data_sub[spec].items():
-                    t1, t2, t3 = self.cls_planck[spec][xname]
+                    t1, t2, t3 = self.cls_ref[spec][xname]
                     d += -t1 - t2 + t3
 
                 # do null specs
                 if null_run:
                     cls_data_sub_null[spec] = copy.deepcopy(self.cls_data_null[spec])
                     for xname, d in cls_data_sub_null[spec].items():
-                        t1, t2, t3 = self.cls_planck_null[spec][xname]
+                        t1, t2, t3 = self.cls_ref_null[spec][xname]
                         d += -t1 - t2 + t3
 
             self.cls_data_sub = cls_data_sub
             if null_run:
                 self.cls_data_sub_null = cls_data_sub_null
-            self.planck_sub = True
+            self.reference_subtracted = True
 
         # change template subtraction coefficients for pre-loaded data
         if all([hasattr(self, attr) for attr in save_attrs]):
@@ -2436,35 +2398,37 @@ class XFaster(object):
                 return {k: getattr(self, k) for k in save_attrs}
 
             if template_fit and getattr(self, "template_cleaned", False):
-                if np.all(template_alpha == self.template_alpha):
-                    return {k: getattr(self, k) for k in save_attrs}
-
-                apply_template()
+                if not np.all(template_alpha == self.template_alpha):
+                    apply_template()
                 return {k: getattr(self, k) for k in save_attrs}
 
-        ret = self.load_data(
-            save_name,
-            "data",
-            fields=save_attrs,
-            to_attrs=True,
-            shape=data_shape,
-            shape_ref="cls_data",
-        )
-        if ret is not None:
-            self.planck_sub = False
-            self.template_cleaned = False
-            if null_run:
-                if sub_planck and not self.planck_sub:
-                    subtract_planck_maps()
-                return ret
-            if all([x is None for x in template_alpha.values()]):
+        save_name = None if sim and not save_sim else "data"
+        if save_name is not None:
+            ret = self.load_data(
+                save_name,
+                "data",
+                fields=save_attrs,
+                to_attrs=True,
+                shape=data_shape,
+                shape_ref="cls_data",
+                data_opts=True,
+                extra_tag="xcorr",
+            )
+            if ret is not None:
+                self.reference_subtracted = False
                 self.template_cleaned = False
+                if null_run:
+                    if subtract_reference_signal and not self.reference_subtracted:
+                        subtract_reference_maps()
+                    return ret
+                if all([x is None for x in template_alpha.values()]):
+                    self.template_cleaned = False
+                    return ret
+                if np.all(template_alpha == self.template_alpha):
+                    self.template_cleaned = True
+                    return ret
+                apply_template()
                 return ret
-            if np.all(template_alpha == self.template_alpha):
-                self.template_cleaned = True
-                return ret
-            apply_template()
-            return ret
 
         # map spectra
         cls = OrderedDict()
@@ -2475,22 +2439,102 @@ class XFaster(object):
         if template_fit:
             cls_tmp = OrderedDict()
             template_files = list(zip(self.template_files, self.template_files2))
-        template_cleaned = False
 
-        # set up planck subtraction
-        cls_planck = None
-        if sub_planck:
-            cls_planck = OrderedDict()
-            cls_planck_null = OrderedDict() if null_run else None
-            planck_files_split = list(
+        # set up reference subtraction
+        cls_ref = None
+        if subtract_reference_signal:
+            cls_ref = OrderedDict()
+            cls_ref_null = OrderedDict() if null_run else None
+            reference_files_split = list(
                 zip(
-                    self.planck_files1_hm1,
-                    self.planck_files1_hm2,
-                    self.planck_files2_hm1,
-                    self.planck_files2_hm2,
+                    self.reference_files[x]
+                    for x in ["ref1a", "ref2a", "ref1b", "ref2b"]
                 )
             )
-        planck_subtracted = False
+
+        # set up noise residuals
+        rls = OrderedDict()
+        if sim and qb_file is not None:
+            rls = self.get_noise_residuals(qb_file)
+
+        # convenience functions
+        def get_map_file(attr, idx, suffix=""):
+            files = getattr(self, "{}{}".format(attr, suffix))
+            if isinstance(files[0], str):
+                return files[idx]
+            files = files[idx]
+            # list of available file indices
+            fidx = [int(os.path.splitext(x.rsplit("_")[-1])[0]) for x in files]
+            # sim index for this component
+            comp = attr.split("_")[0]
+            sidx = index[comp]
+            if sidx not in fidx:
+                raise ValueError("Missing sim index {} in {}".format(sidx, attr))
+            return files[fidx.index(sidx)]
+
+        def get_map_alms(idx, suffix=""):
+            m = mn = mr = None
+            if sim and "noise" in sim_type:
+                rls1 = rls.get(self.map_tags[idx], None)
+
+            mask = self.get_mask(self.mask_files[idx])
+            if not sim:
+                # data from disk
+                f = get_map_file("map_files", idx, suffix)
+                m = self.get_map(f)
+
+            else:
+                # simulated data constructed from individual components
+                if "signal" in sim_type:
+                    f = get_map_file("signal_files_sim", idx, suffix)
+                    m = self.get_map(f)
+                    if r is not None:
+                        f = get_map_file("tensor_files_sim", idx, suffix)
+                        m += np.sqrt(r) * self.get_map(f)
+
+                if "noise" in sim_type:
+                    f = get_map_file("noise_files_sim", idx, suffix)
+                    mn = self.get_map(f)
+                    if m is None:
+                        m = mn
+                    else:
+                        m += mn
+                    if rls1 is None:
+                        mn = None
+
+                if "foreground" in sim_type:
+                    f = get_map_file("foreground_files_sim", idx, suffix)
+                    mf = self.get_map(f)
+                    if m is None:
+                        m = mf
+                    else:
+                        m += mf
+                    del mf
+
+                if "template" in sim_type:
+                    alpha = template_alpha_sim.get(self.map_tags_orig[idx], None)
+                    if alpha is not None:
+                        f = get_map_file("template_files_sim", idx)
+                        mt = alpha * self.get_map(f)
+                        if m is None:
+                            m = mt
+                        else:
+                            m += mt
+                        del mt
+
+            self.apply_mask(m, mask)
+            m_alms = self.map2alm(m, self.pol)
+
+            if sim and "noise" in sim_type:
+                # add noise residuals
+                if rls1 is not None:
+                    self.apply_mask(mn, mask)
+                    mn_alms = self.map2alm(mn, self.pol)
+                    for s, spec in enumerate(self.specs):
+                        if spec in rls1:
+                            m_alms[s] += hp.almxfl(mn_alms[s], rls1[spec])
+
+            return m_alms
 
         cache = dict()
 
@@ -2504,44 +2548,39 @@ class XFaster(object):
 
             self.log("Computing Alms for map {}/{}".format(idx + 1, num_maps), "all")
 
-            m = self.get_map(map_files[idx])
-            mask = self.get_mask(mask_files[idx])
-            self.apply_mask(m, mask)
+            mask = self.get_mask(self.mask_files[idx])
+            m_alms = get_map_alms(idx)
+            mn_alms = None
 
             if null_run:
-                m2 = self.get_map(map_files2[idx])
-                self.apply_mask(m2, mask)
-
                 # sum and diff spectra for null tests
                 # XXX should not take average but sum here if we want to
                 # compare power with sum...
-                m_alms = self.map2alm((m + m2) / 2.0, self.pol)
-                mn_alms = self.map2alm((m - m2) / 2.0, self.pol)
-                if sub_planck:
-                    # cache raw data alms and planck alms together
-                    mp1hm1, mp1hm2, mp2hm1, mp2hm2 = (
-                        self.apply_mask(self.get_map(f), mask)
-                        for f in plank_files_split[idx]
-                    )
-                    m_alms_hm1 = self.map2alm((mp1hm1 + mp2hm1) / 2.0, self.pol)
-                    m_alms_hm2 = self.map2alm((mp1hm2 + mp2hm2) / 2.0, self.pol)
-                    mn_alms_hm1 = self.map2alm((mp1hm1 - mp2hm1) / 2.0, self.pol)
-                    mn_alms_hm2 = self.map2alm((mp1hm2 - mp2hm2) / 2.0, self.pol)
-                    m_alms = (m_alms, m_alms_hm1, m_alms_hm2)
-                    mn_alms = (mn_alms, mn_alms_hm1, mn_alms_hm2)
+                m2_alms = get_map_alms(idx, "2")
+                m_alms, mn_alms = (m_alms + m2_alms) / 2.0, (m_alms - m2_alms) / 2.0
+                del m2_alms
 
-            elif not template_fit:
-                m_alms = self.map2alm(m, self.pol)
-                mn_alms = None
-            else:
+                if subtract_reference_signal:
+                    # cache raw data alms and reference alms together
+                    mp1ref1, mp1ref2, mp2ref1, mp2ref2 = (
+                        self.map2alm(self.apply_mask(self.get_map(f), mask), self.pol)
+                        for f in reference_files_split[idx]
+                    )
+                    m_alms_ref1 = (mp1ref1 + mp2ref1) / 2.0
+                    m_alms_ref2 = (mp1ref2 + mp2ref2) / 2.0
+                    mn_alms_ref1 = (mp1ref1 - mp2ref1) / 2.0
+                    mn_alms_ref2 = (mp1ref2 - mp2ref2) / 2.0
+                    m_alms = (m_alms, m_alms_ref1, m_alms_ref2)
+                    mn_alms = (mn_alms, mn_alms_ref1, mn_alms_ref2)
+
+            elif template_fit:
                 # cache raw data alms and template alms together
-                mn_alms = None
-                m_alms = [self.map2alm(m, self.pol)]
+                m_alms = [m_alms]
                 for tf in template_files[idx]:
                     self.log("Loading template from {}".format(tf), "debug")
-                    mt = self.get_map(tf)
-                    self.apply_mask(mt, mask)
-                    mt_alms = self.map2alm(mt, self.pol)
+                    mt_alms = self.map2alm(
+                        self.apply_mask(self.get_map(tf), mask), self.pol
+                    )
                     # null out T template
                     if self.pol:
                         mt_alms[0] *= 0
@@ -2551,9 +2590,16 @@ class XFaster(object):
             cache[idx] = (m_alms, mn_alms)
             return cache[idx]
 
-        map_pairs = pt.tag_pairs(map_tags, index=True)
+        map_pairs = pt.tag_pairs(self.map_tags, index=True)
 
         for xname, (idx, jdx) in map_pairs.items():
+
+            if self.ensemble_mean or self.ensemble_median:
+                for spec in self.specs:
+                    cls[spec][xname] = cls_ens[spec][xname]
+                    if null_run:
+                        cls_null[spec][xname] = cls_ens_null[spec][xname]
+                continue
 
             imap_alms, inull_alms = process_index(idx)
             jmap_alms, jnull_alms = process_index(jdx)
@@ -2562,8 +2608,6 @@ class XFaster(object):
 
             # store cross spectra
             if isinstance(imap_alms, tuple) and len(imap_alms) == 3:
-                if not sub_planck:
-                    template_cleaned = True
                 # raw map spectrum component
                 cls1 = self.alm2cl(imap_alms[0], jmap_alms[0])
 
@@ -2581,9 +2625,9 @@ class XFaster(object):
 
                 for s, spec in enumerate(self.specs):
                     # apply template to TE/TB but not TT
-                    if not sub_planck and spec == "tt":
+                    if not subtract_reference_signal and spec == "tt":
                         continue
-                    cls_dict = cls_planck if sub_planck else cls_tmp
+                    cls_dict = cls_ref if subtract_reference_signal else cls_tmp
                     cls_dict = cls_dict.setdefault(spec, OrderedDict())
                     cls_dict[xname] = (t1[s], t2[s], t3[s])
 
@@ -2604,7 +2648,7 @@ class XFaster(object):
                     ) / 2.0
 
                     for s, spec in enumerate(self.specs):
-                        cls_dict = cls_planck_null.setdefault(spec, OrderedDict())
+                        cls_dict = cls_ref_null.setdefault(spec, OrderedDict())
                         cls_dict[xname] = (t1[s], t2[s], t3[s])
 
             else:
@@ -2621,74 +2665,69 @@ class XFaster(object):
         self.cls_data = cls
         self.cls_data_null = cls_null
 
-        if template_cleaned:
+        if template_fit:
             self.cls_template = cls_tmp
             apply_template()
         else:
             self.template_cleaned = False
 
-        if sub_planck:
-            self.cls_planck = cls_planck
-            self.cls_planck_null = cls_planck_null
-            subtract_planck_maps()
+        if subtract_reference_signal:
+            self.cls_ref = cls_ref
+            self.cls_ref_null = cls_ref_null
+            subtract_reference_maps()
         else:
-            self.planck_sub = False
+            self.reference_subtracted = False
 
-        return self.save_data(save_name, from_attrs=save_attrs)
+        if not sim or save_sim:
+            return self.save_data(
+                save_name, from_attrs=save_attrs, extra_tag="xcorr", data_opts=True
+            )
 
-    def get_masked_sims(
-        self,
-        ensemble_mean=False,
-        ensemble_median=False,
-        sim_index=None,
-        transfer=False,
-        do_noise=True,
-        sims_add_alms=True,
-        qb_file=None,
-    ):
+    def get_masked_sims(self, transfer=False, do_noise=True, qb_file=None):
         """
-        Compute average signal and noise spectra for a given
-        ensemble of sim maps.  The same procedure that is used for c
-        omputing data cross spectra is used for each realization in the sim
-        ensemble, and only the average spectra for all realizations
-        are stored.
+        Compute average signal and noise spectra for a given ensemble of sim
+        maps.  The same procedure that is used for computing data cross spectra
+        is used for each realization in the sim ensemble, and only the average
+        spectra for all realizations are stored.
 
-        See ``get_masked_data`` for more details on how cross spectra
-        are computed.
+        See ``get_masked_data`` for more details on how cross spectra are
+        computed.
 
         Arguments
         ---------
-        ensemble_mean : bool
-            If true, the mean signal + noise spectrum is used in place
-            of input data. This is useful for testing the behavior of
-            the estimator and mapmaker independently of the data.
-        ensemble_median : bool
-            If true, the median signal + noise spectrum is used in place
-            of input data.  This is useful for testing the behavior of
-            the estimator and mapmaker independently of the data.
-        sim_index : int
-            If not None, substitute the sim_index S+N alms for the data alms
-        sims_add_alms : bool
-            If True and sim_index is not None, add sim alms instead of sim Cls
-            to include signal and noise correlations
+        transfer : bool
+            If True, use the signal ensemble corresponding to
+            `signal_transfer_type`.  Otherwise, uses the standard `signal_type`
+            ensemble.
+        do_noise : bool
+            If True, include noise spectra in the output, as long as
+            `noise_type` is supplied.  Otherwise, only the signal component is
+            computed.
         qb_file : string
-            Pointer to a bandpowers.npz file in the output directory. If used
-            in sim_index mode, the noise sim read from disk will be corrected
-            by the residual qb values stored in qb_file. Useful for noise rescaling.
+            Pointer to a bandpowers.npz file in the output directory, used
+            to correct the ensemble mean noise spectrum by the appropriate
+            residual terms.  See ``get_noise_residuals`` for details.
 
         Notes
         -----
         This method is called at the 'sims' checkpoint, and loads or saves
-        a data dictionary with the following entries::
+        a data dictionary with the following keys:
 
-            cls_signal : <same shape as cls_data>
-            cls_signal_null : <same as cls_data>
-                Average signal spectra (sum and difference if computing
-                a null test).
-            cls_noise : <same shape as cls_data>
-            cls_noise_null : <same as cls_data>
-                Average null spectra (sum and difference if computing
-                a null test).
+            cls_signal, cls_signal_null:
+                Mean signal spectra
+            cls_noise, cls_noise_null:
+                Mean noise spectra
+            cls_sim, cls_sim_null:
+                Mean signal+noise spectra
+            cls_med, cls_med_null:
+                Median signal+noise spectra
+            cls_res, cls_res_null:
+                NxN, SxN and NxS spectra for computing noise residuals
+
+        For null tests, difference spectra of the two null halves are stored
+        in the corresponding `*_null` keys, and summed spectra are stored
+        in the normal keys.  Note that these differ from standard non-null
+        spectra by a factor of 2.
         """
         import healpy as hp
 
@@ -2698,520 +2737,30 @@ class XFaster(object):
         num_maps = self.num_maps
         num_corr = self.num_corr
         data_shape = self.data_shape
-
-        sims_attr = {}
+        null_run = self.null_run
 
         if transfer:
-            sims_attr["signal_files"] = self.signal_transfer_files
-            sims_attr["num_signal"] = self.num_signal_transfer
+            signal_files = self.signal_transfer_files
+            signal_files2 = self.signal_transfer_files2 if null_run else None
+            num_signal = self.num_signal_transfer
         else:
-            sims_attr["signal_files"] = self.signal_files
-            sims_attr["num_signal"] = self.num_signal
+            signal_files = self.signal_files
+            signal_files2 = self.signal_files2 if null_run else None
+            num_signal = self.num_signal
 
-        sims_attr["noise_files"] = self.noise_files
-        sims_attr["num_noise"] = self.num_noise
-        sims_attr["noise_files_sim"] = self.noise_files_sim
-        sims_attr["signal_files_sim"] = self.signal_files_sim
-        sims_attr["num_noise_sim"] = self.num_noise_sim
-        sims_attr["num_signal_sim"] = self.num_signal_sim
-        sims_attr["foreground_files"] = self.foreground_files
-        sims_attr["num_foreground"] = self.num_foreground
-
-        foreground_sims = sims_attr["foreground_files"] is not None
+        noise_files = self.noise_files
+        noise_files2 = self.noise_files2 if null_run else None
+        num_noise = self.num_noise
 
         if do_noise:
-            do_noise = sims_attr["noise_files"] is not None
-            # if qb file is not none, modify cls by residual in file
-            if qb_file is not None:
-                if not os.path.exists(qb_file):
-                    qb_file = os.path.join(self.output_root, qb_file)
-                qb_file = pt.load_and_parse(qb_file)
-
-        null_run = self.null_run
-        if transfer:
-            sims_attr["signal_files2"] = (
-                self.signal_transfer_files2 if null_run else None
-            )
-        else:
-            sims_attr["signal_files2"] = self.signal_files2 if null_run else None
-
-        sims_attr["noise_files2"] = self.noise_files2 if null_run else None
-        sims_attr["noise_files_sim2"] = self.noise_files_sim2 if null_run else None
-        sims_attr["signal_files_sim2"] = self.signal_files_sim2 if null_run else None
-        sims_attr["foreground_files2"] = self.foreground_files2 if null_run else None
-
-        def process_index(files, files2, idx, idx2=None, cache=None, qbf=None):
-            """
-            Internal processing function to compute alms for masked sim map,
-            or sim map pair for null tests.
-            """
-            if cache is None:
-                cache = {}
-
-            if idx in cache:
-                return cache[idx]
-
-            filename = files[idx]
-            if idx2 is None:
-                self.log(
-                    "Computing Alms for map {}/{}".format(idx + 1, num_maps), "all"
-                )
-            else:
-                self.log(
-                    "Computing Alms for sim {} of map {}/{}".format(
-                        idx2, idx + 1, num_maps
-                    ),
-                    "all",
-                )
-                filename = filename[idx2]
-
-            m = self.get_map(filename)
-            mask = self.get_mask(mask_files[idx])
-            self.apply_mask(m, mask)
-            if null_run:
-                # second null half
-                filename2 = files2[idx]
-                if idx2 is not None:
-                    filename2 = filename2[idx2]
-                m2 = self.get_map(filename2)
-                self.apply_mask(m2, mask)
-
-                m_alms = self.map2alm((m + m2) / 2.0, self.pol)
-                mn_alms = self.map2alm((m - m2) / 2.0, self.pol)
-            else:
-                m_alms = self.map2alm(m, self.pol)
-                mn_alms = None
-            if qbf is not None:
-                # if qb file is not none, modify alms by residual in file
-                rbins = dict(filter(lambda x: "res" in x[0], qbf["bin_def"].items()))
-                rfields = {"tt": [0], "ee": [1], "bb": [2], "eebb": [1, 2]}
-                for rb, rb0 in rbins.items():
-                    srb = rb.split("_", 2)
-                    rqb = np.sqrt(1 + qbf["qb"][rb])
-                    (bad,) = np.where(np.isnan(rqb))
-                    if len(bad):
-                        self.warn(
-                            "Unphysical residuals fit, setting to zero {} bins {}".format(
-                                rb, bad
-                            )
-                        )
-                        rqb[bad] = 1
-                    mod = xft.expand_qb(rqb, rb0)
-
-                    for rf in rfields[srb[1]]:
-                        if self.map_tags[idx] == srb[2]:
-                            m_alms[rf] = hp.almxfl(m_alms[rf], mod)
-                            if null_run:
-                                mn_alms[rf] = hp.almxfl(mn_alms[rf], mod)
-
-            cache[idx] = (m_alms, mn_alms)
-            return cache[idx]
-
-        def process_files():
-            """
-            Function to compute cross spectra for ensemble of files and then save in place.
-            """
-            sig_field = "cls_signal"
-            sig_null_field = "cls_signal_null"
-            noise_field = "cls_noise"
-            noise_null_field = "cls_noise_null"
-            tot_field = "cls_sim"
-            tot_null_field = "cls_sim_null"
-            med_field = "cls_med"
-            med_null_field = "cls_med_null"
-
-            ### These fields are needed to iteratate on noise from res fits
-            noise0_field = "cls_noise0"
-            noise0_null_field = "cls_noise0_null"
-            noise1_field = "cls_noise1"
-            noise1_null_field = "cls_noise1_null"
-            sxn0_field = "cls_sxn0"
-            sxn0_null_field = "cls_sxn0_null"
-            nxs0_field = "cls_nxs0"
-            nxs0_null_field = "cls_nxs0_null"
-            sxn1_field = "cls_sxn1"
-            sxn1_null_field = "cls_sxn1_null"
-            nxs1_field = "cls_nxs1"
-            nxs1_null_field = "cls_nxs1_null"
-            ###
-
-            sig_files = sims_attr["signal_files"]
-            sig_files2 = None
-            noise_files = sims_attr["noise_files"]
-            noise_files2 = None
-            if null_run:
-                sig_files2 = sims_attr["signal_files2"]
-                noise_files2 = sims_attr["noise_files2"]
-
-            nsim_sig = sims_attr["num_signal"]
-            nsim_noise = sims_attr["num_noise"]
-
-            cls_sig = OrderedDict()
-            cls_null_sig = OrderedDict() if null_run else None
-            cls_noise = OrderedDict() if do_noise else None
-            cls_null_noise = OrderedDict() if null_run and do_noise else None
-            cls_tot = OrderedDict()
-            cls_null_tot = OrderedDict() if null_run else None
-            cls_med = OrderedDict()
-            cls_null_med = OrderedDict() if null_run else None
-
-            ### Noise iteration from res fit fields
-            cls_noise0 = OrderedDict() if do_noise else None
-            cls_null_noise0 = OrderedDict() if null_run and do_noise else None
-            cls_noise1 = OrderedDict() if do_noise else None
-            cls_null_noise1 = OrderedDict() if null_run and do_noise else None
-            cls_sxn0 = OrderedDict()
-            cls_null_sxn0 = OrderedDict() if null_run else None
-            cls_nxs0 = OrderedDict()
-            cls_null_nxs0 = OrderedDict() if null_run else None
-            cls_sxn1 = OrderedDict()
-            cls_null_sxn1 = OrderedDict() if null_run else None
-            cls_nxs1 = OrderedDict()
-            cls_null_nxs1 = OrderedDict() if null_run else None
-
-            sig_cache = dict()
-            noise_cache = dict()
-            if nsim_noise != 0:
-                nsim_min = min([nsim_sig, nsim_noise])
-            else:
-                nsim_min = nsim_sig
-            nsim_max = max([nsim_sig, nsim_noise])
-            cls_all = np.zeros(
-                [nsim_max, len(map_pairs.items()), len(self.specs), self.lmax + 1]
-            )
-            if null_run:
-                cls_all_null = np.zeros(
-                    [nsim_max, len(map_pairs.items()), len(self.specs), self.lmax + 1]
-                )
-
-            for isim in range(nsim_max):
-                sig_cache.clear()
-                noise_cache.clear()
-                for xind, (xname, (idx, jdx)) in enumerate(map_pairs.items()):
-                    self.log(
-                        "Computing spectra {} for signal{} sim {}".format(
-                            xname, "+noise" if do_noise else "", isim
-                        ),
-                        "debug",
-                    )
-                    if isim < nsim_sig:
-                        simap_alms, sinull_alms = process_index(
-                            sig_files, sig_files2, idx, isim, sig_cache
-                        )
-                        sjmap_alms, sjnull_alms = process_index(
-                            sig_files, sig_files2, jdx, isim, sig_cache
-                        )
-
-                        cls1_sig = self.alm2cl(simap_alms, sjmap_alms)
-                        if null_run:
-                            cls_null1_sig = self.alm2cl(sinull_alms, sjnull_alms)
-
-                    if do_noise and isim < nsim_noise:
-                        nimap_alms, ninull_alms = process_index(
-                            noise_files,
-                            noise_files2,
-                            idx,
-                            isim,
-                            noise_cache,
-                            qbf=qb_file,
-                        )
-                        njmap_alms, njnull_alms = process_index(
-                            noise_files,
-                            noise_files2,
-                            jdx,
-                            isim,
-                            noise_cache,
-                            qbf=qb_file,
-                        )
-
-                        # need non-symmetric since will potentially modify these
-                        # with different residuals for T, E, B
-                        cls1_noise0 = self.alm2cl(
-                            nimap_alms, njmap_alms, symmetric=False
-                        )
-                        cls1_noise1 = self.alm2cl(
-                            njmap_alms, nimap_alms, symmetric=False
-                        )
-                        cls1_noise = (cls1_noise0 + cls1_noise1) / 2
-                        cls1_sxn0 = self.alm2cl(simap_alms, njmap_alms, symmetric=False)
-                        cls1_nxs0 = self.alm2cl(nimap_alms, sjmap_alms, symmetric=False)
-                        cls1_sxn1 = self.alm2cl(njmap_alms, simap_alms, symmetric=False)
-                        cls1_nxs1 = self.alm2cl(sjmap_alms, nimap_alms, symmetric=False)
-                        cls1_sxn = (cls1_sxn0 + cls1_sxn1) / 2
-                        cls1_nxs = (cls1_nxs0 + cls1_nxs1) / 2
-                        if null_run:
-                            cls_null1_noise0 = self.alm2cl(
-                                ninull_alms, njnull_alms, symmetric=False
-                            )
-                            cls_null1_noise1 = self.alm2cl(
-                                njnull_alms, ninull_alms, symmetric=False
-                            )
-                            cls_null1_noise = (cls_null1_noise0 + cls_null1_noise1) / 2
-
-                            cls_null1_sxn0 = self.alm2cl(
-                                sinull_alms, njnull_alms, symmetric=False
-                            )
-                            cls_null1_nxs0 = self.alm2cl(
-                                ninull_alms, sjnull_alms, symmetric=False
-                            )
-                            cls_null1_sxn1 = self.alm2cl(
-                                njnull_alms, sinull_alms, symmetric=False
-                            )
-                            cls_null1_nxs1 = self.alm2cl(
-                                sjnull_alms, ninull_alms, symmetric=False
-                            )
-                            cls_null1_sxn = (cls_null1_sxn0 + cls_null1_sxn1) / 2
-                            cls_null1_nxs = (cls_null1_nxs0 + cls_null1_nxs1) / 2
-
-                        if isim < nsim_min:
-                            cls1t = cls1_sig + cls1_sxn + cls1_nxs + cls1_noise
-                            if null_run:
-                                cls_null1t = (
-                                    cls_null1_sig
-                                    + cls_null1_sxn
-                                    + cls_null1_nxs
-                                    + cls_null1_noise
-                                )
-                    else:
-                        cls1t = np.copy(cls1_sig)
-                        if null_run:
-                            cls_null1t = np.copy(cls_null1_sig)
-
-                    for s, spec in enumerate(self.specs):
-                        quants = []
-                        if isim < nsim_sig:
-                            quants += [[cls_sig, cls1_sig]]
-                            if null_run:
-                                quants += [[cls_null_sig, cls_null1_sig]]
-
-                        if do_noise and isim < nsim_noise:
-                            quants += [
-                                [cls_noise, cls1_noise],
-                                [cls_noise0, cls1_noise0],
-                                [cls_noise1, cls1_noise1],
-                                [cls_sxn0, cls1_sxn0],
-                                [cls_sxn1, cls1_sxn1],
-                                [cls_nxs0, cls1_nxs0],
-                                [cls_nxs1, cls1_nxs1],
-                            ]
-                            if null_run:
-                                quants += [
-                                    [cls_null_noise, cls_null1_noise],
-                                    [cls_null_noise0, cls_null1_noise0],
-                                    [cls_null_noise1, cls_null1_noise1],
-                                    [cls_null_sxn0, cls_null1_sxn0],
-                                    [cls_null_sxn1, cls_null1_sxn1],
-                                    [cls_null_nxs0, cls_null1_nxs0],
-                                    [cls_null_nxs1, cls_null1_nxs1],
-                                ]
-                        if isim < nsim_min:
-                            quants += [[cls_tot, cls1t]]
-                            if null_run:
-                                quants += [[cls_null_tot, cls_null1t]]
-
-                        if len(quants):
-                            # running average
-                            for quant0, quant1 in quants:
-                                d = quant0.setdefault(spec, OrderedDict()).setdefault(
-                                    xname, np.zeros_like(quant1[s])
-                                )
-                                d[:] += (quant1[s] - d) / float(isim + 1)  # in-place
-                        cls_all[isim][xind][s] = cls_tot[spec][xname]
-                        if null_run:
-                            cls_all_null[isim][xind][s] = cls_null_tot[spec][xname]
-
-            cls_med_arr = np.median(cls_all, axis=0)
-            for s, spec in enumerate(self.specs):
-                cls_med[spec] = OrderedDict()
-                for xind, xname in enumerate(map_pairs):
-                    cls_med[spec][xname] = cls_med_arr[xind][s]
-            if null_run:
-                cls_null_med_arr = np.median(cls_all_null, axis=0)
-                for s, spec in enumerate(self.specs):
-                    cls_null_med[spec] = OrderedDict()
-                    for xind, xname in enumerate(map_pairs):
-                        cls_null_med[spec][xname] = cls_null_med_arr[xind][s]
-
-            setattr(self, sig_field, cls_sig)
-            setattr(self, sig_null_field, cls_null_sig)
-            setattr(self, noise_field, cls_noise)
-            setattr(self, noise_null_field, cls_null_noise)
-            setattr(self, tot_field, cls_tot)
-            setattr(self, tot_null_field, cls_null_tot)
-            setattr(self, med_field, cls_med)
-            setattr(self, med_null_field, cls_null_med)
-
-            setattr(self, noise0_field, cls_noise0)
-            setattr(self, noise0_null_field, cls_null_noise0)
-            setattr(self, noise1_field, cls_noise1)
-            setattr(self, noise1_null_field, cls_null_noise1)
-            setattr(self, sxn0_field, cls_sxn0)
-            setattr(self, sxn0_null_field, cls_null_sxn0)
-            setattr(self, sxn1_field, cls_sxn1)
-            setattr(self, sxn1_null_field, cls_null_sxn1)
-            setattr(self, nxs0_field, cls_nxs0)
-            setattr(self, nxs0_null_field, cls_null_nxs0)
-            setattr(self, nxs1_field, cls_nxs1)
-            setattr(self, nxs1_null_field, cls_null_nxs1)
-
-        def check_options():
-            """
-            Check for data options and calls process_files() to compute cross spectra.
-            """
-            if ensemble_mean:
-                self.log("Substitute signal + noise for observed spectrum", "notice")
-                for spec in self.specs:
-                    for xname in self.cls_data[spec]:
-                        if do_noise:
-                            self.cls_data[spec][xname] = self.cls_sim[spec][xname]
-                        else:
-                            self.cls_data[spec][xname] = self.cls_signal[spec][xname]
-                        if null_run:
-                            if do_noise:
-                                self.cls_data_null[spec][xname] = self.cls_sim_null[
-                                    spec
-                                ][xname]
-                            else:
-                                self.cls_data_null[spec][xname] = self.cls_signal_null[
-                                    spec
-                                ][xname]
-            elif ensemble_median:
-                self.log(
-                    "Substitute signal + noise median for observed spectrum", "notice"
-                )
-                for spec in self.specs:
-                    for xname in self.cls_data[spec]:
-                        self.cls_data[spec][xname] = self.cls_med[spec][xname]
-                        if null_run:
-                            self.cls_data_null[spec][xname] = self.cls_med_null[spec][
-                                xname
-                            ]
-
-            elif sim_index is not None:
-                msg = "Substitute #{} sim signal + noise for observed alms"
-                self.log(msg.format(sim_index), "notice")
-
-                # find the sim file that matches the requested sim index
-                # NB: this assumes that the sim files have the form
-                # *_<sim_index>.fits, and will raise an error
-                # if this is not the case, or if the index is not found
-                file_indices = [
-                    int(os.path.splitext(x.rsplit("_")[-1])[0])
-                    for x in sims_attr["signal_files"][0]
-                ]
-                file_index = file_indices.index(sim_index)
-                scache = {}
-                ncache = {}
-                fgcache = {}
-
-                for xname, (idx, jdx) in map_pairs.items():
-                    simap_alms, sinull_alms = process_index(
-                        sims_attr["signal_files_sim"],
-                        sims_attr["signal_files_sim2"],
-                        idx,
-                        file_index,
-                        scache,
-                    )
-                    simap_alms = np.copy(simap_alms)
-                    if null_run:
-                        sinull_alms = np.copy(sinull_alms)
-                    if do_noise:
-                        nimap_alms, ninull_alms = process_index(
-                            sims_attr["noise_files_sim"],
-                            sims_attr["noise_files_sim2"],
-                            idx,
-                            file_index,
-                            ncache,
-                            qbf=qb_file,
-                        )
-                        if sims_add_alms:
-                            simap_alms += nimap_alms
-                            if null_run:
-                                sinull_alms += ninull_alms
-                    if foreground_sims:
-                        fimap_alms, finull_alms = process_index(
-                            sims_attr["foreground_files"],
-                            sims_attr["foreground_files2"],
-                            idx,
-                            file_index,
-                            fgcache,
-                        )
-                        if sims_add_alms:
-                            simap_alms += fimap_alms
-                            if null_run:
-                                sinull_alms += finull_alms
-
-                    sjmap_alms, sjnull_alms = process_index(
-                        sims_attr["signal_files_sim"],
-                        sims_attr["signal_files_sim2"],
-                        jdx,
-                        file_index,
-                        scache,
-                    )
-                    sjmap_alms = np.copy(sjmap_alms)
-                    if null_run:
-                        sjnull_alms = np.copy(sjnull_alms)
-                    if do_noise:
-                        njmap_alms, njnull_alms = process_index(
-                            sims_attr["noise_files_sim"],
-                            sims_attr["noise_files_sim2"],
-                            jdx,
-                            file_index,
-                            ncache,
-                            qbf=qb_file,
-                        )
-                        if sims_add_alms:
-                            sjmap_alms += njmap_alms
-                            if null_run:
-                                sjnull_alms += njnull_alms
-                    if foreground_sims:
-                        fjmap_alms, fjnull_alms = process_index(
-                            sims_attr["foreground_files"],
-                            sims_attr["foreground_files2"],
-                            jdx,
-                            file_index,
-                            fgcache,
-                        )
-                        if sims_add_alms:
-                            sjmap_alms += fjmap_alms
-                            if null_run:
-                                sjnull_alms += fjnull_alms
-
-                    cls = self.alm2cl(simap_alms, sjmap_alms)
-                    if not sims_add_alms:
-                        if do_noise:
-                            cls += self.alm2cl(nimap_alms, njmap_alms)
-                        if foreground_sims:
-                            cls += self.alm2cl(fimap_alms, fjmap_alms)
-                    for s, spec in enumerate(self.specs):
-                        self.cls_data[spec][xname] = cls[s]
-
-                    if null_run:
-                        cls = self.alm2cl(sinull_alms, sjnull_alms)
-                        if not sims_add_alms:
-                            if do_noise:
-                                cls += self.alm2cl(ninull_alms, njnull_alms)
-                            if foreground_sims:
-                                cls += self.alm2cl(finull_alms, fjnull_alms)
-
-                        for s, spec in enumerate(self.specs):
-                            self.cls_data_null[spec][xname] = cls[s]
-
-            self.ensemble_mean = ensemble_mean
-            self.ensemble_median = ensemble_median
-            self.sim_index = sim_index
+            do_noise = noise_files is not None
 
         save_attrs = [
             "cls_signal",
             "cls_noise",
             "cls_sim",
             "cls_med",
-            "cls_noise0",
-            "cls_noise1",
-            "cls_sxn0",
-            "cls_sxn1",
-            "cls_nxs0",
-            "cls_nxs1",
+            "cls_res",
         ]
         if null_run:
             save_attrs += [
@@ -3219,12 +2768,7 @@ class XFaster(object):
                 "cls_noise_null",
                 "cls_sim_null",
                 "cls_med_null",
-                "cls_noise0_null",
-                "cls_noise1_null",
-                "cls_sxn0_null",
-                "cls_sxn1_null",
-                "cls_nxs0_null",
-                "cls_nxs1_null",
+                "cls_res_null",
             ]
 
         if transfer:
@@ -3243,19 +2787,15 @@ class XFaster(object):
             shape_ref="cls_signal",
         )
         if ret is not None:
-            if do_noise and self.cls_noise is None:
-                process_files()
-                check_options()
-                return self.save_data(save_name, from_attrs=save_attrs)
-            elif not do_noise and self.cls_noise is not None:
-                self.cls_noise = None
-                self.cls_noise_null = None
-                ret["cls_noise"] = None
-                ret["cls_noise_null"] = None
-                check_options()
-                return ret
+            if do_noise:
+                if self.cls_noise is not None:
+                    return ret
             else:
-                check_options()
+                if self.cls_noise is not None:
+                    self.cls_noise = None
+                    self.cls_noise_null = None
+                    ret["cls_noise"] = None
+                    ret["cls_noise_null"] = None
                 return ret
         else:
             # don't rerun sims a second time if they've already been run once
@@ -3264,397 +2804,55 @@ class XFaster(object):
                 self.force_rerun["sims"] = False
 
         # process signal, noise, and S+N
-        process_files()
+        cls_sig = OrderedDict()
+        cls_null_sig = OrderedDict() if null_run else None
+        cls_noise = OrderedDict() if do_noise else None
+        cls_null_noise = OrderedDict() if null_run and do_noise else None
+        cls_tot = OrderedDict()
+        cls_null_tot = OrderedDict() if null_run else None
+        cls_med = OrderedDict()
+        cls_null_med = OrderedDict() if null_run else None
 
-        if not do_noise:
-            self.cls_noise = None
-            self.cls_noise_null = None
+        ### Noise iteration from res fit fields
+        cls_res = OrderedDict() if do_noise else None
+        cls_null_res = OrderedDict() if null_run and do_noise else None
+        if do_noise:
+            for k in ["nxn0", "nxn1", "sxn0", "sxn1", "nxs0", "nxs1"]:
+                cls_res[k] = OrderedDict()
+                if null_run:
+                    cls_null_res[k] = OrderedDict()
 
-        # save and return
-        check_options()
-        return self.save_data(save_name, from_attrs=save_attrs)
-
-    def get_masked_fake_data(
-        self,
-        fake_data_r=None,
-        fake_data_template=None,
-        sim_index=None,
-        template_alpha=None,
-        noise_type=None,
-        do_noise=True,
-        do_signal=True,
-        save_data=False,
-        sub_hm_noise=True,
-        qb_file=None,
-    ):
-        """
-        In memory, make a fake data map with signal, noise, and
-        foregrounds.
-        Signal maps are signal_scalar + fake_data_r * signal_tensor
-        where scalar maps are assumed to be in signal_r0 directory
-        and tensor maps are assumed to be in signal_r1tens directory.
-        sim_index is used to determine which sims. Noise maps taken
-        from usual noise directory. Templates read read from
-        templates_fake_data_template/halfmission-1.
-
-        This function doesn't write anything to disk unless save_data=True.
-        It just constructs the maps and computes the Cls and replaces data
-        cls with them. Useful for doing sim runs with template subtraction.
-
-        Arguments
-        ---------
-        fake_data_r : float
-            Tensor-to-scalar ratio to use for CMB sims as scalar + r * tensor.
-        fake_data_template : str
-            If not None, add halfmission-1 template in this directory scaled by
-            alpha to fake data maps
-        sim_index : int
-            Index of sim maps to use for CMB, noise, and template noise
-            simulations.
-        template_alpha : dict
-            Dictionary of (map_tag, alpha scaling) values.
-        noise_type_sim : str
-            The variant of noise sims to use for the fake data map.
-        do_noise : bool
-            If true, use sim_index to set noise seed. If false, always use seed
-            0. Useful for sims isolating effects of varying CMB only or template
-            noise only.
-        do_signal : bool
-            If true, use sim_index to set CMB seed. If false, always use seed
-            0. Useful for sims isolating effects of varying noise only or
-            template noise only.
-        save_data : bool
-            If true, save data_xcorr file to disk for fake data.
-        sub_hm_noise : bool
-            If True, subtract average of Planck ffp10 noise crosses to debias
-            template-cleaned spectra
-        qb_file : str
-            Pointer to a bandpowers.npz file in the output directory.
-            The noise sim read from disk will be corrected by the residual qb
-            values stored in qb_file.
-        """
-        import healpy as hp
-
-        map_tags = self.map_tags
-        map_files = self.map_files
-        map_root = self.map_root
-        mask_files = self.mask_files
-        raw_files = self.raw_files
-        num_maps = self.num_maps
-        data_shape = self.data_shape
-        data_root = self.data_root
-
-        if qb_file is not None:
-            if not os.path.exists(qb_file):
-                qb_file = os.path.join(self.output_root, qb_file)
-            qb_file = pt.load_and_parse(qb_file)
-
-        scalar_root = os.path.join(data_root, "signal_r0")
-        tensor_root = os.path.join(data_root, "signal_r1tens")
-        noise_root = os.path.join(data_root, "noise_{}".format(noise_type))
-
-        # ensure dictionary
-        if template_alpha is None:
-            template_alpha = OrderedDict()
-
-        # ensure tagged by original tags
-        template_alpha = OrderedDict(
-            [(k, v) for k, v in template_alpha.items() if k in self.map_tags_orig]
-        )
-
-        template_fit = fake_data_template is not None
-        if template_fit:
-            template_files = list(zip(self.template_files, self.template_files2))
-            template_root = os.path.join(
-                data_root, "templates_{}/halfmission-1".format(fake_data_template)
-            )
+        if num_noise != 0:
+            nsim_min = min([num_signal, num_noise])
         else:
-            template_alpha = OrderedDict([(k, None) for k in template_alpha])
+            nsim_min = num_signal
+        nsim_max = max([num_signal, num_noise])
+        cls_all = np.zeros(
+            [nsim_max, len(map_pairs.items()), len(self.specs), self.lmax + 1]
+        )
+        if null_run:
+            cls_all_null = np.zeros_like(cls_all)
 
-        cache = dict()
-        self.log("Fake data r: {}".format(fake_data_r), "notice")
-
-        def process_index(idx):
-            """
-            create the fake map for each map in map_files,
-            them compute alms for that and templates.
-            """
-            if idx in cache:
-                return cache[idx]
-            self.log(
-                "Computing Alms for fake data map {}/{}".format(idx, num_maps), "all"
-            )
-            mfile = map_files[idx]
-
-            if do_signal:
-                scalar = self.get_map(
-                    mfile.replace(map_root, scalar_root).replace(
-                        ".fits", "_{:04}.fits".format(sim_index)
-                    )
-                )
-                tensor = self.get_map(
-                    mfile.replace(map_root, tensor_root).replace(
-                        ".fits", "_{:04}.fits".format(sim_index)
-                    )
-                )
-            else:
-                self.log("Using signal 0", "debug")
-                scalar = self.get_map(
-                    mfile.replace(map_root, scalar_root).replace(".fits", "_0000.fits")
-                )
-                tensor = self.get_map(
-                    mfile.replace(map_root, tensor_root).replace(".fits", "_0000.fits")
-                )
-
-            if do_noise:
-                noise = self.get_map(
-                    mfile.replace(map_root, noise_root).replace(
-                        ".fits", "_{:04}.fits".format(sim_index)
-                    )
-                )
-            else:
-                self.log("Using noise 0", "debug")
-                noise = self.get_map(
-                    mfile.replace(map_root, noise_root).replace(".fits", "_0000.fits")
-                )
-
-            if template_fit:
-                template = self.get_map(mfile.replace(map_root, template_root))
-            else:
-                template = 0
-
-            mask = self.get_mask(mask_files[idx])
-            if qb_file is None:
-                m_tot = (
-                    scalar
-                    + np.sqrt(np.abs(fake_data_r)) * tensor
-                    + noise
-                    + template_alpha[self.map_tags_orig[idx]] * template
-                )
-                self.apply_mask(m_tot, mask)
-                m_alms = self.map2alm(m_tot, self.pol)
-
-            else:  # have to do noise alms separately
-                m_tot = (
-                    scalar
-                    + np.sqrt(np.abs(fake_data_r)) * tensor
-                    + template_alpha[self.map_tags_orig[idx]] * template
-                )
-                self.apply_mask(m_tot, mask)
-                m_alms = self.map2alm(m_tot, self.pol)
-                # if qb file is not none, modify alms by residual in file
-                self.apply_mask(noise, mask)
-                noise_alms = self.map2alm(noise, self.pol)
-                rbins = dict(
-                    filter(lambda x: "res" in x[0], qb_file["bin_def"].items())
-                )
-                rfields = {"tt": [0], "ee": [1], "bb": [2], "eebb": [1, 2]}
-                for rb, rb0 in rbins.items():
-                    srb = rb.split("_", 2)
-                    mod = np.zeros(np.max(rb0))
-                    for ib, (left, right) in enumerate(rb0):
-                        il = slice(left, right)
-                        mod[il] = np.sqrt(1 + qb_file["qb"][rb][ib])
-                        if np.any(np.isnan(mod[il])):
-                            warnings.warn(
-                                "Unphysical residuals fit, "
-                                + "setting to zero {} bin {}".format(rb, ib)
-                            )
-                            mod[il][np.isnan(mod[il])] = 1
-
-                    for rf in rfields[srb[1]]:
-                        if self.map_tags[idx] == srb[2]:
-                            noise_alms[rf] = hp.almxfl(noise_alms[rf], mod)
-                m_alms += noise_alms
-
-            if fake_data_r < 0:
-                m_totn = scalar - np.sqrt(np.abs(fake_data_r)) * tensor + noise
-                if template_fit:
-                    m_totn += template_alpha[self.map_tags_orig[idx]] * template
-
-                self.apply_mask(m_totn, mask)
-                mn_alms = self.map2alm(m_totn, self.pol)
-
-            if template_fit:
-                m_alms = [m_alms]
-                for tf in template_files[idx]:
-                    self.log("Loading template from {}".format(tf), "debug")
-                    mt = self.get_map(tf)
-                    self.apply_mask(mt, mask)
-                    mt_alms = self.map2alm(mt, self.pol)
-                    # null out T template
-                    if self.pol:
-                        mt_alms[0] *= 0
-                    m_alms.append(mt_alms)
-                m_alms = tuple(m_alms)
-
-            if fake_data_r < 0:
-                cache[idx] = tuple([m_alms, mn_alms])
-            else:
-                cache[idx] = m_alms
-
-            return cache[idx]
-
-        map_pairs = pt.tag_pairs(map_tags, index=True)
-        for xname, (idx, jdx) in map_pairs.items():
-            imap_alms = process_index(idx)
-            jmap_alms = process_index(jdx)
-
-            self.log(
-                "Computing fake data spectra {}x{}".format(idx + 1, jdx + 1), "debug"
-            )
-
-            # store cross spectra
-            if isinstance(imap_alms, tuple) and len(imap_alms) in [2, 3]:
-                if fake_data_r >= 0:
-                    cls1 = self.alm2cl(imap_alms[0], jmap_alms[0])
-
-                    # average template alms
-                    imt = (imap_alms[1] + imap_alms[2]) / 2.0
-                    jmt = (jmap_alms[1] + jmap_alms[2]) / 2.0
-
-                    # compute maximally symmetric cross spectra
-                    t1 = self.alm2cl(imt, jmap_alms[0])  # multiplies alpha_i
-                    t2 = self.alm2cl(imap_alms[0], jmt)  # multiplies alpha_j
-                    t3 = (
-                        self.alm2cl(imap_alms[1], jmap_alms[2])
-                        + self.alm2cl(imap_alms[2], jmap_alms[1])
-                    ) / 2.0  # multiplies alpha_i * alpha_j
-
-                    for s, spec in enumerate(self.specs):
-                        # apply template to TE/TB but not TT
-                        if spec == "tt":
-                            continue
-                        self.cls_template[spec][xname] = (t1[s], t2[s], t3[s])
-
-                else:
-                    mp_i = imap_alms[0][0]
-                    mn_i = imap_alms[1]
-                    mp_j = jmap_alms[0][0]
-                    mn_j = jmap_alms[1]
-                    t1_i = imap_alms[0][1]
-                    t2_i = imap_alms[0][2]
-                    t1_j = jmap_alms[0][1]
-                    t2_j = jmap_alms[0][2]
-
-                    cls1 = (
-                        0.5 * (self.alm2cl(mp_i, mn_j) + self.alm2cl(mn_i, mp_j))
-                        + 0.5 * self.alm2cl(mn_i, mn_j)
-                        - 0.5 * self.alm2cl(mp_i, mp_j)
-                    )
-
-                    # average template alms
-                    imt = (t1_i + t2_i) / 2.0
-                    jmt = (t1_j + t2_j) / 2.0
-
-                    # compute maximally symmetric cross spectra
-                    t1 = 1.5 * self.alm2cl(mn_j, imt) - 0.5 * self.alm2cl(mp_j, imt)
-                    t2 = 1.5 * self.alm2cl(mn_i, jmt) - 0.5 * self.alm2cl(mp_i, jmt)
-                    t3 = 0.5 * (self.alm2cl(t1_i, t2_j) + self.alm2cl(t2_i, t1_j))
-
-                    for s, spec in enumerate(self.specs):
-                        # apply template to TE/TB but not TT
-                        if spec == "tt":
-                            continue
-                        self.cls_template[spec][xname] = (t1[s], t2[s], t3[s])
-            else:
-                cls1 = self.alm2cl(imap_alms, jmap_alms)
-
-            for s, spec in enumerate(self.specs):
-                self.cls_data[spec][xname] = cls1[s]
-
-        def apply_template():
-            """
-            In place, subtract the scaled template cross terms from the data
-            pseudo-spectra.
-            """
-            cls_clean = getattr(self, "cls_data_clean", OrderedDict())
-
-            for spec in self.specs:
-                cls_clean[spec] = copy.deepcopy(self.cls_data[spec])
-                if spec not in self.cls_template:
-                    continue
-                for xname, d in cls_clean[spec].items():
-                    if xname not in self.cls_template[spec]:
-                        continue
-                    m0, m1 = self.map_pairs_orig[xname]
-                    alphas = [template_alpha.get(m, None) for m in (m0, m1)]
-
-                    t1, t2, t3 = self.cls_template[spec][xname]
-
-                    if alphas[0] is not None:
-                        d -= alphas[0] * t1
-                    if alphas[1] is not None:
-                        d -= alphas[1] * t2
-                        if alphas[0] is not None:
-                            d += alphas[0] * alphas[1] * t3
-                            # subtract average template noise spectrum to debias
-                            if sub_hm_noise:
-                                n = self.cls_tnoise_hm1xhm2[spec][xname]
-                                d -= alphas[0] * alphas[1] * n
-
-            self.cls_data_clean = cls_clean
-            self.template_alpha = template_alpha
-            self.template_cleaned = True
-
-        if template_fit:
-            apply_template()
-
-        if save_data:
-            save_attrs = [
-                "cls_data",
-                "cls_data_clean",
-                "cls_template",
-                "template_alpha",
-                "nside",
-            ]
-            if fake_data_r < 0:
-                rname = "rmp{:03}".format(int(np.abs(fake_data_r) * 1000))
-            else:
-                rname = "rp{:03}".format(int(np.abs(fake_data_r) * 1000))
-            data_name = "data_{}_clean_{}_sim{:03}".format(
-                rname, fake_data_template, sim_index
-            )
-            save_name = "{}_xcorr".format(data_name)
-            self.save_data(save_name, from_attrs=save_attrs)
-
-    def get_masked_template_noise(self, template_type):
-        """
-        Compute hm1, hm2, and hm1xhm2 template noise spectra from
-        sim ensemble.
-
-        Notes
-        -----
-        This method is called at the 'template_noise' checkpoint,
-        and loads or saves a data dictionary with the following entries:
-
-            cls_tnoise_hm1 : <same shape as cls_data>
-            cls_tnoise_hm2 : <same shape as cls_data>
-            cls_tnoise_hm1xhm2 : <same shape as cls_data>
-
-        Arguments
-        ---------
-        template_type : str
-            Tag of the template maps directory (noise files in
-            template_noise_<template_type>).
-        """
-        mask_files = self.mask_files
-        map_tags = self.map_tags
-        map_pairs = pt.tag_pairs(map_tags, index=True)
-        num_maps = self.num_maps
-        num_corr = self.num_corr
-        data_shape = self.data_shape
-
-        sims_attr = {}
-
-        sims_attr["template_noise_files"] = self.template_noise_files
-        sims_attr["template_noise_files2"] = self.template_noise_files2
-        sims_attr["num_template_noise"] = self.num_template_noise
+        rls = OrderedDict()
+        if do_noise and qb_file is not None:
+            rls = self.get_noise_residuals(qb_file)
 
         # convenience functions
-        def process_index(files, idx, idx2=None, cache=None):
+        def get_map_alms(filename, mask, rls=None):
+            m = self.get_map(filename)
+            self.apply_mask(m, mask)
+            m_alms = self.map2alm(m, self.pol)
+
+            if rls is not None:
+                for s, spec in enumerate(self.specs):
+                    if spec in rls:
+                        m_alms[s] += hp.almxfl(m_alms[s], rls[spec])
+
+            return m_alms
+
+        def process_index(files, files2, idx, idx2=None, cache=None, rls=None):
             """
-            Compute alms of masked input map.
+            Compute alms of masked input map
             """
             if cache is None:
                 cache = {}
@@ -3676,99 +2874,269 @@ class XFaster(object):
                 )
                 filename = filename[idx2]
 
-            m = self.get_map(filename)
+            if rls is not None:
+                rls = rls.get(map_tags[idx], None)
+
             mask = self.get_mask(mask_files[idx])
-            self.apply_mask(m, mask)
-            m_alms = self.map2alm(m, self.pol)
+            m_alms = get_map_alms(filename, mask, rls=rls)
+            mn_alms = None
+
+            if null_run:
+                # second null half
+                filename2 = files2[idx]
+                if idx2 is not None:
+                    filename2 = filename2[idx2]
+
+                m2_alms = get_map_alms(filename2, mask, rls=rls)
+                m_alms, mn_alms = (m_alms + m2_alms) / 2.0, (m_alms - m2_alms) / 2.0
+
+            cache[idx] = (m_alms, mn_alms)
+            return cache[idx]
+
+        sig_cache = dict()
+        noise_cache = dict()
+
+        for isim in range(nsim_max):
+            sig_cache.clear()
+            noise_cache.clear()
+            for xind, (xname, (idx, jdx)) in enumerate(map_pairs.items()):
+                self.log(
+                    "Computing spectra {} for signal{} sim {}".format(
+                        xname, "+noise" if do_noise else "", isim
+                    ),
+                    "debug",
+                )
+                if isim < num_signal:
+                    simap_alms, sinull_alms = process_index(
+                        signal_files, signal_files2, idx, isim, sig_cache
+                    )
+                    sjmap_alms, sjnull_alms = process_index(
+                        signal_files, signal_files2, jdx, isim, sig_cache
+                    )
+
+                    cls1_sig = self.alm2cl(simap_alms, sjmap_alms)
+                    if null_run:
+                        cls_null1_sig = self.alm2cl(sinull_alms, sjnull_alms)
+
+                    if isim < nsim_min:
+                        cls1t = np.copy(cls1_sig)
+                        if null_run:
+                            cls_null1t = np.copy(cls_null1_sig)
+
+                if do_noise and isim < num_noise:
+                    cls1_res = OrderedDict()
+                    if null_run:
+                        cls_null1_res = OrderedDict()
+
+                    nimap_alms, ninull_alms = process_index(
+                        noise_files,
+                        noise_files2,
+                        idx,
+                        isim,
+                        noise_cache,
+                        rls=rls,
+                    )
+                    njmap_alms, njnull_alms = process_index(
+                        noise_files,
+                        noise_files2,
+                        jdx,
+                        isim,
+                        noise_cache,
+                        rls=rls,
+                    )
+
+                    # need non-symmetric since will potentially modify these
+                    # with different residuals for T, E, B
+                    for k, cx, cy, cnx, cny in [
+                        ("nxn", nimap_alms, njmap_alms, ninull_alms, njnull_alms),
+                        ("sxn", simap_alms, njmap_alms, sinull_alms, njnull_alms),
+                        ("nxs", nimap_alms, sjmap_alms, ninull_alms, sjnull_alms),
+                    ]:
+                        k0, k1 = ["{}{}".format(k, i) for i in range(2)]
+                        cls1_res[k0] = self.alm2cl(cx, cy, symmetric=False)
+                        cls1_res[k1] = self.alm2cl(cy, cx, symmetric=False)
+                        if null_run:
+                            cls_null1_res[k0] = self.alm2cl(cnx, cny, symmetric=False)
+                            cls_null1_res[k1] = self.alm2cl(cny, cnx, symmetric=False)
+
+                    # construct noise model
+                    cls1_noise = (cls1_res["nxn0"] + cls1_res["nxn1"]) / 2.0
+                    if null_run:
+                        cls_null1_noise = (
+                            cls_null1_res["nxn0"] + cls_null1_res["nxn1"]
+                        ) / 2.0
+
+                    # construct total model
+                    if isim < nsim_min:
+                        for k in cls1_res:
+                            cls1t += cls1_res[k] / 2.0
+                            if null_run:
+                                cls_null1t += cls_null1_res[k] / 2.0
+
+                quants = []
+                if isim < num_signal:
+                    quants += [[cls_sig, cls1_sig]]
+                    if null_run:
+                        quants += [[cls_null_sig, cls_null1_sig]]
+
+                if do_noise and isim < num_noise:
+                    quants += [[cls_noise, cls1_noise]]
+                    quants += [[cls_res[k], cls1_res[k]] for k in cls_res]
+                    if null_run:
+                        quants += [[cls_null_noise, cls_null1_noise]]
+                        quants += [
+                            [cls_null_res[k], cls_null1_res[k]] for k in cls_null_res
+                        ]
+                if isim < nsim_min:
+                    quants += [[cls_tot, cls1t]]
+                    if null_run:
+                        quants += [[cls_null_tot, cls_null1t]]
+
+                for s, spec in enumerate(self.specs):
+                    # running average
+                    for q0, q1 in quants:
+                        if spec not in q0:
+                            q0[spec] = OrderedDict()
+                        if xname not in q0[spec]:
+                            q0[spec][xname] = np.zeros_like(q1[s])
+                        d = q0[spec][xname]
+                        d[:] += (q1[s] - d) / float(isim + 1)  # in-place
+
+                    # matrix form for efficient median
+                    if isim < nsim_min:
+                        cls_all[isim][xind][s] = cls_tot[spec][xname]
+                        if null_run:
+                            cls_all_null[isim][xind][s] = cls_null_tot[spec][xname]
+
+        cls_med_arr = np.median(cls_all, axis=0)
+        for s, spec in enumerate(self.specs):
+            cls_med[spec] = OrderedDict()
+            for xind, xname in enumerate(map_pairs):
+                cls_med[spec][xname] = cls_med_arr[xind][s]
+
+        if null_run:
+            cls_null_med_arr = np.median(cls_all_null, axis=0)
+            for s, spec in enumerate(self.specs):
+                cls_null_med[spec] = OrderedDict()
+                for xind, xname in enumerate(map_pairs):
+                    cls_null_med[spec][xname] = cls_null_med_arr[xind][s]
+
+        self.cls_signal = cls_sig
+        self.cls_signal_null = cls_null_sig
+        self.cls_noise = cls_noise
+        self.cls_noise_null = cls_null_noise
+        self.cls_sim = cls_tot
+        self.cls_sim_null = cls_null_tot
+        self.cls_med = cls_med
+        self.cls_med_null = cls_null_med
+        self.cls_res = cls_res
+        self.cls_res_null = cls_null_res
+
+        # save and return
+        return self.save_data(save_name, from_attrs=save_attrs)
+
+    def get_masked_template_noise(self):
+        """
+        Compute all combinations of template noise cross spectra from the ensemble
+        of template noise sims.
+
+        Returns
+        -------
+        cls_template_noise : OrderedDict
+            Dictionary of template noise spectra averaged over all sims, containing
+            the following keys: ["temp1:temp1", "temp2:temp2", "temp1:temp2"].  Each entry
+            has the same shape structure as the ``cls_data`` attribute.
+
+        Notes
+        -----
+        This method is called at the 'template_noise' checkpoint, and loads or
+        saves a data dictionary containing the ``cls_template_noise`` attribute
+        that is returned.
+        """
+        template_type = self.template_noise_type
+        mask_files = self.mask_files
+        map_files = [self.template_noise_files, self.template_noise_files2]
+        map_tags = self.map_tags
+        map_pairs = pt.tag_pairs(map_tags, index=True)
+        num_maps = self.num_maps
+        data_shape = (3 * self.data_shape[0], self.data_shape[1])
+
+        save_attrs = ["cls_template_noise"]
+        save_name = "template_noise_{}".format(template_type)
+
+        ret = self.load_data(
+            save_name,
+            "template_noise",
+            fields=save_attrs,
+            to_attrs=True,
+            shape=data_shape,
+            shape_ref="cls_template_noise",
+        )
+        if ret is not None:
+            return ret["cls_template_noise"]
+
+        cls_template_noise = OrderedDict()
+        for k in ["temp1:temp1", "temp2:temp2", "temp1:temp2"]:
+            cls_template_noise[k] = OrderedDict()
+
+        cache = dict()
+
+        # convenience functions
+        def process_index(idx, isim):
+            """
+            Compute alms of masked temp1 and temp2 template noise sims
+            """
+            if idx in cache:
+                return cache[idx]
+
+            self.log(
+                "Computing Alms for sim {} of map {}/{}".format(
+                    isim, idx + 1, num_maps
+                ),
+                "all",
+            )
+
+            mask = self.get_mask(mask_files[idx])
+
+            m_alms = []
+            for f in [x[idx][isim] for x in map_files]:
+                m = self.get_map(f)
+                self.apply_mask(m, mask)
+                m_alms.append(self.map2alm(m, self.pol))
 
             cache[idx] = m_alms
             return cache[idx]
 
-        def process_files():
-            """
-            Compute cross spectra.
-            """
-            hm1_field = "cls_tnoise_hm1"
-            hm2_field = "cls_tnoise_hm2"
-            hm1xhm2_field = "cls_tnoise_hm1xhm2"
+        for isim in range(self.num_template_noise):
+            cache.clear()
+            for xname, (idx, jdx) in map_pairs.items():
+                self.log(
+                    "Computing spectra {} for template noise sim {}".format(
+                        xname, isim
+                    ),
+                    "debug",
+                )
+                temp1i, temp2i = process_index(idx, isim)
+                temp1j, temp2j = process_index(jdx, isim)
 
-            hm1_files = sims_attr["template_noise_files"]
-            hm2_files = sims_attr["template_noise_files2"]
+                cls1 = OrderedDict()
+                cls1["temp1:temp1"] = self.alm2cl(temp1i, temp1j)
+                cls1["temp2:temp2"] = self.alm2cl(temp2i, temp2j)
+                cls1["temp1:temp2"] = 0.5 * (
+                    self.alm2cl(temp1i, temp2j) + self.alm2cl(temp2i, temp1j)
+                )
 
-            nsim_tnoise = sims_attr["num_template_noise"]
-
-            cls_hm1 = OrderedDict()
-            cls_hm2 = OrderedDict()
-            cls_hm1xhm2 = OrderedDict()
-
-            hm1_cache = dict()
-            hm2_cache = dict()
-            for isim in range(nsim_tnoise):
-                hm1_cache.clear()
-                hm2_cache.clear()
-                for xind, (xname, (idx, jdx)) in enumerate(map_pairs.items()):
-                    self.log(
-                        "Computing spectra {} for template noise sim {}".format(
-                            xname, isim
-                        ),
-                        "debug",
-                    )
-                    hm1imap_alms = process_index(hm1_files, idx, isim, hm1_cache)
-                    hm1jmap_alms = process_index(hm1_files, jdx, isim, hm1_cache)
-                    hm2imap_alms = process_index(hm2_files, idx, isim, hm2_cache)
-                    hm2jmap_alms = process_index(hm2_files, jdx, isim, hm2_cache)
-
-                    cls1_hm1 = self.alm2cl(hm1imap_alms, hm1jmap_alms)
-                    cls1_hm2 = self.alm2cl(hm2imap_alms, hm2jmap_alms)
-                    cls1_hm1xhm2 = 0.5 * (
-                        self.alm2cl(hm1imap_alms, hm2jmap_alms)
-                        + self.alm2cl(hm2imap_alms, hm1jmap_alms)
-                    )
-
+                for q0, q1 in [(cls_template_noise[k], cls1[k]) for k in cls1]:
                     for s, spec in enumerate(self.specs):
-                        quants = [
-                            [cls_hm1, cls1_hm1],
-                            [cls_hm2, cls1_hm2],
-                            [cls_hm1xhm2, cls1_hm1xhm2],
-                        ]
-                        # running average
-                        for quant0, quant1 in quants:
-                            d = quant0.setdefault(spec, OrderedDict()).setdefault(
-                                xname, np.zeros_like(quant1[s])
-                            )
-                            d[:] += (quant1[s] - d) / float(isim + 1)  # in-place
+                        dd = q0.setdefault(spec, OrderedDict())
+                        if xname not in dd:
+                            dd[xname] = np.zeros_like(q1[s])
+                        d = dd[xname]
+                        d[:] += (q1[s] - d) / float(isim + 1)  # in-place
 
-            setattr(self, hm1_field, cls_hm1)
-            setattr(self, hm2_field, cls_hm2)
-            setattr(self, hm1xhm2_field, cls_hm1xhm2)
-
-        save_attrs = ["cls_tnoise_hm1", "cls_tnoise_hm2", "cls_tnoise_hm1xhm2"]
-
-        ### this block is so sims with template type like
-        # 353_100_gauss_003 can use ensemble in 353_100_gauss
-        tp = template_type.split("_")
-        ttype = template_type
-        if tp[-1].isdigit():
-            if ttype[-7:] not in ["353_100", "217_100"]:
-                ttype = "_".join(tp[:-1])
-        save_name = "template_noise_{}".format(ttype)
-        cp = "template_noise"
-
-        ret = self.load_data(
-            save_name,
-            cp,
-            fields=save_attrs,
-            to_attrs=True,
-            shape=data_shape,
-            shape_ref="cls_tnoise_hm1",
-        )
-        if ret is not None:
-            return ret
-
-        # process template noise
-        process_files()
-
-        return self.save_data(save_name, from_attrs=save_attrs)
+        self.cls_template_noise = cls_template_noise
+        self.save_data(save_name, from_attrs=save_attrs)
+        return cls_template_noise
 
     def get_kernels(self, window_lmax=None):
         """
@@ -3786,8 +3154,12 @@ class XFaster(object):
         This method is called at the 'kernels' checkpoint and loads or saves
         the following data keys to disk:
 
-        kern, pkern, mkern, xkern : shape (num_mask_corr, lmax+1, 2*lmax+1)
-        Temperature and polarization kernels
+            kern:
+                temperature kernel
+            pkern, mkern:
+                + and - polarization kernels
+            xkern:
+                temperature/polarization cross term kernel
         """
 
         if window_lmax is None:
@@ -3835,9 +3207,9 @@ class XFaster(object):
             l2 = np.min([2 * lmax + 1, l + lmax + 1])
             # populate upper triangle
             for ll in all_ells[l:l2]:
-                j0, j0_lmin, j0_lmax = xft.wigner3j(l, 0, ll, 0)
+                j0, j0_lmin, j0_lmax = st.wigner3j(l, 0, ll, 0)
                 if pol:
-                    j2, j2_lmin, j2_lmax = xft.wigner3j(l, 2, ll, -2)
+                    j2, j2_lmin, j2_lmax = st.wigner3j(l, 2, ll, -2)
 
                 # only go up to window lmax
                 j0_lmax = np.minimum(j0_lmax, window_lmax)
@@ -4002,9 +3374,9 @@ class XFaster(object):
             # cache model components
             if not hasattr(self, "r_model") or self.r_model is None:
                 # scalar CAMB spectrum
-                scal = xft.get_camb_cl(r=0, lmax=lmax_kern)
+                scal = st.get_camb_cl(r=0, lmax=lmax_kern)
                 # tensor CAMB spectrum for r=1, scales linearly with r
-                tens = xft.get_camb_cl(r=1, lmax=lmax_kern, nt=0, spec="tensor")
+                tens = st.get_camb_cl(r=1, lmax=lmax_kern, nt=0, spec="tensor")
                 self.r_model = {"scalar": scal, "tensor": tens}
                 if save:
                     opts["r_model"] = self.r_model
@@ -4070,7 +3442,7 @@ class XFaster(object):
                 tbeb_flat[:2] = 0
                 cls_shape["cmb_eb"] = np.copy(tbeb_flat)
                 cls_shape["cmb_tb"] = np.copy(tbeb_flat)
-            elif not tbeb:
+            elif not tbeb and not transfer:
                 cls_shape["cmb_eb"] = np.zeros_like(ell, dtype=float)
                 cls_shape["cmb_tb"] = np.zeros_like(ell, dtype=float)
 
@@ -4249,15 +3621,18 @@ class XFaster(object):
 
     def get_bin_def(
         self,
-        bin_width=25,
         lmin=2,
+        lmax=500,
+        pol=True,
+        pol_mask=True,
         tbeb=False,
-        foreground_fit=False,
-        bin_width_fg=25,
+        bin_width=25,
+        weighted_bins=False,
         residual_fit=False,
         res_specs=None,
         bin_width_res=25,
-        weighted_bins=False,
+        foreground_fit=False,
+        bin_width_fg=25,
     ):
         """
         Construct the bin definition array that defines the bins for each output
@@ -4265,25 +3640,27 @@ class XFaster(object):
 
         Arguments
         ---------
+        lmin : int
+            Minimum ell for binned spectra
+        lmax : int
+            The maximum multipole for which spectra are computed
+        pol : bool
+            If True, polarized spectra are computed from the input maps
+        pol_mask : bool
+            If True, two independent masks are applied to every map:
+            one for T maps and one for Q/U maps.
+        tbeb : bool
+            If True, EB and TB bins are constructed so that these spectra are
+            computed by the estimator.  Otherwise, these spectra are fixed at
+            zero.
         bin_width : int or list of ints
             Width of each spectrum bin.  If a scalar, the same width is applied
             to all cross spectra.  Otherwise, must be a list of up to six
             elements, listing bin widths for the spectra in the order (TT, EE,
             BB, TE, EB, TB).
-        lmin : int
-            Minimum ell for binned spectra
-        tbeb : bool
-            If True, EB and TB bins are constructed so that these spectra are
-            computed by the estimator.  Otherwise, these spectra are fixed at
-            zero.
-        foreground_fit : bool
-            If True, construct bin definitions for foreground components as
-            well.
-        bin_width_fg : int or list of ints
-            Width of each foreground spectrum bin.  If a scalar, the same width
-            is applied to all cross spectra.  Otherwise, must be a list of up to
-            six elements, listing bin widths for the spectra in the order (TT,
-            EE, BB, TE, EB, TB).
+        weighted_bins : bool
+            If True, use an lfac-weighted binning operator to construct Cbls.
+            By default, a flat binning operator is used.
         residual_fit : bool
             If True, fit for (compute bandpower amplitudes for) several wide
             bins of excess noise.
@@ -4297,9 +3674,14 @@ class XFaster(object):
             is applied to all spectra for all cross spectra.  Otherwise, must
             be a list of up to nspec * nmaps elements, listing bin widths for
             each of the spectra in ``res_specs`` in order, then ordered by map.
-        weighted_bins : bool
-            If True, use an lfac-weighted binning operator to construct Cbls.
-            By default, a flat binning operator is used.
+        foreground_fit : bool
+            If True, construct bin definitions for foreground components as
+            well.
+        bin_width_fg : int or list of ints
+            Width of each foreground spectrum bin.  If a scalar, the same width
+            is applied to all cross spectra.  Otherwise, must be a list of up to
+            six elements, listing bin widths for the spectra in the order (TT,
+            EE, BB, TE, EB, TB).
 
         Returns
         -------
@@ -4308,12 +3690,26 @@ class XFaster(object):
             that defines the left and right edges for each bin of the
             corresponding spectrum.
         """
+        self.lmax = lmax
+        self.pol = pol
+        self.pol_dim = 3 if self.pol else 1
+        self.pol_mask = pol_mask if self.pol else False
+
+        # count all the things
+        self.num_corr = pt.num_corr(self.num_maps)
+        self.num_spec = pt.num_corr(3 if self.pol else 1)
+        self.num_spec_mask = pt.num_corr(2 if self.pol_mask else 1)
+        self.num_kern = self.num_corr
+        self.data_shape = (self.num_corr * self.num_spec, self.lmax + 1)
+        self.mask_shape = (self.num_corr * self.num_spec_mask, self.lmax + 1)
+        self.kern_shape = (self.num_kern * (self.lmax + 1), 2 * self.lmax + 1)
+
         npol = (6 if tbeb else 4) if self.pol else 1
         specs = ["tt", "ee", "bb", "te", "eb", "tb"][:npol]
 
-        if np.isscalar(bin_width):
+        if np.isscalar(bin_width) or len(bin_width) == 1:
             bin_width = [bin_width] * npol
-        bin_width = np.asarray(bin_width)[:npol]
+        bin_width = np.asarray(bin_width).ravel()[:npol]
 
         bwerr = "EE and BB must have the same bin width (for mixing)"
         if self.pol and bin_width[1] != bin_width[2]:
@@ -4332,9 +3728,9 @@ class XFaster(object):
         # Do the same for foreground bins
         nbins_fg = 0
         if foreground_fit:
-            if np.isscalar(bin_width_fg):
+            if np.isscalar(bin_width_fg) or len(bin_width_fg) == 1:
                 bin_width_fg = [bin_width_fg] * npol
-            bin_width_fg = np.asarray(bin_width_fg)[:npol]
+            bin_width_fg = np.asarray(bin_width_fg).ravel()[:npol]
 
             if self.pol and bin_width_fg[1] != bin_width_fg[2]:
                 raise ValueError("Foreground {}".format(bwerr))
@@ -4357,11 +3753,11 @@ class XFaster(object):
             res_specs = [s.lower() for s in res_specs]
             nmap = len(self.map_tags)
             nspecr = len(res_specs) * nmap
-            if np.isscalar(bin_width_res):
+            if np.isscalar(bin_width_res) or len(bin_width_res) == 1:
                 bin_width_res = [bin_width_res] * nspecr
             elif len(bin_width_res) == nspecr // nmap:
                 bin_width_res = np.array([bin_width_res] * nmap).ravel()
-            bin_width_res = np.asarray(bin_width_res)[:nspecr].reshape(nmap, -1)
+            bin_width_res = np.asarray(bin_width_res).ravel()[:nspecr].reshape(nmap, -1)
 
             for tag, bws in zip(self.map_tags, bin_width_res):
                 if self.pol and "ee" in res_specs and "bb" in res_specs:
@@ -4438,15 +3834,12 @@ class XFaster(object):
         lmax = self.lmax  # 2 * lmax
 
         if not transfer_run:
-            # expand transfer function terms
+            # collect transfer function terms
             transfer = OrderedDict()
             for spec in specs:
                 transfer[spec] = OrderedDict()
-                stag = "cmb_{}".format(spec)
                 for tag in map_tags:
-                    transfer[spec][tag] = xft.expand_qb(
-                        self.qb_transfer[stag][tag], self.bin_def[stag], lmax + 1
-                    )
+                    transfer[spec][tag] = self.transfer[spec][tag]
 
         lk = slice(0, lmax + 1)
         mll = OrderedDict()
@@ -4580,12 +3973,7 @@ class XFaster(object):
         if self.nbins_res > 0 and not transfer_run:
             comps += ["res"]
             cls_noise = self.cls_noise_null if self.null_run else self.cls_noise
-            cls_noise0 = self.cls_noise0_null if self.null_run else self.cls_noise0
-            cls_noise1 = self.cls_noise1_null if self.null_run else self.cls_noise1
-            cls_sxn0 = self.cls_sxn0_null if self.null_run else self.cls_sxn0
-            cls_sxn1 = self.cls_sxn1_null if self.null_run else self.cls_sxn1
-            cls_nxs0 = self.cls_nxs0_null if self.null_run else self.cls_nxs0
-            cls_nxs1 = self.cls_nxs1_null if self.null_run else self.cls_nxs1
+            cls_res = self.cls_res_null if self.null_run else self.cls_res
 
         ell = np.arange(lmax_kern + 1)
 
@@ -4686,34 +4074,31 @@ class XFaster(object):
                     for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
                         if "res" in comp:
                             s0, s1 = spec
-                            res_tags = {
-                                "s0m0": "res_{}_{}".format(s0 * 2, tag1),
-                                "s0m1": "res_{}_{}".format(s0 * 2, tag2),
-                                "s1m0": "res_{}_{}".format(s1 * 2, tag1),
-                                "s1m1": "res_{}_{}".format(s1 * 2, tag2),
-                            }
                             bd = [[0, lmax + 1]]
                             # if any component of XY spec is in residual bin
                             # def, use that bin def
-                            for k, v in res_tags.items():
-                                spec0 = v.split("_")[1]
-                                if v not in self.bin_def:
-                                    if spec0 in ["ee", "bb"]:
-                                        v = v.replace(spec0, "eebb")
-                                        if v in self.bin_def:
-                                            bd = self.bin_def[v]
-                                else:
-                                    bd = self.bin_def[v]
-                            for comp, cls in [
-                                ("res0_nxn", cls_noise0),
-                                ("res1_nxn", cls_noise1),
-                                ("res0_sxn", cls_sxn0),
-                                ("res1_sxn", cls_sxn1),
-                                ("res0_nxs", cls_nxs0),
-                                ("res1_nxs", cls_nxs1),
-                                ("res", cls_noise),
+                            for v in [
+                                "res_{}_{}".format(s0 * 2, tag1),
+                                "res_{}_{}".format(s0 * 2, tag2),
+                                "res_{}_{}".format(s1 * 2, tag1),
+                                "res_{}_{}".format(s1 * 2, tag2),
                             ]:
-                                stag = "{}_{}".format(comp, spec)
+                                if v in self.bin_def:
+                                    bd = self.bin_def[v]
+                                    break
+                                spec0 = v.split("_")[1]
+                                if spec0 in ["ee", "bb"]:
+                                    v = v.replace(spec0, "eebb")
+                                    if v in self.bin_def:
+                                        bd = self.bin_def[v]
+                                        break
+
+                            comp_list = [("res", cls_noise)] + [
+                                ("res_{}".format(k), cls_res[k]) for k in cls_res
+                            ]
+
+                            for res_comp, cls in comp_list:
+                                stag = "{}_{}".format(res_comp, spec)
                                 cbl.setdefault(stag, OrderedDict())
                                 cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
                                 cl1 = cls[spec][xname]
@@ -4873,7 +4258,7 @@ class XFaster(object):
                         # frequency scaling for foreground model
                         # I don't remember why delta beta was done this way.
                         # For likelihood, it makes sense to just use beta_ref+db
-                        freq_scale = xft.scale_dust(
+                        freq_scale = st.scale_dust(
                             self.map_freqs[tag1],
                             self.map_freqs[tag2],
                             ref_freq=self.ref_freq,
@@ -4897,14 +4282,14 @@ class XFaster(object):
                         qbr = {"s0m0": 1, "s0m1": 1, "s1m0": 1, "s1m1": 1}
 
                         for k, v in res_tags.items():
-                            spec0 = v.split("_")[1]
-                            if v not in qb:
+                            if v in qb:
+                                qbr[k] = np.sqrt(1 + qb[v])[:, None]
+                            else:
+                                spec0 = v.split("_")[1]
                                 if spec0 in ["ee", "bb"]:
                                     res_tags[k] = v.replace(spec0, "eebb")
                                     if res_tags[k] in qb:
                                         qbr[k] = np.sqrt(1 + qb[res_tags[k]])[:, None]
-                            else:
-                                qbr[k] = np.sqrt(1 + qb[v])[:, None]
 
                             if np.any(np.isnan(qbr[k])):
                                 self.warn(
@@ -4915,31 +4300,24 @@ class XFaster(object):
                                 )
                                 qbr[k][np.isnan(qbr[k])] = 1
 
-                        cl1 = np.zeros_like(cl1)
-                        for k1, k2, k3 in [
-                            (
-                                "s0m0",
-                                "s1m1",
-                                "res0_nxn_{}".format(spec),
-                            ),  # N_s0m0 x N_s1m1
-                            (
-                                "s1m0",
-                                "s0m1",
-                                "res1_nxn_{}".format(spec),
-                            ),  # N_s1m0 x N_s0m1
-                        ]:
-                            r = qbr[k1] * qbr[k2] - 1
-                            cl1 += (r * cbl[k3][xname]).sum(axis=0)
-
+                        res_list = [
+                            ("s0m0", "s1m1", "nxn0"),  # N_s0m0 x N_s1m1
+                            ("s1m0", "s0m1", "nxn1"),  # N_s1m0 x N_s0m1
+                        ]
                         if self.null_run:
-                            for k1, k3 in [
-                                ("s1m1", "res0_sxn_{}".format(spec)),  # S_s0m0 x N_s1m1
-                                ("s0m1", "res1_sxn_{}".format(spec)),  # S_s1m0 x N_s0m1
-                                ("s0m0", "res0_nxs_{}".format(spec)),  # N_s0m0 x S_s1m1
-                                ("s1m0", "res1_nxs_{}".format(spec)),  # N_s1m0 x S_s0m1
-                            ]:
-                                r = qbr[k1] - 1
-                                cl1 += (r * cbl[k3][xname]).sum(axis=0)
+                            res_list += [
+                                (None, "s1m1", "sxn0"),  # S_s0m0 x N_s1m1
+                                (None, "s0m1", "sxn1"),  # S_s1m0 x N_s0m1
+                                ("s0m0", None, "nxs0"),  # N_s0m0 x S_s1m1
+                                ("s1m0", None, "nxs1"),  # N_s1m0 x S_s0m1
+                            ]
+
+                        cl1 = np.zeros_like(cl1)
+                        for k1, k2, k3 in res_list:
+                            q1 = qbr[k1] if k1 else 1.0
+                            q2 = qbr[k2] if k2 else 1.0
+                            rtag = "res_{}_{}".format(k3, spec)
+                            cl1 += ((q1 * q2 - 1.0) * cbl[rtag][xname]).sum(axis=0)
 
                         # all of these were asymmetric specs, divide by 2 for mean
                         cl1 /= 2.0
@@ -5036,7 +4414,7 @@ class XFaster(object):
         if transfer_run:
             obs_quant = self.cls_signal
         elif self.null_run:
-            if self.planck_sub:
+            if self.reference_subtracted:
                 obs_quant = self.cls_data_sub_null
             else:
                 obs_quant = self.cls_data_null
@@ -5058,38 +4436,19 @@ class XFaster(object):
         nell = None
         debias = None
         # Nulls are debiased by average of S+N sims
-        if self.null_run and not transfer_run:
-            if self.cls_noise is not None:
-                nell = OrderedDict()
+        if self.null_run and not transfer_run and self.cls_sim_null is not None:
+            nell = OrderedDict()
             debias = OrderedDict()
             for spec in specs:
-                if self.cls_noise is not None:
-                    nell[spec] = OrderedDict()
+                nell[spec] = OrderedDict()
                 debias[spec] = OrderedDict()
-                for xname, (m0, m1) in map_pairs.items():
-                    if m0 != m1:
-                        if self.cls_noise is not None:
-                            nell[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
-                        if self.planck_sub:
-                            debias[spec][xname] = np.copy(
-                                self.cls_noise_null[spec][xname]
-                            )
-                        else:
-                            debias[spec][xname] = np.copy(
-                                self.cls_sim_null[spec][xname]
-                            )
-
+                for xname in map_pairs:
+                    nell[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
+                    if self.reference_subtracted:
+                        # signal term already subtracted with reference maps
+                        debias[spec][xname] = np.copy(self.cls_noise_null[spec][xname])
                     else:
-                        if self.cls_noise is not None:
-                            nell[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
-                        if self.planck_sub:
-                            debias[spec][xname] = np.copy(
-                                self.cls_noise_null[spec][xname]
-                            )
-                        else:
-                            debias[spec][xname] = np.copy(
-                                self.cls_sim_null[spec][xname]
-                            )
+                        debias[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
 
         # Non-nulls are debiased by average of N sims
         elif not transfer_run and self.cls_noise is not None:
@@ -5532,7 +4891,7 @@ class XFaster(object):
 
                 # get foreground at pivot point spectral index
                 # and first derivative
-                freq_scale0, freq_scale_deriv = xft.scale_dust(
+                freq_scale0, freq_scale_deriv = st.scale_dust(
                     self.map_freqs[m0],
                     self.map_freqs[m1],
                     ref_freq=self.ref_freq,
@@ -5874,6 +5233,7 @@ class XFaster(object):
             If ``transfer_run`` is False, this dictionary also contains::
 
                 qb_transfer : transfer function amplitudes
+                transfer : ell-by-ell transfer function
                 nbins_res : number of residual bins
 
 
@@ -5886,10 +5246,11 @@ class XFaster(object):
         separate files with the same name (and different index).
         """
 
-        save_name = "transfer" if transfer_run else "bandpowers"
-
         if transfer_run:
             null_first_cmb = False
+            save_name = "transfer_wbins" if self.weighted_bins else "transfer"
+        else:
+            save_name = "bandpowers"
 
         # previous fqb iterations to monitor convergence and adjust conditioning
         prev_fqb = []
@@ -6141,7 +5502,10 @@ class XFaster(object):
             )
 
         if not transfer_run:
-            out.update(qb_transfer=self.qb_transfer)
+            out.update(
+                qb_transfer=self.qb_transfer,
+                transfer=self.transfer,
+            )
             if self.template_cleaned:
                 out.update(template_alpha=self.template_alpha)
 
@@ -6285,7 +5649,11 @@ class XFaster(object):
             self.warn(msg)
 
         return self.save_data(
-            save_name, map_tag=map_tag, bp_opts=True, extra_tag=file_tag, **out
+            save_name,
+            map_tag=map_tag,
+            bp_opts=not transfer_run,
+            extra_tag=file_tag,
+            **out
         )
 
     def get_transfer(
@@ -6293,7 +5661,7 @@ class XFaster(object):
         converge_criteria=0.005,
         iter_max=200,
         save_iters=False,
-        fix_bb_xfer=False,
+        fix_bb_transfer=False,
     ):
         """
         Compute the transfer function from signal simulations created using
@@ -6313,26 +5681,28 @@ class XFaster(object):
         save_iters : bool
             If True, the output data from each Fisher iteration are stored
             in an individual npz file.
-        fix_bb_xfer : bool
+        fix_bb_transfer : bool
             If True, after transfer functions have been calculated, impose
             the BB xfer is exactly equal to the EE transfer.
 
         Returns
         -------
-        qb_transfer : OrderedDict
-            Binned transfer function for each map
+        transfer : OrderedDict
+            Ell-by-ell transfer function for each map
 
         Notes
         -----
         This method is called at the 'transfer' checkpoint, and loads or saves
         a data dictionary named 'transfer_all' with the following entries:
 
-            nbins : int
+            nbins:
                 number of bins
-            bin_def : (nbins, 3)
-                bin definition array (see ``get_bin_def``)
-            qb_transfer : (num_maps, nbins)
-                binned transfer function for each map
+            bin_def:
+                bin definition dictionary (see ``get_bin_def``)
+            qb_transfer:
+                binned transfer function for each map and spectrum component
+            transfer:
+                ell-by-ell transfer function for each map and spectrum component
 
         Additionally the final output of ``fisher_iterate`` is stored
         in a dictionary called ``transfer_map<idx>`` for each map.
@@ -6344,7 +5714,7 @@ class XFaster(object):
 
         opts = dict(
             converge_criteria=converge_criteria,
-            fix_bb_xfer=fix_bb_xfer,
+            fix_bb_transfer=fix_bb_transfer,
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
         )
@@ -6362,15 +5732,40 @@ class XFaster(object):
             value_ref=opts,
         )
 
+        # function for converting qb's to ell-by-ell transfer function
+        def expand_transfer(qb_transfer, bin_def):
+            transfer = OrderedDict()
+            for spec in self.specs:
+                stag = "cmb_{}".format(spec)
+                transfer[spec] = OrderedDict()
+                bd = bin_def[stag]
+                for m0 in self.map_tags:
+                    if spec == "bb" and fix_bb_transfer:
+                        transfer[spec][m0] = transfer["ee"][m0]
+                    elif spec in ["tb", "eb"]:
+                        speca, specb = [s + s for s in spec]
+                        transfer[spec][m0] = np.sqrt(
+                            np.abs(transfer[speca][m0] * transfer[specb][m0])
+                        )
+                    else:
+                        transfer[spec][m0] = pt.expand_qb(
+                            qb_transfer[stag][m0], bd, self.lmax + 1
+                        )
+            return transfer
+
         if ret is not None:
             self.qb_transfer = ret["qb_transfer"]
-            return ret["qb_transfer"]
+            if "transfer" in ret:
+                self.transfer = ret["transfer"]
+            else:
+                self.transfer = expand_transfer(ret["qb_transfer"], ret["bin_def"])
+            return self.transfer
 
         self.qb_transfer = OrderedDict()
         for spec in self.specs:
             self.qb_transfer["cmb_" + spec] = OrderedDict()
 
-        success = False
+        success = True
         msg = ""
 
         for im0, m0 in enumerate(self.map_tags):
@@ -6380,7 +5775,6 @@ class XFaster(object):
                         self.nbins_cmb // len(self.specs)
                     )
                 self.log("Setting map {} transfer to unity".format(m0), "info")
-                success = True
                 continue
 
             self.log(
@@ -6401,8 +5795,8 @@ class XFaster(object):
             )
             qb = ret["qb"]
 
-            success = ret["success"]
-            if not success:
+            success = success and ret["success"]
+            if not ret["success"]:
                 msg = "Error in fisher_iterate for map {}".format(m0)
 
             # fix negative amplitude bins
@@ -6429,11 +5823,7 @@ class XFaster(object):
                         )
                         success = False
 
-            # fix the BB transfer to EE, if desired
-            if fix_bb_xfer:
-                qb["cmb_bb"] = qb["cmb_ee"]
-
-            # fix TB/EB transfer functions
+            # Set EB/TB qb transfers to geometric means of components
             if len(self.specs) > 4:
                 qb["cmb_eb"] = np.sqrt(np.abs(qb["cmb_ee"] * qb["cmb_bb"]))
                 qb["cmb_tb"] = np.sqrt(np.abs(qb["cmb_tt"] * qb["cmb_bb"]))
@@ -6441,9 +5831,14 @@ class XFaster(object):
             for stag, qbdat in qb.items():
                 self.qb_transfer[stag][m0] = qbdat
 
+        if success:
+            self.transfer = expand_transfer(self.qb_transfer, self.bin_def)
+        else:
+            self.transfer = None
+
         self.save_data(
             "{}{}".format("" if success else "ERROR_", save_name),
-            from_attrs=["nbins", "bin_def", "qb_transfer", "map_tags"],
+            from_attrs=["nbins", "bin_def", "qb_transfer", "map_tags", "transfer"],
             cls_shape=self.cls_shape,
             success=success,
             **opts
@@ -6452,7 +5847,7 @@ class XFaster(object):
         if not success:
             raise RuntimeError("Error computing transfer function: {}".format(msg))
 
-        return self.qb_transfer
+        return self.transfer
 
     def get_bandpowers(
         self,
@@ -6461,6 +5856,8 @@ class XFaster(object):
         iter_max=200,
         return_qb=False,
         save_iters=False,
+        ref_freq=359.7,
+        beta_ref=1.54,
         delta_beta_prior=None,
         cond_noise=None,
         cond_criteria=None,
@@ -6496,6 +5893,13 @@ class XFaster(object):
         save_iters : bool
             If True, the output data from each Fisher iteration are stored
             in an individual npz file.
+        ref_freq : float
+            In GHz, reference frequency for dust model. Dust bandpowers output
+            will be at this reference frequency.
+        beta_ref : float
+            The spectral index of the dust model. This is a fixed value, with
+            an additive deviation from this value fit for in foreground fitting
+            mode.
         delta_beta_prior : float
             The width of the prior on the additive change from beta_ref. If you
             don't want the code to fit for a spectral index different
@@ -6550,12 +5954,20 @@ class XFaster(object):
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
         )
+
+        # foreground fitting
         if "fg_tt" in self.bin_def:
+            # reference frequency and spectral index
+            self.ref_freq = ref_freq
+            self.beta_ref = beta_ref
+            # priors on frequency spectral index
+            self.delta_beta_fix = 1.0e-8
             opts.update(
                 delta_beta_prior=delta_beta_prior,
                 ref_freq=self.ref_freq,
                 beta_ref=self.beta_ref,
             )
+
         if self.template_cleaned:
             opts.update(template_alpha=self.template_alpha)
         self.return_cls = return_cls
@@ -6614,8 +6026,8 @@ class XFaster(object):
         lmin=33,
         lmax=250,
         mcmc=True,
-        alpha_tags=["95", "150"],
-        beam_tags=["95", "150"],
+        alpha_tags="all",
+        beam_tags="all",
         r_prior=[0, np.inf],
         alpha_prior=[0, np.inf],
         res_prior=None,
@@ -6628,9 +6040,9 @@ class XFaster(object):
         converge_criteria=0.01,
         reset_backend=None,
         file_tag=None,
-        sub_hm_noise=False,
+        subtract_template_noise=False,
         r_specs=["ee", "bb"],
-        temp_specs=["ee", "bb", "eb"],
+        template_specs=["ee", "bb", "eb"],
     ):
         """
         Explore the likelihood, optionally with an MCMC sampler.
@@ -6658,11 +6070,16 @@ class XFaster(object):
         alpha_tags : list of strings
             List of map tags from which foreground template maps should be
             subtracted.  These should be the original map tags, not
-            those generated for chunk sets.
+            those generated for chunk sets.  If "all", then all map tags
+            used in the template subtraction are included, as determined by
+            the keys in the `template_alpha` attribute.  If None, then the alpha
+            parameters are not included in the likelihood.
         beam_tags : list of strings
             List of map tags from which beam error envelopes should be
             marginalized over. These should be the original map tags, not
-            those generated for chunk sets.
+            those generated for chunk sets.  If "all", then all available map
+            tags in the dataset are included.  If None, then the beam error
+            parameters are not included in the likelihood.
         r_prior : 2-list or None
             Prior upper and lower bound on tensor to scalar ratio.  If None, the
             fiducial shape spectrum is assumed, and the r parameter space is not
@@ -6700,12 +6117,15 @@ class XFaster(object):
             set to True if the checkpoint has been forced to be rerun.
         file_tag : string
             If supplied, appended to the likelihood filename.
-        sub_hm_noise : bool
-            If True, subtract average of Planck ffp10 noise crosses to debias
-            template-cleaned spectra
+        subtract_template_noise : bool
+            If True, subtract average of cross spectra of an ensemble of noise
+            realizations corresponding to each template map, to debias
+            template-cleaned spectra.  Typically, this would be a noise model
+            based on the Planck FFP10 ensemble for each half-mission foreground
+            template.
         r_specs : list
             Which spectra to use in the r likelihood.
-        temp_specs : list
+        template_specs : list
             Which spectra to use for alpha in the likelihood.
         """
 
@@ -6729,7 +6149,7 @@ class XFaster(object):
                 x[:] = [float(x[0]), float(x[1])]
 
         r_specs = [x.lower() for x in r_specs]
-        temp_specs = [x.lower() for x in temp_specs]
+        template_specs = [x.lower() for x in template_specs]
 
         save_name = "like_mcmc"
         if not mcmc:
@@ -6752,6 +6172,10 @@ class XFaster(object):
             alpha_prior = None
 
         # count alpha parameters to fit
+        if alpha_tags is None:
+            alpha_tags = []
+        elif alpha_tags == "all":
+            alpha_tags = list(self.template_alpha) if self.template_alpha else []
         alpha_tags = [x for x in alpha_tags if x in self.map_tags_orig]
         if not len(alpha_tags):
             alpha_prior = None
@@ -6761,6 +6185,10 @@ class XFaster(object):
             num_alpha = len(alpha_tags)
 
         # count beam parameters to fit
+        if beam_tags is None:
+            beam_tags = []
+        elif beam_tags == "all":
+            beam_tags = list(self.map_tags_orig)
         beam_tags = [x for x in beam_tags if x in self.map_tags_orig]
         if not len(beam_tags):
             beam_prior = None
@@ -7031,8 +6459,8 @@ class XFaster(object):
             else:
                 self.get_masked_data(
                     template_alpha=OrderedDict(zip(alpha_tags, alpha)),
-                    sub_hm_noise=sub_hm_noise,
-                    temp_specs=temp_specs,
+                    subtract_template_noise=subtract_template_noise,
+                    template_specs=template_specs,
                 )
                 clsi = self.get_data_spectra(do_noise=False)
 
