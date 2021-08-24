@@ -118,7 +118,7 @@ def xfaster_run(
     like_r_specs=["EE", "BB"],
     like_template_specs=["EE", "BB", "EB"],
     like_alpha_tags="all",
-    alpha_prior=[-np.inf, np.inf],
+    alpha_prior=None,
     r_prior=[-np.inf, np.inf],
     res_prior=None,
     like_beam_tags="all",
