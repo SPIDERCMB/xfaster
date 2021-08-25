@@ -5054,12 +5054,12 @@ class XFaster(object):
 
         # construct matrices for the qb and fisher terms,
         # and take the trace and sum over ell simultaneously
-        if not windows:
-            qb_vec = np.einsum("iil,ijkl,jil->k", gmat, mat, Dmat_obs) / 2.0
-            del gmat, mat, Dmat_obs
         if not windows or (windows and inv_fish is None):
             fisher = np.einsum("iil,ijkl,jiml->km", gmat, mat, dSdqb_mat1_freq) / 2
             del dSdqb_mat1_freq
+        if not windows:
+            qb_vec = np.einsum("iil,ijkl,jil->k", gmat, mat, Dmat_obs) / 2.0
+            del gmat, mat, Dmat_obs
 
         if windows:
 
