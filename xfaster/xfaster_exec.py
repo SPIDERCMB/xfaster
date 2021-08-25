@@ -563,6 +563,7 @@ def xfaster_run(
         num_walkers=mcmc_walkers,
         converge_criteria=like_converge_criteria,
         file_tag=like_tag,
+        use_xfer_mat=use_xfer_mat,
         sub_hm_noise=sub_hm_noise,
     )
     config_vars.update(like_opts, "Likelihood Estimation Options")

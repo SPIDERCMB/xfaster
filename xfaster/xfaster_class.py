@@ -4879,7 +4879,7 @@ class XFaster(object):
                 bw = self.bin_weights[stag]
                 for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
                     if beam_error:
-                        cbl[mstag][xname] = OrderedDict(
+                        cbl[stag][xname] = OrderedDict( # change from mstag
                             [(k, np.zeros((len(bd), lmax + 1))) for k in beam_keys]
                         )
                     else:
@@ -5008,7 +5008,7 @@ class XFaster(object):
                     #)
                     
                     # loading anafast ll transfer matrix
-                    ll_xfermat_dir = "/data/vyluu/anafast_matrix_blocks"
+                    ll_xfermat_dir = "/data/vyluu/anafast_matrix_blocks" # make this into param
                     ll_xfermat_fn = "{:s}x{:s}_{:s}_to_{:s}_block.dat".format(
                             self.map_reobs_freqs[tag1],
                             self.map_reobs_freqs[tag2],
@@ -6795,6 +6795,7 @@ class XFaster(object):
         like_profile_sigma=3.0,
         like_profile_points=100,
         file_tag=None,
+        use_xfer_mat=True,
     ):
         """
         Compute the maximum likelihood bandpowers of the data, assuming
@@ -6903,7 +6904,12 @@ class XFaster(object):
 
         self.clear_precalc()
 
-        cbl = self.bin_cl_template(map_tag=map_tag, transfer_run=False)
+        if use_xfer_mat:
+            cbl = self.bin_cl_template_tmat(map_tag=map_tag, transfer_run=False) 
+            self.lmax = 300 #308
+            self.lmin = 5 #8
+        else:
+            cbl = self.bin_cl_template(map_tag=map_tag, transfer_run=False)
 
         ret = self.fisher_iterate(
             cbl,
@@ -6953,6 +6959,7 @@ class XFaster(object):
         converge_criteria=0.01,
         reset_backend=None,
         file_tag=None,
+        use_xfer_mat=True,
         sub_hm_noise=False,
         r_specs=["ee", "bb"],
         temp_specs=["ee", "bb", "eb"],
@@ -7025,6 +7032,9 @@ class XFaster(object):
             set to True if the checkpoint has been forced to be rerun.
         file_tag : string
             If supplied, appended to the likelihood filename.
+        use_xfer_mat : bool 
+            If True, use transfer matrix to construct model spectrum. If false, use
+            transfer function XFaster computes
         sub_hm_noise : bool
             If True, subtract average of Planck ffp10 noise crosses to debias
             template-cleaned spectra
@@ -7148,8 +7158,8 @@ class XFaster(object):
 
         if use_xfer_mat:
             bin_cl_template = self.bin_cl_template_tmat
-            self.lmax = 308
-            self.lmin = 8
+            self.lmax = 300 #308
+            self.lmin = 5 #8
         else:
             bin_cl_template = self.bin_cl_template
 
