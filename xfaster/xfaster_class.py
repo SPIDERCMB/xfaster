@@ -4838,6 +4838,9 @@ class XFaster(object):
                     Dmat_obs = self.Dmat_obs
                 dSdqb_mat1 = self.dSdqb_mat1
 
+        if windows:
+            self.clear_precalc()
+
         delta_beta = 0.0
         if "delta_beta" in qb:
             delta_beta = qb["delta_beta"][0]
@@ -4991,9 +4994,8 @@ class XFaster(object):
             dSdqb_mat1_freq = dSdqb_mat1_freq[..., ell]
         gmat = gmat[..., ell]
 
-        self.Dmat1 = Dmat1
-
         lam, R = np.linalg.eigh(Dmat1.swapaxes(0, -1))
+        del Dmat1
         bad = (lam <= 0).sum(axis=-1).astype(bool)
         if bad.sum():
             # exclude any ell's with ill-conditioned D matrix
@@ -5006,29 +5008,33 @@ class XFaster(object):
             gmat[..., bad_idx] = 0
         inv_lam = 1.0 / lam
         Dinv = np.einsum("...ij,...j,...kj->...ik", R, inv_lam, R).swapaxes(0, -1)
+        del inv_lam
 
         if likelihood:
             # log(det(D)) = tr(log(D)), latter is numerically stable
             # compute log(D) by eigenvalue decomposition per ell
             log_lam = np.log(lam)
+            del lam
             Dlog = np.einsum("...ij,...j,...kj->...ik", R, log_lam, R).swapaxes(0, -1)
+            del R, log_lam
 
         else:
-            # compute ell-by-ell inverse
-            # Dinv = np.linalg.inv(Dmat1.swapaxes(0, -1)).swapaxes(0, -1)
-
             # optimized matrix multiplication
             # there is something super weird about this whole matrix operation
             # that causes the computation of mats to take four times as long
             # if mat1 is not computed.
+            del lam, R
             eye = np.eye(len(gmat))
             mat1 = np.einsum("ij...,jk...->ik...", eye, Dinv)
             mat2 = np.einsum("klm...,ln...->knm...", dSdqb_mat1_freq, Dinv)
+            del Dinv
             mat = np.einsum("ik...,knm...->inm...", mat1, mat2)
+            del mat1, mat2
 
         if likelihood:
             # compute log likelihood as tr(g * (D^-1 * Dobs + log(D)))
             arg = np.einsum("ij...,jk...->ik...", Dinv, Dmat_obs_b) + Dlog
+            del Dinv, Dmat_obs_b, Dlog
             like = -np.einsum("iij,iij->", gmat, arg) / 2.0
 
             # include priors in likelihood
@@ -5050,10 +5056,13 @@ class XFaster(object):
         # and take the trace and sum over ell simultaneously
         if not windows:
             qb_vec = np.einsum("iil,ijkl,jil->k", gmat, mat, Dmat_obs) / 2.0
+            del gmat, mat, Dmat_obs
         if not windows or (windows and inv_fish is None):
             fisher = np.einsum("iil,ijkl,jiml->km", gmat, mat, dSdqb_mat1_freq) / 2
+            del dSdqb_mat1_freq
 
         if windows:
+
             if inv_fish is None:
                 inv_fish = np.linalg.solve(fisher, np.eye(len(fisher)))
 
@@ -5063,6 +5072,7 @@ class XFaster(object):
 
             # compute binning term
             arg = np.einsum("ij,kljm->klim", inv_fish, mat)
+            del mat
             wbl = OrderedDict()
             bin_index = pt.dict_to_index(qb)
             spec_mask = pt.spec_mask(nmaps=self.num_maps)
@@ -5084,7 +5094,10 @@ class XFaster(object):
                     smat += spec_mask[mspec][:, :, None, None] * Mmat_mix
 
                 # qb window function
+                # XXX try to compute this in a more memory-efficient way,
+                # probably by looping over elements of spec_mask
                 wbl1 = np.einsum("iil,ijkl,jilm->km", gmat, sarg, smat) / 2.0 / norm
+                del smat
 
                 # bin weighting, allowing for overlapping bin edges
                 chi_bl = np.zeros_like(norm)
