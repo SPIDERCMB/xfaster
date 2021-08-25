@@ -1310,6 +1310,7 @@ class XFasterJobGroup(object):
                 if a in [
                     "template_alpha_tags",
                     "template_alpha",
+                    "template_alpha_sim",
                     "res_specs",
                     "like_mask",
                     "r_prior",
