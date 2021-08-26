@@ -748,7 +748,7 @@
     <span class="k">return</span> <span class="n">spec_mask</span><span class="p">[</span><span class="n">spec</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="dict_to_dmat"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.dict_to_dmat">[docs]</a><span class="k">def</span> <span class="nf">dict_to_dmat</span><span class="p">(</span><span class="n">dmat_dict</span><span class="p">):</span>
+<div class="viewcode-block" id="dict_to_dmat"><a class="viewcode-back" href="../../api.html#xfaster.parse_tools.dict_to_dmat">[docs]</a><span class="k">def</span> <span class="nf">dict_to_dmat</span><span class="p">(</span><span class="n">dmat_dict</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Take a dmat dictionary and return the right shaped Dmat matrix:</span>
 <span class="sd">    (Nmaps * 3, Nmaps * 3, lmax + 1) if pol else</span>
@@ -773,13 +773,14 @@
     <span class="n">map_pairs</span> <span class="o">=</span> <span class="n">tag_pairs</span><span class="p">(</span><span class="n">map_tags</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="n">nmaps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">map_tags</span><span class="p">)</span>
-    <span class="n">pol_dim</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">pol_dim</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">pol</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="mi">3</span> <span class="k">if</span> <span class="n">pol</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span>
 
     <span class="n">Dmat</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">inds</span> <span class="o">=</span> <span class="n">spec_index</span><span class="p">()</span>
 
     <span class="k">for</span> <span class="n">xname</span><span class="p">,</span> <span class="p">(</span><span class="n">im0</span><span class="p">,</span> <span class="n">im1</span><span class="p">)</span> <span class="ow">in</span> <span class="n">map_pairs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">pol_dim</span> <span class="o">=</span> <span class="mi">3</span> <span class="k">if</span> <span class="s2">&quot;ee&quot;</span> <span class="ow">in</span> <span class="n">dmat_dict</span><span class="p">[</span><span class="n">xname</span><span class="p">]</span> <span class="k">else</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">pol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pol_dim</span> <span class="o">=</span> <span class="mi">3</span> <span class="k">if</span> <span class="s2">&quot;ee&quot;</span> <span class="ow">in</span> <span class="n">dmat_dict</span><span class="p">[</span><span class="n">xname</span><span class="p">]</span> <span class="k">else</span> <span class="mi">1</span>
         <span class="k">for</span> <span class="n">spec</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">dmat_dict</span><span class="p">[</span><span class="n">xname</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">Dmat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">pol_dim</span> <span class="o">*</span> <span class="n">nmaps</span><span class="p">,</span> <span class="n">pol_dim</span> <span class="o">*</span> <span class="n">nmaps</span><span class="p">)</span>

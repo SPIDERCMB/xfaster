@@ -608,7 +608,7 @@ that is 1 in elements corresponding to spec if spec is provided.</p>
 
 <dl class="function">
 <dt id="xfaster.parse_tools.dict_to_dmat">
-<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">dict_to_dmat</code><span class="sig-paren">(</span><em class="sig-param">dmat_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#dict_to_dmat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.dict_to_dmat" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">dict_to_dmat</code><span class="sig-paren">(</span><em class="sig-param">dmat_dict</em>, <em class="sig-param">pol=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#dict_to_dmat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.dict_to_dmat" title="Permalink to this definition">¶</a></dt>
 <dd><p>Take a dmat dictionary and return the right shaped Dmat matrix:
 (Nmaps * 3, Nmaps * 3, lmax + 1) if pol else
 (Nmaps, Nmaps, lmax + 1)</p>
@@ -1146,7 +1146,6 @@ dSdqb_mat1 are also computed.</p></li>
 <li><p><strong>dSdqb_mat1</strong> (<em>OrderedDict</em>) – Signal derivative matrix from Cbl</p></li>
 <li><p><strong>Mmat</strong> (<em>OrderedDict</em>) – Mode mixing matrix (Kll’ * Fl * Bl^2) for constructing
 window functions.</p></li>
-<li><p><strong>Mmat_mix</strong> (<em>OrderedDict</em>) – EB mixing terms for the mode mixxing matrix</p></li>
 <li><p><em>.. note:: the output arrays are also stored as attributes of the</em></p></li>
 <li><p>parent object to avoid repeating the computation in <code class="docutils literal notranslate"><span class="pre">fisher_calc</span></code></p></li>
 </ul>

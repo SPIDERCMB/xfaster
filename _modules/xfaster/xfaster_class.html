@@ -4767,8 +4767,6 @@
 <span class="sd">        Mmat : OrderedDict</span>
 <span class="sd">            Mode mixing matrix (Kll&#39; * Fl * Bl^2) for constructing</span>
 <span class="sd">            window functions.</span>
-<span class="sd">        Mmat_mix : OrderedDict</span>
-<span class="sd">            EB mixing terms for the mode mixxing matrix</span>
 
 <span class="sd">        .. note:: the output arrays are also stored as attributes of the</span>
 <span class="sd">        parent object to avoid repeating the computation in ``fisher_calc``</span>
@@ -4790,19 +4788,18 @@
             <span class="n">Dmat_obs</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">dSdqb</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">Mmat</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="n">Mmat_mix</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">windows</span><span class="p">:</span>
                 <span class="n">Dmat_obs</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="n">Mmat</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-                <span class="n">Mmat_mix</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">:</span>
+                    <span class="n">Mmat</span><span class="p">[</span><span class="n">spec</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
                 <span class="n">mll</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;mll&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">mll</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">mll</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernel_precalc</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">Dmat_obs</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
                 <span class="n">Mmat</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="n">Mmat_mix</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">Dmat_obs_b</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">dSdqb</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
 
@@ -4814,9 +4811,8 @@
             <span class="k">if</span> <span class="n">likelihood</span><span class="p">:</span>
                 <span class="n">Dmat_obs_b</span><span class="p">[</span><span class="n">xname</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
             <span class="k">elif</span> <span class="n">windows</span><span class="p">:</span>
-                <span class="n">Mmat</span><span class="p">[</span><span class="n">xname</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span><span class="p">:</span>
-                    <span class="n">Mmat_mix</span><span class="p">[</span><span class="n">xname</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">:</span>
+                    <span class="n">Mmat</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">Dmat_obs</span><span class="p">[</span><span class="n">xname</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
 
@@ -4825,10 +4821,10 @@
                     <span class="c1"># without bias subtraction for likelihood</span>
                     <span class="n">Dmat_obs_b</span><span class="p">[</span><span class="n">xname</span><span class="p">][</span><span class="n">spec</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls_input</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span>
                 <span class="k">elif</span> <span class="n">windows</span><span class="p">:</span>
-                    <span class="n">Mmat</span><span class="p">[</span><span class="n">xname</span><span class="p">][</span><span class="n">spec</span><span class="p">]</span> <span class="o">=</span> <span class="n">mll</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span>
+                    <span class="n">Mmat</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">xname</span><span class="p">][</span><span class="n">spec</span><span class="p">]</span> <span class="o">=</span> <span class="n">mll</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span>
                     <span class="k">if</span> <span class="n">spec</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]:</span>
                         <span class="n">mspec</span> <span class="o">=</span> <span class="s2">&quot;bb&quot;</span> <span class="k">if</span> <span class="n">spec</span> <span class="o">==</span> <span class="s2">&quot;ee&quot;</span> <span class="k">else</span> <span class="s2">&quot;ee&quot;</span>
-                        <span class="n">Mmat_mix</span><span class="p">[</span><span class="n">xname</span><span class="p">][</span><span class="n">spec</span><span class="p">]</span> <span class="o">=</span> <span class="n">mll</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_mix&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mspec</span><span class="p">)][</span><span class="n">xname</span><span class="p">]</span>
+                        <span class="n">Mmat</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">xname</span><span class="p">][</span><span class="n">mspec</span><span class="p">]</span> <span class="o">=</span> <span class="n">mll</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_mix&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">)][</span><span class="n">xname</span><span class="p">]</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">cls_debias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="n">Dmat_obs</span><span class="p">[</span><span class="n">xname</span><span class="p">][</span><span class="n">spec</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
@@ -4869,18 +4865,16 @@
                         <span class="c1"># this will be filled in in fisher_calc</span>
                         <span class="n">dSdqb</span><span class="p">[</span><span class="s2">&quot;delta_beta&quot;</span><span class="p">][</span><span class="n">xname</span><span class="p">][</span><span class="n">spec</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
 
-        <span class="k">return</span> <span class="n">Dmat_obs</span><span class="p">,</span> <span class="n">Dmat_obs_b</span><span class="p">,</span> <span class="n">dSdqb</span><span class="p">,</span> <span class="n">Mmat</span><span class="p">,</span> <span class="n">Mmat_mix</span></div>
+        <span class="k">return</span> <span class="n">Dmat_obs</span><span class="p">,</span> <span class="n">Dmat_obs_b</span><span class="p">,</span> <span class="n">dSdqb</span><span class="p">,</span> <span class="n">Mmat</span></div>
 
 <div class="viewcode-block" id="XFaster.clear_precalc"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.clear_precalc">[docs]</a>    <span class="k">def</span> <span class="nf">clear_precalc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Clear variables pre-computed with ``fisher_precalc``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">Dmat_obs</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">Dmat_obs_b</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dSdqb_mat1</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">Mmat</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">Mmat_mix</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mll</span> <span class="o">=</span> <span class="kc">None</span></div>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;Dmat_obs&quot;</span><span class="p">,</span> <span class="s2">&quot;Dmat_obs_b&quot;</span><span class="p">,</span> <span class="s2">&quot;dSdqb_mat1&quot;</span><span class="p">,</span> <span class="s2">&quot;Mmat&quot;</span><span class="p">,</span> <span class="s2">&quot;mll&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+                <span class="nb">delattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="XFaster.fisher_calc"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.fisher_calc">[docs]</a>    <span class="k">def</span> <span class="nf">fisher_calc</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -4978,7 +4972,9 @@
         <span class="n">dkey</span> <span class="o">=</span> <span class="s2">&quot;Dmat_obs_b&quot;</span> <span class="k">if</span> <span class="n">likelihood</span> <span class="k">else</span> <span class="s2">&quot;Mmat&quot;</span> <span class="k">if</span> <span class="n">windows</span> <span class="k">else</span> <span class="s2">&quot;Dmat_obs&quot;</span>
 
         <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dkey</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">use_precalc</span><span class="p">:</span>
-            <span class="n">Dmat_obs</span><span class="p">,</span> <span class="n">Dmat_obs_b</span><span class="p">,</span> <span class="n">dSdqb_mat1</span><span class="p">,</span> <span class="n">Mmat</span><span class="p">,</span> <span class="n">Mmat_mix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_precalc</span><span class="p">(</span>
+            <span class="k">if</span> <span class="n">use_precalc</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">clear_precalc</span><span class="p">()</span>
+            <span class="n">Dmat_obs</span><span class="p">,</span> <span class="n">Dmat_obs_b</span><span class="p">,</span> <span class="n">dSdqb_mat1</span><span class="p">,</span> <span class="n">Mmat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fisher_precalc</span><span class="p">(</span>
                 <span class="n">cbl</span><span class="p">,</span>
                 <span class="n">cls_input</span><span class="p">,</span>
                 <span class="n">cls_debias</span><span class="o">=</span><span class="n">cls_debias</span><span class="p">,</span>
@@ -4990,17 +4986,18 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">Dmat_obs_b</span> <span class="o">=</span> <span class="n">Dmat_obs_b</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">dSdqb_mat1</span> <span class="o">=</span> <span class="n">dSdqb_mat1</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">Mmat</span> <span class="o">=</span> <span class="n">Mmat</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">Mmat_mix</span> <span class="o">=</span> <span class="n">Mmat_mix</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">likelihood</span><span class="p">:</span>
                 <span class="n">Dmat_obs_b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Dmat_obs_b</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">windows</span><span class="p">:</span>
                     <span class="n">Mmat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Mmat</span>
-                    <span class="n">Mmat_mix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Mmat_mix</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">Dmat_obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Dmat_obs</span>
                 <span class="n">dSdqb_mat1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dSdqb_mat1</span>
+
+        <span class="k">if</span> <span class="n">windows</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clear_precalc</span><span class="p">()</span>
 
         <span class="n">delta_beta</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="k">if</span> <span class="s2">&quot;delta_beta&quot;</span> <span class="ow">in</span> <span class="n">qb</span><span class="p">:</span>
@@ -5126,11 +5123,7 @@
         <span class="k">if</span> <span class="n">likelihood</span><span class="p">:</span>
             <span class="n">Dmat_obs_b</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">dict_to_dmat</span><span class="p">(</span><span class="n">Dmat_obs_b</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">windows</span><span class="p">:</span>
-                <span class="n">Mmat</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">dict_to_dmat</span><span class="p">(</span><span class="n">Mmat</span><span class="p">)</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span><span class="p">:</span>
-                    <span class="n">Mmat_mix</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">dict_to_dmat</span><span class="p">(</span><span class="n">Mmat_mix</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">windows</span><span class="p">:</span>
                 <span class="n">Dmat_obs</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">dict_to_dmat</span><span class="p">(</span><span class="n">Dmat_obs</span><span class="p">)</span>
             <span class="n">dSdqb_mat1_freq</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">dict_to_dsdqb_mat</span><span class="p">(</span><span class="n">dSdqb_mat1_freq</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">)</span>
 
@@ -5146,18 +5139,13 @@
         <span class="k">if</span> <span class="n">likelihood</span><span class="p">:</span>
             <span class="n">Dmat_obs_b</span> <span class="o">=</span> <span class="n">Dmat_obs_b</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">ell</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">windows</span><span class="p">:</span>
-                <span class="n">Mmat</span> <span class="o">=</span> <span class="n">Mmat</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">ell</span><span class="p">,</span> <span class="p">:]</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span><span class="p">:</span>
-                    <span class="n">Mmat_mix</span> <span class="o">=</span> <span class="n">Mmat_mix</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">ell</span><span class="p">,</span> <span class="p">:]</span>
-            <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">windows</span><span class="p">:</span>
                 <span class="n">Dmat_obs</span> <span class="o">=</span> <span class="n">Dmat_obs</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">ell</span><span class="p">]</span>
             <span class="n">dSdqb_mat1_freq</span> <span class="o">=</span> <span class="n">dSdqb_mat1_freq</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">ell</span><span class="p">]</span>
         <span class="n">gmat</span> <span class="o">=</span> <span class="n">gmat</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">ell</span><span class="p">]</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">Dmat1</span> <span class="o">=</span> <span class="n">Dmat1</span>
-
         <span class="n">lam</span><span class="p">,</span> <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="n">Dmat1</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">del</span> <span class="n">Dmat1</span>
         <span class="n">bad</span> <span class="o">=</span> <span class="p">(</span><span class="n">lam</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">bad</span><span class="o">.</span><span class="n">sum</span><span class="p">():</span>
             <span class="c1"># exclude any ell&#39;s with ill-conditioned D matrix</span>
@@ -5170,29 +5158,33 @@
             <span class="n">gmat</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">bad_idx</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">inv_lam</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">lam</span>
         <span class="n">Dinv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;...ij,...j,...kj-&gt;...ik&quot;</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">inv_lam</span><span class="p">,</span> <span class="n">R</span><span class="p">)</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">inv_lam</span>
 
         <span class="k">if</span> <span class="n">likelihood</span><span class="p">:</span>
             <span class="c1"># log(det(D)) = tr(log(D)), latter is numerically stable</span>
             <span class="c1"># compute log(D) by eigenvalue decomposition per ell</span>
             <span class="n">log_lam</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">lam</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">lam</span>
             <span class="n">Dlog</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;...ij,...j,...kj-&gt;...ik&quot;</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">log_lam</span><span class="p">,</span> <span class="n">R</span><span class="p">)</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">R</span><span class="p">,</span> <span class="n">log_lam</span>
 
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># compute ell-by-ell inverse</span>
-            <span class="c1"># Dinv = np.linalg.inv(Dmat1.swapaxes(0, -1)).swapaxes(0, -1)</span>
-
             <span class="c1"># optimized matrix multiplication</span>
             <span class="c1"># there is something super weird about this whole matrix operation</span>
             <span class="c1"># that causes the computation of mats to take four times as long</span>
             <span class="c1"># if mat1 is not computed.</span>
+            <span class="k">del</span> <span class="n">lam</span><span class="p">,</span> <span class="n">R</span>
             <span class="n">eye</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gmat</span><span class="p">))</span>
             <span class="n">mat1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij...,jk...-&gt;ik...&quot;</span><span class="p">,</span> <span class="n">eye</span><span class="p">,</span> <span class="n">Dinv</span><span class="p">)</span>
             <span class="n">mat2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;klm...,ln...-&gt;knm...&quot;</span><span class="p">,</span> <span class="n">dSdqb_mat1_freq</span><span class="p">,</span> <span class="n">Dinv</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">Dinv</span>
             <span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ik...,knm...-&gt;inm...&quot;</span><span class="p">,</span> <span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span>
 
         <span class="k">if</span> <span class="n">likelihood</span><span class="p">:</span>
             <span class="c1"># compute log likelihood as tr(g * (D^-1 * Dobs + log(D)))</span>
             <span class="n">arg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij...,jk...-&gt;ik...&quot;</span><span class="p">,</span> <span class="n">Dinv</span><span class="p">,</span> <span class="n">Dmat_obs_b</span><span class="p">)</span> <span class="o">+</span> <span class="n">Dlog</span>
+            <span class="k">del</span> <span class="n">Dinv</span><span class="p">,</span> <span class="n">Dmat_obs_b</span><span class="p">,</span> <span class="n">Dlog</span>
             <span class="n">like</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;iij,iij-&gt;&quot;</span><span class="p">,</span> <span class="n">gmat</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
 
             <span class="c1"># include priors in likelihood</span>
@@ -5212,12 +5204,15 @@
 
         <span class="c1"># construct matrices for the qb and fisher terms,</span>
         <span class="c1"># and take the trace and sum over ell simultaneously</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">windows</span><span class="p">:</span>
-            <span class="n">qb_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;iil,ijkl,jil-&gt;k&quot;</span><span class="p">,</span> <span class="n">gmat</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">Dmat_obs</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">windows</span> <span class="ow">or</span> <span class="p">(</span><span class="n">windows</span> <span class="ow">and</span> <span class="n">inv_fish</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
             <span class="n">fisher</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;iil,ijkl,jiml-&gt;km&quot;</span><span class="p">,</span> <span class="n">gmat</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">dSdqb_mat1_freq</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+            <span class="k">del</span> <span class="n">dSdqb_mat1_freq</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">windows</span><span class="p">:</span>
+            <span class="n">qb_vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;iil,ijkl,jil-&gt;k&quot;</span><span class="p">,</span> <span class="n">gmat</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">Dmat_obs</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+            <span class="k">del</span> <span class="n">gmat</span><span class="p">,</span> <span class="n">mat</span><span class="p">,</span> <span class="n">Dmat_obs</span>
 
         <span class="k">if</span> <span class="n">windows</span><span class="p">:</span>
+
             <span class="k">if</span> <span class="n">inv_fish</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">inv_fish</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">fisher</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fisher</span><span class="p">)))</span>
 
@@ -5227,9 +5222,9 @@
 
             <span class="c1"># compute binning term</span>
             <span class="n">arg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ij,kljm-&gt;klim&quot;</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="n">mat</span><span class="p">)</span>
+            <span class="k">del</span> <span class="n">mat</span>
             <span class="n">wbl</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
             <span class="n">bin_index</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">dict_to_index</span><span class="p">(</span><span class="n">qb</span><span class="p">)</span>
-            <span class="n">spec_mask</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">spec_mask</span><span class="p">(</span><span class="n">nmaps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_maps</span><span class="p">)</span>
 
             <span class="c1"># compute window functions for each spectrum</span>
             <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> <span class="ow">in</span> <span class="n">bin_index</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -5240,15 +5235,12 @@
                 <span class="c1"># select bins for corresponding spectrum</span>
                 <span class="n">sarg</span> <span class="o">=</span> <span class="n">arg</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">left</span><span class="p">:</span><span class="n">right</span><span class="p">]</span>
 
-                <span class="c1"># select the spectrum terms from the kernel matrix</span>
-                <span class="n">smat</span> <span class="o">=</span> <span class="n">spec_mask</span><span class="p">[</span><span class="n">spec</span><span class="p">][:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">Mmat</span>
-                <span class="k">if</span> <span class="n">spec</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]:</span>
-                    <span class="c1"># add mixing terms</span>
-                    <span class="n">mspec</span> <span class="o">=</span> <span class="s2">&quot;bb&quot;</span> <span class="k">if</span> <span class="n">spec</span> <span class="o">==</span> <span class="s2">&quot;ee&quot;</span> <span class="k">else</span> <span class="s2">&quot;ee&quot;</span>
-                    <span class="n">smat</span> <span class="o">+=</span> <span class="n">spec_mask</span><span class="p">[</span><span class="n">mspec</span><span class="p">][:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">Mmat_mix</span>
+                <span class="c1"># construct Mll&#39; matrix</span>
+                <span class="n">marg</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">dict_to_dmat</span><span class="p">(</span><span class="n">Mmat</span><span class="p">[</span><span class="n">spec</span><span class="p">],</span> <span class="n">pol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pol</span><span class="p">)[</span><span class="o">...</span><span class="p">,</span> <span class="n">ell</span><span class="p">,</span> <span class="p">:]</span>
 
                 <span class="c1"># qb window function</span>
-                <span class="n">wbl1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;iil,ijkl,jilm-&gt;km&quot;</span><span class="p">,</span> <span class="n">gmat</span><span class="p">,</span> <span class="n">sarg</span><span class="p">,</span> <span class="n">smat</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="n">norm</span>
+                <span class="n">wbl1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;iil,ijkl,jilm-&gt;km&quot;</span><span class="p">,</span> <span class="n">gmat</span><span class="p">,</span> <span class="n">sarg</span><span class="p">,</span> <span class="n">marg</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="n">norm</span>
+                <span class="k">del</span> <span class="n">marg</span>
 
                 <span class="c1"># bin weighting, allowing for overlapping bin edges</span>
                 <span class="n">chi_bl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span>
