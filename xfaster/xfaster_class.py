@@ -1423,7 +1423,7 @@ class XFaster(object):
                             continue
                         name += ["{}{:04d}".format(comp[0], self.sim_index[comp])]
                         if comp == "signal" and "tensor" in self.sim_index:
-                            name += ["t{:04d}".format(sidx["tensor"])]
+                            name += ["t{:04d}".format(self.sim_index["tensor"])]
                 elif self.data_type != "raw":
                     name += [self.data_type]
                 if getattr(self, "template_cleaned", False):
