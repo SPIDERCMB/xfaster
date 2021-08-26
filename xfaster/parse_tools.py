@@ -584,7 +584,7 @@ def spec_mask(spec=None, nmaps=1):
     return spec_mask[spec]
 
 
-def dict_to_dmat(dmat_dict):
+def dict_to_dmat(dmat_dict, pol=None):
     """
     Take a dmat dictionary and return the right shaped Dmat matrix:
     (Nmaps * 3, Nmaps * 3, lmax + 1) if pol else
@@ -609,13 +609,14 @@ def dict_to_dmat(dmat_dict):
     map_pairs = tag_pairs(map_tags, index=True)
 
     nmaps = len(map_tags)
-    pol_dim = 0
+    pol_dim = 0 if pol is None else (3 if pol else 1)
 
     Dmat = None
     inds = spec_index()
 
     for xname, (im0, im1) in map_pairs.items():
-        pol_dim = 3 if "ee" in dmat_dict[xname] else 1
+        if pol is None:
+            pol_dim = 3 if "ee" in dmat_dict[xname] else 1
         for spec, val in dmat_dict[xname].items():
             if Dmat is None:
                 shape = (pol_dim * nmaps, pol_dim * nmaps)
