@@ -4603,8 +4603,6 @@ class XFaster(object):
         Mmat : OrderedDict
             Mode mixing matrix (Kll' * Fl * Bl^2) for constructing
             window functions.
-        Mmat_mix : OrderedDict
-            EB mixing terms for the mode mixxing matrix
 
         .. note:: the output arrays are also stored as attributes of the
         parent object to avoid repeating the computation in ``fisher_calc``
@@ -4626,19 +4624,18 @@ class XFaster(object):
             Dmat_obs = None
             dSdqb = None
             Mmat = None
-            Mmat_mix = None
         else:
             if windows:
                 Dmat_obs = None
                 Mmat = OrderedDict()
-                Mmat_mix = OrderedDict() if self.pol else None
+                for spec in specs:
+                    Mmat[spec] = OrderedDict()
                 mll = getattr(self, "mll", None)
                 if mll is None:
                     mll = self.kernel_precalc()
             else:
                 Dmat_obs = OrderedDict()
                 Mmat = None
-                Mmat_mix = None
             Dmat_obs_b = None
             dSdqb = OrderedDict()
 
@@ -4650,9 +4647,8 @@ class XFaster(object):
             if likelihood:
                 Dmat_obs_b[xname] = OrderedDict()
             elif windows:
-                Mmat[xname] = OrderedDict()
-                if self.pol:
-                    Mmat_mix[xname] = OrderedDict()
+                for spec in specs:
+                    Mmat[spec][xname] = OrderedDict()
             else:
                 Dmat_obs[xname] = OrderedDict()
 
@@ -4661,10 +4657,10 @@ class XFaster(object):
                     # without bias subtraction for likelihood
                     Dmat_obs_b[xname][spec] = cls_input[spec][xname]
                 elif windows:
-                    Mmat[xname][spec] = mll[spec][xname]
+                    Mmat[spec][xname][spec] = mll[spec][xname]
                     if spec in ["ee", "bb"]:
                         mspec = "bb" if spec == "ee" else "ee"
-                        Mmat_mix[xname][spec] = mll["{}_mix".format(mspec)][xname]
+                        Mmat[spec][xname][mspec] = mll["{}_mix".format(spec)][xname]
                 else:
                     if cls_debias is not None:
                         Dmat_obs[xname][spec] = (
@@ -4705,18 +4701,16 @@ class XFaster(object):
                         # this will be filled in in fisher_calc
                         dSdqb["delta_beta"][xname][spec] = OrderedDict()
 
-        return Dmat_obs, Dmat_obs_b, dSdqb, Mmat, Mmat_mix
+        return Dmat_obs, Dmat_obs_b, dSdqb, Mmat
 
     def clear_precalc(self):
         """
         Clear variables pre-computed with ``fisher_precalc``.
         """
-        self.Dmat_obs = None
-        self.Dmat_obs_b = None
-        self.dSdqb_mat1 = None
-        self.Mmat = None
-        self.Mmat_mix = None
-        self.mll = None
+        for k in ["Dmat_obs", "Dmat_obs_b", "dSdqb_mat1", "Mmat", "mll"]:
+            if hasattr(self, k):
+                delattr(self, k)
+            setattr(self, k, None)
 
     def fisher_calc(
         self,
@@ -4814,7 +4808,9 @@ class XFaster(object):
         dkey = "Dmat_obs_b" if likelihood else "Mmat" if windows else "Dmat_obs"
 
         if getattr(self, dkey, None) is None or not use_precalc:
-            Dmat_obs, Dmat_obs_b, dSdqb_mat1, Mmat, Mmat_mix = self.fisher_precalc(
+            if use_precalc:
+                self.clear_precalc()
+            Dmat_obs, Dmat_obs_b, dSdqb_mat1, Mmat = self.fisher_precalc(
                 cbl,
                 cls_input,
                 cls_debias=cls_debias,
@@ -4826,17 +4822,18 @@ class XFaster(object):
                 self.Dmat_obs_b = Dmat_obs_b
                 self.dSdqb_mat1 = dSdqb_mat1
                 self.Mmat = Mmat
-                self.Mmat_mix = Mmat_mix
         else:
             if likelihood:
                 Dmat_obs_b = self.Dmat_obs_b
             else:
                 if windows:
                     Mmat = self.Mmat
-                    Mmat_mix = self.Mmat_mix
                 else:
                     Dmat_obs = self.Dmat_obs
                 dSdqb_mat1 = self.dSdqb_mat1
+
+        if windows:
+            self.clear_precalc()
 
         delta_beta = 0.0
         if "delta_beta" in qb:
@@ -4962,11 +4959,7 @@ class XFaster(object):
         if likelihood:
             Dmat_obs_b = pt.dict_to_dmat(Dmat_obs_b)
         else:
-            if windows:
-                Mmat = pt.dict_to_dmat(Mmat)
-                if self.pol:
-                    Mmat_mix = pt.dict_to_dmat(Mmat_mix)
-            else:
+            if not windows:
                 Dmat_obs = pt.dict_to_dmat(Dmat_obs)
             dSdqb_mat1_freq = pt.dict_to_dsdqb_mat(dSdqb_mat1_freq, self.bin_def)
 
@@ -4982,18 +4975,13 @@ class XFaster(object):
         if likelihood:
             Dmat_obs_b = Dmat_obs_b[..., ell]
         else:
-            if windows:
-                Mmat = Mmat[..., ell, :]
-                if self.pol:
-                    Mmat_mix = Mmat_mix[..., ell, :]
-            else:
+            if not windows:
                 Dmat_obs = Dmat_obs[..., ell]
             dSdqb_mat1_freq = dSdqb_mat1_freq[..., ell]
         gmat = gmat[..., ell]
 
-        self.Dmat1 = Dmat1
-
         lam, R = np.linalg.eigh(Dmat1.swapaxes(0, -1))
+        del Dmat1
         bad = (lam <= 0).sum(axis=-1).astype(bool)
         if bad.sum():
             # exclude any ell's with ill-conditioned D matrix
@@ -5006,29 +4994,33 @@ class XFaster(object):
             gmat[..., bad_idx] = 0
         inv_lam = 1.0 / lam
         Dinv = np.einsum("...ij,...j,...kj->...ik", R, inv_lam, R).swapaxes(0, -1)
+        del inv_lam
 
         if likelihood:
             # log(det(D)) = tr(log(D)), latter is numerically stable
             # compute log(D) by eigenvalue decomposition per ell
             log_lam = np.log(lam)
+            del lam
             Dlog = np.einsum("...ij,...j,...kj->...ik", R, log_lam, R).swapaxes(0, -1)
+            del R, log_lam
 
         else:
-            # compute ell-by-ell inverse
-            # Dinv = np.linalg.inv(Dmat1.swapaxes(0, -1)).swapaxes(0, -1)
-
             # optimized matrix multiplication
             # there is something super weird about this whole matrix operation
             # that causes the computation of mats to take four times as long
             # if mat1 is not computed.
+            del lam, R
             eye = np.eye(len(gmat))
             mat1 = np.einsum("ij...,jk...->ik...", eye, Dinv)
             mat2 = np.einsum("klm...,ln...->knm...", dSdqb_mat1_freq, Dinv)
+            del Dinv
             mat = np.einsum("ik...,knm...->inm...", mat1, mat2)
+            del mat1, mat2
 
         if likelihood:
             # compute log likelihood as tr(g * (D^-1 * Dobs + log(D)))
             arg = np.einsum("ij...,jk...->ik...", Dinv, Dmat_obs_b) + Dlog
+            del Dinv, Dmat_obs_b, Dlog
             like = -np.einsum("iij,iij->", gmat, arg) / 2.0
 
             # include priors in likelihood
@@ -5048,12 +5040,15 @@ class XFaster(object):
 
         # construct matrices for the qb and fisher terms,
         # and take the trace and sum over ell simultaneously
-        if not windows:
-            qb_vec = np.einsum("iil,ijkl,jil->k", gmat, mat, Dmat_obs) / 2.0
         if not windows or (windows and inv_fish is None):
             fisher = np.einsum("iil,ijkl,jiml->km", gmat, mat, dSdqb_mat1_freq) / 2
+            del dSdqb_mat1_freq
+        if not windows:
+            qb_vec = np.einsum("iil,ijkl,jil->k", gmat, mat, Dmat_obs) / 2.0
+            del gmat, mat, Dmat_obs
 
         if windows:
+
             if inv_fish is None:
                 inv_fish = np.linalg.solve(fisher, np.eye(len(fisher)))
 
@@ -5063,9 +5058,9 @@ class XFaster(object):
 
             # compute binning term
             arg = np.einsum("ij,kljm->klim", inv_fish, mat)
+            del mat
             wbl = OrderedDict()
             bin_index = pt.dict_to_index(qb)
-            spec_mask = pt.spec_mask(nmaps=self.num_maps)
 
             # compute window functions for each spectrum
             for k, (left, right) in bin_index.items():
@@ -5076,15 +5071,12 @@ class XFaster(object):
                 # select bins for corresponding spectrum
                 sarg = arg[:, :, left:right]
 
-                # select the spectrum terms from the kernel matrix
-                smat = spec_mask[spec][:, :, None, None] * Mmat
-                if spec in ["ee", "bb"]:
-                    # add mixing terms
-                    mspec = "bb" if spec == "ee" else "ee"
-                    smat += spec_mask[mspec][:, :, None, None] * Mmat_mix
+                # construct Mll' matrix
+                marg = pt.dict_to_dmat(Mmat[spec], pol=self.pol)[..., ell, :]
 
                 # qb window function
-                wbl1 = np.einsum("iil,ijkl,jilm->km", gmat, sarg, smat) / 2.0 / norm
+                wbl1 = np.einsum("iil,ijkl,jilm->km", gmat, sarg, marg) / 2.0 / norm
+                del marg
 
                 # bin weighting, allowing for overlapping bin edges
                 chi_bl = np.zeros_like(norm)
