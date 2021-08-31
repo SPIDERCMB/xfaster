@@ -889,7 +889,7 @@ This array is modified in place.</p></li>
 
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.bin_cl_template">
-<code class="sig-name descname">bin_cl_template</code><span class="sig-paren">(</span><em class="sig-param">cls_shape=None</em>, <em class="sig-param">map_tag=None</em>, <em class="sig-param">transfer_run=False</em>, <em class="sig-param">beam_error=False</em>, <em class="sig-param">use_precalc=True</em>, <em class="sig-param">fg_ell_ind=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.bin_cl_template"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.bin_cl_template" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">bin_cl_template</code><span class="sig-paren">(</span><em class="sig-param">cls_shape=None</em>, <em class="sig-param">map_tag=None</em>, <em class="sig-param">transfer_run=False</em>, <em class="sig-param">beam_error=False</em>, <em class="sig-param">use_precalc=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.bin_cl_template"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.bin_cl_template" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the Cbl matrix from the input shape spectrum.</p>
 <p>This method requires beam windows, kernels and transfer functions
 (if <code class="docutils literal notranslate"><span class="pre">transfer_run</span></code> is False) to have been precomputed.</p>
@@ -909,8 +909,6 @@ are 1 sigma beam error envelope offset of signal terms.</p></li>
 <li><p><strong>use_precalc</strong> (<em>bool</em>) – If True, load pre-calculated terms stored from a previous iteration,
 and store for a future iteration.  Otherwise, all calculations are
 repeated.</p></li>
-<li><p><strong>fg_ell_ind</strong> (<em>float</em>) – If binning foreground shape, offset the ell index from the reference
-by this amount.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1518,7 +1516,7 @@ the following data keys to disk:</p>
 
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.get_likelihood">
-<code class="sig-name descname">get_likelihood</code><span class="sig-paren">(</span><em class="sig-param">qb, inv_fish, map_tag=None, null_first_cmb=False, lmin=33, lmax=250, mcmc=True, alpha_tags='all', beam_tags='all', r_prior=[0, inf], alpha_prior=[0, inf], res_prior=None, beam_prior=[0, 1], betad_prior=[0, 1], dust_amp_prior=[0, inf], dust_ellind_prior=[0, 1], num_walkers=50, num_steps=20000, converge_criteria=0.01, reset_backend=None, file_tag=None, subtract_template_noise=False, r_specs=['ee', 'bb'], template_specs=['ee', 'bb', 'eb']</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_likelihood" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_likelihood</code><span class="sig-paren">(</span><em class="sig-param">qb, inv_fish, map_tag=None, null_first_cmb=False, lmin=33, lmax=250, mcmc=True, alpha_tags='all', beam_tags='all', r_prior=[0, inf], alpha_prior=[0, inf], res_prior=None, beam_prior=[0, 1], num_walkers=50, num_steps=20000, converge_criteria=0.01, reset_backend=None, file_tag=None, subtract_template_noise=False, r_specs=['ee', 'bb'], template_specs=['ee', 'bb', 'eb']</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Explore the likelihood, optionally with an MCMC sampler.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1555,13 +1553,6 @@ res parameter space is not varied.</p></li>
 <li><p><strong>beam_prior</strong> (<em>2-list</em><em> or </em><em>none</em>) – Prior mean and width of gaussian width on beam error (when
 multiplied by beam error envelope).  If None, the
 beam parameter space is not varied.</p></li>
-<li><p><strong>betad_prior</strong> (<em>2-list</em><em> or </em><em>none</em>) – Prior mean and width of gaussian width on dust spectral index.
-If None, the dust index parameter space is not varied.</p></li>
-<li><p><strong>dust_amp_prior</strong> (<em>2-list</em><em> or </em><em>none</em>) – Prior upper and lower bound on dust amplitude.
-If None, the dust amp parameter space is not varied.</p></li>
-<li><p><strong>dust_ellind_prior</strong> (<em>2-list</em><em> or </em><em>none</em>) – Prior mean and width of Gaussian prior on difference in dust ell
-power law index. If None, don’t vary from reference if fitting dust
-power spectrum model.</p></li>
 <li><p><strong>num_walkers</strong> (<em>int</em>) – Number of unique walkers with which to sample the parameter space.</p></li>
 <li><p><strong>num_steps</strong> (<em>int</em>) – Maximum number of steps each walker can take in sampling the
 parameter space.</p></li>
@@ -2237,7 +2228,7 @@ is set to the path to the data file on disk.</p>
 submits the job to a grid system</p>
 <dl class="function">
 <dt id="xfaster.xfaster_exec.xfaster_run">
-<code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">xfaster_run</code><span class="sig-paren">(</span><em class="sig-param">config='config_example.ini', output_root=None, output_tag=None, verbose='notice', debug=False, checkpoint=None, add_log=False, data_root='all', data_subset='full/*0', data_root2=None, data_subset2=None, data_type='raw', mask_type='rectangle', signal_type='synfast', signal_subset='*', signal_transfer_type=None, signal_type_sim=None, noise_type='stationary', noise_subset='*', noise_type_sim=None, foreground_type_sim=None, template_type=None, template_noise_type=None, template_type_sim=None, lmin=2, lmax=500, pol=True, pol_mask=True, tbeb=False, bin_width=25, weighted_bins=False, residual_fit=True, bin_width_res=25, res_specs=None, foreground_fit=False, bin_width_fg=30, template_alpha_tags=None, template_alpha=None, template_alpha_tags_sim=None, template_alpha_sim=None, subtract_template_noise=True, subtract_reference_signal=False, ensemble_mean=False, ensemble_median=False, sim_data=False, sim_data_components=['signal', 'noise', 'foreground'], sim_data_r=None, qb_file_data=None, sim_index_signal=None, sim_index_noise=None, sim_index_foreground=None, sim_index_default=0, save_sim_data=False, pixwin=True, window_lmax=None, apply_gcorr=False, reload_gcorr=False, gcorr_file=None, multi_map=True, bandpower_tag=None, converge_criteria=0.005, cond_noise=1e-05, cond_criteria=5000.0, iter_max=200, save_iters=False, return_cls=False, fix_bb_transfer=False, null_first_cmb=False, qb_file_sim=None, signal_spec=None, signal_transfer_spec=None, model_r=None, ref_freq=359.7, beta_ref=1.54, delta_beta_prior=0.5, like_profiles=False, like_profile_sigma=3.0, like_profile_points=100, likelihood=False, mcmc=True, mcmc_walkers=50, like_converge_criteria=0.01, like_tag=None, like_lmin=33, like_lmax=250, like_r_specs=['EE', 'BB'], like_template_specs=['EE', 'BB', 'EB'], like_alpha_tags='all', alpha_prior=None, r_prior=[-inf, inf], res_prior=None, like_beam_tags='all', beam_prior=None, betad_prior=None, dust_amp_prior=None, dust_ellind_prior=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#xfaster_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.xfaster_run" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">xfaster_run</code><span class="sig-paren">(</span><em class="sig-param">config='config_example.ini', output_root=None, output_tag=None, verbose='notice', debug=False, checkpoint=None, add_log=False, data_root='all', data_subset='full/*0', data_root2=None, data_subset2=None, data_type='raw', mask_type='rectangle', signal_type='synfast', signal_subset='*', signal_transfer_type=None, signal_type_sim=None, noise_type='stationary', noise_subset='*', noise_type_sim=None, foreground_type_sim=None, template_type=None, template_noise_type=None, template_type_sim=None, lmin=2, lmax=500, pol=True, pol_mask=True, tbeb=False, bin_width=25, weighted_bins=False, residual_fit=True, bin_width_res=25, res_specs=None, foreground_fit=False, bin_width_fg=30, template_alpha_tags=None, template_alpha=None, template_alpha_tags_sim=None, template_alpha_sim=None, subtract_template_noise=True, subtract_reference_signal=False, ensemble_mean=False, ensemble_median=False, sim_data=False, sim_data_components=['signal', 'noise', 'foreground'], sim_data_r=None, qb_file_data=None, sim_index_signal=None, sim_index_noise=None, sim_index_foreground=None, sim_index_default=0, save_sim_data=False, pixwin=True, window_lmax=None, apply_gcorr=False, reload_gcorr=False, gcorr_file=None, multi_map=True, bandpower_tag=None, converge_criteria=0.005, cond_noise=1e-05, cond_criteria=5000.0, iter_max=200, save_iters=False, return_cls=False, fix_bb_transfer=False, null_first_cmb=False, qb_file_sim=None, signal_spec=None, signal_transfer_spec=None, model_r=None, ref_freq=359.7, beta_ref=1.54, delta_beta_prior=0.5, like_profiles=False, like_profile_sigma=3.0, like_profile_points=100, likelihood=False, mcmc=True, mcmc_walkers=50, like_converge_criteria=0.01, like_tag=None, like_lmin=33, like_lmax=250, like_r_specs=['EE', 'BB'], like_template_specs=['EE', 'BB', 'EB'], like_alpha_tags='all', alpha_prior=None, r_prior=[-inf, inf], res_prior=None, like_beam_tags='all', beam_prior=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#xfaster_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.xfaster_run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main function for running the XFaster algorithm.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -2440,14 +2431,6 @@ in the likelihood is disabled.</p></li>
 <li><p><strong>beam_prior</strong> (<em>list of floats</em>) – Gaussian prior mean and number of strandard deviations for beam error.
 This Gaussian is applied as a prior in fitting for beam error in the
 likelihood. Set to None to not fit for beam error.</p></li>
-<li><p><strong>betad_prior</strong> (<em>list of floats</em>) – Gaussian prior on dust index different from ref beta.
-Should be [0, sig] for [mean 0, width sig] gaussian.
-Set to None to not fit for betad in the likelihood.</p></li>
-<li><p><strong>dust_amp_prior</strong> (<em>list of floats</em>) – Flat prior edges on dust amplitude (relative to Planck 353 ref).
-Set to None to not fit for dust_amp in the likelihood.</p></li>
-<li><p><strong>dust_ellind_prior</strong> (<em>list of floats</em>) – Gaussian prior on dust ell index different from reference, -2.28.
-Should be [0, sig] for [mean 0, width sig] gaussian).
-Set to None to not fit for dust_ellind in the likelihood.</p></li>
 </ul>
 </dd>
 </dl>

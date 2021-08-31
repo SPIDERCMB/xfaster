@@ -4044,7 +4044,6 @@
         <span class="n">transfer_run</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">beam_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">use_precalc</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">fg_ell_ind</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute the Cbl matrix from the input shape spectrum.</span>
@@ -4072,9 +4071,6 @@
 <span class="sd">            If True, load pre-calculated terms stored from a previous iteration,</span>
 <span class="sd">            and store for a future iteration.  Otherwise, all calculations are</span>
 <span class="sd">            repeated.</span>
-<span class="sd">        fg_ell_ind : float</span>
-<span class="sd">            If binning foreground shape, offset the ell index from the reference</span>
-<span class="sd">            by this amount.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -4196,99 +4192,80 @@
             <span class="c1"># need n_xname x n_spec x ell</span>
             <span class="n">nspec</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">specs</span><span class="p">)</span>
             <span class="n">nxmap</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">map_pairs</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">comp</span> <span class="o">==</span> <span class="s2">&quot;fg&quot;</span> <span class="ow">and</span> <span class="n">fg_ell_ind</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">s_arr</span> <span class="o">=</span> <span class="p">(</span><span class="n">ell</span> <span class="o">/</span> <span class="mf">80.0</span><span class="p">)</span> <span class="o">**</span> <span class="n">fg_ell_ind</span>
-                <span class="n">s_arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">beam_error</span><span class="p">:</span>
-                    <span class="c1"># don&#39;t create a new object in memory each time</span>
-                    <span class="c1"># use last one&#39;s space to save runtime</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">d_fg</span><span class="p">,</span> <span class="n">s_arr</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">md</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">md_fg</span><span class="p">,</span> <span class="n">s_arr</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;md&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-                    <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">beam_keys</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">):</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">d</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="n">k</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">beam_keys</span><span class="p">])</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">md</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="n">k</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">beam_keys</span><span class="p">])</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">d_fg</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">s_arr</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">md</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">md_fg</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">s_arr</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">md</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
-                <span class="n">bin_things</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">md</span><span class="p">)</span>
 
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">kshape</span> <span class="o">=</span> <span class="p">[</span><span class="n">nspec</span><span class="p">,</span> <span class="n">nxmap</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lmax</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">lmax_kern</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
-                <span class="n">mkshape</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">kshape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-                <span class="n">k_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">kshape</span><span class="p">)</span>
-                <span class="n">mk_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">mkshape</span><span class="p">)</span>
+            <span class="n">kshape</span> <span class="o">=</span> <span class="p">[</span><span class="n">nspec</span><span class="p">,</span> <span class="n">nxmap</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lmax</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">lmax_kern</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">mkshape</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">kshape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="n">k_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">kshape</span><span class="p">)</span>
+            <span class="n">mk_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">mkshape</span><span class="p">)</span>
 
-                <span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">nspec</span><span class="p">,</span> <span class="n">nxmap</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">lmax_kern</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
-                <span class="n">s_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">beam_error</span><span class="p">:</span>
-                    <span class="n">b_arr</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">beam_keys</span><span class="p">}</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">nspec</span><span class="p">,</span> <span class="n">nxmap</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">lmax_kern</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">s_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">beam_error</span><span class="p">:</span>
+                <span class="n">b_arr</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">beam_keys</span><span class="p">}</span>
 
-                <span class="k">for</span> <span class="n">si</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">specs</span><span class="p">):</span>
-                    <span class="n">stag</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-                    <span class="n">mstag</span> <span class="o">=</span> <span class="kc">None</span>
-                    <span class="k">if</span> <span class="n">comp</span> <span class="o">!=</span> <span class="s2">&quot;res&quot;</span> <span class="ow">and</span> <span class="n">spec</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]:</span>
-                        <span class="n">mstag</span> <span class="o">=</span> <span class="n">stag</span> <span class="o">+</span> <span class="s2">&quot;_mix&quot;</span>
+            <span class="k">for</span> <span class="n">si</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">specs</span><span class="p">):</span>
+                <span class="n">stag</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
+                <span class="n">mstag</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">if</span> <span class="n">comp</span> <span class="o">!=</span> <span class="s2">&quot;res&quot;</span> <span class="ow">and</span> <span class="n">spec</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]:</span>
+                    <span class="n">mstag</span> <span class="o">=</span> <span class="n">stag</span> <span class="o">+</span> <span class="s2">&quot;_mix&quot;</span>
 
-                    <span class="k">for</span> <span class="n">xi</span><span class="p">,</span> <span class="p">(</span><span class="n">xname</span><span class="p">,</span> <span class="p">(</span><span class="n">tag1</span><span class="p">,</span> <span class="n">tag2</span><span class="p">))</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">map_pairs</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
-                        <span class="k">if</span> <span class="s2">&quot;res&quot;</span> <span class="ow">in</span> <span class="n">comp</span><span class="p">:</span>
-                            <span class="n">s0</span><span class="p">,</span> <span class="n">s1</span> <span class="o">=</span> <span class="n">spec</span>
-                            <span class="n">bd</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="n">lmax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
-                            <span class="c1"># if any component of XY spec is in residual bin</span>
-                            <span class="c1"># def, use that bin def</span>
-                            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">[</span>
-                                <span class="s2">&quot;res_</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s0</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">tag1</span><span class="p">),</span>
-                                <span class="s2">&quot;res_</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s0</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">tag2</span><span class="p">),</span>
-                                <span class="s2">&quot;res_</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s1</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">tag1</span><span class="p">),</span>
-                                <span class="s2">&quot;res_</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s1</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">tag2</span><span class="p">),</span>
-                            <span class="p">]:</span>
+                <span class="k">for</span> <span class="n">xi</span><span class="p">,</span> <span class="p">(</span><span class="n">xname</span><span class="p">,</span> <span class="p">(</span><span class="n">tag1</span><span class="p">,</span> <span class="n">tag2</span><span class="p">))</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">map_pairs</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+                    <span class="k">if</span> <span class="s2">&quot;res&quot;</span> <span class="ow">in</span> <span class="n">comp</span><span class="p">:</span>
+                        <span class="n">s0</span><span class="p">,</span> <span class="n">s1</span> <span class="o">=</span> <span class="n">spec</span>
+                        <span class="n">bd</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="n">lmax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
+                        <span class="c1"># if any component of XY spec is in residual bin</span>
+                        <span class="c1"># def, use that bin def</span>
+                        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">[</span>
+                            <span class="s2">&quot;res_</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s0</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">tag1</span><span class="p">),</span>
+                            <span class="s2">&quot;res_</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s0</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">tag2</span><span class="p">),</span>
+                            <span class="s2">&quot;res_</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s1</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">tag1</span><span class="p">),</span>
+                            <span class="s2">&quot;res_</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s1</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">tag2</span><span class="p">),</span>
+                        <span class="p">]:</span>
+                            <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">:</span>
+                                <span class="n">bd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
+                                <span class="k">break</span>
+                            <span class="n">spec0</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                            <span class="k">if</span> <span class="n">spec0</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]:</span>
+                                <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">spec0</span><span class="p">,</span> <span class="s2">&quot;eebb&quot;</span><span class="p">)</span>
                                 <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">:</span>
                                     <span class="n">bd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
                                     <span class="k">break</span>
-                                <span class="n">spec0</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
-                                <span class="k">if</span> <span class="n">spec0</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]:</span>
-                                    <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">spec0</span><span class="p">,</span> <span class="s2">&quot;eebb&quot;</span><span class="p">)</span>
-                                    <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">:</span>
-                                        <span class="n">bd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_def</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
-                                        <span class="k">break</span>
 
-                            <span class="n">comp_list</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;res&quot;</span><span class="p">,</span> <span class="n">cls_noise</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span>
-                                <span class="p">(</span><span class="s2">&quot;res_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="n">cls_res</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">cls_res</span>
-                            <span class="p">]</span>
+                        <span class="n">comp_list</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;res&quot;</span><span class="p">,</span> <span class="n">cls_noise</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span>
+                            <span class="p">(</span><span class="s2">&quot;res_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="n">cls_res</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">cls_res</span>
+                        <span class="p">]</span>
 
-                            <span class="k">for</span> <span class="n">res_comp</span><span class="p">,</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">comp_list</span><span class="p">:</span>
-                                <span class="n">stag</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">res_comp</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-                                <span class="n">cbl</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">stag</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">())</span>
-                                <span class="n">cbl</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">bd</span><span class="p">),</span> <span class="n">lmax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
-                                <span class="n">cl1</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span>
-                                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bd</span><span class="p">):</span>
-                                    <span class="n">lls</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span>
-                                    <span class="n">cbl</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">xname</span><span class="p">][</span><span class="n">idx</span><span class="p">,</span> <span class="n">lls</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">cl1</span><span class="p">[</span><span class="n">lls</span><span class="p">])</span>
+                        <span class="k">for</span> <span class="n">res_comp</span><span class="p">,</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">comp_list</span><span class="p">:</span>
+                            <span class="n">stag</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">res_comp</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
+                            <span class="n">cbl</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">stag</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">())</span>
+                            <span class="n">cbl</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">bd</span><span class="p">),</span> <span class="n">lmax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+                            <span class="n">cl1</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span>
+                            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bd</span><span class="p">):</span>
+                                <span class="n">lls</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span>
+                                <span class="n">cbl</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">xname</span><span class="p">][</span><span class="n">idx</span><span class="p">,</span> <span class="n">lls</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">cl1</span><span class="p">[</span><span class="n">lls</span><span class="p">])</span>
 
-                            <span class="k">continue</span>
+                        <span class="k">continue</span>
 
-                        <span class="k">if</span> <span class="n">beam_error</span><span class="p">:</span>
-                            <span class="n">b_arr</span><span class="p">[</span><span class="s2">&quot;b1&quot;</span><span class="p">][</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">=</span> <span class="n">beam_error</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">tag1</span><span class="p">]</span>
-                            <span class="n">b_arr</span><span class="p">[</span><span class="s2">&quot;b2&quot;</span><span class="p">][</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">=</span> <span class="n">beam_error</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">tag2</span><span class="p">]</span>
-                            <span class="n">b_arr</span><span class="p">[</span><span class="s2">&quot;b3&quot;</span><span class="p">][</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                                <span class="n">b_arr</span><span class="p">[</span><span class="s2">&quot;b1&quot;</span><span class="p">][</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">*</span> <span class="n">b_arr</span><span class="p">[</span><span class="s2">&quot;b2&quot;</span><span class="p">][</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span>
-                            <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">beam_error</span><span class="p">:</span>
+                        <span class="n">b_arr</span><span class="p">[</span><span class="s2">&quot;b1&quot;</span><span class="p">][</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">=</span> <span class="n">beam_error</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">tag1</span><span class="p">]</span>
+                        <span class="n">b_arr</span><span class="p">[</span><span class="s2">&quot;b2&quot;</span><span class="p">][</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">=</span> <span class="n">beam_error</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">tag2</span><span class="p">]</span>
+                        <span class="n">b_arr</span><span class="p">[</span><span class="s2">&quot;b3&quot;</span><span class="p">][</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="n">b_arr</span><span class="p">[</span><span class="s2">&quot;b1&quot;</span><span class="p">][</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">*</span> <span class="n">b_arr</span><span class="p">[</span><span class="s2">&quot;b2&quot;</span><span class="p">][</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span>
+                        <span class="p">)</span>
 
-                        <span class="c1"># use correct shape spectrum</span>
-                        <span class="k">if</span> <span class="n">comp</span> <span class="o">==</span> <span class="s2">&quot;fg&quot;</span><span class="p">:</span>
-                            <span class="c1"># single foreground spectrum</span>
-                            <span class="n">s_arr</span> <span class="o">=</span> <span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;fg&quot;</span><span class="p">][</span><span class="n">lk</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">ell</span> <span class="o">/</span> <span class="mf">80.0</span><span class="p">)</span> <span class="o">**</span> <span class="n">fg_ell_ind</span>
-                            <span class="n">s_arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="n">s_arr</span><span class="p">[</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;cmb_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">)][</span><span class="n">lk</span><span class="p">]</span>
+                    <span class="c1"># use correct shape spectrum</span>
+                    <span class="k">if</span> <span class="n">comp</span> <span class="o">==</span> <span class="s2">&quot;fg&quot;</span><span class="p">:</span>
+                        <span class="c1"># single foreground spectrum</span>
+                        <span class="n">s_arr</span> <span class="o">=</span> <span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;fg&quot;</span><span class="p">][</span><span class="n">lk</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">ell</span> <span class="o">/</span> <span class="mf">80.0</span><span class="p">)</span> <span class="o">**</span> <span class="n">fg_ell_ind</span>
+                        <span class="n">s_arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">s_arr</span><span class="p">[</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;cmb_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">)][</span><span class="n">lk</span><span class="p">]</span>
 
-                        <span class="c1"># get cross spectrum kernel terms</span>
-                        <span class="n">k_arr</span><span class="p">[</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">=</span> <span class="n">mll</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">xname</span><span class="p">][</span><span class="n">ls</span><span class="p">,</span> <span class="n">lk</span><span class="p">]</span>
-                        <span class="k">if</span> <span class="n">spec</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]:</span>
-                            <span class="n">mspec</span> <span class="o">=</span> <span class="n">spec</span> <span class="o">+</span> <span class="s2">&quot;_mix&quot;</span>
-                            <span class="n">mk_arr</span><span class="p">[</span><span class="n">si</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">=</span> <span class="n">mll</span><span class="p">[</span><span class="n">mspec</span><span class="p">][</span><span class="n">xname</span><span class="p">][</span><span class="n">ls</span><span class="p">,</span> <span class="n">lk</span><span class="p">]</span>
+                    <span class="c1"># get cross spectrum kernel terms</span>
+                    <span class="n">k_arr</span><span class="p">[</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">=</span> <span class="n">mll</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">xname</span><span class="p">][</span><span class="n">ls</span><span class="p">,</span> <span class="n">lk</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">spec</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]:</span>
+                        <span class="n">mspec</span> <span class="o">=</span> <span class="n">spec</span> <span class="o">+</span> <span class="s2">&quot;_mix&quot;</span>
+                        <span class="n">mk_arr</span><span class="p">[</span><span class="n">si</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">=</span> <span class="n">mll</span><span class="p">[</span><span class="n">mspec</span><span class="p">][</span><span class="n">xname</span><span class="p">][</span><span class="n">ls</span><span class="p">,</span> <span class="n">lk</span><span class="p">]</span>
 
                 <span class="n">md</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="k">if</span> <span class="n">s_arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -6185,9 +6162,6 @@
         <span class="n">alpha_prior</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">],</span>
         <span class="n">res_prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">beam_prior</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-        <span class="n">betad_prior</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
-        <span class="n">dust_amp_prior</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">],</span>
-        <span class="n">dust_ellind_prior</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
         <span class="n">num_walkers</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
         <span class="n">num_steps</span><span class="o">=</span><span class="mi">20000</span><span class="p">,</span>
         <span class="n">converge_criteria</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
@@ -6247,16 +6221,6 @@
 <span class="sd">            Prior mean and width of gaussian width on beam error (when</span>
 <span class="sd">            multiplied by beam error envelope).  If None, the</span>
 <span class="sd">            beam parameter space is not varied.</span>
-<span class="sd">        betad_prior : 2-list or none</span>
-<span class="sd">            Prior mean and width of gaussian width on dust spectral index.</span>
-<span class="sd">            If None, the dust index parameter space is not varied.</span>
-<span class="sd">        dust_amp_prior : 2-list or none</span>
-<span class="sd">            Prior upper and lower bound on dust amplitude.</span>
-<span class="sd">            If None, the dust amp parameter space is not varied.</span>
-<span class="sd">        dust_ellind_prior : 2-list or none</span>
-<span class="sd">            Prior mean and width of Gaussian prior on difference in dust ell</span>
-<span class="sd">            power law index. If None, don&#39;t vary from reference if fitting dust</span>
-<span class="sd">            power spectrum model.</span>
 <span class="sd">        num_walkers : int</span>
 <span class="sd">            Number of unique walkers with which to sample the parameter space.</span>
 <span class="sd">        num_steps : int</span>
@@ -6294,9 +6258,6 @@
             <span class="n">alpha_prior</span><span class="p">,</span>
             <span class="n">res_prior</span><span class="p">,</span>
             <span class="n">beam_prior</span><span class="p">,</span>
-            <span class="n">betad_prior</span><span class="p">,</span>
-            <span class="n">dust_amp_prior</span><span class="p">,</span>
-            <span class="n">dust_ellind_prior</span><span class="p">,</span>
         <span class="p">]:</span>
             <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">x</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
@@ -6309,9 +6270,6 @@
             <span class="n">alpha_prior</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">res_prior</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">beam_prior</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="n">betad_prior</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="n">dust_amp_prior</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="n">dust_ellind_prior</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># no template cleaning if there aren&#39;t any templates specified</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;template_cleaned&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
@@ -6353,26 +6311,12 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span><span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;res_&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">qb</span><span class="p">]):</span>
             <span class="n">res_prior</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span>
-            <span class="p">[</span>
-                <span class="n">betad_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
-                <span class="n">dust_amp_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
-                <span class="n">dust_ellind_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="p">):</span>
-            <span class="n">dust_ell_fit</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">dust_ell_fit</span> <span class="o">=</span> <span class="kc">False</span>
-
         <span class="c1"># bookkeeping: ordered priors</span>
         <span class="n">priors</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;r_prior&quot;</span><span class="p">:</span> <span class="n">r_prior</span><span class="p">,</span>
             <span class="s2">&quot;alpha_prior&quot;</span><span class="p">:</span> <span class="n">alpha_prior</span><span class="p">,</span>
             <span class="s2">&quot;res_prior&quot;</span><span class="p">:</span> <span class="n">res_prior</span><span class="p">,</span>
             <span class="s2">&quot;beam_prior&quot;</span><span class="p">:</span> <span class="n">beam_prior</span><span class="p">,</span>
-            <span class="s2">&quot;betad_prior&quot;</span><span class="p">:</span> <span class="n">betad_prior</span><span class="p">,</span>
-            <span class="s2">&quot;dust_amp_prior&quot;</span><span class="p">:</span> <span class="n">dust_amp_prior</span><span class="p">,</span>
-            <span class="s2">&quot;dust_ellind_prior&quot;</span><span class="p">:</span> <span class="n">dust_ellind_prior</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="c1"># priors on quantities that affect Dmat_obs or gmat (precalculated)</span>
         <span class="n">obs_priors</span> <span class="o">=</span> <span class="p">[</span><span class="n">alpha_prior</span><span class="p">]</span>
@@ -6386,9 +6330,6 @@
             <span class="n">alpha_prior</span><span class="o">=</span><span class="n">alpha_prior</span><span class="p">,</span>
             <span class="n">res_prior</span><span class="o">=</span><span class="n">res_prior</span><span class="p">,</span>
             <span class="n">beam_prior</span><span class="o">=</span><span class="n">beam_prior</span><span class="p">,</span>
-            <span class="n">betad_prior</span><span class="o">=</span><span class="n">betad_prior</span><span class="p">,</span>
-            <span class="n">dust_amp_prior</span><span class="o">=</span><span class="n">dust_amp_prior</span><span class="p">,</span>
-            <span class="n">dust_ellind_prior</span><span class="o">=</span><span class="n">dust_ellind_prior</span><span class="p">,</span>
             <span class="n">alpha_tags</span><span class="o">=</span><span class="n">alpha_tags</span><span class="p">,</span>
             <span class="n">num_walkers</span><span class="o">=</span><span class="n">num_walkers</span><span class="p">,</span>
             <span class="n">null_first_cmb</span><span class="o">=</span><span class="n">null_first_cmb</span><span class="p">,</span>
@@ -6503,17 +6444,6 @@
                     <span class="n">qb</span><span class="p">,</span> <span class="n">cbl_tensor_beam</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">res</span><span class="o">=</span><span class="kc">False</span>
                 <span class="p">)</span>
 
-            <span class="c1"># load foreground shape</span>
-            <span class="k">if</span> <span class="n">dust_ell_fit</span><span class="p">:</span>
-                <span class="n">cls_shape_dust</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="n">save</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="s2">&quot;fg&quot;</span><span class="p">)</span>
-                <span class="c1"># if dust_ellind_prior is None:</span>
-                <span class="c1">#    # can preload shape since not varying ell index</span>
-                <span class="n">cbl_fg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span><span class="n">cls_shape_dust</span><span class="p">,</span> <span class="n">map_tag</span><span class="o">=</span><span class="n">map_tag</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">beam_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">cbl_fg_beam</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span>
-                        <span class="n">cls_shape_dust</span><span class="p">,</span> <span class="n">map_tag</span><span class="p">,</span> <span class="n">beam_error</span><span class="o">=</span><span class="kc">True</span>
-                    <span class="p">)</span>
-
             <span class="n">cbl</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">cbl_scalar</span><span class="p">)</span>
             <span class="n">cls_model</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">cls_model_scalar</span><span class="p">)</span>
 
@@ -6537,16 +6467,6 @@
             <span class="k">if</span> <span class="n">beam_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">params</span><span class="p">[</span><span class="s2">&quot;beam&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[:</span><span class="n">num_beam</span><span class="p">]</span>
                 <span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">num_beam</span><span class="p">:]</span>
-            <span class="k">if</span> <span class="n">betad_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">params</span><span class="p">[</span><span class="s2">&quot;betad&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-            <span class="k">if</span> <span class="n">dust_amp_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="c1"># param for ee and bb</span>
-                <span class="n">params</span><span class="p">[</span><span class="s2">&quot;dust_amp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
-                <span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
-            <span class="k">if</span> <span class="n">dust_ellind_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">params</span><span class="p">[</span><span class="s2">&quot;dust_ellind&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Too many parameters to parse&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">params</span>
@@ -6556,9 +6476,6 @@
             <span class="n">alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">res</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">beam</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">betad</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">dust_amp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">dust_ellind</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Log prior function constructed from input options</span>
@@ -6567,7 +6484,6 @@
                 <span class="s2">&quot;r_prior&quot;</span><span class="p">:</span> <span class="n">r</span><span class="p">,</span>
                 <span class="s2">&quot;alpha_prior&quot;</span><span class="p">:</span> <span class="n">alpha</span><span class="p">,</span>
                 <span class="s2">&quot;res_prior&quot;</span><span class="p">:</span> <span class="n">res</span><span class="p">,</span>
-                <span class="s2">&quot;dust_amp_prior&quot;</span><span class="p">:</span> <span class="n">dust_amp</span><span class="p">,</span>
             <span class="p">}</span>
             <span class="k">for</span> <span class="n">v</span><span class="p">,</span> <span class="n">pval</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">prior</span> <span class="o">=</span> <span class="n">priors</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
@@ -6577,10 +6493,8 @@
 
             <span class="n">values_gauss</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">&quot;beam_prior&quot;</span><span class="p">:</span> <span class="n">beam</span><span class="p">,</span>
-                <span class="s2">&quot;betad_prior&quot;</span><span class="p">:</span> <span class="n">betad</span><span class="p">,</span>
-                <span class="s2">&quot;dust_ellind_prior&quot;</span><span class="p">:</span> <span class="n">dust_ellind</span><span class="p">,</span>
             <span class="p">}</span>
-            <span class="c1"># for beam and betad, use gaussian prior</span>
+            <span class="c1"># for beam, use gaussian prior</span>
             <span class="n">log_prob</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="k">for</span> <span class="n">v</span><span class="p">,</span> <span class="n">pval</span> <span class="ow">in</span> <span class="n">values_gauss</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">prior</span> <span class="o">=</span> <span class="n">priors</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
@@ -6597,9 +6511,6 @@
             <span class="n">alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">res</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">beam</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">betad</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">dust_amp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">dust_ellind</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Log likelihood function constructed from input options</span>
@@ -6666,62 +6577,6 @@
                             <span class="n">beam_term</span> <span class="o">+=</span> <span class="n">bc</span> <span class="o">*</span> <span class="n">cls_mod_scal_beam</span><span class="p">[</span><span class="n">ctag</span><span class="p">][</span><span class="n">xname</span><span class="p">][</span><span class="n">bn</span><span class="p">]</span>
                         <span class="n">dd</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">cls_model_scalar</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span> <span class="o">+</span> <span class="n">beam_term</span>
 
-            <span class="c1"># fg term, including beam modifications. Because mix terms are</span>
-            <span class="c1"># dependent on dust amp, get model specs here.</span>
-            <span class="k">if</span> <span class="n">dust_ell_fit</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">dust_amp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">qb</span><span class="p">[</span><span class="s2">&quot;fg_ee&quot;</span><span class="p">][:]</span> <span class="o">=</span> <span class="mi">1</span>
-                    <span class="n">qb</span><span class="p">[</span><span class="s2">&quot;fg_bb&quot;</span><span class="p">][:]</span> <span class="o">=</span> <span class="mi">1</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">qb</span><span class="p">[</span><span class="s2">&quot;fg_ee&quot;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">dust_amp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                    <span class="n">qb</span><span class="p">[</span><span class="s2">&quot;fg_bb&quot;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">dust_amp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-                <span class="k">if</span> <span class="n">betad</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">qb</span><span class="p">[</span><span class="s2">&quot;delta_beta&quot;</span><span class="p">][:]</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">qb</span><span class="p">[</span><span class="s2">&quot;delta_beta&quot;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">betad</span>
-                <span class="k">if</span> <span class="n">dust_ellind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">cbl_fg0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span>
-                        <span class="n">cls_shape_dust</span><span class="p">,</span> <span class="n">map_tag</span><span class="o">=</span><span class="n">map_tag</span><span class="p">,</span> <span class="n">fg_ell_ind</span><span class="o">=</span><span class="n">dust_ellind</span>
-                    <span class="p">)</span>
-                    <span class="k">if</span> <span class="n">beam</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="n">cbl_fg_beam0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_cl_template</span><span class="p">(</span>
-                            <span class="n">cls_shape_dust</span><span class="p">,</span>
-                            <span class="n">map_tag</span><span class="p">,</span>
-                            <span class="n">fg_ell_ind</span><span class="o">=</span><span class="n">dust_ellind</span><span class="p">,</span>
-                            <span class="n">beam_error</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                        <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">cbl_fg0</span> <span class="o">=</span> <span class="n">cbl_fg</span>
-                    <span class="k">if</span> <span class="n">beam</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="n">cbl_fg_beam0</span> <span class="o">=</span> <span class="n">cbl_fg_beam</span>
-
-                <span class="n">cls_model_fg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_model_spectra</span><span class="p">(</span>
-                    <span class="n">qb</span><span class="p">,</span> <span class="n">cbl_fg0</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">res</span><span class="o">=</span><span class="kc">False</span>
-                <span class="p">)</span>
-                <span class="k">if</span> <span class="n">beam</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">cls_mod_fg_beam</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_model_spectra</span><span class="p">(</span>
-                        <span class="n">qb</span><span class="p">,</span> <span class="n">cbl_fg_beam0</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">res</span><span class="o">=</span><span class="kc">False</span>
-                    <span class="p">)</span>
-                <span class="c1"># add fg field to model, and add fg to total model</span>
-                <span class="k">for</span> <span class="n">stag</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">cls_model_fg</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="n">comp</span><span class="p">,</span> <span class="n">spec</span> <span class="o">=</span> <span class="n">stag</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">spec</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">comp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;fg&quot;</span><span class="p">,</span> <span class="s2">&quot;total&quot;</span><span class="p">]:</span>
-                        <span class="k">continue</span>
-                    <span class="n">ftag</span> <span class="o">=</span> <span class="s2">&quot;fg_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">stag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cls_model0</span><span class="p">:</span>
-                        <span class="n">cls_model0</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-                    <span class="k">for</span> <span class="n">xname</span><span class="p">,</span> <span class="n">dd</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                        <span class="k">if</span> <span class="n">xname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cls_model0</span><span class="p">[</span><span class="n">stag</span><span class="p">]:</span>
-                            <span class="n">cls_model0</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls_model_fg</span><span class="p">[</span><span class="n">ftag</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="n">cls_model0</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span> <span class="o">+=</span> <span class="n">cls_model_fg</span><span class="p">[</span><span class="n">ftag</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span>
-
-                        <span class="c1"># add beam terms to fg and total fields</span>
-                        <span class="k">if</span> <span class="n">beam</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                            <span class="n">beam_term</span> <span class="o">=</span> <span class="mi">0</span>
-                            <span class="k">for</span> <span class="n">bn</span><span class="p">,</span> <span class="n">bc</span> <span class="ow">in</span> <span class="n">beam_coeffs</span><span class="p">[</span><span class="n">xname</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                                <span class="n">beam_term</span> <span class="o">+=</span> <span class="n">bc</span> <span class="o">*</span> <span class="n">cls_mod_fg_beam</span><span class="p">[</span><span class="n">ftag</span><span class="p">][</span><span class="n">xname</span><span class="p">][</span><span class="n">bn</span><span class="p">]</span>
-                            <span class="n">cls_model0</span><span class="p">[</span><span class="n">stag</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span> <span class="o">+=</span> <span class="n">beam_term</span>
 
             <span class="c1"># compute noise model terms</span>
             <span class="k">if</span> <span class="n">res</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -6785,15 +6640,6 @@
         <span class="k">if</span> <span class="n">beam_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># add a beam term for each frequency</span>
             <span class="n">x0</span> <span class="o">+=</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">beam_tags</span><span class="p">)</span>
-            <span class="n">brute_force</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">if</span> <span class="n">betad_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">x0</span> <span class="o">+=</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">]</span>
-            <span class="n">brute_force</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">if</span> <span class="n">dust_amp_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">x0</span> <span class="o">+=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-            <span class="n">brute_force</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">if</span> <span class="n">dust_ellind_prior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">x0</span> <span class="o">+=</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">]</span>
             <span class="n">brute_force</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="n">ndim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x0</span><span class="p">)</span>

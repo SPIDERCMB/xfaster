@@ -284,9 +284,6 @@
     <span class="n">res_prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">like_beam_tags</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span>
     <span class="n">beam_prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">betad_prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">dust_amp_prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">dust_ellind_prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Main function for running the XFaster algorithm.</span>
@@ -584,17 +581,6 @@
 <span class="sd">        Gaussian prior mean and number of strandard deviations for beam error.</span>
 <span class="sd">        This Gaussian is applied as a prior in fitting for beam error in the</span>
 <span class="sd">        likelihood. Set to None to not fit for beam error.</span>
-<span class="sd">    betad_prior : list of floats</span>
-<span class="sd">        Gaussian prior on dust index different from ref beta.</span>
-<span class="sd">        Should be [0, sig] for [mean 0, width sig] gaussian.</span>
-<span class="sd">        Set to None to not fit for betad in the likelihood.</span>
-<span class="sd">    dust_amp_prior: list of floats</span>
-<span class="sd">        Flat prior edges on dust amplitude (relative to Planck 353 ref).</span>
-<span class="sd">        Set to None to not fit for dust_amp in the likelihood.</span>
-<span class="sd">    dust_ellind_prior: list of floats</span>
-<span class="sd">        Gaussian prior on dust ell index different from reference, -2.28.</span>
-<span class="sd">        Should be [0, sig] for [mean 0, width sig] gaussian).</span>
-<span class="sd">        Set to None to not fit for dust_ellind in the likelihood.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">__version__</span> <span class="k">as</span> <span class="n">version</span>
 
@@ -809,9 +795,6 @@
         <span class="n">res_prior</span><span class="o">=</span><span class="n">res_prior</span><span class="p">,</span>
         <span class="n">beam_tags</span><span class="o">=</span><span class="n">like_beam_tags</span><span class="p">,</span>
         <span class="n">beam_prior</span><span class="o">=</span><span class="n">beam_prior</span><span class="p">,</span>
-        <span class="n">betad_prior</span><span class="o">=</span><span class="n">betad_prior</span><span class="p">,</span>
-        <span class="n">dust_amp_prior</span><span class="o">=</span><span class="n">dust_amp_prior</span><span class="p">,</span>
-        <span class="n">dust_ellind_prior</span><span class="o">=</span><span class="n">dust_ellind_prior</span><span class="p">,</span>
         <span class="n">num_walkers</span><span class="o">=</span><span class="n">mcmc_walkers</span><span class="p">,</span>
         <span class="n">converge_criteria</span><span class="o">=</span><span class="n">like_converge_criteria</span><span class="p">,</span>
         <span class="n">file_tag</span><span class="o">=</span><span class="n">like_tag</span><span class="p">,</span>
@@ -1273,9 +1256,6 @@
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;res_prior&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;like_beam_tags&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;TAG&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;beam_prior&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;betad_prior&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;dust_amp_prior&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;dust_ellind_prior&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
         <span class="c1"># submit args</span>
         <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;submit&quot;</span><span class="p">:</span>
@@ -1486,9 +1466,6 @@
                     <span class="s2">&quot;res_prior&quot;</span><span class="p">,</span>
                     <span class="s2">&quot;like_r_specs&quot;</span><span class="p">,</span>
                     <span class="s2">&quot;like_template_specs&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;betad_prior&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;dust_amp_prior&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;dust_ellind_prior&quot;</span><span class="p">,</span>
                     <span class="s2">&quot;sim_data_components&quot;</span><span class="p">,</span>
                     <span class="s2">&quot;bin_width&quot;</span><span class="p">,</span>
                     <span class="s2">&quot;bin_width_res&quot;</span><span class="p">,</span>
