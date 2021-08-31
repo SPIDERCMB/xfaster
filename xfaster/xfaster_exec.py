@@ -120,9 +120,6 @@ def xfaster_run(
     res_prior=None,
     like_beam_tags="all",
     beam_prior=None,
-    betad_prior=None,
-    dust_amp_prior=None,
-    dust_ellind_prior=None,
 ):
     """
     Main function for running the XFaster algorithm.
@@ -420,17 +417,6 @@ def xfaster_run(
         Gaussian prior mean and number of strandard deviations for beam error.
         This Gaussian is applied as a prior in fitting for beam error in the
         likelihood. Set to None to not fit for beam error.
-    betad_prior : list of floats
-        Gaussian prior on dust index different from ref beta.
-        Should be [0, sig] for [mean 0, width sig] gaussian.
-        Set to None to not fit for betad in the likelihood.
-    dust_amp_prior: list of floats
-        Flat prior edges on dust amplitude (relative to Planck 353 ref).
-        Set to None to not fit for dust_amp in the likelihood.
-    dust_ellind_prior: list of floats
-        Gaussian prior on dust ell index different from reference, -2.28.
-        Should be [0, sig] for [mean 0, width sig] gaussian).
-        Set to None to not fit for dust_ellind in the likelihood.
     """
     from . import __version__ as version
 
@@ -645,9 +631,6 @@ def xfaster_run(
         res_prior=res_prior,
         beam_tags=like_beam_tags,
         beam_prior=beam_prior,
-        betad_prior=betad_prior,
-        dust_amp_prior=dust_amp_prior,
-        dust_ellind_prior=dust_ellind_prior,
         num_walkers=mcmc_walkers,
         converge_criteria=like_converge_criteria,
         file_tag=like_tag,
@@ -1109,9 +1092,6 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "res_prior", nargs=2)
         add_arg(G, "like_beam_tags", nargs="+", metavar="TAG")
         add_arg(G, "beam_prior", nargs=2)
-        add_arg(G, "betad_prior", nargs=2)
-        add_arg(G, "dust_amp_prior", nargs=2)
-        add_arg(G, "dust_ellind_prior", nargs=2)
 
         # submit args
         if mode == "submit":
@@ -1322,9 +1302,6 @@ class XFasterJobGroup(object):
                     "res_prior",
                     "like_r_specs",
                     "like_template_specs",
-                    "betad_prior",
-                    "dust_amp_prior",
-                    "dust_ellind_prior",
                     "sim_data_components",
                     "bin_width",
                     "bin_width_res",

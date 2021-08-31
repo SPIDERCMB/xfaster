@@ -3880,7 +3880,6 @@ class XFaster(object):
         transfer_run=False,
         beam_error=False,
         use_precalc=True,
-        fg_ell_ind=0,
     ):
         """
         Compute the Cbl matrix from the input shape spectrum.
@@ -3908,9 +3907,6 @@ class XFaster(object):
             If True, load pre-calculated terms stored from a previous iteration,
             and store for a future iteration.  Otherwise, all calculations are
             repeated.
-        fg_ell_ind : float
-            If binning foreground shape, offset the ell index from the reference
-            by this amount.
 
         Returns
         -------
@@ -4032,99 +4028,80 @@ class XFaster(object):
             # need n_xname x n_spec x ell
             nspec = len(specs)
             nxmap = len(map_pairs)
-            if comp == "fg" and fg_ell_ind != 0:
-                s_arr = (ell / 80.0) ** fg_ell_ind
-                s_arr[0] = 0
-                if not beam_error:
-                    # don't create a new object in memory each time
-                    # use last one's space to save runtime
-                    self.d = np.multiply(self.d_fg, s_arr, out=getattr(self, "d", None))
-                    self.md = np.multiply(
-                        self.md_fg, s_arr, out=getattr(self, "md", None)
-                    )
-                else:
-                    for k in beam_keys:
-                        if not hasattr(self, "d"):
-                            self.d = OrderedDict([(k, None) for k in beam_keys])
-                            self.md = OrderedDict([(k, None) for k in beam_keys])
-                        self.d[k] = np.multiply(self.d_fg[k], s_arr, out=self.d[k])
-                        self.md[k] = np.multiply(self.md_fg[k], s_arr, out=self.md[k])
-                bin_things(comp, self.d, self.md)
 
-            else:
-                kshape = [nspec, nxmap, self.lmax - 1, lmax_kern + 1]
-                mkshape = [2] + kshape[1:]
-                k_arr = np.zeros(kshape)
-                mk_arr = np.zeros(mkshape)
+            kshape = [nspec, nxmap, self.lmax - 1, lmax_kern + 1]
+            mkshape = [2] + kshape[1:]
+            k_arr = np.zeros(kshape)
+            mk_arr = np.zeros(mkshape)
 
-                shape = [nspec, nxmap, 1, lmax_kern + 1]
-                s_arr = np.zeros(shape)
-                if beam_error:
-                    b_arr = {k: np.zeros(shape) for k in beam_keys}
+            shape = [nspec, nxmap, 1, lmax_kern + 1]
+            s_arr = np.zeros(shape)
+            if beam_error:
+                b_arr = {k: np.zeros(shape) for k in beam_keys}
 
-                for si, spec in enumerate(specs):
-                    stag = "{}_{}".format(comp, spec)
-                    mstag = None
-                    if comp != "res" and spec in ["ee", "bb"]:
-                        mstag = stag + "_mix"
+            for si, spec in enumerate(specs):
+                stag = "{}_{}".format(comp, spec)
+                mstag = None
+                if comp != "res" and spec in ["ee", "bb"]:
+                    mstag = stag + "_mix"
 
-                    for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
-                        if "res" in comp:
-                            s0, s1 = spec
-                            bd = [[0, lmax + 1]]
-                            # if any component of XY spec is in residual bin
-                            # def, use that bin def
-                            for v in [
-                                "res_{}_{}".format(s0 * 2, tag1),
-                                "res_{}_{}".format(s0 * 2, tag2),
-                                "res_{}_{}".format(s1 * 2, tag1),
-                                "res_{}_{}".format(s1 * 2, tag2),
-                            ]:
+                for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
+                    if "res" in comp:
+                        s0, s1 = spec
+                        bd = [[0, lmax + 1]]
+                        # if any component of XY spec is in residual bin
+                        # def, use that bin def
+                        for v in [
+                            "res_{}_{}".format(s0 * 2, tag1),
+                            "res_{}_{}".format(s0 * 2, tag2),
+                            "res_{}_{}".format(s1 * 2, tag1),
+                            "res_{}_{}".format(s1 * 2, tag2),
+                        ]:
+                            if v in self.bin_def:
+                                bd = self.bin_def[v]
+                                break
+                            spec0 = v.split("_")[1]
+                            if spec0 in ["ee", "bb"]:
+                                v = v.replace(spec0, "eebb")
                                 if v in self.bin_def:
                                     bd = self.bin_def[v]
                                     break
-                                spec0 = v.split("_")[1]
-                                if spec0 in ["ee", "bb"]:
-                                    v = v.replace(spec0, "eebb")
-                                    if v in self.bin_def:
-                                        bd = self.bin_def[v]
-                                        break
 
-                            comp_list = [("res", cls_noise)] + [
-                                ("res_{}".format(k), cls_res[k]) for k in cls_res
-                            ]
+                        comp_list = [("res", cls_noise)] + [
+                            ("res_{}".format(k), cls_res[k]) for k in cls_res
+                        ]
 
-                            for res_comp, cls in comp_list:
-                                stag = "{}_{}".format(res_comp, spec)
-                                cbl.setdefault(stag, OrderedDict())
-                                cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
-                                cl1 = cls[spec][xname]
-                                for idx, (left, right) in enumerate(bd):
-                                    lls = slice(left, right)
-                                    cbl[stag][xname][idx, lls] = np.copy(cl1[lls])
+                        for res_comp, cls in comp_list:
+                            stag = "{}_{}".format(res_comp, spec)
+                            cbl.setdefault(stag, OrderedDict())
+                            cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
+                            cl1 = cls[spec][xname]
+                            for idx, (left, right) in enumerate(bd):
+                                lls = slice(left, right)
+                                cbl[stag][xname][idx, lls] = np.copy(cl1[lls])
 
-                            continue
+                        continue
 
-                        if beam_error:
-                            b_arr["b1"][si, xi] = beam_error[spec][tag1]
-                            b_arr["b2"][si, xi] = beam_error[spec][tag2]
-                            b_arr["b3"][si, xi] = (
-                                b_arr["b1"][si, xi] * b_arr["b2"][si, xi]
-                            )
+                    if beam_error:
+                        b_arr["b1"][si, xi] = beam_error[spec][tag1]
+                        b_arr["b2"][si, xi] = beam_error[spec][tag2]
+                        b_arr["b3"][si, xi] = (
+                            b_arr["b1"][si, xi] * b_arr["b2"][si, xi]
+                        )
 
-                        # use correct shape spectrum
-                        if comp == "fg":
-                            # single foreground spectrum
-                            s_arr = cls_shape["fg"][lk] * (ell / 80.0) ** fg_ell_ind
-                            s_arr[0] = 0
-                        else:
-                            s_arr[si, xi] = cls_shape["cmb_{}".format(spec)][lk]
+                    # use correct shape spectrum
+                    if comp == "fg":
+                        # single foreground spectrum
+                        s_arr = cls_shape["fg"][lk] * (ell / 80.0) ** fg_ell_ind
+                        s_arr[0] = 0
+                    else:
+                        s_arr[si, xi] = cls_shape["cmb_{}".format(spec)][lk]
 
-                        # get cross spectrum kernel terms
-                        k_arr[si, xi] = mll[spec][xname][ls, lk]
-                        if spec in ["ee", "bb"]:
-                            mspec = spec + "_mix"
-                            mk_arr[si - 1, xi] = mll[mspec][xname][ls, lk]
+                    # get cross spectrum kernel terms
+                    k_arr[si, xi] = mll[spec][xname][ls, lk]
+                    if spec in ["ee", "bb"]:
+                        mspec = spec + "_mix"
+                        mk_arr[si - 1, xi] = mll[mspec][xname][ls, lk]
 
                 md = None
                 if s_arr.ndim == 1:
@@ -6021,9 +5998,6 @@ class XFaster(object):
         alpha_prior=[0, np.inf],
         res_prior=None,
         beam_prior=[0, 1],
-        betad_prior=[0, 1],
-        dust_amp_prior=[0, np.inf],
-        dust_ellind_prior=[0, 1],
         num_walkers=50,
         num_steps=20000,
         converge_criteria=0.01,
@@ -6083,16 +6057,6 @@ class XFaster(object):
             Prior mean and width of gaussian width on beam error (when
             multiplied by beam error envelope).  If None, the
             beam parameter space is not varied.
-        betad_prior : 2-list or none
-            Prior mean and width of gaussian width on dust spectral index.
-            If None, the dust index parameter space is not varied.
-        dust_amp_prior : 2-list or none
-            Prior upper and lower bound on dust amplitude.
-            If None, the dust amp parameter space is not varied.
-        dust_ellind_prior : 2-list or none
-            Prior mean and width of Gaussian prior on difference in dust ell
-            power law index. If None, don't vary from reference if fitting dust
-            power spectrum model.
         num_walkers : int
             Number of unique walkers with which to sample the parameter space.
         num_steps : int
@@ -6130,9 +6094,6 @@ class XFaster(object):
             alpha_prior,
             res_prior,
             beam_prior,
-            betad_prior,
-            dust_amp_prior,
-            dust_ellind_prior,
         ]:
             if x is not None:
                 x[:] = [float(x[0]), float(x[1])]
@@ -6145,9 +6106,6 @@ class XFaster(object):
             alpha_prior = None
             res_prior = None
             beam_prior = None
-            betad_prior = None
-            dust_amp_prior = None
-            dust_ellind_prior = None
 
         # no template cleaning if there aren't any templates specified
         if not getattr(self, "template_cleaned", False):
@@ -6189,26 +6147,12 @@ class XFaster(object):
         if not any([k.startswith("res_") for k in qb]):
             res_prior = None
 
-        if np.any(
-            [
-                betad_prior is not None,
-                dust_amp_prior is not None,
-                dust_ellind_prior is not None,
-            ]
-        ):
-            dust_ell_fit = True
-        else:
-            dust_ell_fit = False
-
         # bookkeeping: ordered priors
         priors = {
             "r_prior": r_prior,
             "alpha_prior": alpha_prior,
             "res_prior": res_prior,
             "beam_prior": beam_prior,
-            "betad_prior": betad_prior,
-            "dust_amp_prior": dust_amp_prior,
-            "dust_ellind_prior": dust_ellind_prior,
         }
         # priors on quantities that affect Dmat_obs or gmat (precalculated)
         obs_priors = [alpha_prior]
@@ -6222,9 +6166,6 @@ class XFaster(object):
             alpha_prior=alpha_prior,
             res_prior=res_prior,
             beam_prior=beam_prior,
-            betad_prior=betad_prior,
-            dust_amp_prior=dust_amp_prior,
-            dust_ellind_prior=dust_ellind_prior,
             alpha_tags=alpha_tags,
             num_walkers=num_walkers,
             null_first_cmb=null_first_cmb,
@@ -6339,17 +6280,6 @@ class XFaster(object):
                     qb, cbl_tensor_beam, delta=False, res=False
                 )
 
-            # load foreground shape
-            if dust_ell_fit:
-                cls_shape_dust = self.get_signal_shape(save=False, component="fg")
-                # if dust_ellind_prior is None:
-                #    # can preload shape since not varying ell index
-                cbl_fg = self.bin_cl_template(cls_shape_dust, map_tag=map_tag)
-                if beam_prior is not None:
-                    cbl_fg_beam = self.bin_cl_template(
-                        cls_shape_dust, map_tag, beam_error=True
-                    )
-
             cbl = copy.deepcopy(cbl_scalar)
             cls_model = copy.deepcopy(cls_model_scalar)
 
@@ -6373,16 +6303,6 @@ class XFaster(object):
             if beam_prior is not None:
                 params["beam"] = theta[:num_beam]
                 theta = theta[num_beam:]
-            if betad_prior is not None:
-                params["betad"] = theta[0]
-                theta = theta[1:]
-            if dust_amp_prior is not None:
-                # param for ee and bb
-                params["dust_amp"] = theta[:2]
-                theta = theta[2:]
-            if dust_ellind_prior is not None:
-                params["dust_ellind"] = theta[0]
-                theta = theta[1:]
             if len(theta):
                 raise ValueError("Too many parameters to parse")
             return params
@@ -6392,9 +6312,6 @@ class XFaster(object):
             alpha=None,
             res=None,
             beam=None,
-            betad=None,
-            dust_amp=None,
-            dust_ellind=None,
         ):
             """
             Log prior function constructed from input options
@@ -6403,7 +6320,6 @@ class XFaster(object):
                 "r_prior": r,
                 "alpha_prior": alpha,
                 "res_prior": res,
-                "dust_amp_prior": dust_amp,
             }
             for v, pval in values.items():
                 prior = priors[v]
@@ -6413,10 +6329,8 @@ class XFaster(object):
 
             values_gauss = {
                 "beam_prior": beam,
-                "betad_prior": betad,
-                "dust_ellind_prior": dust_ellind,
             }
-            # for beam and betad, use gaussian prior
+            # for beam, use gaussian prior
             log_prob = 0.0
             for v, pval in values_gauss.items():
                 prior = priors[v]
@@ -6433,9 +6347,6 @@ class XFaster(object):
             alpha=None,
             res=None,
             beam=None,
-            betad=None,
-            dust_amp=None,
-            dust_ellind=None,
         ):
             """
             Log likelihood function constructed from input options
@@ -6502,62 +6413,6 @@ class XFaster(object):
                             beam_term += bc * cls_mod_scal_beam[ctag][xname][bn]
                         dd[:] = cls_model_scalar[stag][xname] + beam_term
 
-            # fg term, including beam modifications. Because mix terms are
-            # dependent on dust amp, get model specs here.
-            if dust_ell_fit:
-                if dust_amp is None:
-                    qb["fg_ee"][:] = 1
-                    qb["fg_bb"][:] = 1
-                else:
-                    qb["fg_ee"][:] = dust_amp[0]
-                    qb["fg_bb"][:] = dust_amp[1]
-                if betad is None:
-                    qb["delta_beta"][:] = 0
-                else:
-                    qb["delta_beta"][:] = betad
-                if dust_ellind is not None:
-                    cbl_fg0 = self.bin_cl_template(
-                        cls_shape_dust, map_tag=map_tag, fg_ell_ind=dust_ellind
-                    )
-                    if beam is not None:
-                        cbl_fg_beam0 = self.bin_cl_template(
-                            cls_shape_dust,
-                            map_tag,
-                            fg_ell_ind=dust_ellind,
-                            beam_error=True,
-                        )
-                else:
-                    cbl_fg0 = cbl_fg
-                    if beam is not None:
-                        cbl_fg_beam0 = cbl_fg_beam
-
-                cls_model_fg = self.get_model_spectra(
-                    qb, cbl_fg0, delta=True, res=False
-                )
-                if beam is not None:
-                    cls_mod_fg_beam = self.get_model_spectra(
-                        qb, cbl_fg_beam0, delta=True, res=False
-                    )
-                # add fg field to model, and add fg to total model
-                for stag, d in cls_model_fg.items():
-                    comp, spec = stag.split("_", 1)
-                    if spec not in ["ee", "bb"] or comp not in ["fg", "total"]:
-                        continue
-                    ftag = "fg_{}".format(spec)
-                    if stag not in cls_model0:
-                        cls_model0[stag] = OrderedDict()
-                    for xname, dd in d.items():
-                        if xname not in cls_model0[stag]:
-                            cls_model0[stag][xname] = cls_model_fg[ftag][xname]
-                        else:
-                            cls_model0[stag][xname] += cls_model_fg[ftag][xname]
-
-                        # add beam terms to fg and total fields
-                        if beam is not None:
-                            beam_term = 0
-                            for bn, bc in beam_coeffs[xname].items():
-                                beam_term += bc * cls_mod_fg_beam[ftag][xname][bn]
-                            cls_model0[stag][xname] += beam_term
 
             # compute noise model terms
             if res is None:
@@ -6621,15 +6476,6 @@ class XFaster(object):
         if beam_prior is not None:
             # add a beam term for each frequency
             x0 += [0.01] * len(beam_tags)
-            brute_force = False
-        if betad_prior is not None:
-            x0 += [0.01]
-            brute_force = False
-        if dust_amp_prior is not None:
-            x0 += [1, 1]
-            brute_force = False
-        if dust_ellind_prior is not None:
-            x0 += [0.01]
             brute_force = False
 
         ndim = len(x0)
