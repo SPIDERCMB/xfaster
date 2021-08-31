@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import healpy as hp
-from xfaster import xfaster_tools as xft
+import xfaster as xf
 
 """
 This scipt will generate the ensemble of maps needed to run the
@@ -42,7 +42,7 @@ if os.path.exists(spec_file):
     dls = np.loadtxt(spec_file, unpack=True)[1:]
     cls = np.hstack([np.zeros((len(dls), 2)), dls / lfac[2:]])
 else:
-    cls = xft.get_camb_cl(r=1.0, lmax=2000, lfac=False)
+    cls = xf.get_camb_cl(r=1.0, lmax=2000, lfac=False)
     # write to disk for transfer function
     dls = np.vstack([ell[2:], (lfac * cls)[:, 2:]])
     np.savetxt(spec_file, dls.T)
