@@ -4092,7 +4092,7 @@ class XFaster(object):
                     # use correct shape spectrum
                     if comp == "fg":
                         # single foreground spectrum
-                        s_arr = cls_shape["fg"][lk]
+                        s_arr[si, xi] = cls_shape["fg"][lk]
                     else:
                         s_arr[si, xi] = cls_shape["cmb_{}".format(spec)][lk]
 
