@@ -4256,8 +4256,7 @@
                     <span class="c1"># use correct shape spectrum</span>
                     <span class="k">if</span> <span class="n">comp</span> <span class="o">==</span> <span class="s2">&quot;fg&quot;</span><span class="p">:</span>
                         <span class="c1"># single foreground spectrum</span>
-                        <span class="n">s_arr</span> <span class="o">=</span> <span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;fg&quot;</span><span class="p">][</span><span class="n">lk</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">ell</span> <span class="o">/</span> <span class="mf">80.0</span><span class="p">)</span> <span class="o">**</span> <span class="n">fg_ell_ind</span>
-                        <span class="n">s_arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="n">s_arr</span> <span class="o">=</span> <span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;fg&quot;</span><span class="p">][</span><span class="n">lk</span><span class="p">]</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">s_arr</span><span class="p">[</span><span class="n">si</span><span class="p">,</span> <span class="n">xi</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls_shape</span><span class="p">[</span><span class="s2">&quot;cmb_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">)][</span><span class="n">lk</span><span class="p">]</span>
 
@@ -4279,9 +4278,6 @@
                     <span class="n">d</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="n">k</span><span class="p">,</span> <span class="n">d</span> <span class="o">*</span> <span class="n">b_arr</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">beam_keys</span><span class="p">])</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span><span class="p">:</span>
                         <span class="n">md</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="n">k</span><span class="p">,</span> <span class="n">md</span> <span class="o">*</span> <span class="n">b_arr</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">beam_keys</span><span class="p">])</span>
-                <span class="k">if</span> <span class="n">comp</span> <span class="o">==</span> <span class="s2">&quot;fg&quot;</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">d_fg</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">md_fg</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">md</span><span class="p">)</span>
 
                 <span class="n">bin_things</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">md</span><span class="p">)</span>
 
