@@ -572,6 +572,7 @@ class XFaster(object):
         mask_type="hitsmask_tailored",
         signal_type="r0p03",
         signal_transfer_type=None,
+        signal_transfer_type_dust=None,
         signal_subset="*",
         noise_type="stationary",
         noise_subset="*",
