@@ -4092,8 +4092,7 @@ class XFaster(object):
                     # use correct shape spectrum
                     if comp == "fg":
                         # single foreground spectrum
-                        s_arr = cls_shape["fg"][lk] * (ell / 80.0) ** fg_ell_ind
-                        s_arr[0] = 0
+                        s_arr[si, xi] = cls_shape["fg"][lk]
                     else:
                         s_arr[si, xi] = cls_shape["cmb_{}".format(spec)][lk]
 
@@ -4115,9 +4114,6 @@ class XFaster(object):
                     d = OrderedDict([(k, d * b_arr[k]) for k in beam_keys])
                     if self.pol:
                         md = OrderedDict([(k, md * b_arr[k]) for k in beam_keys])
-                if comp == "fg":
-                    self.d_fg = copy.deepcopy(d)
-                    self.md_fg = copy.deepcopy(md)
 
                 bin_things(comp, d, md)
 
