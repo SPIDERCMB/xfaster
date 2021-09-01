@@ -3973,84 +3973,40 @@ class XFaster(object):
         def binup(d, left, right, weights):
             return (d[..., left:right] * weights).sum(axis=-1)
 
-        def bin_things(comp, d, md):
-            if "res" in comp:
-                return
-            for si, spec in enumerate(specs):
-                stag = "{}_{}".format(comp, spec)
-                cbl.setdefault(stag, OrderedDict())
-                mstag = None
-                if spec in ["ee", "bb"]:
-                    mstag = stag + "_mix"
-                    cbl.setdefault(mstag, OrderedDict())
-                bd = self.bin_def[stag]
-                bw = self.bin_weights[stag]
-                for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
-                    if beam_error:
-                        cbl[stag][xname] = OrderedDict(
-                            [(k, np.zeros((len(bd), lmax + 1))) for k in beam_keys]
-                        )
-                    else:
-                        cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
-                    if spec in ["ee", "bb"]:
-                        if beam_error:
-                            cbl[mstag][xname] = OrderedDict(
-                                [(k, np.zeros((len(bd), lmax + 1))) for k in beam_keys]
-                            )
-                        else:
-                            cbl[mstag][xname] = np.zeros((len(bd), lmax + 1))
+        def binup2(d, bd, bw):
+            d = np.asarray([binup(d, l, r, w) for (l, r), w in zip(bd, bw)])
+            return d.transpose(1, 0, 2)
 
-                    # integrate per bin
-                    for idx, ((left, right), weights) in enumerate(zip(bd, bw)):
-                        if beam_error:
-                            for k in beam_keys:
-                                cbl[stag][xname][k][idx, ls] = binup(
-                                    d[k][si, xi], left, right, weights
-                                )
-                        else:
-                            cbl[stag][xname][idx, ls] = binup(
-                                d[si, xi], left, right, weights
-                            )
-                        if spec in ["ee", "bb"]:
-                            if beam_error:
-                                for k in beam_keys:
-                                    cbl[mstag][xname][k][idx, ls] = binup(
-                                        md[k][si - 1, xi], left, right, weights
-                                    )
-                            else:
-                                cbl[mstag][xname][idx, ls] = binup(
-                                    md[si - 1, xi], left, right, weights
-                                )
+        # convert to matrices to speed up multiplication and binning
+        nxmap = len(map_pairs)
+        dshape = [nxmap, lmax + 1, lmax_kern + 1]
+        d_arr = np.zeros(dshape)
+        if "ee" in specs and "bb" in specs:
+            md_arr = np.zeros(dshape)
+
+        cshape = [nxmap, 1, lmax_kern + 1]
+        s_arr = np.zeros(cshape)
+        if beam_error:
+            b_arr = {k: np.zeros(cshape) for k in beam_keys}
 
         for comp in comps:
-            # convert to matrices to do multiplication to speed things up,
-            # except for res is weird so don't do it for that.
-            # need n_xname x n_spec x ell
-            nspec = len(specs)
-            nxmap = len(map_pairs)
-
-            kshape = [nspec, nxmap, self.lmax - 1, lmax_kern + 1]
-            mkshape = [2] + kshape[1:]
-            k_arr = np.zeros(kshape)
-            mk_arr = np.zeros(mkshape)
-
-            shape = [nspec, nxmap, 1, lmax_kern + 1]
-            s_arr = np.zeros(shape)
-            if beam_error:
-                b_arr = {k: np.zeros(shape) for k in beam_keys}
-
-            for si, spec in enumerate(specs):
-                stag = "{}_{}".format(comp, spec)
-                mstag = None
-                if comp != "res" and spec in ["ee", "bb"]:
-                    mstag = stag + "_mix"
+            for spec in specs:
+                if "res" not in comp:
+                    # clear arrays
+                    d_arr[:] = 0
+                    if spec in ["ee", "bb"]:
+                        md_arr[:] = 0
+                    s_arr[:] = 0
+                    if beam_error:
+                        for k, v in b_arr.items():
+                            v[:] = 0
 
                 for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
                     if "res" in comp:
                         s0, s1 = spec
                         bd = [[0, lmax + 1]]
-                        # if any component of XY spec is in residual bin
-                        # def, use that bin def
+                        # if any component of XY spec is in residual bin def,
+                        # use that bin def
                         for v in [
                             "res_{}_{}".format(s0 * 2, tag1),
                             "res_{}_{}".format(s0 * 2, tag2),
@@ -4082,40 +4038,61 @@ class XFaster(object):
 
                         continue
 
-                    if beam_error:
-                        b_arr["b1"][si, xi] = beam_error[spec][tag1]
-                        b_arr["b2"][si, xi] = beam_error[spec][tag2]
-                        b_arr["b3"][si, xi] = (
-                            b_arr["b1"][si, xi] * b_arr["b2"][si, xi]
-                        )
-
                     # use correct shape spectrum
                     if comp == "fg":
                         # single foreground spectrum
-                        s_arr[si, xi] = cls_shape["fg"][lk]
+                        s_arr[xi] = cls_shape["fg"][lk]
                     else:
-                        s_arr[si, xi] = cls_shape["cmb_{}".format(spec)][lk]
+                        s_arr[xi] = cls_shape["cmb_{}".format(spec)][lk]
 
-                    # get cross spectrum kernel terms
-                    k_arr[si, xi] = mll[spec][xname][ls, lk]
+                    # use correct beam error shape
+                    if beam_error:
+                        b_arr["b1"][xi] = beam_error[spec][tag1][lk]
+                        b_arr["b2"][xi] = beam_error[spec][tag2][lk]
+
+                    # apply cross spectrum kernel terms
+                    d_arr[xi, ls] = mll[spec][xname][ls, lk]
                     if spec in ["ee", "bb"]:
                         mspec = spec + "_mix"
-                        mk_arr[si - 1, xi] = mll[mspec][xname][ls, lk]
+                        md_arr[xi, ls] = mll[mspec][xname][ls, lk]
 
-                md = None
-                if s_arr.ndim == 1:
-                    s_arr_md = s_arr
-                else:
-                    s_arr_md = s_arr[1:3]
-                d = k_arr * s_arr
-                if self.pol:
-                    md = mk_arr * s_arr_md
+                if "res" in comp:
+                    continue
+
+                stag = "{}_{}".format(comp, spec)
+                bd = self.bin_def[stag]
+                bw = self.bin_weights[stag]
+                cbl.setdefault(stag, OrderedDict())
+
+                # mixing terms
+                mstag = None
+                if spec in ["ee", "bb"]:
+                    mstag = stag + "_mix"
+                    cbl.setdefault(mstag, OrderedDict())
+
+                # multiply all the things
+                d_arr *= s_arr
+                if mstag:
+                    md_arr *= s_arr
+
+                # bin all the things
                 if beam_error:
-                    d = OrderedDict([(k, d * b_arr[k]) for k in beam_keys])
-                    if self.pol:
-                        md = OrderedDict([(k, md * b_arr[k]) for k in beam_keys])
-
-                bin_things(comp, d, md)
+                    b_arr["b3"][:] = b_arr["b1"] * b_arr["b2"]
+                    for k in beam_keys:
+                        d = binup2(d_arr * b_arr[k], bd, bw)
+                        if mstag:
+                            md = binup2(md_arr * b_arr[k], bd, bw)
+                        for xi, xname in enumerate(map_pairs):
+                            cbl[stag][xname][k] = d[xi]
+                            if mstag:
+                                cbl[mstag][xname][k] = md[xi]
+                else:
+                    d = binup2(d_arr, bd, bw)
+                    md = binup2(md_arr, bd, bw)
+                    for xi, xname in enumerate(map_pairs):
+                        cbl[stag][xname] = d[xi]
+                        if mstag:
+                            cbl[mstag][xname] = md[xi]
 
         return cbl
 
