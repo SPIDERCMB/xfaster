@@ -3995,6 +3995,7 @@ class XFaster(object):
 
         for comp in comps:
             for spec in specs:
+                s0, s1 = spec
                 if "res" not in comp:
                     # clear arrays
                     d_arr[:] = 0
@@ -4006,9 +4007,8 @@ class XFaster(object):
                             v[:] = 0
 
                 for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
+                    bd = [[0, lmax + 1]]
                     if "res" in comp:
-                        s0, s1 = spec
-                        bd = [[0, lmax + 1]]
                         # if any component of XY spec is in residual bin def,
                         # use that bin def
                         for v in [
