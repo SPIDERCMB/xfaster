@@ -919,16 +919,18 @@ class XFaster(object):
 
             def find_sim_files(name, root=None):
                 for suff in ["", "2"] if null_run else [""]:
-                    fs.update(
-                        self._get_sim_files(
-                            name,
-                            root,
-                            suffix="_sim" + suff,
-                            data_suffix=suff,
-                            match_count=False,
-                            fs=fs,
-                        )
+                    # Edited by Suren Aug 31 2021 (lines 923-933)
+                    fs_temp = self._get_sim_files(
+                        name,
+                        root,
+                        suffix="_sim" + suff,
+                        data_suffix=suff,
+                        match_count = False,
+                        fs=fs,
                     )
+                    for k, v, in fs_temp.items():
+                        setattr(self, k, v)
+                    fs.update(**fs_temp)
 
             if str(signal_type_sim) == "r":
                 find_sim_files("signal", "signal_r0")
