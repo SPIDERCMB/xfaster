@@ -98,6 +98,7 @@ def xfaster_run(
     signal_spec=None,
     signal_transfer_spec=None,
     model_r=None,
+    transfer_matrix_root=None,
     ref_freq=359.7,
     beta_ref=1.54,
     delta_beta_prior=0.5,
@@ -120,7 +121,6 @@ def xfaster_run(
     res_prior=None,
     like_beam_tags="all",
     beam_prior=None,
-    use_xfer_mat=False,
 ):
     """
     Main function for running the XFaster algorithm.
@@ -358,6 +358,10 @@ def xfaster_run(
     model_r : float
         The ``r`` value to use to compute a spectrum for estimating bandpowers.
         Overrides ``signal_spec``.
+    transfer_matrix_root : str
+        If set, use the pre-computed ell-by-ell transfer matrix stored in this
+        directory, instead of the standard transfer function computed by the
+        XFaster estimator.
     ref_freq : float
         In GHz, reference frequency for dust model. Dust bandpowers output
         will be at this reference frequency.
@@ -418,9 +422,6 @@ def xfaster_run(
         Gaussian prior mean and number of strandard deviations for beam error.
         This Gaussian is applied as a prior in fitting for beam error in the
         likelihood. Set to None to not fit for beam error.
-    use_xfer_mat : bool
-        If True, use NSI transfer matrix instead of transfer function computed
-        by XFaster.
     """
     from . import __version__ as version
 
@@ -584,6 +585,7 @@ def xfaster_run(
         signal_spec=signal_spec,
         signal_transfer_spec=signal_transfer_spec,
         model_r=model_r,
+        transfer_matrix_root=transfer_matrix_root,
         ref_freq=ref_freq,
         beta_ref=beta_ref,
         delta_beta_prior=delta_beta_prior,
@@ -605,6 +607,7 @@ def xfaster_run(
     spec_opts.pop("signal_transfer_spec")
     spec_opts.pop("model_r")
     spec_opts.pop("qb_file")
+    spec_opts.pop("transfer_matrix_root")
     bandpwr_opts = spec_opts.copy()
     bandpwr_opts.pop("fix_bb_transfer")
     spec_opts.pop("file_tag")
@@ -639,7 +642,6 @@ def xfaster_run(
         converge_criteria=like_converge_criteria,
         file_tag=like_tag,
         subtract_template_noise=subtract_template_noise,
-        use_xfer_mat=use_xfer_mat,
     )
     config_vars.update(like_opts, "Likelihood Estimation Options")
     config_vars.remove_option("XFaster General", "like_lmin")
@@ -667,19 +669,24 @@ def xfaster_run(
     X.log("Computing kernels...", "notice")
     X.get_kernels(window_lmax=window_lmax)
 
-    X.log("Computing sim ensemble averages for transfer function...", "notice")
-    # Do all the sims at once to also get the S+N sim ensemble average
-    do_noise = signal_transfer_type in [signal_type, None]
-    X.get_masked_sims(transfer=True, do_noise=do_noise, qb_file=qb_file_sim)
-
     X.log("Computing beam window functions...", "notice")
     X.get_beams(pixwin=pixwin)
 
-    X.log("Loading spectrum shape for transfer function...", "notice")
-    X.get_signal_shape(filename=signal_transfer_spec, transfer=True)
+    if transfer_matrix_root:
+        X.log("Loading pre-computed transfer matrix...", "notice")
+        X.get_transfer_matrix(file_root=transfer_matrix_root)
 
-    X.log("Computing transfer functions...", "notice")
-    X.get_transfer(**transfer_opts)
+    else:
+        X.log("Computing sim ensemble averages for transfer function...", "notice")
+        # Do all the sims at once to also get the S+N sim ensemble average
+        do_noise = signal_transfer_type in [signal_type, None]
+        X.get_masked_sims(transfer=True, do_noise=do_noise, qb_file=qb_file_sim)
+
+        X.log("Loading spectrum shape for transfer function...", "notice")
+        X.get_signal_shape(filename=signal_transfer_spec, transfer=True)
+
+        X.log("Computing transfer functions...", "notice")
+        X.get_transfer(**transfer_opts)
 
     X.log("Computing sim ensemble averages...", "notice")
     X.get_masked_sims(qb_file=qb_file_sim)
@@ -1062,6 +1069,7 @@ def xfaster_parse(args=None, test=False):
         add_arg(E, "signal_spec")
         add_arg(E, "model_r")
         add_arg(G, "signal_transfer_spec")
+        add_arg(G, "transfer_matrix_root")
         add_arg(G, "ref_freq")
         add_arg(G, "beta_ref", argtype=float)
         add_arg(G, "delta_beta_prior", argtype=float)
@@ -1097,7 +1105,6 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "res_prior", nargs=2)
         add_arg(G, "like_beam_tags", nargs="+", metavar="TAG")
         add_arg(G, "beam_prior", nargs=2)
-        add_arg(G, "use_xfer_mat")
 
         # submit args
         if mode == "submit":

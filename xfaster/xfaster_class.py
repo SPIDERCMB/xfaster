@@ -134,6 +134,7 @@ class XFaster(object):
         "sims_transfer": ["transfer"],
         "shape_transfer": ["transfer"],
         "transfer": ["bandpowers"],
+        "transfer_matrix": ["bandpowers"],
         "sims": ["bandpowers"],
         "beams": ["transfer"],
         "data": ["bandpowers"],
@@ -1395,7 +1396,8 @@ class XFaster(object):
             template_cleaned, reference_subtracted.
         bp_opts : bool
             If True, also check the following attributes (in addition to those
-            checked if ``data_opts`` is True): weighted_bins, return_cls.
+            checked if ``data_opts`` is True): weighted_bins, return_cls,
+            transfer_matrix.
 
         Returns
         -------
@@ -1435,6 +1437,8 @@ class XFaster(object):
                 name += ["wbins"]
             if getattr(self, "return_cls", False):
                 name += ["cl"]
+            if hasattr(self, "transfer_matrix"):
+                name += ["xfermat"]
 
         if map_tag is not None:
             name += ["map", map_tag]
@@ -3830,16 +3834,10 @@ class XFaster(object):
         specs = list(self.specs)
         lmax = self.lmax  # 2 * lmax
 
-        if not transfer_run:
-            # collect transfer function terms
-            transfer = OrderedDict()
-            for spec in specs:
-                transfer[spec] = OrderedDict()
-                for tag in map_tags:
-                    transfer[spec][tag] = self.transfer[spec][tag]
-
         lk = slice(0, lmax + 1)
         mll = OrderedDict()
+
+        use_transfer_matrix = hasattr(self, "transfer_matrix")
 
         for spec in specs:
             mll[spec] = OrderedDict()
@@ -3847,13 +3845,19 @@ class XFaster(object):
                 mspec = "{}_mix".format(spec)
                 mll[mspec] = OrderedDict()
 
-            for xname, (m0, m1) in map_pairs.items():
-                # beams
-                fb2 = self.beam_windows[spec][m0][lk] * self.beam_windows[spec][m1][lk]
+            # assume that beam and filtering transfer effects are included in
+            # the transfer matrix
+            if not use_transfer_matrix:
+                bw = self.beam_windows[spec]
+                tf = self.transfer[spec]
 
-                # transfer function
-                if not transfer_run:
-                    fb2 *= np.sqrt(transfer[spec][m0][lk] * transfer[spec][m1][lk])
+            for xname, (m0, m1) in map_pairs.items():
+                if not use_transfer_matrix:
+                    # beams
+                    fb2 = bw[m0][lk] * bw[m1][lk]
+                    # transfer function
+                    if not transfer_run:
+                        fb2 *= np.sqrt(tf[m0][lk] * tf[m1][lk])
 
                 # kernels
                 if spec == "tt":
@@ -3867,9 +3871,9 @@ class XFaster(object):
                     k = self.pkern[xname][:, lk] - self.mkern[xname][:, lk]
 
                 # store final product
-                mll[spec][xname] = k * fb2
+                mll[spec][xname] = k if use_transfer_matrix else k * fb2
                 if spec in ["ee", "bb"]:
-                    mll[mspec][xname] = mk * fb2
+                    mll[mspec][xname] = mk if use_transfer_matrix else mk * fb2
 
         return mll
 
@@ -4038,12 +4042,26 @@ class XFaster(object):
 
                         continue
 
-                    # use correct shape spectrum
-                    if comp == "fg":
-                        # single foreground spectrum
-                        s_arr[xi] = cls_shape["fg"][lk]
+                    if hasattr(self, "transfer_matrix"):
+                        # construct modified shape spectrum C^X_l = sum_{l',Y} J^XY_ll' * C^Y_l'
+                        for spec2 in specs:
+                            # use correct shape spectrum
+                            if comp == "fg":
+                                cl1 = cls_shape["fg"][lk]
+                            else:
+                                cl1 = cls_shape["cmb_{}".format(spec2)][lk]
+
+                            xfermat = self.transfer_matrix[xname][spec][spec2][lk, lk]
+
+                            # matrix multiplication over l', loop sum over Y
+                            s_arr[xi] += np.einsum("ij,j->i", xfermat, cl1)
                     else:
-                        s_arr[xi] = cls_shape["cmb_{}".format(spec)][lk]
+                        # use correct shape spectrum
+                        if comp == "fg":
+                            # single foreground spectrum
+                            s_arr[xi] = cls_shape["fg"][lk]
+                        else:
+                            s_arr[xi] = cls_shape["cmb_{}".format(spec)][lk]
 
                     # use correct beam error shape
                     if beam_error:
@@ -4094,331 +4112,6 @@ class XFaster(object):
                         if mstag:
                             cbl[mstag][xname] = md[xi]
 
-        return cbl
-
-    def bin_cl_template_tmat(
-        self,
-        cls_shape=None,
-        map_tag=None,
-        beam_error=False,
-        fg_ell_ind=0,
-    ):
-        """
-        *** Note: obtained from labah fg_like
-        Compute the Cbl matrix from the input shape spectrum.
-        Use transfer matrix instead of transfer function
-
-        This method requires kernels to have been precomputed.
-
-        Arguments
-        ---------
-        cls_shape : array_like
-            The shape spectrum to use.  This can be computed using
-            `get_signal_shape` or otherwise.
-        map_tag : str
-            If supplied, the Cbl is computed only for the given map tag
-            (or cross if map_tag is map_tag1:map_tag2).
-            Otherwise, it is computed for all maps and crosses.
-        beam_error : bool
-            If True, use beam error envelope instead of beam to get cbls that
-            are 1 sigma beam error envelope offset of signal terms.
-        fg_ell_ind : float
-            If binning foreground shape, offset the ell index from the reference
-            by this amount.
-
-        Returns
-        -------
-        cbl : dict of arrays (num_bins, 2, lmax + 1)
-            The Cbl matrix, indexed by component and spectrum, then by map
-            cross, e.g. `cbl['cmb_tt']['map1:map2']`
-            E/B mixing terms are stored in elements ``cbl['cmb_ee_mix']`` and
-            ``cbl['cmb_bb_mix']``, and unmixed terms are stored in elements
-            ``cbl['cmb_ee']`` and ``cbl['cmb_bb']``.
-        """
-        if cls_shape is None:
-            cls_shape = self.cls_shape
-
-        #from spider_analysis import nsi
-        # Need to update this to use ell-by-ell anafast transfer matrix
-        #T = nsi.TransferMatrix()
-        # updated to anafast ll xfermat, no need nsi. 
-
-        map_pairs = None
-        if map_tag is not None:
-            if map_tag in self.map_pairs:
-                map_pairs = {map_tag: self.map_pairs[map_tag]}
-                map_tags = list(set(self.map_pairs[map_tag]))
-            else:
-                map_tags = [map_tag]
-        else:
-            map_tags = self.map_tags
-
-        if map_pairs is None:
-            map_pairs = pt.tag_pairs(map_tags)
-
-        specs = list(self.specs)
-
-        # This will need to change for ell-by-ell transfer matrix
-        #transfer_bins = np.arange(
-        #    8, 8 + 25 * 13, 25
-        #)  # change this once transfer matrix adds lowest bin!
-        transfer_bins = np.arange(5, 301, 25)
-        
-        nbins_transfer = len(transfer_bins) - 1
-        lmin = min(transfer_bins)
-        lmax = max(transfer_bins)
-        lmax_kern = lmax
-
-        if beam_error:
-            beam_error = self.get_beam_errors()
-            beam_keys = ["b1", "b2", "b3"]
-
-        ls = slice(2, lmax + 1)
-        lk = slice(0, lmax_kern + 1)
-        cbl = OrderedDict()
-
-        comps = []
-        if "cmb_tt" in cls_shape or "cmb_ee" in cls_shape:
-            comps += ["cmb"]
-        if "fg" in cls_shape:
-            comps += ["fg"]
-        if self.nbins_res > 0:
-            comps += ["res"]
-            cls_noise = self.cls_noise_null if self.null_run else self.cls_noise
-            cls_noise0 = self.cls_noise0_null if self.null_run else self.cls_noise0
-            cls_noise1 = self.cls_noise1_null if self.null_run else self.cls_noise1
-            cls_sxn0 = self.cls_sxn0_null if self.null_run else self.cls_sxn0
-            cls_sxn1 = self.cls_sxn1_null if self.null_run else self.cls_sxn1
-            cls_nxs0 = self.cls_nxs0_null if self.null_run else self.cls_nxs0
-            cls_nxs1 = self.cls_nxs1_null if self.null_run else self.cls_nxs1
-
-        ell = np.arange(lmax_kern + 1)
-
-        def binup(d, left, right, weights):
-            return (d[..., left:right] * weights).sum(axis=-1)
-
-        def bin_things(comp, d, md):
-            if "res" in comp:
-                return
-            for si, spec in enumerate(specs):
-                stag = "{}_{}".format(comp, spec)
-                cbl.setdefault(stag, OrderedDict())
-                mstag = None
-                if spec in ["ee", "bb"]:
-                    mstag = stag + "_mix"
-                    cbl.setdefault(mstag, OrderedDict())
-                bd = self.bin_def[stag]
-                bw = self.bin_weights[stag]
-                for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
-                    if beam_error:
-                        cbl[stag][xname] = OrderedDict( # change from mstag
-                            [(k, np.zeros((len(bd), lmax + 1))) for k in beam_keys]
-                        )
-                    else:
-                        cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
-
-                    if spec in ["ee", "bb"]:
-                        if beam_error:
-                            cbl[mstag][xname] = OrderedDict(
-                                [(k, np.zeros((len(bd), lmax + 1))) for k in beam_keys]
-                            )
-                        else:
-                            cbl[mstag][xname] = np.zeros((len(bd), lmax + 1))
-
-                    # integrate per bin
-                    for idx, ((left, right), weights) in enumerate(zip(bd, bw)):
-                        if beam_error:
-                            for k in beam_keys:
-                                cbl[stag][xname][k][idx, ls] = binup(
-                                    d[k][si, xi], left, right, weights
-                                )
-                        else:
-                            cbl[stag][xname][idx, ls] = binup(
-                                d[si, xi], left, right, weights
-                            )
-                        if spec in ["ee", "bb"]:
-                            if beam_error:
-                                for k in beam_keys:
-                                    cbl[mstag][xname][k][idx, ls] = binup(
-                                        md[k][si - 1, xi], left, right, weights
-                                    )
-                            else:
-                                cbl[mstag][xname][idx, ls] = binup(
-                                    md[si - 1, xi], left, right, weights
-                                )
-
-        for comp in comps:
-            # convert to matrices to do multiplication to speed things up,
-            # except for res is weird so don't do it for that.
-            # need n_xname x n_spec x ell
-            nspec = len(specs)
-            nxmap = len(map_pairs)
-            if comp == "fg" and fg_ell_ind != 0:
-                s_arr = (ell / 80.0) ** fg_ell_ind
-                s_arr[0] = 0
-                if not beam_error:
-                    # don't create a new object in memory each time
-                    # use last one's space to save runtime
-                    self.d = np.multiply(self.d_fg, s_arr, out=getattr(self, "d", None))
-                    self.md = np.multiply(self.md_fg, s_arr, out=getattr(self, "md", None))
-                else:
-                    for k in beam_keys:
-                        if not hasattr(self, "d"):
-                            self.d = OrderedDict([(k, None) for k in beam_keys])
-                            self.md = OrderedDict([(k, None) for k in beam_keys])
-                        self.d[k] = np.multiply(self.d_fg[k], s_arr, out=self.d[k])
-                        self.md[k] = np.multiply(self.md_fg[k], s_arr, out=self.md[k])
-                bin_things(comp, self.d, self.md)
-
-            else:
-                kshape = [nspec, nxmap, self.lmax - 1, lmax_kern + 1]
-                mkshape = [2] + kshape[1:]
-                k_arr = np.zeros(kshape)
-                mk_arr = np.zeros(mkshape)
-
-                # because transfer matrix includes flbl2, combine those, just store
-                # xfermat * binned shape
-
-                fbs_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
-
-                for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
-                    for si, spec in enumerate(specs):
-                        stag = "{}_{}".format(comp, spec)
-                        mstag = None
-                        if comp != "res" and spec in ["ee", "bb"]:
-                            mstag = stag + "_mix"
-
-                        if "res" in comp:
-                            s0, s1 = spec
-                            res_tags = {
-                                "s0m0": "res_{}_{}".format(s0 * 2, tag1),
-                                "s0m1": "res_{}_{}".format(s0 * 2, tag2),
-                                "s1m0": "res_{}_{}".format(s1 * 2, tag1),
-                                "s1m1": "res_{}_{}".format(s1 * 2, tag2),
-                            }
-                            bd = [[0, lmax + 1]]
-                            # if any component of XY spec is in residual bin
-                            # def, use that bin def
-                            for k, v in res_tags.items():
-                                spec0 = v.split("_")[1]
-                                if v not in self.bin_def:
-                                    if spec0 in ["ee", "bb"]:
-                                        v = v.replace(spec0, "eebb")
-                                        if v in self.bin_def:
-                                            bd = self.bin_def[v]
-                                else:
-                                    bd = self.bin_def[v]
-                            for comp, cls in [
-                                ("res0_nxn", cls_noise0),
-                                ("res1_nxn", cls_noise1),
-                                ("res0_sxn", cls_sxn0),
-                                ("res1_sxn", cls_sxn1),
-                                ("res0_nxs", cls_nxs0),
-                                ("res1_nxs", cls_nxs1),
-                                ("res", cls_noise),
-                            ]:
-                                stag = "{}_{}".format(comp, spec)
-                                cbl.setdefault(stag, OrderedDict())
-                                cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
-                                cl1 = cls[spec][xname]
-                                for idx, (left, right) in enumerate(bd):
-                                    lls = slice(left, right)
-                                    cbl[stag][xname][idx, lls] = np.copy(cl1[lls])
-
-                            continue
-
-                        if beam_error:
-                            b_arr["b1"][si, xi] = beam_error[spec][tag1]
-                            b_arr["b2"][si, xi] = beam_error[spec][tag2]
-                            b_arr["b3"][si, xi] = (
-                                b_arr["b1"][si, xi] * b_arr["b2"][si, xi]
-                            )
-
-                    # updating to anafast ll transfer matrix, no need nsi
-                    #xfermat = T.get(
-                    #    self.map_reobs_freqs[tag1], self.map_reobs_freqs[tag1]
-                    #)
-                    
-                    # loading anafast ll transfer matrix
-                    ll_xfermat_dir = "/data/vyluu/anafast_matrix_blocks" # make this into param
-                    ll_xfermat_fn = "{:s}x{:s}_{:s}_to_{:s}_block.dat".format(
-                            self.map_reobs_freqs[tag1],
-                            self.map_reobs_freqs[tag2],
-                            specs[0],
-                            specs[1]
-                            )
-                    xfermat = np.loadtxt(os.path.join(ll_xfermat_dir, ll_xfermat_fn))
-                    xfermat = xfermat[5:301]
-
-                    # use correct shape spectrum
-                    if comp == "fg":
-                        # single foreground spectrum
-                        s_arr = cls_shape["fg"][lk] * (ell / 80.0) ** fg_ell_ind
-                        s_arr[0] = 0
-                        # repeat for all specs
-                        s_arr = np.tile(s_arr, len(specs))
-                    else:
-                        s_arr = np.zeros(nbins_transfer * len(specs))
-                        for si, spec in enumerate(specs):
-                            s_spec = cls_shape["cmb_{}".format(spec)][:lk]
-                            s_arr[
-                                si * nbins_transfer : (si + 1) * nbins_transfer
-                            ] = s_spec
-                    binned_fbs = np.matmul(np.linalg.inv(xfermat), s_arr)
-                    #  fbs_arr = np.zeros([nspec, nxmap, lmax_kern + 1])
-                    for si, spec in enumerate(specs):
-                        for ib, b0 in enumerate(transfer_bins[:-1]):
-                            fbs_arr[si][xi][b0 : transfer_bins[ib + 1]] = binned_fbs[ib]
-
-                        # get cross spectrum kernel terms
-                        if spec == "tt":
-                            k_arr[si, xi] = self.kern[xname][ls, : lmax_kern + 1]
-                        elif spec in ["ee", "bb"]:
-                            k_arr[si, xi] = self.pkern[xname][ls, : lmax_kern + 1]
-                            mk_arr[si - 1, xi] = self.mkern[xname][ls, : lmax_kern + 1]
-                        elif spec in ["te", "tb"]:
-                            k_arr[si, xi] = self.xkern[xname][ls, : lmax_kern + 1]
-                        elif spec == "eb":
-                            k_arr[si, xi] = (
-                                self.pkern[xname][ls] - self.mkern[xname][ls]
-                            )[:, : lmax_kern + 1]
-
-                # need last 3 dims of kernel to match other arrays
-                k_arr = np.transpose(k_arr, axes=[2, 0, 1, 3])
-                mk_arr = np.transpose(mk_arr, axes=[2, 0, 1, 3])
-                if not beam_error:
-                    d = k_arr * fbs_arr
-                    md = mk_arr * fbs_arr[1:3]
-                    if comp == "fg":
-                        self.d_fg = np.copy(d)
-                        self.md_fg = np.copy(md)
-                    d_b1 = None
-                    d_b2 = None
-                    d_b3 = None
-                    md_b1 = None
-                    md_b2 = None
-                    md_b3 = None
-                else:
-                    # why not include error here
-
-                    d = None
-                    md = None
-                    """
-                    d_b1 = k_arr * b1_arr * f_arr * s_arr
-                    d_b2 = k_arr * b2_arr * f_arr * s_arr
-                    d_b3 = k_arr * b3_arr * f_arr * s_arr
-                    md_b1 = mk_arr * b1_arr[1:3] * f_arr[1:3] * s_arr_md
-                    md_b2 = mk_arr * b2_arr[1:3] * f_arr[1:3] * s_arr_md
-                    md_b3 = mk_arr * b3_arr[1:3] * f_arr[1:3] * s_arr_md
-                    if comp == "fg":
-                        self.d_fg_b1 = d_b1
-                        self.d_fg_b2 = d_b2
-                        self.d_fg_b3 = d_b3
-                        self.md_fg_b1 = md_b1
-                        self.md_fg_b2 = md_b2
-                        self.md_fg_b3 = md_b3
-                    """
-                bin_things(comp, d, md)
         return cbl
 
     def get_model_spectra(
@@ -6113,6 +5806,81 @@ class XFaster(object):
 
         return self.transfer
 
+    def get_transfer_matrix(self, file_root=None):
+        """
+        Read in an ell-by-ell transfer matrix, constructed from ratios of
+        `anafast` spectra using an ensemble of simulations.  This matrix should
+        be used in place of the standard XFaster transfer function calculation,
+        and includes both filtering and beam effects.
+
+        Arguments
+        ---------
+        file_root : str
+            Directory where the transfer matrix blocks are stored.  Expects
+            column text files with naming pattern:
+            ``<tag1>x<tag2>_<spec_in>_to_<spec_out>_block.dat``
+            Required if the transfer matrix has not already been computed.
+
+        Returns
+        -------
+        transfer_matrix : OrderedDict
+            Dictionary of matrix blocks of shape (lmax + 1, lmax + 1),
+            keyed by map cross (xname), output spectrum, and input spectrum.
+            This dictionary is also cached in the ``transfer_matrix`` attribute.
+
+        Notes
+        -----
+        This function is called at the ``transfer_matrix`` checkpoint, and is
+        meant to be an alternative to the standard ``transfer`` sequence.
+
+        This option uses a significant amount of RAM, especially for large
+        numbers of map crosses, since the entire matrix is stored in memory
+        for efficient computation.
+        """
+
+        tm_shape = (
+            self.num_corr * (self.num_spec ** 2) * (self.lmax + 1),
+            self.lmax + 1,
+        )
+
+        save_name = "transfer_matrix"
+        save_attrs = ["transfer_file_root", "transfer_matrix"]
+        ret = self.load_data(
+            save_name,
+            "transfer_matrix",
+            fields=save_attrs,
+            to_attrs=True,
+            shape=tm_shape,
+            shape_ref="transfer_matrix",
+        )
+
+        if ret is not None:
+            return ret["transfer_matrix"]
+
+        lk = slice(0, self.lmax + 1)
+
+        transfer_matrix = OrderedDict()
+        for xname, (tag1, tag2) in self.map_pairs.items():
+            dx = transfer_matrix.setdefault(xname, OrderedDict())
+
+            for spec_out in self.specs:
+                dsi = dx.setdefault(spec_out, OrderedDict())
+
+                for spec_in in self.specs:
+                    fname = os.path.join(
+                        file_root,
+                        "{}x{}_{}_to_{}_block.dat".format(
+                            tag1, tag2, spec_in, spec_out
+                        ),
+                    )
+                    dsi[spec_out] = np.loadtxt(fname)[lk, lk]
+
+        self.transfer_file_root = file_root
+        self.transfer_matrix = transfer_matrix
+
+        self.save_data(save_name, from_attrs=save_attrs)
+        return transfer_matrix
+
     def get_bandpowers(
         self,
         map_tag=None,
@@ -6131,7 +5899,6 @@ class XFaster(object):
         like_profile_sigma=3.0,
         like_profile_points=100,
         file_tag=None,
-        use_xfer_mat=True,
     ):
         """
         Compute the maximum likelihood bandpowers of the data, assuming
@@ -6255,12 +6022,7 @@ class XFaster(object):
 
         self.clear_precalc()
 
-        if use_xfer_mat:
-            cbl = self.bin_cl_template_tmat(map_tag=map_tag, transfer_run=False) 
-            self.lmax = 300 #308
-            self.lmin = 5 #8
-        else:
-            cbl = self.bin_cl_template(map_tag=map_tag, transfer_run=False)
+        cbl = self.bin_cl_template(map_tag=map_tag, transfer_run=False)
 
         ret = self.fisher_iterate(
             cbl,
@@ -6310,7 +6072,6 @@ class XFaster(object):
         subtract_template_noise=False,
         r_specs=["ee", "bb"],
         template_specs=["ee", "bb", "eb"],
-        use_xfer_mat=False,
     ):
         """
         Explore the likelihood, optionally with an MCMC sampler.
@@ -6385,9 +6146,6 @@ class XFaster(object):
             Which spectra to use in the r likelihood.
         template_specs : list
             Which spectra to use for alpha in the likelihood.
-        use_xfer_mat : bool 
-            If True, use transfer matrix to construct model spectrum. If false, use
-            transfer function XFaster computes
         """
 
         # Check if OMP threads > 1. It actually slows the code way down to have
@@ -6462,9 +6220,6 @@ class XFaster(object):
             "res_prior": res_prior,
             "beam_prior": beam_prior,
         }
-
-        self.log("Priors: {}".format(priors), "debug")
-
         # priors on quantities that affect Dmat_obs or gmat (precalculated)
         obs_priors = [alpha_prior]
 
@@ -6484,15 +6239,7 @@ class XFaster(object):
             weighted_bins=self.weighted_bins,
             lmin=lmin,
             lmax=lmax,
-            use_xfer_mat=use_xfer_mat,
         )
-
-        if use_xfer_mat:
-            bin_cl_template = self.bin_cl_template_tmat
-            self.lmax = 300 #308
-            self.lmin = 5 #8
-        else:
-            bin_cl_template = self.bin_cl_template
 
         if mcmc and reset_backend is None:
             ret = self.load_data(
@@ -6555,7 +6302,7 @@ class XFaster(object):
         if r_prior is None:
             self.log("Computing model spectrum", "debug")
             self.warn("Beam variation not implemented for case of no r fit")
-            cbl = bin_cl_template(map_tag=map_tag)
+            cbl = self.bin_cl_template(map_tag=map_tag)
             cls_model = self.get_model_spectra(qb, cbl, delta=True, cls_noise=cls_noise)
         else:
             qb = copy.deepcopy(qb)
@@ -6576,23 +6323,23 @@ class XFaster(object):
             )
 
             # load tensor and scalar terms separately
-            cbl_scalar = bin_cl_template(cls_shape_scalar, map_tag)
+            cbl_scalar = self.bin_cl_template(cls_shape_scalar, map_tag)
             cls_model_scalar = self.get_model_spectra(
                 qb, cbl_scalar, delta=True, cls_noise=cls_noise
             )
-            cbl_tensor = bin_cl_template(cls_shape_tensor, map_tag)
+            cbl_tensor = self.bin_cl_template(cls_shape_tensor, map_tag)
             cls_model_tensor = self.get_model_spectra(
                 qb, cbl_tensor, delta=False, res=False
             )
             if beam_prior is not None:
                 # load beam error term for tensor and scalar
-                cbl_scalar_beam = bin_cl_template(
+                cbl_scalar_beam = self.bin_cl_template(
                     cls_shape_scalar, map_tag, beam_error=True
                 )
                 cls_mod_scal_beam = self.get_model_spectra(
                     qb, cbl_scalar_beam, delta=True, res=False
                 )
-                cbl_tensor_beam = bin_cl_template(
+                cbl_tensor_beam = self.bin_cl_template(
                     cls_shape_tensor, map_tag, beam_error=True
                 )
                 cls_mod_tens_beam = self.get_model_spectra(
@@ -6731,6 +6478,7 @@ class XFaster(object):
                         for bn, bc in beam_coeffs[xname].items():
                             beam_term += bc * cls_mod_scal_beam[ctag][xname][bn]
                         dd[:] = cls_model_scalar[stag][xname] + beam_term
+
 
             # compute noise model terms
             if res is None:
