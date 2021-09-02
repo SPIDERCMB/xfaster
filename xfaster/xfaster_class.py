@@ -3432,7 +3432,7 @@ class XFaster(object):
                     cls_shape[spec] = np.append([0, 0], d[: ltmp - 2])
 
         # EB and TB flat l^2 * C_l
-        if self.pol:
+        if self.pol and any([x.startswith("cmb") for x in specs]):
             if tbeb and (flat is None or flat is False):
                 tbeb_flat = np.abs(cls_shape["cmb_bb"][100]) * ellfac[100] * 1e-4
                 tbeb_flat = np.ones_like(cls_shape["cmb_bb"]) * tbeb_flat
@@ -3630,6 +3630,7 @@ class XFaster(object):
         bin_width_res=25,
         foreground_fit=False,
         bin_width_fg=25,
+        fit_beta=True,
     ):
         """
         Construct the bin definition array that defines the bins for each output
@@ -3737,7 +3738,8 @@ class XFaster(object):
                 bins = np.append(bins, self.lmax + 1)
                 bin_def["fg_{}".format(spec)] = np.column_stack((bins[:-1], bins[1:]))
                 nbins_fg += len(bins) - 1
-            bin_def["delta_beta"] = np.array([[0, 0]])
+            if fit_beta:
+                bin_def["delta_beta"] = np.array([[0, 0]])
             self.log(
                 "Added {} foreground bins to bin_def".format(nbins_fg + 1), "debug"
             )
@@ -4051,7 +4053,7 @@ class XFaster(object):
                     # use correct shape spectrum
                     if comp == "fg":
                         # single foreground spectrum
-                        s_arr[xi] = cls_shape["fg"][lk]
+                        s_arr[xi] = cls_shape["fg"][lk] * (ell / 80.0) ** fg_ell_ind
                     else:
                         s_arr[xi] = cls_shape["cmb_{}".format(spec)][lk]
 
@@ -4153,11 +4155,13 @@ class XFaster(object):
             comps = ["cmb"]
 
         delta_beta = 0.0
-        if "delta_beta" in qb:
+        if any([k.startswith("fg_") for k in qb]):
             # Evaluate fg at spectral index pivot for derivative
             # in Fisher matrix, unless delta is True
-            if delta:
-                delta_beta = qb["delta_beta"][0]
+            if delta and "delta_beta" in qb:
+                delta_beta = qb["delta_beta"]
+            else:
+                delta_beta = 0
             comps += ["fg"]
 
         if res and any([k.startswith("res_") for k in qb]):
@@ -4652,7 +4656,7 @@ class XFaster(object):
                         mix_cbl = cbl[stag + "_mix"][xname]
                         dSdqb[comp][xname][spec][mspec] = mix_cbl
 
-                if comp == "fg":
+                if comp == "fg" and "delta_beta" in self.bin_def:
                     # add delta beta bin for spectral index
                     dSdqb.setdefault("delta_beta", OrderedDict()).setdefault(
                         xname, OrderedDict()
@@ -4732,7 +4736,7 @@ class XFaster(object):
         delta_beta_prior : float
             The width of the prior on the additive change from beta_ref. If you
             don't want the code to fit for a spectral index different
-            from beta_ref, set this to be a very small value (O(1e-10)).
+            from beta_ref, set this to be None.
         null_first_cmb : bool
             Keep first CMB bandpowers fixed to input shape (qb=1).
         use_precalc : bool
@@ -4797,7 +4801,9 @@ class XFaster(object):
 
         delta_beta = 0.0
         if "delta_beta" in qb:
-            delta_beta = qb["delta_beta"][0]
+            delta_beta = qb["delta_beta"]
+        else:
+            delta_beta = 0
 
         if not likelihood:
             dSdqb_mat1_freq = copy.deepcopy(dSdqb_mat1)
@@ -4862,8 +4868,9 @@ class XFaster(object):
 
                 # build delta_beta term from frequency scaled model,
                 # divide out frequeny scaling and apply derivative term
-                for s1, sdat in dSdqb_mat1_freq["delta_beta"][xname].items():
-                    sdat[s1] = cls_model["fg_{}".format(s1)][xname] * freq_scale_ratio
+                if delta_beta != 0:
+                    for s1, sdat in dSdqb_mat1_freq["delta_beta"][xname].items():
+                        sdat[s1] = cls_model["fg_{}".format(s1)][xname] * freq_scale_ratio
 
         # Set up Dmat -- if it's not well conditioned, add noise to the
         # diagonal until it is.
@@ -5205,6 +5212,8 @@ class XFaster(object):
         prev_fqb = []
         cond_adjusted = False
 
+        foreground_fit = "fg_tt" in self.bin_def and not transfer_run
+
         if qb_start is None:
             qb = OrderedDict()
             for k, v in self.bin_def.items():
@@ -5230,6 +5239,8 @@ class XFaster(object):
         )
 
         bin_index = pt.dict_to_index(self.bin_def)
+
+        out = dict(cond_criteria=cond_criteria)
 
         success = False
         for iter_idx in range(iter_max):
@@ -5312,7 +5323,7 @@ class XFaster(object):
                     extra_tag=file_tag,
                 )
 
-                if "fg_tt" in self.bin_def:
+                if foreground_fit:
                     out.update(
                         beta_fit=beta_fit,
                         beta_err=beta_err,
@@ -5411,7 +5422,7 @@ class XFaster(object):
                     prev_fqb = []
 
         # save and return
-        out = dict(
+        out.update(
             qb=qb,
             inv_fish=inv_fish,
             fqb=fqb,
@@ -5423,13 +5434,12 @@ class XFaster(object):
             map_freqs=self.map_freqs,
             converge_criteria=converge_criteria,
             cond_noise=cond_noise,
-            cond_criteria=cond_criteria,
             null_first_cmb=null_first_cmb,
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
         )
 
-        if "fg_tt" in self.bin_def:
+        if foreground_fit:
             out.update(
                 delta_beta_prior=delta_beta_prior,
                 beta_fit=beta_fit,
@@ -5852,7 +5862,7 @@ class XFaster(object):
         delta_beta_prior : float
             The width of the prior on the additive change from beta_ref. If you
             don't want the code to fit for a spectral index different
-            from beta_ref, set this to be a very small value (O(1e-10)).
+            from beta_ref, set this to be None.
         cond_noise : float
             The level of regularizing noise to add to EE and BB diagonals.
         cond_criteria : float
@@ -6472,9 +6482,9 @@ class XFaster(object):
                     qb["fg_ee"][:] = dust_amp[0]
                     qb["fg_bb"][:] = dust_amp[1]
                 if betad is None:
-                    qb["delta_beta"][:] = 0
+                    qb["delta_beta"] = 0
                 else:
-                    qb["delta_beta"][:] = betad
+                    qb["delta_beta"] = betad
                 if dust_ellind is not None:
                     cbl_fg0 = self.bin_cl_template(
                         cls_shape_dust, map_tag=map_tag, fg_ell_ind=dust_ellind
