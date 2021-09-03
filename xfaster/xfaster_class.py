@@ -6260,6 +6260,13 @@ class XFaster(object):
                     qb_res[k] = v
             self.nbins_res = num_res
 
+        # extract foreground qbs
+        if dust_ell_fit:
+            qb_fg = OrderedDict()
+            for k, v in qb.items():
+                if k.startswith("fg_") or "beta" in k:
+                    qb_fg[k] = v
+
         # set CMB model bandpowers to unity, since we are computing
         # the likelihood of this model given the data
         if r_prior is None:
@@ -6476,15 +6483,15 @@ class XFaster(object):
             # dependent on dust amp, get model specs here.
             if dust_ell_fit:
                 if dust_amp is None:
-                    qb["fg_ee"][:] = 1
-                    qb["fg_bb"][:] = 1
+                    qb_fg["fg_ee"][:] = 1
+                    qb_fg["fg_bb"][:] = 1
                 else:
-                    qb["fg_ee"][:] = dust_amp[0]
-                    qb["fg_bb"][:] = dust_amp[1]
+                    qb_fg["fg_ee"][:] = dust_amp[0]
+                    qb_fg["fg_bb"][:] = dust_amp[1]
                 if betad is None:
-                    qb["delta_beta"] = 0
+                    qb_fg["delta_beta"] = 0
                 else:
-                    qb["delta_beta"] = betad
+                    qb_fg["delta_beta"] = betad
                 if dust_ellind is not None:
                     cbl_fg0 = self.bin_cl_template(
                         cls_shape_dust, map_tag=map_tag, fg_ell_ind=dust_ellind
@@ -6497,16 +6504,16 @@ class XFaster(object):
                             beam_error=True,
                         )
                 else:
-                    cbl_fg0 = np.copy(cbl_fg)
+                    cbl_fg0 = copy.deepcopy(cbl_fg)
                     if beam is not None:
-                        cbl_fg_beam0 = np.copy(cbl_fg_beam)
+                        cbl_fg_beam0 = copy.deepcopy(cbl_fg_beam)
 
                 cls_model_fg = self.get_model_spectra(
-                    qb, cbl_fg0, delta=True, res=False
+                    qb_fg, cbl_fg0, delta=True, res=False
                 )
                 if beam is not None:
                     cls_mod_fg_beam = self.get_model_spectra(
-                        qb, cbl_fg_beam0, delta=True, res=False
+                        qb_fg, cbl_fg_beam0, delta=True, res=False
                     )
                 # add fg field to model, and add fg to total model
                 for stag, d in cls_model_fg.items():
@@ -6518,9 +6525,9 @@ class XFaster(object):
                         cls_model0[stag] = OrderedDict()
                     for xname, dd in d.items():
                         if xname not in cls_model0[stag]:
-                            cls_model0[stag][xname] = np.copy(cls_model_fg[ftag][xname])
+                            cls_model0[stag][xname] = np.copy(dd)
                         else:
-                            cls_model0[stag][xname] += cls_model_fg[ftag][xname]
+                            cls_model0[stag][xname] += dd
 
                         # add beam terms to fg and total fields
                         if beam is not None:
