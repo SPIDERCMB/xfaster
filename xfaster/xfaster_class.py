@@ -574,6 +574,7 @@ class XFaster(object):
         signal_transfer_type=None,
         signal_transfer_type_dust=None,
         signal_subset="*",
+        signal_subset_dust="None",
         noise_type="stationary",
         noise_subset="*",
         signal_type_sim=None,
@@ -687,6 +688,19 @@ class XFaster(object):
             "signal_transfer", "signal_{}".format(signal_transfer_type), signal_subset
         )
 
+        # transfer_dust
+        # do option to separate_dust_transfer
+        #if separate_dust_transfer:
+        if signal_transfer_type_dust is None:
++            signal_transfer_root_dust = None
++            signal_transfer_files_dust = None
+        else: 
+            if signal_subset_dust is None:
+                signal_subset_dust = signal_subset
+            find_sim_files(
+            "signal_transfer_dust", "signal_{}".format(signal_transfer_type_dust), signal_subset_dust
+        )
+
         # apply suffix
         out = dict()
         for k, v in fs.items():
@@ -706,6 +720,8 @@ class XFaster(object):
         signal_type="synfast",
         signal_type_sim=None,
         signal_transfer_type=None,
+        signal_transfer_type_dust=None, # transfer_dust
+        signal_subset_dust=None,
         data_root2=None,
         data_subset2=None,
         foreground_type_sim=None,
@@ -900,6 +916,8 @@ class XFaster(object):
             mask_type=mask_type,
             signal_type=signal_type,
             signal_transfer_type=signal_transfer_type,
+            signal_transfer_type_dust=signal_transfer_type_dust,
+            signal_subset_dust=signal_subset_dust,
             signal_subset=signal_subset,
             noise_subset=noise_subset,
         )
@@ -2043,7 +2061,7 @@ class XFaster(object):
             gmat[xname] = OrderedDict()
             for spec in self.specs:
                 si, sj = spec_inds[spec]
-                f = (fsky_eff[xname][si, sj] + fsky_eff[xname][sj, si]) / 2.0
+                f = (ky_eff[xname][si, sj] + fsky_eff[xname][sj, si]) / 2.0
                 gmat[xname][spec] = f
 
         if np.any(np.asarray([f for f in fsky.values()]) > 0.1):
@@ -2741,6 +2759,8 @@ class XFaster(object):
             signal_files = self.signal_transfer_files
             signal_files2 = self.signal_transfer_files2 if null_run else None
             num_signal = self.num_signal_transfer
+            signal_files_dust = self.signal_transfer_files_dust # how about null_run
+            num_signal_dust = self.num_signal_transfer_dust # SET UP THESE
         else:
             signal_files = self.signal_files
             signal_files2 = self.signal_files2 if null_run else None
@@ -2755,6 +2775,7 @@ class XFaster(object):
 
         save_attrs = [
             "cls_signal",
+            "cls_signal_dust",
             "cls_noise",
             "cls_sim",
             "cls_med",
@@ -2772,6 +2793,8 @@ class XFaster(object):
         if transfer:
             save_name = "sims_xcorr_{}".format(self.signal_transfer_type)
             cp = "sims_transfer"
+            if self.signal_transfer_type_dust is not None:
+                save_name += "_" + self.signal_transfer_type_dust
         else:
             save_name = "sims_xcorr_{}".format(self.signal_type)
             cp = "sims"
@@ -2784,6 +2807,8 @@ class XFaster(object):
             shape=data_shape,
             shape_ref="cls_signal",
         )
+        # load cls_signal_dust 
+
         if ret is not None:
             if do_noise:
                 if self.cls_noise is not None:
@@ -2803,6 +2828,7 @@ class XFaster(object):
 
         # process signal, noise, and S+N
         cls_sig = OrderedDict()
+        cls_sig_dust = OrderedDict()
         cls_null_sig = OrderedDict() if null_run else None
         cls_noise = OrderedDict() if do_noise else None
         cls_null_noise = OrderedDict() if null_run and do_noise else None
@@ -2815,16 +2841,16 @@ class XFaster(object):
         cls_res = OrderedDict() if do_noise else None
         cls_null_res = OrderedDict() if null_run and do_noise else None
         if do_noise:
-            for k in ["nxn0", "nxn1", "sxn0", "sxn1", "nxs0", "nxs1"]:
+            for k in ["nxn0", "nxn1", "sxn0", "sxn1", "nxs0", "nxs1", "cls_signal_dust"]:
                 cls_res[k] = OrderedDict()
                 if null_run:
                     cls_null_res[k] = OrderedDict()
 
         if num_noise != 0:
-            nsim_min = min([num_signal, num_noise])
+            nsim_min = min([num_signal, num_signal_dust,  num_noise])
         else:
             nsim_min = num_signal
-        nsim_max = max([num_signal, num_noise])
+        nsim_max = max([num_signal, num_signal_dust, num_noise])
         cls_all = np.zeros(
             [nsim_max, len(map_pairs.items()), len(self.specs), self.lmax + 1]
         )
@@ -2892,10 +2918,12 @@ class XFaster(object):
             return cache[idx]
 
         sig_cache = dict()
+        sig_dust_cache = dict()
         noise_cache = dict()
 
         for isim in range(nsim_max):
             sig_cache.clear()
+            sig_dust_cache.clear()
             noise_cache.clear()
             for xind, (xname, (idx, jdx)) in enumerate(map_pairs.items()):
                 self.log(
@@ -2920,6 +2948,15 @@ class XFaster(object):
                         cls1t = np.copy(cls1_sig)
                         if null_run:
                             cls_null1t = np.copy(cls_null1_sig)
+
+                if isim < num_signal_dust:
+                    dimap_alms, _ = process_index(
+                        signal_files_dust, None, idx, isim, sig_dust_cache
+                        )
+                    djmap_alms, djnull_alms = process_index(
+                        signal_files_dust, None, jdx, isim, sig_dust_cache
+                        )
+                    cls1_sig_dust = self.alm2cl(dimap_alms, djmap_alms)
 
                 if do_noise and isim < num_noise:
                     cls1_res = OrderedDict()
@@ -2976,6 +3013,8 @@ class XFaster(object):
                     quants += [[cls_sig, cls1_sig]]
                     if null_run:
                         quants += [[cls_null_sig, cls_null1_sig]]
+                if isim < num_signal_dust:
+                    quants += [[cls_sig_dust, cls1_sig_dust]]
 
                 if do_noise and isim < num_noise:
                     quants += [[cls_noise, cls1_noise]]
@@ -3020,6 +3059,7 @@ class XFaster(object):
                     cls_null_med[spec][xname] = cls_null_med_arr[xind][s]
 
         self.cls_signal = cls_sig
+        self.cls_signal_dust = cls_sig_dust
         self.cls_signal_null = cls_null_sig
         self.cls_noise = cls_noise
         self.cls_noise_null = cls_null_noise
@@ -3267,7 +3307,10 @@ class XFaster(object):
         flat=None,
         signal_mask=None,
         transfer=False,
+        transfer_dust=False,
         save=True,
+        template_alpha90=None,
+        template_alpha150=None,
     ):
         """
         Load a shape spectrum for input to the Fisher iteration algorithm.
@@ -3285,12 +3328,13 @@ class XFaster(object):
 
         Arguments
         ---------
-        filename : string
+        filename : string, or list of strings
             Filename for a spectrum on disk.  If None, and ``r`` is None and
             ``flat`` is False, this will search for a spectrum stored in
             ``signal_<signal_type>/spec_signal_<signal_type>.dat``.
             Otherwise, if the filename is a relative path and not found,
             the config directory is searched.
+            If a list, first element is CMB and second element is dust.
         r : float
             If supplied and ``flat`` is False, a spectrum is computed using
             CAMB for the given ``r`` value.  Overrides ``filename``.
@@ -3309,6 +3353,10 @@ class XFaster(object):
             and ``r`` is None and ``flat`` is False, will search for a spectrum
             stored in
             ``signal_<signal_transfer_type>/spec_signal_<signal_transfer_type>.dat``.
+        transfer_dust : bool
+            If True, this is a transfer function run for dust and dust+cmb.
+            If `filename` is None, will search for a spectrum stored in
+            `signal_<signal_transfer_type_dust>/spec_signal_<signal_transfer_type_dust>.dat`.
         save : bool
             If True, save signal shape dict to disk.
 
@@ -3318,6 +3366,9 @@ class XFaster(object):
             Dictionary keyed by spectrum (cmb_tt, cmb_ee, ... , fg), each
             entry containing a vector of length 2 * lmax + 1
         """
+        if isinstance(filename, list):
+            filename_dust = filename[1]
+            filename = filename[0]
 
         lmax_kern = 2 * self.lmax
 
@@ -3361,6 +3412,27 @@ class XFaster(object):
         ellfac = ell * (ell + 1) / 2.0 / np.pi
         cls_shape = OrderedDict()
 
+        def fix_camb_specs(arr, ltmp, filename):
+            # camb starts at l=2, so set first 2 ells to be 0
+            # make sure order is TT, EE, BB, TE, no ell row.
+            new_arr = np.append([0, 0], arr[1, : ltmp - 2])
+            if self.pol:
+                if np.any(arr[2, : ltmp - 2] < 0):
+                    # this is true if TE is the third index instead of EE
+                    # # (ell is 0th index for CAMB)
+                    self.log(
+                        "Old CAMB format in model file {}. Re-indexing.".format(
+                            filename
+                        ),
+                        "detail",
+                    )
+                    pol_specs = [3, 4, 2]
+                else:
+                    pol_specs = [2, 3, 4]
+                for d in arr[pol_specs]:
+                    new_arr = np.vstack([new_arr, np.append([0, 0], d[: ltmp - 2])])
+            return new_arr
+
         if flat is not None and flat is not False:
             if flat is True:
                 flat = 2e-5
@@ -3403,6 +3475,36 @@ class XFaster(object):
             if not os.path.exists(filename):
                 raise OSError("Missing model file {}".format(filename))
 
+
+# chech this
+            if transfer_dust:
+                if filename_dust is None:
+                    signal_root = self.signal_transfer_root_dust
+                    filename_dust = "spec_{}.dat".format(os.path.basename(signal_root))
+                    filename_dust = os.path.join(signal_root, filename_dust)
+                if not os.path.exists(filename_dust) and not os.path.isabs(
+                    filename_dust
+                ):
+                    filename_dust = os.path.abspath(
+                        os.path.join(
+                            os.path.dirname(__file__), "../data", filename_dust
+                        )
+                    )
+                if not os.path.exists(filename_dust):
+                    raise OSError("Missing model file {}".format(filename_dust))
+                tmpd = np.loadtxt(filename_dust, unpack=True)
+
+                ltmpd = tmpd.shape[-1]
+                if lmax_kern + 1 < ltmpd:
+                    ltmpd = lmax_kern + 1
+                else:
+                    raise ValueError(
+                        "Require at least lmax={} in model file, found {}".format(
+                            lmax_kern, ltmpd
+                        )
+                    )
+                tmpd = fix_camb_specs(tmpd, ltmpd, filename_dust)
+
             tmp = np.loadtxt(filename, unpack=True)
 
             ltmp = tmp.shape[-1]
@@ -3415,6 +3517,7 @@ class XFaster(object):
                     )
                 )
 
+            tmp = fix_camb_specs(tmp, ltmp, filename)
             # camb starts at l=2, so set first 2 ells to be 0
             cls_shape["cmb_tt"] = np.append([0, 0], tmp[1, : ltmp - 2])
             if self.pol:
@@ -3427,10 +3530,30 @@ class XFaster(object):
                         )
                     )
                     pol_specs = [3, 4, 2]
+            spec_order = {"tt": 0, "ee": 1, "bb": 2, "te": 3}
+            for spec in specs:
+                parts = spec.split("_")
+                comp = parts[0]
+                spec0 = parts[1]
+                self.log(spec)
+                if len(parts) == 3:
+                    nom_freq = parts[2]
+                if comp == "cmb":
+                    arr = tmp
+                elif comp == "dust":
+                    arr = tmpd
                 else:
                     pol_specs = [2, 3, 4]
                 for spec, d in zip(specs[1:4], tmp[pol_specs]):
                     cls_shape[spec] = np.append([0, 0], d[: ltmp - 2])
+                    # Combine CMB and dust scaled by alpha**2 for frequency
+                    if nom_freq == "90":
+                        alpha = template_alpha90
+                    elif nom_freq == "150":
+                        alpha = template_alpha150
+                        arr = tmp + alpha ** 2 * tmpd
+                cls_shape[spec] = arr[spec_order[spec0]]
+
 
         # EB and TB flat l^2 * C_l
         if self.pol:
@@ -3451,6 +3574,25 @@ class XFaster(object):
             self.log(
                 "Added foreground to cls shape {}".format(list(cls_shape)), "debug"
             )
+
+        if transfer_dust:
+            cls_shape["dust_tt"] = 0
+            #nspecs += 1
+            # Need separate fields per freq for dust+CMB to get relative 
+            # amplitudes right
+            if self.pol:
+                cls_shape["dust_ee"] = 0 # add values here
+                cls_shape["dust_bb"] = 0
+                cls_shape["dust_te"] = 0
+                # nspecs += 3
+            for freq in np.unique(list(self.nom_freqs.values())):
+                cls_shape["cmbdust_tt_{}".format(freq)] = 0
+                # nspecs += 1
+                if self.pol:
+                    for s in ["ee", "bb", "te"]:
+                        cls_shape["cmbdust_{}_{}".format(s, freq)] = 0
+                    nspecs += 3
+
 
         # divide out l^2/2pi
         for spec in specs:
@@ -3881,6 +4023,8 @@ class XFaster(object):
         transfer_run=False,
         beam_error=False,
         use_precalc=True,
+        dust=False,
+        cmbdust=False,
     ):
         """
         Compute the Cbl matrix from the input shape spectrum.
@@ -3964,6 +4108,10 @@ class XFaster(object):
             comps += ["cmb"]
         if "fg" in cls_shape and not transfer_run:
             comps += ["fg"]
+        if transfer_run and dust:
+            comps += ["dust"]
+        if transfer_run and cmbdust:
+            comps += ["dustcmb"]
         if self.nbins_res > 0 and not transfer_run:
             comps += ["res"]
             cls_noise = self.cls_noise_null if self.null_run else self.cls_noise
@@ -4095,7 +4243,9 @@ class XFaster(object):
                         # single foreground spectrum
                         s_arr[si, xi] = cls_shape["fg"][lk]
                     else:
-                        s_arr[si, xi] = cls_shape["cmb_{}".format(spec)][lk]
+                        # for comp in [cmb, dust, cmbdust]
+                        s_arr[si, xi] = cls = cls_shape["{}_{}".format(comp, spec)][lk]
+                        # cls_shape["cmb_{}".format(spec)][lk]
 
                     # get cross spectrum kernel terms
                     k_arr[si, xi] = mll[spec][xname][ls, lk]
@@ -4340,7 +4490,18 @@ class XFaster(object):
 
         return cls
 
-    def get_data_spectra(self, map_tag=None, transfer_run=False, do_noise=True):
+    #def get_data_spectra(self, map_tag=None, transfer_run=False, do_noise=True):
+    def get_data_spectra(
+        self,
+        map_tag=None,
+        transfer_run=False,
+        do_noise=True,
+        transfer_dust=False,
+        transfer_cmbdust=False,
+        template_alpha90=None,
+        template_alpha150=None,
+    ):
+
         """
         Return data and noise spectra for the given map tag(s).  Data spectra
         and signal/noise sim spectra must have been precomputed or loaded from
@@ -4384,6 +4545,23 @@ class XFaster(object):
         # obs depends on what you're computing
         if transfer_run:
             obs_quant = self.cls_signal
+            if transfer_dust:
+                obs_quant = self.cls_signal_dust
+            elif transfer_cmbdust:
+                # need to add cmb and dust scaled by alphas
+                obs_quant = copy.deepcopy(self.cls_signal_dust)
+                adict = {"90": template_alpha90, "150": template_alpha150}
+                for k2 in self.cls_signal_dust[k1].keys():
+                    mtag1, mtag2 = k2.split(":")
+                    freq1 = self.nom_freqs[mtag1]
+                    freq2 = self.nom_freqs[mtag2]
+                    obs_quant[k1][k2] = (
+                        self.cls_signal
+                        + adict[freq1] * adict[freq2] * self.cls_signal_dust
+                        )
+            else:
+                obs_quant = self.cls_signal
+
         elif self.null_run:
             if self.reference_subtracted:
                 obs_quant = self.cls_data_sub_null
@@ -5114,6 +5292,10 @@ class XFaster(object):
         like_profile_sigma=3.0,
         like_profile_points=100,
         file_tag=None,
+        transfer_dust=dust,
+        transfer_cmbdust=cmbdust,
+        template_alpha90=tempalate_alpha90,
+        template_alpha150=template_alpha150,
     ):
         """
         Iterate over the Fisher calculation to compute bandpower estimates
@@ -5240,7 +5422,13 @@ class XFaster(object):
             qb = qb_start
 
         obs, nell, debias = self.get_data_spectra(
-            map_tag=map_tag, transfer_run=transfer_run
+            #map_tag=map_tag, transfer_run=transfer_run,
+            map_tag=map_tag,
+            transfer_run=transfer_run,
+            transfer_dust=transfer_dust,
+            transfer_cmbdust=cmbdust,
+            template_alpha90=tempalate_alpha90,
+            template_alpha150=tempalate_alpha150,
         )
 
         bin_index = pt.dict_to_index(self.bin_def)
@@ -5625,6 +5813,10 @@ class XFaster(object):
         iter_max=200,
         save_iters=False,
         fix_bb_transfer=False,
+        dust=False,
+        cmbdust=False,
+        template_alpha90=None,
+        template_alpha150=None,
     ):
         """
         Compute the transfer function from signal simulations created using
@@ -5683,6 +5875,11 @@ class XFaster(object):
         )
 
         save_name = "transfer_all"
+        if dust:
+            save_name = "{}_dust".format(save_name)
+        elif cmbdust:
+            save_name = "{}_cmbdust".format(save_name)
+
         if self.weighted_bins:
             save_name = "{}_wbins".format(save_name)
 
@@ -5717,7 +5914,15 @@ class XFaster(object):
             return transfer
 
         if ret is not None:
-            self.qb_transfer = ret["qb_transfer"]
+            #self.qb_transfer = ret["qb_transfer"]
+            if dust:
+                self.qb_transfer_dust = ret["qb_transfer"]
+            elif cmbdust:
+                self.qb_transfer_cmbdust = ret["qb_transfer"]
+            else:
+                self.qb_transfer = ret["qb_transfer"]
+            # return ret["qb_transfer"] 
+
             if "transfer" in ret:
                 self.transfer = ret["transfer"]
             else:
@@ -5725,16 +5930,31 @@ class XFaster(object):
             return self.transfer
 
         self.qb_transfer = OrderedDict()
-        for spec in self.specs:
-            self.qb_transfer["cmb_" + spec] = OrderedDict()
+        qb_transfer = OrderedDict()
+        if dust:
+            comp = "dust"
+        elif cmbdust:
+            comp = "cmbdust"
+        else:
+            comp = "cmb"
 
+        for spec in self.specs:
+            #self.qb_transfer["cmb_" + spec] = OrderedDict()
+            if dust:
+                qb_transfer["{}_{}".format(comp, spec)] = OrderedDict()
+        
+        # success = False
         success = True
         msg = ""
 
         for im0, m0 in enumerate(self.map_tags):
             if not self.fit_transfer[self.map_tags_orig[im0]]:
-                for spec in self.specs:
-                    self.qb_transfer["cmb_{}".format(spec)][m0] = np.ones(
+                #for spec in self.specs:
+                #    self.qb_transfer["cmb_{}".format(spec)][m0] = np.ones(
+                #        self.nbins_cmb // len(self.specs)
+                #    )
+                for stag in self.qb_transfer.keys():
+                    self.qb_transfer[stag][m0] = np.ones(
                         self.nbins_cmb // len(self.specs)
                     )
                 self.log("Setting map {} transfer to unity".format(m0), "info")
@@ -5747,7 +5967,10 @@ class XFaster(object):
                 "info",
             )
             self.clear_precalc()
-            cbl = self.bin_cl_template(map_tag=m0, transfer_run=True)
+            #cbl = self.bin_cl_template(map_tag=m0, transfer_run=True)
+            cbl = self.bin_cl_template(
+                cls_shape, m0, transfer_run=True, dust=dust, cmbdust=cmbdust
+                )
             ret = self.fisher_iterate(
                 cbl,
                 m0,
@@ -5755,6 +5978,10 @@ class XFaster(object):
                 iter_max=iter_max,
                 converge_criteria=converge_criteria,
                 save_iters=save_iters,
+                transfer_dust=dust,
+                transfer_cmbdust=cmbdust,
+                template_alpha90=tempalate_alpha90,
+                template_alpha150=template_alpha150,
             )
             qb = ret["qb"]
 
@@ -5788,11 +6015,14 @@ class XFaster(object):
 
             # Set EB/TB qb transfers to geometric means of components
             if len(self.specs) > 4:
-                qb["cmb_eb"] = np.sqrt(np.abs(qb["cmb_ee"] * qb["cmb_bb"]))
-                qb["cmb_tb"] = np.sqrt(np.abs(qb["cmb_tt"] * qb["cmb_bb"]))
+                #qb["cmb_eb"] = np.sqrt(np.abs(qb["cmb_ee"] * qb["cmb_bb"]))
+                #qb["cmb_tb"] = np.sqrt(np.abs(qb["cmb_tt"] * qb["cmb_bb"]))
+                qb[comp + "_eb"] = np.sqrt(np.abs(qb[comp + "_ee"] * qb[comp + "_bb"]))
+                qb[comp + "_tb"] = np.sqrt(np.abs(qb[comp + "_tt"] * qb[comp + "_bb"]))
 
             for stag, qbdat in qb.items():
-                self.qb_transfer[stag][m0] = qbdat
+                #self.qb_transfer[stag][m0] = qbdat
+                qb_transfer[stag][m0] = qbdat
 
         if success:
             self.transfer = expand_transfer(self.qb_transfer, self.bin_def)
@@ -5809,8 +6039,16 @@ class XFaster(object):
 
         if not success:
             raise RuntimeError("Error computing transfer function: {}".format(msg))
+        
+        if dust:
+            self.qb_transfer_dust = qb_transfer
+        elif cmbdust:
+            self.qb_transfer_cmbdust = qb_transfer
+        else:
+            self.qb_transfer = qb_transfer
 
-        return self.transfer
+        return qb_transfer
+        #return self.transfer # equivalent to self.qb_transfer in Anne's old code. 
 
     def get_bandpowers(
         self,
@@ -5876,6 +6114,11 @@ class XFaster(object):
             Keep first CMB bandpowers fixed to input shape (qb=1).
         return_cls : bool
             If True, return C_ls rather than D_ls
+        dust : bool
+            If True, compute transfer function using dust sims
+        cmbdust : bool
+            If True, compute transfer function using CMB+dust sims, with
+            dust scaled by template_alpha90, template_alpha150
         like_profiles : bool
             If True, compute profile likelihoods for each qb, leaving all
             others fixed at their maximum likelihood values.  Profiles are

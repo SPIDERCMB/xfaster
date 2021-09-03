@@ -38,6 +38,8 @@ def xfaster_run(
     signal_type="synfast",
     signal_subset="*",
     signal_transfer_type=None,
+    signal_transfer_type_dust=None,
+    signal_subset_dust=None,
     signal_type_sim=None,
     noise_type="stationary",
     noise_subset="*",
@@ -97,6 +99,7 @@ def xfaster_run(
     qb_file_sim=None,
     signal_spec=None,
     signal_transfer_spec=None,
+    signal_transfer_spec_dust=None,
     model_r=None,
     ref_freq=359.7,
     beta_ref=1.54,
@@ -171,6 +174,20 @@ def xfaster_run(
     signal_transfer_type : str
         The variant of signal sims to use for computing the transfer function.
         If not set, defaults to ``signal_type``.
+    signal_transfer_type_dust : string
+        1. The variant of signal simulation to use for transfer function
+        calculation for dust, typically identified by the input spectrum model
+        used to generate it, e.g 'power_law'. These are assumed to be at 353
+        GHz and thus scaled by the map frequency's alpha.
+        This directory may also contain
+        a copy of the input spectrum, to make sure that the correct
+        spectrum is used to compute the transfer function.
+        2. The variant of signal sims to use for transfer function for dust,
+        or, to add to signal_transfer type for raw (uncleaned) spectra,
+        multiplied by alpha90**2 or alpha150**2
+    signal_transfer_dust: string
+        If not provided, use signal_subset values
+        Add more. 
     signal_type_sim : str
         The variant of signal sims to use for sim_index data maps.
         This enables having a different noise sim ensemble to use for
@@ -354,6 +371,11 @@ def xfaster_run(
         The spectrum data file used to generate signal sims.  If not
         supplied, will search for ``spec_signal_<signal_type>.dat`` in the
         transfer signal sim directory. Used for computing transfer functions.
+    signal_transfer_spec_dust : string
+        The spectrum data file used to generate signal sims for dust transfer
+        function.  If not supplied, will search for
+        `spec_signal_<signal_transfer_type_dust>.dat` in the
+        dust transfer signal sim directory. Used for computing transfer functions.
     model_r : float
         The ``r`` value to use to compute a spectrum for estimating bandpowers.
         Overrides ``signal_spec``.
@@ -499,6 +521,8 @@ def xfaster_run(
         signal_type=signal_type,
         signal_type_sim=signal_type_sim if sim_data_r is None else "r",
         signal_transfer_type=signal_transfer_type,
+        signal_transfer_type_dust=signal_transfer_type_dust,
+        signal_subset_dust=signal_subset_dust,
         data_root2=data_root2,
         data_subset2=data_subset2,
         foreground_type_sim=foreground_type_sim,
@@ -579,6 +603,7 @@ def xfaster_run(
         fix_bb_transfer=fix_bb_transfer,
         signal_spec=signal_spec,
         signal_transfer_spec=signal_transfer_spec,
+        signal_transfer_spec_dust=signal_transfer_spec_dust,
         model_r=model_r,
         ref_freq=ref_freq,
         beta_ref=beta_ref,
@@ -599,6 +624,7 @@ def xfaster_run(
     spec_opts.pop("multi_map")
     spec_opts.pop("signal_spec")
     spec_opts.pop("signal_transfer_spec")
+    spec_opts.pop("signal_transfer_spec_dust")
     spec_opts.pop("model_r")
     spec_opts.pop("qb_file")
     bandpwr_opts = spec_opts.copy()
@@ -671,10 +697,32 @@ def xfaster_run(
     X.get_beams(pixwin=pixwin)
 
     X.log("Loading spectrum shape for transfer function...", "notice")
-    X.get_signal_shape(filename=signal_transfer_spec, transfer=True)
+    X.get_signal_shape(
+        #filename=signal_transfer_spec, transfer=True,
+        filename=[signal_transfer_spec, signal_transfer_spec_dust],
+        tbeb=False,
+        transfer=True,
+        transfer_dust=signal_transfer_type_dust is not None,
+        template_alpha90=template_alpha90,
+        template_alpha150=template_alpha150,
+        )
 
-    X.log("Computing transfer functions...", "notice")
+    #X.log("Computing transfer functions...", "notice")
+    X.log("Computing transfer functions for CMB...", "task")
     X.get_transfer(**transfer_opts)
+    if signal_transfer_type_dust is not None:
+        X.log("Computing transfer functions for Dust...", "task")
+        X.get_transfer(cls_shape, fix_bb_xfer=fix_bb_xfer, dust=True, **fisher_opts)
+        X.log("Computing transfer functions for Dust+CMB...", "task")
+        # this is old code, may break
+        X.get_transfer(
+            cls_shape,
+            fix_bb_xfer=fix_bb_xfer,
+            cmbdust=True,
+            template_alpha90=template_alpha90,
+            template_alpha150=template_alpha150,
+            **fisher_opts
+        )
 
     X.log("Computing sim ensemble averages...", "notice")
     X.get_masked_sims(qb_file=qb_file_sim)
@@ -974,7 +1022,13 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "mask_type")
         add_arg(G, "signal_type")
         add_arg(G, "signal_subset")
-        add_arg(G, "signal_transfer_type")
+        #add_arg(G, "signal_transfer_type")
+        add_arg(G, "signal_transfer_type",
+            help="Signal sim variant for CMB transfer functions",
+        )
+        add_arg(G, "signal_transfer_type_dust",
+            help="Signal sim variant for dust transfer functions",
+        )
         add_arg(G, "signal_type_sim")
         add_arg(G, "noise_type")
         add_arg(G, "noise_subset")
@@ -1057,6 +1111,11 @@ def xfaster_parse(args=None, test=False):
         add_arg(E, "signal_spec")
         add_arg(E, "model_r")
         add_arg(G, "signal_transfer_spec")
+        add_arg(G, "signal_transfer_spec_dust",
+            help="Power spectrum used to create transfer signal simulations for dust. "
+            "Defaults to the spec_signal_{signal_transfer_type_dust}.dat file found "
+            "in the signal directory.",
+        )
         add_arg(G, "ref_freq")
         add_arg(G, "beta_ref", argtype=float)
         add_arg(G, "delta_beta_prior", argtype=float)
