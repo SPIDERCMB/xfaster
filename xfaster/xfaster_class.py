@@ -6497,9 +6497,9 @@ class XFaster(object):
                             beam_error=True,
                         )
                 else:
-                    cbl_fg0 = cbl_fg
+                    cbl_fg0 = np.copy(cbl_fg)
                     if beam is not None:
-                        cbl_fg_beam0 = cbl_fg_beam
+                        cbl_fg_beam0 = np.copy(cbl_fg_beam)
 
                 cls_model_fg = self.get_model_spectra(
                     qb, cbl_fg0, delta=True, res=False
@@ -6518,7 +6518,7 @@ class XFaster(object):
                         cls_model0[stag] = OrderedDict()
                     for xname, dd in d.items():
                         if xname not in cls_model0[stag]:
-                            cls_model0[stag][xname] = cls_model_fg[ftag][xname]
+                            cls_model0[stag][xname] = np.copy(cls_model_fg[ftag][xname])
                         else:
                             cls_model0[stag][xname] += cls_model_fg[ftag][xname]
 
