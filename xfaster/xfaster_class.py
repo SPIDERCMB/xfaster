@@ -6266,6 +6266,8 @@ class XFaster(object):
             for k, v in qb.items():
                 if k.startswith("fg_") or "beta" in k:
                     qb_fg[k] = v
+            for k in qb_fg.keys():
+                qb.pop(k)
 
         # set CMB model bandpowers to unity, since we are computing
         # the likelihood of this model given the data
