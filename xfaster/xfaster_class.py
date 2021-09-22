@@ -3998,7 +3998,6 @@ class XFaster(object):
 
         for comp in comps:
             for spec in specs:
-                s0, s1 = spec
                 if "res" not in comp:
                     # clear arrays
                     d_arr[:] = 0
@@ -4010,8 +4009,9 @@ class XFaster(object):
                             v[:] = 0
 
                 for xi, (xname, (tag1, tag2)) in enumerate(map_pairs.items()):
-                    bd = [[0, lmax + 1]]
                     if "res" in comp:
+                        s0, s1 = spec
+                        bd = [[0, lmax + 1]]
                         # if any component of XY spec is in residual bin def,
                         # use that bin def
                         for v in [
@@ -4029,27 +4029,21 @@ class XFaster(object):
                                 if v in self.bin_def:
                                     bd = self.bin_def[v]
                                     break
-                                spec0 = v.split("_")[1]
-                                if spec0 in ["ee", "bb"]:
-                                    v = v.replace(spec0, "eebb")
-                                    if v in self.bin_def:
-                                        bd = self.bin_def[v]
-                                        break
 
-                            comp_list = [("res", cls_noise)] + [
-                                ("res_{}".format(k), cls_res[k]) for k in cls_res
-                            ]
+                        comp_list = [("res", cls_noise)] + [
+                            ("res_{}".format(k), cls_res[k]) for k in cls_res
+                        ]
 
-                            for res_comp, cls in comp_list:
-                                stag = "{}_{}".format(res_comp, spec)
-                                cbl.setdefault(stag, OrderedDict())
-                                cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
-                                cl1 = cls[spec][xname]
-                                for idx, (left, right) in enumerate(bd):
-                                    lls = slice(left, right)
-                                    cbl[stag][xname][idx, lls] = np.copy(cl1[lls])
+                        for res_comp, cls in comp_list:
+                            stag = "{}_{}".format(res_comp, spec)
+                            cbl.setdefault(stag, OrderedDict())
+                            cbl[stag][xname] = np.zeros((len(bd), lmax + 1))
+                            cl1 = cls[spec][xname]
+                            for idx, (left, right) in enumerate(bd):
+                                lls = slice(left, right)
+                                cbl[stag][xname][idx, lls] = np.copy(cl1[lls])
 
-                            continue
+                        continue
 
                     # use correct shape spectrum
                     if comp == "fg":
@@ -4155,14 +4149,12 @@ class XFaster(object):
         if any([k.startswith("cmb_") for k in qb]):
             comps = ["cmb"]
 
-        delta_beta = 0.0
+        delta_beta = None
         if any([k.startswith("fg_") for k in qb]):
             # Evaluate fg at spectral index pivot for derivative
             # in Fisher matrix, unless delta is True
             if delta and "delta_beta" in qb:
-                delta_beta = qb["delta_beta"]
-            else:
-                delta_beta = 0
+                delta_beta = qb["delta_beta"][0]
             comps += ["fg"]
 
         if res and any([k.startswith("res_") for k in qb]):
@@ -4800,11 +4792,9 @@ class XFaster(object):
         if windows:
             self.clear_precalc()
 
-        delta_beta = 0.0
+        delta_beta = None
         if "delta_beta" in qb:
-            delta_beta = qb["delta_beta"]
-        else:
-            delta_beta = 0
+            delta_beta = qb["delta_beta"][0]
 
         if not likelihood:
             dSdqb_mat1_freq = copy.deepcopy(dSdqb_mat1)
@@ -4859,8 +4849,9 @@ class XFaster(object):
                     beta=self.beta_ref,
                     deriv=True,
                 )
-                freq_scale = freq_scale0 + delta_beta * freq_scale_deriv
-                freq_scale_ratio = freq_scale_deriv / freq_scale
+                freq_scale = freq_scale0
+                if delta_beta is not None:
+                    freq_scale += delta_beta * freq_scale_deriv
 
                 # scale foreground model by frequency scaling adjusted for beta
                 for s1, sdat in dSdqb_mat1_freq["fg"][xname].items():
@@ -4869,7 +4860,8 @@ class XFaster(object):
 
                 # build delta_beta term from frequency scaled model,
                 # divide out frequeny scaling and apply derivative term
-                if delta_beta != 0:
+                if delta_beta is not None:
+                    freq_scale_ratio = freq_scale_deriv / freq_scale
                     for s1, sdat in dSdqb_mat1_freq["delta_beta"][xname].items():
                         sdat[s1] = cls_model["fg_{}".format(s1)][xname] * freq_scale_ratio
 
@@ -4993,7 +4985,7 @@ class XFaster(object):
 
             # include priors in likelihood
             if "delta_beta" in qb and delta_beta_prior is not None:
-                chi = (qb["delta_beta"] - self.delta_beta_fix) / delta_beta_prior
+                chi = (qb["delta_beta"][0] - self.delta_beta_fix) / delta_beta_prior
                 like -= chi ** 2 / 2.0
 
             if null_first_cmb:
@@ -5241,8 +5233,6 @@ class XFaster(object):
 
         bin_index = pt.dict_to_index(self.bin_def)
 
-        out = dict(cond_criteria=cond_criteria)
-
         success = False
         for iter_idx in range(iter_max):
             self.log(
@@ -5423,7 +5413,7 @@ class XFaster(object):
                     prev_fqb = []
 
         # save and return
-        out.update(
+        out = dict(
             qb=qb,
             inv_fish=inv_fish,
             fqb=fqb,
@@ -5435,6 +5425,7 @@ class XFaster(object):
             map_freqs=self.map_freqs,
             converge_criteria=converge_criteria,
             cond_noise=cond_noise,
+            cond_criteria=cond_criteria,
             null_first_cmb=null_first_cmb,
             apply_gcorr=self.apply_gcorr,
             weighted_bins=self.weighted_bins,
@@ -6492,9 +6483,9 @@ class XFaster(object):
                     qb_fg["fg_ee"][:] = dust_amp[0]
                     qb_fg["fg_bb"][:] = dust_amp[1]
                 if betad is None:
-                    qb_fg["delta_beta"] = 0
+                    qb_fg["delta_beta"][:] = 0
                 else:
-                    qb_fg["delta_beta"] = betad
+                    qb_fg["delta_beta"][:] = betad
                 if dust_ellind is not None:
                     cbl_fg0 = self.bin_cl_template(
                         cls_shape_dust, map_tag=map_tag, fg_ell_ind=dust_ellind
