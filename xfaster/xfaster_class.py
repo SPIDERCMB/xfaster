@@ -5873,7 +5873,7 @@ class XFaster(object):
                             tag1, tag2, spec_in, spec_out
                         ),
                     )
-                    dsi[spec_out] = np.loadtxt(fname)[lk, lk]
+                    dsi[spec_in] = np.loadtxt(fname)[lk, lk]
 
         self.transfer_file_root = file_root
         self.transfer_matrix = transfer_matrix
