@@ -3339,6 +3339,7 @@ class XFaster(object):
         signal_mask=None,
         transfer=False,
         transfer_dust=False, 
+        #separate_dust_Fl=False,
         save=True,
         template_alpha90=None,  
         template_alpha150=None, 
@@ -3424,6 +3425,7 @@ class XFaster(object):
             if self.pol:
                 for s in ["ee", "bb", "te"]:
                     specs += ["dust_{}".format(s)]
+            # CHECK: DO I NEED THIS FOR SEPARATE DUST Fl ???
             # Need separate fields per freq for dust+CMB to get relative
             # amplitudes right
             for freq in np.unique(list(self.nom_freqs.values())):
@@ -3592,6 +3594,7 @@ class XFaster(object):
                 #for spec, d in zip(specs[1:4], tmp[pol_specs]):
                 #    cls_shape[spec] = np.append([0, 0], d[: ltmp - 2])
                     # Combine CMB and dust scaled by alpha**2 for frequency 
+                    # TODO: GENERALIZE THIS FOR FREQs
                     if nom_freq == "90":
                         alpha = template_alpha90
                     elif nom_freq == "150":
@@ -3962,7 +3965,7 @@ class XFaster(object):
 
         return self.bin_def
 
-    def kernel_precalc(self, map_tag=None, transfer_run=False):
+    def kernel_precalc(self, dust=False, map_tag=None, transfer_run=False):
         """
         Compute the mixing kernels M_ll' = K_ll' * F_l' * B_l'^2.  Called by
         ``bin_cl_template`` to pre-compute kernel terms.
@@ -3973,6 +3976,8 @@ class XFaster(object):
             If supplied, the kernels are computed only for the given map tag
             (or cross if map_tag is map_tag1:map_tag2).
             Otherwise, it is computed for all maps and crosses.
+        dust: bool
+            If true, get mll with dust Fl 
         transfer_run : bool
             If True, set transfer function to 1 to solve for transfer function
             qbs.
@@ -3982,6 +3987,7 @@ class XFaster(object):
         mll : OrderedDict
             Dictionary of M_ll' matrices, keyed by spec and xname.
         """
+        # add one dim to add 
 
         map_pairs = None
         if map_tag is not None:
@@ -4004,7 +4010,10 @@ class XFaster(object):
             for spec in specs:
                 transfer[spec] = OrderedDict()
                 for tag in map_tags:
-                    transfer[spec][tag] = self.transfer[spec][tag]
+                    if dust:
+                        transfer[spec][tag] = self.transfer_dust[spec][tag]
+                    else:
+                        transfer[spec][tag] = self.transfer[spec][tag]
 
         lk = slice(0, lmax + 1)
         mll = OrderedDict()
@@ -4125,6 +4134,14 @@ class XFaster(object):
         else:
             mll = self.mll
 
+        if not hasattr(self, "transfer_dust") and not use_precalc:
+            mll_dust = self.kernel_precalc(map_tag=map_tag, dust=True, 
+                transfer_run=transfer_run)
+            if use_precalc:
+                self.mll_dust = mll_dust
+        else:
+            mll_dust = self.mll_dust 
+        
         if beam_error:
             beam_error = self.get_beam_errors()
             beam_keys = ["b1", "b2", "b3"]
@@ -4141,7 +4158,8 @@ class XFaster(object):
         if transfer_run and dust: 
             comps += ["dust"] 
         if transfer_run and cmbdust: 
-            comps += ["dustcmb"] 
+            #comps += ["dustcmb"] 
+            comps += ["cmbdust"]
         if self.nbins_res > 0 and not transfer_run:
             comps += ["res"]
             cls_noise = self.cls_noise_null if self.null_run else self.cls_noise
@@ -4278,10 +4296,17 @@ class XFaster(object):
                         s_arr[si, xi] = cls_shape["{}_{}".format(comp, spec)][lk]
 
                     # get cross spectrum kernel terms
-                    k_arr[si, xi] = mll[spec][xname][ls, lk]
+                    if comp == "dust"
+                        k_arr[si, xi] = mll_dust[spec][xname][ls, lk]
+                    else:
+                        k_arr[si, xi] = mll[spec][xname][ls, lk]
+                    
                     if spec in ["ee", "bb"]:
                         mspec = spec + "_mix"
-                        mk_arr[si - 1, xi] = mll[mspec][xname][ls, lk]
+                        if comp == "dust":
+                            mk_arr[si - 1, xi] = mll_dust[mspec][xname][ls, lk]
+                        else:
+                            mk_arr[si - 1, xi] = mll[mspec][xname][ls, lk]
 
                 md = None
                 if s_arr.ndim == 1:
@@ -4301,7 +4326,9 @@ class XFaster(object):
         return cbl
 
     def get_model_spectra(
-        self, qb, cbl, delta=True, res=True, cls_noise=None, cond_noise=None
+        self, qb, cbl, delta=True, res=True, cls_noise=None, cond_noise=None,
+        transfer_dust=False, 
+        transfer_cmbdust=False,
     ):
         """
         Compute unbinned model spectra from qb amplitudes and a Cbl matrix.
@@ -4343,11 +4370,15 @@ class XFaster(object):
         """
         comps = []
 
-        if any([k.startswith("cmb_") for k in qb]):
+        if transfer_dust:
+            comps = ["dust"]
+        elif transfer_cmbdust:
+            comps = ["cmbdust"]
+        elif any([k.startswith("cmb_") for k in qb]):
             comps = ["cmb"]
 
         delta_beta = 0.0
-        if "delta_beta" in qb:
+        if "delta_beta" in qb and not transfer_dust:
             # Evaluate fg at spectral index pivot for derivative
             # in Fisher matrix, unless delta is True
             if delta:
@@ -4372,6 +4403,7 @@ class XFaster(object):
 
         specs = []
         for spec in self.specs:
+            # cmb, dust, and cmbdust should have same specs (Fl cases)
             if "cmb_{}".format(spec) in cbl:
                 # Don't add entries that won't be filled in later
                 cls["total_{}".format(spec)] = OrderedDict()
@@ -4400,7 +4432,7 @@ class XFaster(object):
                     tag1, tag2 = self.map_pairs[xname]
 
                     # extract qb's for the component spectrum
-                    if comp == "cmb":
+                    if comp in ["cmb", "dust", "cmbdust"]:
                         qbs = qb[stag]
                         if spec in ["ee", "bb"]:
                             qbm = qb[mstag]
@@ -4474,7 +4506,7 @@ class XFaster(object):
                         cl1 /= 2.0
 
                     # compute model spectra
-                    if comp in ["cmb", "fg"]:
+                    if comp in ["cmb", "fg", "dust", "cmb_dust"]:
                         if xname not in cbl[stag]:
                             continue
                         cbl1 = cbl[stag][xname]
@@ -4749,6 +4781,8 @@ class XFaster(object):
         cls_debias=None,
         likelihood=False,
         windows=False,
+        transfer_dust=False, 
+        transfer_cmbdust=False,
     ):
         """
         Pre-compute the D_ell and signal derivative matrices necessary for
@@ -4792,7 +4826,13 @@ class XFaster(object):
         pol_dim = 3 if self.pol else 1
         dim1 = pol_dim * num_maps
 
-        comps = ["cmb"]
+        if transfer_dust:
+            comps = ["dust"]
+        elif transfer_cmbdust:
+            comps = ["cmbdust"]
+        else:
+            comps = ["cmb"]
+
         if "fg_tt" in cbl:
             comps += ["fg"]
         if "res_tt" in cbl or "res_ee" in cbl:
@@ -4873,7 +4913,8 @@ class XFaster(object):
                         mix_cbl = cbl[stag + "_mix"][xname]
                         dSdqb[comp][xname][spec][mspec] = mix_cbl
 
-                if comp == "fg":
+                if comp == "fg" and not transfer_dust:
+                    # currently don't solve both beta_d and dust power. 
                     # add delta beta bin for spectral index
                     dSdqb.setdefault("delta_beta", OrderedDict()).setdefault(
                         xname, OrderedDict()
@@ -4911,6 +4952,8 @@ class XFaster(object):
         use_precalc=True,
         windows=False,
         inv_fish=None,
+        transfer_dust=False, 
+        transfer_cmbdust=False,
     ):
         """
         Re-compute the Fisher matrix and qb amplitudes based on
@@ -4997,6 +5040,8 @@ class XFaster(object):
                 cls_debias=cls_debias,
                 likelihood=likelihood,
                 windows=windows,
+                transfer_dust=transfer_dust, 
+                transfer_cmbdust=transfer_cmbdust,
             )
             if use_precalc:
                 self.Dmat_obs = Dmat_obs
@@ -5033,7 +5078,9 @@ class XFaster(object):
         if cls_model is None:
             # TO DO: if dust, Eq 8 paper: model = dust + cmb 
             cls_model = self.get_model_spectra(
-                qb, cbl, delta=True, cls_noise=cls_noise, cond_noise=cond_noise
+                qb, cbl, delta=True, cls_noise=cls_noise, cond_noise=cond_noise,
+                transfer_dust=transfer_dust, 
+                transfer_cmbdust=transfer_cmbdust,
             )
 
         mkeys = list(cls_model)
@@ -5092,7 +5139,9 @@ class XFaster(object):
         cond_iter = 0
         while not well_cond:
             cls_model = self.get_model_spectra(
-                qb, cbl, delta=True, cls_noise=cls_noise, cond_noise=cond_noise
+                qb, cbl, delta=True, cls_noise=cls_noise, cond_noise=cond_noise,
+                transfer_dust=transfer_dust, 
+                transfer_cmbdust=transfer_cmbdust,
             )
 
             for xname, (m0, m1) in self.map_pairs.items():
@@ -5483,6 +5532,8 @@ class XFaster(object):
                 delta_beta_prior=delta_beta_prior,
                 cond_criteria=cond_criteria,
                 null_first_cmb=null_first_cmb,
+                transfer_dust=transfer_dust, 
+                transfer_cmbdust=transfer_cmbdust,
             )
 
             qb_arr = pt.dict_to_arr(qb, flatten=True)
@@ -6065,7 +6116,10 @@ class XFaster(object):
                 qb_transfer[stag][m0] = qbdat  
 
         if success:
-            self.transfer = expand_transfer(self.qb_transfer, self.bin_def)
+            if dust: 
+                self.transfer_dust = expand_transfer(self.qb_transfer, self.bin_def)
+            else: 
+                self.transfer = expand_transfer(self.qb_transfer, self.bin_def)
         else:
             self.transfer = None
 

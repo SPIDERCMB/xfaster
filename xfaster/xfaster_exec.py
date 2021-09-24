@@ -100,6 +100,7 @@ def xfaster_run(
     signal_spec=None,
     signal_transfer_spec=None,
     signal_transfer_spec_dust=None, 
+    separate_dust_Fl=False,
     model_r=None,
     ref_freq=359.7,
     beta_ref=1.54,
@@ -695,7 +696,7 @@ def xfaster_run(
     X.log("Computing beam window functions...", "notice")
     X.get_beams(pixwin=pixwin)
 
-    # todo: load template_alpha in get_signal_shape
+    # TODO: load template_alpha in get_signal_shape
     template_alpha90 = template_alpha["90"]
     template_alpha150 = template_alpha["150a"]
 
@@ -704,7 +705,7 @@ def xfaster_run(
     X.get_signal_shape( 
         #filename=signal_transfer_spec, transfer=True, 
         filename=[signal_transfer_spec, signal_transfer_spec_dust],
-        tbeb=False,
+        #tbeb=False,
         transfer=True,
         transfer_dust=signal_transfer_type_dust is not None,
         template_alpha90=template_alpha90,
@@ -715,25 +716,40 @@ def xfaster_run(
     #X.get_transfer(
     #    fix_bb_transfer=fix_bb_transfer, 
     #    **transfer_opts)
+    dust = False
+    cmbdust = False
     if (signal_transfer_spec_dust is not None):
-        if separate_dust_transfer_function:
+        if separate_dust_Fl:
+            dust = True
+            X.log("Computing transfer functions for CMB...", "task")
+            X.get_transfer(
+                fix_bb_transfer=fix_bb_transfer, 
+                **transfer_opts,
+                )
             X.log("Computing transfer functions for Dust...", "task")
             X.get_transfer(
                 fix_bb_transfer=fix_bb_transfer, 
-                dust=True, 
-                **transfer_opts)
+                dust=dust, 
+                template_alpha90=template_alpha90,
+                template_alpha150=template_alpha150,
+                **transfer_opts,
+                )
         else:
+            cmbdust=True
             X.log("Computing transfer functions for Dust+CMB...", "task")
             X.get_transfer(
-                cmbdust=True,
+                cmbdust=cmbdust,
                 fix_bb_transfer=fix_bb_transfer,
                 template_alpha90=template_alpha90,
                 template_alpha150=template_alpha150,
                 **transfer_opts,
-            )
+                )
     else:
-        X.log("Computing same transfer function for dust and CMB...", "task")
-        X.get_transfer(**transfer_opts)
+        X.log("Computing transfer function...", "task")
+        X.get_transfer(
+            fix_bb_transfer=fix_bb_transfer, 
+            **transfer_opts
+            )
 
     X.log("Computing sim ensemble averages...", "notice")
     X.get_masked_sims(qb_file=qb_file_sim)
@@ -757,7 +773,9 @@ def xfaster_run(
 
     if multi_map:
         X.log("Computing multi-map bandpowers...", "notice")
-        qb, inv_fish = X.get_bandpowers(return_qb=True, **bandpwr_opts)
+        qb, inv_fish = X.get_bandpowers(return_qb=True, 
+            dust=dust, cmbdust=cmbdust,
+            **bandpwr_opts)
 
         if likelihood:
             X.log("Computing multi-map likelihood...", "notice")
