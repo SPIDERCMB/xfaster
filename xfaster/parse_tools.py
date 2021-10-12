@@ -299,6 +299,9 @@ def load_and_parse(filename, check_version=True):
             data.pop("raw_root")
             data.pop("raw_files")
 
+        # In version 1, these parameters referred to ensembles used for
+        # sim_index runs.  In version 2+, these parameters refer to ensembles
+        # used for the foreground component of the covariance model
         if "foreground_type" in data:
             data["foreground_type_sim"] = data.pop("foreground_type")
         if "foreground_root" in data:
@@ -390,6 +393,22 @@ def load_and_parse(filename, check_version=True):
 
         if "fix_bb_xfer" in data:
             data["fix_bb_transfer"] = data.pop("fix_bb_xfer")
+
+    if version >= 1:
+
+        if "ref_freq" in data:
+            data["freq_ref"] = data.pop("ref_freq")
+
+        if "foreground_type_sim" in data and "foreground_type" not in data:
+            for k in ["type", "root", "files", "root2", "files2"]:
+                data["foreground_" + k] = None
+                data["foreground_transfer_" + k] = None
+            data["num_foreground"] = 0
+            data["num_foreground_transfer"] = 0
+            data["foreground_subset"] = "*"
+
+        if "cls_sim" in data and "cls_fg" not in data:
+            data["cls_fg"] = None
 
         # update data version in memory
         data["data_version"] = version = dv
@@ -655,13 +674,14 @@ def dict_to_dsdqb_mat(dsdqb_dict, bin_def):
         in the Fisher iteration.
     """
     # get the unique map tags in order from the keys map1:map2
-    mtags = [x.split(":")[0] for x in dsdqb_dict["cmb"]]
+    mkeys = list(list(dsdqb_dict.values())[0].keys())
+    mtags = [x.split(":")[0] for x in mkeys]
     _, uind = np.unique(mtags, return_index=True)
     map_tags = np.asarray(mtags)[sorted(uind)]
     map_pairs = tag_pairs(map_tags, index=True)
 
     nmaps = len(map_tags)
-    pol_dim = 3 if "cmb_ee" in bin_def else 1
+    pol_dim = 3 if any(["ee" in x.split("_")[1] for x in bin_def]) else 1
 
     inds = spec_index()
     bin_index = dict_to_index(bin_def)
