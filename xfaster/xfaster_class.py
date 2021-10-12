@@ -116,6 +116,7 @@ class XFaster(object):
         "sims_transfer",
         "shape_transfer",
         "transfer",
+        "transfer_matrix",
         "sims",
         "beams",
         "data",
@@ -4052,7 +4053,7 @@ class XFaster(object):
                                 cl1 = cls_shape["cmb_{}".format(spec2)][lk]
 
                             xfermat = self.transfer_matrix[xname][spec][spec2][lk, lk]
-
+                            print(xfermat.shape, cl1.shape)
                             # matrix multiplication over l', loop sum over Y
                             s_arr[xi] += np.einsum("ij,j->i", xfermat, cl1)
                     else:
@@ -5867,13 +5868,21 @@ class XFaster(object):
                 dsi = dx.setdefault(spec_out, OrderedDict())
 
                 for spec_in in self.specs:
-                    fname = os.path.join(
-                        file_root,
-                        "{}x{}_{}_to_{}_block.dat".format(
-                            tag1, tag2, spec_in, spec_out
-                        ),
-                    )
-                    dsi[spec_out] = np.loadtxt(fname)[lk, lk]
+                    if spec_in[0]==spec_in[1] and spec_in==spec_out:
+                        fname = os.path.join(
+                            file_root,
+                            "{}x{}_{}_to_{}_block.dat".format(
+                                tag1, tag2, spec_in.upper(), spec_out.upper()
+                            ),
+                        )
+                        if not os.path.isfile(fname):
+                            fname = os.path.join(
+                                file_root,
+                                "{}x{}_{}_to_{}_block.dat".format(
+                                    tag2, tag1, spec_in.upper(), spec_out.upper()
+                                ),
+                            )   
+                        dsi[spec_out] = np.loadtxt(fname)[lk, lk]
 
         self.transfer_file_root = file_root
         self.transfer_matrix = transfer_matrix
