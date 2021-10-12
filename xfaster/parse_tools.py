@@ -362,7 +362,7 @@ def load_and_parse(filename, check_version=True):
             cbl = data["cbl"]
             for k in list(cbl):
                 if k.startswith("res0") or k.startswith("res1"):
-                    knew = "res_{}".format(k.split("_")[1], k[3])
+                    knew = "res_{}{}".format(k.split("_")[1], k[3])
                     cbl[knew] = cbl.pop(k)
 
         if "cls_tnoise_hm1" in data:
