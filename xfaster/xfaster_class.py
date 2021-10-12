@@ -1660,7 +1660,7 @@ class XFaster(object):
                     except:
                         pass
 
-                    if not vref == "undef" and np.any(v != vref):
+                    if str(vref) != "undef" and np.any(v != vref):
                         self.warn(
                             "{}: Field {} has value {}, expected {}".format(
                                 errmsg, k, v, vref
