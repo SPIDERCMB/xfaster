@@ -1207,12 +1207,10 @@ class XFaster(object):
 
             # fix data root
             if data_root != ret["data_root"]:
-                update = True
                 old_data_root = ret["data_root"]
                 ret["data_root"] = data_root
             if null_run:
                 if data_root2 != ret["data_root2"]:
-                    update = True
                     old_data_root2 = ret["data_root2"]
                     ret["data_root2"] = data_root2
 
