@@ -1926,7 +1926,7 @@ class XFaster(object):
                     bd = gdata["bin_def"]["cmb_{}".format(k)]
                     if len(bd0) < len(bd):
                         bd = bd[: len(bd0)]
-                        gcorr[k] = g[: len(bd)]
+                        gcorr[k] = g[: len(bd)]                    
                     if not np.all(bd0 == bd):
                         self.warn(
                             "G correction for map {} has incompatible bin def".format(
@@ -4045,6 +4045,7 @@ class XFaster(object):
 
                     if hasattr(self, "transfer_matrix"):
                         # construct modified shape spectrum C^X_l = sum_{l',Y} J^XY_ll' * C^Y_l'
+                        print("\nbin_cl_template: ", specs)
                         for spec2 in specs:
                             # use correct shape spectrum
                             if comp == "fg":
@@ -5860,29 +5861,66 @@ class XFaster(object):
 
         lk = slice(0, self.lmax + 1)
 
+        def load_matrix(spec_in_in, spec_out_in):
+            # there exist tag 90x150a but not 150ax90
+            # TODO: better way to make this isensitive to upper/lower case
+            fname = os.path.join(
+                file_root,
+                "{}x{}_{}_to_{}_block.dat".format(
+                    tag1, tag2, spec_in_in.upper(), spec_out_in.upper()
+                ),
+            )
+            if os.path.isfile(fname):
+                return np.loadtxt(fname)
+            else:
+                fname = os.path.join(
+                    file_root,
+                    "{}x{}_{}_to_{}_block.dat".format(
+                        tag2, tag1, spec_in_in.upper(), spec_out_in.upper()
+                    ),
+                )
+                if os.path.isfile(fname):
+                    return np.loadtxt(fname)
+                else:
+                    return None
+                
+        def get_cross_matrix(cross_spec):
+            s1, s2 = cross_spec
+            s1 = s1 * 2
+            s2 = s2 * 2
+            return np.sqrt(np.abs(np.multiply(load_matrix(s1, s1), 
+                                                load_matrix(s2, s2))))
+
         transfer_matrix = OrderedDict()
         for xname, (tag1, tag2) in self.map_pairs.items():
             dx = transfer_matrix.setdefault(xname, OrderedDict())
-
+            
+            #print("\nget transfer matrix: ", self.specs)
             for spec_out in self.specs:
                 dsi = dx.setdefault(spec_out, OrderedDict())
 
                 for spec_in in self.specs:
-                    if spec_in[0]==spec_in[1] and spec_in==spec_out:
-                        fname = os.path.join(
-                            file_root,
-                            "{}x{}_{}_to_{}_block.dat".format(
-                                tag1, tag2, spec_in.upper(), spec_out.upper()
-                            ),
-                        )
-                        if not os.path.isfile(fname):
-                            fname = os.path.join(
-                                file_root,
-                                "{}x{}_{}_to_{}_block.dat".format(
-                                    tag2, tag1, spec_in.upper(), spec_out.upper()
-                                ),
-                            )   
-                        dsi[spec_out] = np.loadtxt(fname)[lk, lk]
+                    #print("\nspecs: ", xname, tag1, tag2, spec_out, spec_in)
+                    # case auto1- => auto2- and 
+                    # auto1- => auto1- 
+                    tmp = load_matrix(spec_in, spec_out)
+                    if tmp is None:
+                        # cross- => auto- and 
+                        # auto1- => auto2- whose files dont exist
+                        # TODO: this is floppy. fix this. 
+                        matrix_shape = dx[self.specs[0]][self.specs[0]].shape
+                        if spec_out[0]==spec_out[1]:
+                            tmp = np.zeros(matrix_shape)
+                        else:
+                            # cross1- => cross1-
+                            tmp =  get_cross_matrix(spec_out)
+                            # auto- => cross- and 
+                            # cross1- => cross2-
+                            if spec_in != spec_out:
+                                tmp = np.zeros(matrix_shape)
+                        
+                    dsi[spec_in] = tmp[lk, lk]
+                    del tmp
 
         self.transfer_file_root = file_root
         self.transfer_matrix = transfer_matrix
