@@ -5462,7 +5462,7 @@ class XFaster(object):
 
         if not transfer_run:
             out.update(
-                qb_transfer=self.qb_transfer,
+                #qb_transfer=self.qb_transfer,
                 transfer=self.transfer,
             )
             if self.template_cleaned:
