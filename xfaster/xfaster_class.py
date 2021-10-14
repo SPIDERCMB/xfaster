@@ -921,16 +921,17 @@ class XFaster(object):
 
             def find_sim_files(name, root=None):
                 for suff in ["", "2"] if null_run else [""]:
-                    fs.update(
-                        self._get_sim_files(
-                            name,
-                            root,
-                            suffix="_sim" + suff,
-                            data_suffix=suff,
-                            match_count=False,
-                            fs=fs,
-                        )
+                    fs_temp = self._get_sim_files(
+                        name,
+                        root,
+                        suffix="_sim" + suff,
+                        data_suffix=suff,
+                        match_count=False,
+                        fs=fs,
                     )
+                    for k, v in fs_temp.items():
+                        setattr(self, k, v)
+                    fs.update(**fs_temp)
 
             if str(signal_type_sim) == "r":
                 find_sim_files("signal", "signal_r0")
@@ -5900,6 +5901,7 @@ class XFaster(object):
                 dsi = dx.setdefault(spec_out, OrderedDict())
 
                 for spec_in in self.specs:
+<<<<<<< HEAD
                     #print("\nspecs: ", xname, tag1, tag2, spec_out, spec_in)
                     # case auto1- => auto2- and 
                     # auto1- => auto1- 
@@ -5921,6 +5923,15 @@ class XFaster(object):
                         
                     dsi[spec_in] = tmp[lk, lk]
                     del tmp
+=======
+                    fname = os.path.join(
+                        file_root,
+                        "{}x{}_{}_to_{}_block.dat".format(
+                            tag1, tag2, spec_in, spec_out
+                        ),
+                    )
+                    dsi[spec_in] = np.loadtxt(fname)[lk, lk]
+>>>>>>> 2739e163a6c0571b11971cd319f36c88f2adeab9
 
         self.transfer_file_root = file_root
         self.transfer_matrix = transfer_matrix
