@@ -4046,7 +4046,6 @@ class XFaster(object):
 
                     if hasattr(self, "transfer_matrix"):
                         # construct modified shape spectrum C^X_l = sum_{l',Y} J^XY_ll' * C^Y_l'
-                        print("\nbin_cl_template: ", specs)
                         for spec2 in specs:
                             # use correct shape spectrum
                             if comp == "fg":
@@ -5462,10 +5461,10 @@ class XFaster(object):
             )
 
         if not transfer_run:
-            out.update(
-                #qb_transfer=self.qb_transfer,
-                transfer=self.transfer,
-            )
+        #    out.update(
+        #        qb_transfer=self.qb_transfer,
+        #        transfer=self.transfer,
+        #    )
             if self.template_cleaned:
                 out.update(template_alpha=self.template_alpha)
 
@@ -5901,7 +5900,6 @@ class XFaster(object):
                 dsi = dx.setdefault(spec_out, OrderedDict())
 
                 for spec_in in self.specs:
-<<<<<<< HEAD
                     #print("\nspecs: ", xname, tag1, tag2, spec_out, spec_in)
                     # case auto1- => auto2- and 
                     # auto1- => auto1- 
@@ -5923,15 +5921,6 @@ class XFaster(object):
                         
                     dsi[spec_in] = tmp[lk, lk]
                     del tmp
-=======
-                    fname = os.path.join(
-                        file_root,
-                        "{}x{}_{}_to_{}_block.dat".format(
-                            tag1, tag2, spec_in, spec_out
-                        ),
-                    )
-                    dsi[spec_in] = np.loadtxt(fname)[lk, lk]
->>>>>>> 2739e163a6c0571b11971cd319f36c88f2adeab9
 
         self.transfer_file_root = file_root
         self.transfer_matrix = transfer_matrix
