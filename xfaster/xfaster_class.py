@@ -1925,6 +1925,8 @@ class XFaster(object):
                     # check bins match g
                     bd0 = self.bin_def["cmb_{}".format(k)]
                     bd = gdata["bin_def"]["cmb_{}".format(k)]
+                    print('bd0:', bd0)
+                    print('bd: ', bd)
                     if len(bd0) < len(bd):
                         bd = bd[: len(bd0)]
                         gcorr[k] = g[: len(bd)]
@@ -5902,7 +5904,7 @@ class XFaster(object):
 
                     # populate matrix up to lmax
                     dsi[spec_in] = np.zeros((self.lmax + 1, self.lmax + 1))
-                    nx, ny = min([s, self.lmax + 1]) for s in mat.shape
+                    nx, ny = [min([s, self.lmax + 1]) for s in mat.shape]
                     dsi[spec_in][:nx, :ny] = mat[:nx, :ny]
                     del mat
 
