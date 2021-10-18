@@ -3803,7 +3803,8 @@ class XFaster(object):
     def kernel_precalc(self, map_tag=None, transfer_run=False):
         """
         Compute the mixing kernels M_ll' = K_ll' * F_l' * B_l'^2.  Called by
-        ``bin_cl_template`` to pre-compute kernel terms.
+        ``bin_cl_template`` to pre-compute kernel terms.  Constructs M_ll'
+        directly from the ``transfer_matrix`` attribute, if present.
 
         Arguments
         ---------
@@ -3840,6 +3841,10 @@ class XFaster(object):
         mll = OrderedDict()
 
         use_transfer_matrix = hasattr(self, "transfer_matrix")
+        if use_transfer_matrix and transfer_run:
+            raise ValueError(
+                "Transfer matrix cannot be used to compute transfer functions."
+            )
 
         for spec in specs:
             mll[spec] = OrderedDict()
@@ -3847,19 +3852,26 @@ class XFaster(object):
                 mspec = "{}_mix".format(spec)
                 mll[mspec] = OrderedDict()
 
-            # assume that beam and filtering transfer effects are included in
-            # the transfer matrix
             if not use_transfer_matrix:
                 bw = self.beam_windows[spec]
                 tf = self.transfer[spec]
 
             for xname, (m0, m1) in map_pairs.items():
-                if not use_transfer_matrix:
-                    # beams
-                    fb2 = bw[m0][lk] * bw[m1][lk]
-                    # transfer function
-                    if not transfer_run:
-                        fb2 *= np.sqrt(tf[m0][lk] * tf[m1][lk])
+                # extract transfer matrix terms
+                if use_transfer_matrix:
+                    tm = self.transfer_matrix[xname][spec]
+                    mll[spec][xname] = tm[spec][:, lk]
+                    if spec in ["ee", "bb"]:
+                        spec2 = "bb" if spec == "ee" else "ee"
+                        mll[mspec][xname] = tm[spec2][:, lk]
+                    continue
+
+                # beams
+                fb2 = bw[m0][lk] * bw[m1][lk]
+
+                # transfer function
+                if not transfer_run:
+                    fb2 *= np.sqrt(tf[m0][lk] * tf[m1][lk])
 
                 # kernels
                 if spec == "tt":
@@ -3873,9 +3885,9 @@ class XFaster(object):
                     k = self.pkern[xname][:, lk] - self.mkern[xname][:, lk]
 
                 # store final product
-                mll[spec][xname] = k if use_transfer_matrix else k * fb2
+                mll[spec][xname] = k * fb2
                 if spec in ["ee", "bb"]:
-                    mll[mspec][xname] = mk if use_transfer_matrix else mk * fb2
+                    mll[mspec][xname] = mk * fb2
 
         return mll
 
@@ -4044,26 +4056,12 @@ class XFaster(object):
 
                         continue
 
-                    if hasattr(self, "transfer_matrix"):
-                        xfermat = self.transfer_matrix[xname].get(spec, {})
-
-                        # construct modified shape spectrum C^X_l = sum_{l',Y} J^XY_ll' * C^Y_l'
-                        for spec2 in set(specs) & set(xfermat):
-                            # use correct shape spectrum
-                            if comp == "fg":
-                                cl1 = cls_shape["fg"][lk]
-                            else:
-                                cl1 = cls_shape["cmb_{}".format(spec2)][lk]
-
-                            # matrix multiplication over l', loop sum over Y
-                            s_arr[xi] += np.einsum("ij,j->i", xfermat[spec2][lk, lk], cl1)
+                    # use correct shape spectrum
+                    if comp == "fg":
+                        # single foreground spectrum
+                        s_arr[xi] = cls_shape["fg"][lk]
                     else:
-                        # use correct shape spectrum
-                        if comp == "fg":
-                            # single foreground spectrum
-                            s_arr[xi] = cls_shape["fg"][lk]
-                        else:
-                            s_arr[xi] = cls_shape["cmb_{}".format(spec)][lk]
+                        s_arr[xi] = cls_shape["cmb_{}".format(spec)][lk]
 
                     # use correct beam error shape
                     if beam_error:
@@ -5814,7 +5812,7 @@ class XFaster(object):
         Read in an ell-by-ell transfer matrix, constructed from ratios of
         `anafast` spectra using an ensemble of simulations.  This matrix should
         be used in place of the standard XFaster transfer function calculation,
-        and includes both filtering and beam effects.
+        and includes masking, filtering and beam effects.
 
         Arguments
         ---------
@@ -5835,19 +5833,15 @@ class XFaster(object):
         -----
         This function is called at the ``transfer_matrix`` checkpoint, and is
         meant to be an alternative to the standard ``transfer`` sequence.
-
-        This option uses a significant amount of RAM, especially for large
-        numbers of map crosses, since the entire matrix is stored in memory
-        for efficient computation.
         """
 
         tm_shape = (
-            self.num_corr * (self.num_spec ** 2) * (self.lmax + 1),
+            self.num_corr * (self.num_spec + 2) * (self.lmax + 1),
             self.lmax + 1,
         )
 
         save_name = "transfer_matrix"
-        save_attrs = ["transfer_file_root", "transfer_matrix"]
+        save_attrs = ["transfer_matrix_root", "transfer_matrix"]
         ret = self.load_data(
             save_name,
             "transfer_matrix",
@@ -5864,15 +5858,17 @@ class XFaster(object):
         for xname, (tag1, tag2) in self.map_pairs.items():
             dx = transfer_matrix.setdefault(xname, OrderedDict())
 
-            ftag = None
-            for t in ["{}x{}".format(tag1, tag2), "{}x{}".format(tag2, tag1)]:
-                fname = os.path.join(file_root, "{}_*_to_*_block.dat".format(t))
-                if len(glob.glob(fname)):
-                    ftag = t
-                    break
+            if tag1 == tag2:
+                ftag = "{}x{}".format(tag1, tag2)
             else:
-                self.warn("Missing transfer matrix for {}".format(xname))
-                continue
+                for t in ["{}x{}".format(tag1, tag2), "{}x{}".format(tag2, tag1)]:
+                    fname = os.path.join(file_root, "{}_*_to_*_block.dat".format(t))
+                    if len(glob.glob(fname)):
+                        ftag = t
+                        break
+                else:
+                    self.warn("Missing transfer matrix for {}".format(xname))
+                    continue
 
             # file name format string
             fname = os.path.join(file_root, "{}_{{}}_to_{{}}_block.dat".format(ftag))
@@ -5880,33 +5876,27 @@ class XFaster(object):
             for spec_out in self.specs:
                 dsi = dx.setdefault(spec_out, OrderedDict())
 
-                for spec_in in self.specs:
-                    if spec_in in ["tt", "ee", "bb"] and spec_out in ["tt", "ee", "bb"]:
+                specs_in = ["ee", "bb"] if spec_out in ["ee", "bb"] else [spec_out]
+                for spec_in in specs_in:
+                    if spec_out in ["tt", "ee", "bb"]:
                         # auto- => auto-
                         fname1 = fname.format(spec_in.upper(), spec_out.upper())
-                        if not os.path.exists(fname1):
-                            # some are not computed
-                            continue
                         mat = np.loadtxt(fname1)
+                        # transpose for input axis on second dimension ?
+                        # mat = mat.T
 
-                    elif spec_in == spec_out:
-                        # cross1- => cross1-
-                        s1, s2 = spec_in.upper()
-                        mat = np.loadtxt(fname.format(s1 * 2, s1 * 2))
-                        mat *= np.loadtxt(fname.format(s2 * 2, s2 * 2))
-                        mat = np.sqrt(np.abs(mat))
+                        # populate matrix up to lmax
+                        dsi[spec_in] = np.zeros((self.lmax + 1, self.lmax + 1))
+                        nx, ny = [min([s, self.lmax + 1]) for s in mat.shape]
+                        dsi[spec_in][:nx, :ny] = mat[:nx, :ny]
+                        del mat
 
                     else:
-                        # cross- => auto-
-                        continue
+                        # cross1- => cross1-
+                        s1, s2 = [s + s for s in spec_in]
+                        dsi[spec_in] = np.sqrt(np.abs(dx[s1][s1] * dx[s2][s2]))
 
-                    # populate matrix up to lmax
-                    dsi[spec_in] = np.zeros((self.lmax + 1, self.lmax + 1))
-                    nx, ny = [min([s, self.lmax + 1]) for s in mat.shape]
-                    dsi[spec_in][:nx, :ny] = mat[:nx, :ny]
-                    del mat
-
-        self.transfer_file_root = file_root
+        self.transfer_matrix_root = file_root
         self.transfer_matrix = transfer_matrix
 
         self.save_data(save_name, from_attrs=save_attrs)

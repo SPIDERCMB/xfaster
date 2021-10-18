@@ -666,17 +666,17 @@ def xfaster_run(
         apply_gcorr=apply_gcorr, reload_gcorr=reload_gcorr, gcorr_file=gcorr_file
     )
 
-    X.log("Computing kernels...", "notice")
-    X.get_kernels(window_lmax=window_lmax)
-
-    X.log("Computing beam window functions...", "notice")
-    X.get_beams(pixwin=pixwin)
-
     if transfer_matrix_root:
         X.log("Loading pre-computed transfer matrix...", "notice")
         X.get_transfer_matrix(file_root=transfer_matrix_root)
 
     else:
+        X.log("Computing kernels...", "notice")
+        X.get_kernels(window_lmax=window_lmax)
+
+        X.log("Computing beam window functions...", "notice")
+        X.get_beams(pixwin=pixwin)
+
         X.log("Computing sim ensemble averages for transfer function...", "notice")
         # Do all the sims at once to also get the S+N sim ensemble average
         do_noise = signal_transfer_type in [signal_type, None]
