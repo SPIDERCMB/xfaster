@@ -1,5 +1,6 @@
 import numpy as np
 import xfaster as xf
+import os
 
 kerns = xf.load_and_parse("outputs_example/95x150/kernels_95x150.npz")
 beams = xf.load_and_parse("outputs_example/95x150/beams_95x150.npz")
@@ -8,6 +9,8 @@ tf.shape
 lmax = 500
 lk = slice(0, lmax + 1)
 bw = beams["beam_windows"]
+
+os.makedirs("transfer_matrix")
 
 for xname in kerns["kern"].keys():
     tag1, tag2 = xname.split(":")
