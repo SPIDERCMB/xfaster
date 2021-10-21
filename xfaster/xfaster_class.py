@@ -3852,7 +3852,7 @@ class XFaster(object):
                 mspec = "{}_mix".format(spec)
                 mll[mspec] = OrderedDict()
 
-            if not use_transfer_matrix:
+            if not use_transfer_matrix and not transfer_run: 
                 bw = self.beam_windows[spec]
                 tf = self.transfer[spec]
 
