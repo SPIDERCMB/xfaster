@@ -3852,9 +3852,10 @@ class XFaster(object):
                 mspec = "{}_mix".format(spec)
                 mll[mspec] = OrderedDict()
 
-            if not use_transfer_matrix and not transfer_run: 
+            if not use_transfer_matrix: 
                 bw = self.beam_windows[spec]
-                tf = self.transfer[spec]
+                if not transfer_run:
+                    tf = self.transfer[spec]
 
             for xname, (m0, m1) in map_pairs.items():
                 # extract transfer matrix terms
