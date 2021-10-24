@@ -924,11 +924,11 @@ class XFaster(object):
             files = np.asarray(files)
             if nfiles is None:
                 nfiles = len(files)
-
-            if nfiles.shape[-1] != nfiles:
+            print('here', nfiles, files.shape[-1])
+            if files.shape[-1] != nfiles:
                 raise OSError(
                     "Wrong number of {} files. Found {} files, expected {}.".format(
-                        name, nfiles.shape[-1], nfiles
+                        name, files.shape[-1], nfiles
                     )
                 )
 
