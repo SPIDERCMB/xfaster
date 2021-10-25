@@ -5884,7 +5884,7 @@ class XFaster(object):
                         fname1 = fname.format(spec_in.upper(), spec_out.upper())
                         mat = np.loadtxt(fname1)
                         # transpose for input axis on second dimension. 
-                        mat = mat.T
+                        #mat = mat.T
 
                         # populate matrix up to lmax
                         dsi[spec_in] = np.zeros((self.lmax + 1, self.lmax + 1))
