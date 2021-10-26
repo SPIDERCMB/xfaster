@@ -5621,6 +5621,8 @@ class XFaster(object):
         iter_max=200,
         save_iters=False,
         fix_bb_transfer=False,
+        ref_freq=359.7,
+        beta_ref=.154,
     ):
         """
         Compute the transfer function from signal simulations created using
@@ -5719,6 +5721,15 @@ class XFaster(object):
             else:
                 self.transfer = expand_transfer(ret["qb_transfer"], ret["bin_def"])
             return self.transfer
+        
+        # foreground fitting, required in fisher_iterate: 
+        # TODO: JUST TO PASS CODE ERROR; REPEATED IN GET_GETBANDPOWER, CLEAN UP
+        if "fg_tt" in self.bin_def:
+            # reference frequency and spectral index
+            self.ref_freq = ref_freq
+            self.beta_ref = beta_ref
+            # priors on frequency spectral index
+            self.delta_beta_fix = 1.0e-8
 
         self.qb_transfer = OrderedDict()
         for spec in self.specs:
@@ -6011,11 +6022,11 @@ class XFaster(object):
 
         # foreground fitting
         if "fg_tt" in self.bin_def:
-            # reference frequency and spectral index
-            self.ref_freq = ref_freq
-            self.beta_ref = beta_ref
+            # reference frequency and spectral index, move to get_transfer
+            #self.ref_freq = ref_freq
+            #self.beta_ref = beta_ref
             # priors on frequency spectral index
-            self.delta_beta_fix = 1.0e-8
+            #self.delta_beta_fix = 1.0e-8
             opts.update(
                 delta_beta_prior=delta_beta_prior,
                 ref_freq=self.ref_freq,
