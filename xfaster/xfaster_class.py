@@ -3514,10 +3514,11 @@ class XFaster(object):
         r : float
             If supplied and ``flat`` is False, a spectrum is computed using
             CAMB for the given ``r`` value.  Overrides ``filename``.
-        component : 'scalar', 'tensor', 'fg'
+        component : 'scalar', 'tensor', 'cmb', 'fg'
             If 'scalar', and ``r`` is not None, return just the r=0 scalar terms
             in the signal model.  If 'tensor', return just the tensor component
-            scaled by the input ``r`` value. If 'fg', return just fg terms
+            scaled by the input ``r`` value. If 'cmb' or 'fg', return just those
+            signal terms.
         flat : float
             If given, a spectrum that is flat in ell^2 Cl is returned, with
             amplitude given by the supplied value. Overrides all other options.
@@ -3558,12 +3559,10 @@ class XFaster(object):
 
         specs = list(self.specs)
 
-        comps = []
-        if "cmb_tt" in self.bin_def or "cmb_ee" in self.bin_def:
-            comps += ["cmb"]
-        if not self.null_run and "fg_tt" in self.bin_def:
-            comps += ["fg"]
-        if component in ["cmb", "fg"]:
+        comps = list(self.signal_components)
+        if self.null_run:
+            comps.remove("fg")
+        if component in self.signal_components:
             comps = [component]
 
         if transfer:
@@ -3977,6 +3976,9 @@ class XFaster(object):
         if self.pol and bin_width[1] != bin_width[2]:
             raise ValueError(bwerr)
 
+        comps = []
+        signal_comps = []
+
         # Define bins
         nbins_cmb = 0
         bin_def = OrderedDict()
@@ -3985,6 +3987,8 @@ class XFaster(object):
             bins = np.append(bins, self.lmax + 1)
             bin_def["cmb_{}".format(spec)] = np.column_stack((bins[:-1], bins[1:]))
             nbins_cmb += len(bins) - 1
+        comps += ["cmb"]
+        signal_comps += ["cmb"]
         self.log("Added {} CMB bins to bin_def".format(nbins_cmb), "debug")
 
         # Do the same for foreground bins
@@ -4004,6 +4008,8 @@ class XFaster(object):
                 nbins_fg += len(bins) - 1
             if beta_fit:
                 bin_def["delta_beta"] = np.array([[0, 0]])
+            comps += ["fg"]
+            signal_comps += ["fg"]
             self.log(
                 "Added {} foreground bins to bin_def".format(nbins_fg + int(beta_fit)),
                 "debug",
@@ -4035,6 +4041,7 @@ class XFaster(object):
                     bin_def[btag] = np.column_stack((bins[:-1], bins[1:]))
                     nbins_res += len(bins) - 1
 
+            comps += ["res"]
             self.log("Added {} residual bins to bin_def".format(nbins_res), "debug")
 
         ell = np.arange(self.lmax + 1)
@@ -4058,6 +4065,8 @@ class XFaster(object):
         self.specs = specs
         self.weighted_bins = weighted_bins
         self.bin_weights = bin_weights
+        self.components = comps
+        self.signal_components = signal_comps
 
         return self.bin_def
 
@@ -4072,7 +4081,7 @@ class XFaster(object):
             If supplied, the kernels are computed only for the given map tag
             (or cross if map_tag is map_tag1:map_tag2).
             Otherwise, it is computed for all maps and crosses.
-        component : str
+        component : str or list
             If supplied, the matrix is computed only for the given component(s).
             Required if ``transfer=True``.
         transfer : bool
@@ -4103,17 +4112,20 @@ class XFaster(object):
         lk = slice(0, lmax + 1)
         mll = OrderedDict()
 
-        all_comps = ["cmb", "fg"]
         if component is None:
-            component = all_comps
-        elif component not in all_comps:
-            raise ValueError(
-                "Invalid component, must be one of {}".format(", ".join(all_comps))
-            )
+            component = list(self.signal_components)
+        if not isinstance(component, list):
+            if component not in self.signal_components:
+                raise ValueError(
+                    "Invalid component {}, must be one of {}".format(
+                        component, ", ".join(self.signal_components)
+                    )
+                )
+            component = [component]
 
         for stag in self.bin_def:
             comp, spec = stag.split("_", 1)
-            if comp not in ["cmb", "fg"]:
+            if comp not in self.signal_components:
                 continue
 
             if transfer and comp not in component:
@@ -4178,7 +4190,7 @@ class XFaster(object):
             If supplied, the Cbl is computed only for the given map tag
             (or cross if map_tag is map_tag1:map_tag2).
             Otherwise, it is computed for all maps and crosses.
-        component : str
+        component : str or list
             If supplied, the Cbl is computed only for the given component(s).
             Required if ``transfer=True``.
         transfer : bool
@@ -4221,10 +4233,9 @@ class XFaster(object):
 
         specs = list(self.specs)
         if transfer:
-            assert component in [
-                "cmb",
-                "fg",
-            ], "Argument `component` required if `transfer=True`"
+            assert (
+                component in self.signal_components
+            ), "Argument `component` required if `transfer=True`"
             if "eb" in specs:
                 specs.remove("eb")
             if "tb" in specs:
@@ -4256,11 +4267,10 @@ class XFaster(object):
         if component:
             comps = component if isinstance(component, list) else [component]
         else:
-            if "cmb_tt" in cls_shape or "cmb_ee" in cls_shape:
-                comps += ["cmb"]
-            if "fg_tt" in cls_shape or "fg_ee" in cls_shape:
-                comps += ["fg"]
-            if self.nbins_res > 0:
+            for comp in self.signal_components:
+                if any([k.startswith(comp + "_") for k in cls_shape]):
+                    comps += [comp]
+            if "res" in self.components:
                 comps += ["res"]
                 cls_noise = self.cls_noise_null if self.null_run else self.cls_noise
                 cls_res = self.cls_res_null if self.null_run else self.cls_res
@@ -4430,19 +4440,15 @@ class XFaster(object):
         """
         comps = []
 
-        if any([k.startswith("cmb_") for k in qb]):
-            comps += ["cmb"]
-        if any([k.startswith("fg_") for k in qb]):
-            comps += ["fg"]
+        for comp in self.components:
+            if any([k.startswith(comp + "_") for k in qb]):
+                comps += [comp]
 
         delta_beta = 0.0
         if "delta_beta" in qb:
             # Evaluate fg at spectral index pivot for derivative
             # in Fisher matrix, unless delta is True
             delta_beta = qb["delta_beta"][0]
-
-        if any([k.startswith("res_") for k in qb]):
-            comps += ["res"]
 
         if cls_noise is not None:
             comps += ["noise"]
@@ -4459,11 +4465,10 @@ class XFaster(object):
 
         specs = []
         for spec in self.specs:
-            if "cmb_{}".format(spec) in cbl:
-                # Don't add entries that won't be filled in later
-                cls["total_{}".format(spec)] = OrderedDict()
-            elif "fg_{}".format(spec) in cbl:
-                cls["total_{}".format(spec)] = OrderedDict()
+            for comp in self.signal_components:
+                if "{}_{}".format(comp, spec) in cbl:
+                    # Don't add entries that won't be filled in later
+                    cls["total_{}".format(spec)] = OrderedDict()
             specs.append(spec)
 
         for comp in comps:
@@ -4553,7 +4558,7 @@ class XFaster(object):
                         cl1 /= 2.0
 
                     # compute model spectra
-                    if comp in ["cmb", "fg"]:
+                    if comp in self.signal_components:
                         if xname not in cbl[stag]:
                             continue
                         cbl1 = cbl[stag][xname]
@@ -4592,10 +4597,9 @@ class XFaster(object):
                     cls.setdefault(stag, OrderedDict())[xname] = cl1
 
                     # add to total model
-                    if not isinstance(cl1, dict):
-                        ttag = "total_{}".format(spec)
-                        cls[ttag].setdefault(xname, np.zeros_like(cl1))
-                        cls[ttag][xname] += cl1
+                    ttag = "total_{}".format(spec)
+                    cls[ttag].setdefault(xname, np.zeros_like(cl1))
+                    cls[ttag][xname] += cl1
 
         return cls
 
@@ -4636,7 +4640,7 @@ class XFaster(object):
         map_pairs = pt.tag_pairs(map_tags)
 
         # select spectra
-        tbeb = "cmb_tb" in self.bin_def or "fg_tb" in self.bin_def
+        tbeb = "tb" in self.specs
         specs = list(self.specs)
         if transfer_comp or not tbeb:
             if "eb" in specs:
@@ -4858,12 +4862,12 @@ class XFaster(object):
         dim1 = pol_dim * num_maps
 
         comps = []
-        if "cmb_tt" in cbl or "cmb_ee" in cbl:
-            comps += ["cmb"]
-        if "fg_tt" in cbl:
-            comps += ["fg"]
-        if "res_tt" in cbl or "res_ee" in cbl:
-            comps += ["res"]
+        sig_comps = []
+        for comp in self.components:
+            if any([k.startswith(comp + "_") for k in cbl]):
+                comps += [comp]
+                if comp in self.signal_components:
+                    sig_comps += [comp]
 
         specs = list(cls_input)
 
@@ -4876,9 +4880,7 @@ class XFaster(object):
             if windows:
                 Dmat_obs = None
                 Mmat = OrderedDict()
-                for comp in comps:
-                    if comp not in ["cmb", "fg"]:
-                        continue
+                for comp in sig_comps:
                     for spec in specs:
                         Mmat["{}_{}".format(comp, spec)] = OrderedDict()
                 mll = getattr(self, "mll", None)
@@ -4898,9 +4900,7 @@ class XFaster(object):
             if likelihood:
                 Dmat_obs_b[xname] = OrderedDict()
             elif windows:
-                for comp in comps:
-                    if comp not in ["cmb", "fg"]:
-                        continue
+                for comp in sig_comps:
                     for spec in specs:
                         Mmat["{}_{}".format(comp, spec)][xname] = OrderedDict()
             else:
@@ -4911,9 +4911,7 @@ class XFaster(object):
                     # without bias subtraction for likelihood
                     Dmat_obs_b[xname][spec] = cls_input[spec][xname]
                 elif windows:
-                    for comp in comps:
-                        if comp not in ["cmb", "fg"]:
-                            continue
+                    for comp in sig_comps:
                         stag = "{}_{}".format(comp, spec)
                         Mmat[stag][xname][spec] = mll[stag][xname]
                         if spec in ["ee", "bb"]:
@@ -5207,9 +5205,7 @@ class XFaster(object):
             if not windows:
                 Dmat_obs = pt.dict_to_dmat(Dmat_obs)
             # select only derivative terms for bins that are iterated
-            bin_def = OrderedDict(
-                [(k, v) for k, v in self.bin_def.items() if k in qb]
-            )
+            bin_def = OrderedDict([(k, v) for k, v in self.bin_def.items() if k in qb])
             dSdqb_mat1 = pt.dict_to_dsdqb_mat(dSdqb_mat1, bin_def)
 
         # apply ell limits
@@ -5606,7 +5602,7 @@ class XFaster(object):
                     extra_tag=file_tag,
                 )
 
-                if "fg_tt" in self.bin_def:
+                if "fg" in self.components:
                     out.update(
                         map_freqs=self.map_freqs,
                         freq_ref=self.freq_ref,
@@ -5728,7 +5724,7 @@ class XFaster(object):
             weighted_bins=self.weighted_bins,
         )
 
-        if "fg_tt" in self.bin_def:
+        if "fg" in self.components:
             out.update(
                 map_freqs=self.map_freqs,
                 freq_ref=self.freq_ref,
@@ -5768,7 +5764,7 @@ class XFaster(object):
             self.log("Calculating final Fisher matrix without sample variance.", "info")
             qb_zeroed = copy.deepcopy(qb)
             qb_new_ns = copy.deepcopy(qb)
-            for comp in ["cmb", "fg"]:
+            for comp in self.signal_components:
                 for spec in self.specs:
                     stag = "{}_{}".format(comp, spec)
                     if stag not in qb_zeroed:
@@ -5964,11 +5960,7 @@ class XFaster(object):
         Additionally the final output of ``fisher_iterate`` is stored in a
         dictionary called ``transfer_map<idx>`` for each map.
         """
-        comps = []
-        if "cmb_tt" in self.bin_def or "cmb_ee" in self.bin_def:
-            comps += ["cmb"]
-        if "fg_tt" in self.bin_def or "fg_ee" in self.bin_def:
-            comps += ["fg"]
+        comps = list(self.signal_components)
 
         opts = dict(
             converge_criteria=converge_criteria,
@@ -5978,7 +5970,7 @@ class XFaster(object):
         )
 
         if "fg" in comps:
-            if self.cls_fg is None:
+            if getattr(self, "cls_fg") is None:
                 fix_fg_transfer = True
             opts.update(fix_fg_transfer=fix_fg_transfer)
 
@@ -6021,7 +6013,7 @@ class XFaster(object):
                         if lq != lb:
                             raise ValueError(
                                 "Found {} transfer bins for component {} map {}, expected {}".format(
-                                    lq, stag, m0, lb,
+                                    lq, stag, m0, lb
                                 )
                             )
                         if check_only:
@@ -6253,7 +6245,7 @@ class XFaster(object):
         )
 
         # foreground fitting
-        if "fg_tt" in self.bin_def:
+        if "fg" in self.components:
             opts.update(
                 freq_ref=self.freq_ref,
                 beta_ref=self.beta_ref,
@@ -6557,7 +6549,7 @@ class XFaster(object):
         else:
             qb = copy.deepcopy(qb)
             for spec in self.specs:
-                stags = ["cmb_{}".format(spec), "fg_{}".format(spec)]
+                stags = ["{}_{}".format(c, spec) for c in self.signal_components]
                 for stag in stags:
                     if stag not in qb:
                         continue
