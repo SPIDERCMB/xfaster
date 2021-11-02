@@ -120,6 +120,7 @@
     <span class="n">template_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">template_noise_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">template_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">reference_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="c1"># binning options</span>
     <span class="n">lmin</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
     <span class="n">lmax</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
@@ -138,8 +139,6 @@
     <span class="n">template_alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">template_alpha_tags_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">template_alpha_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">subtract_template_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">subtract_reference_signal</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">ensemble_mean</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">ensemble_median</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">sim_data</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -271,13 +270,21 @@
 <span class="sd">        containing one template per map tag.</span>
 <span class="sd">    template_noise_type : string</span>
 <span class="sd">        Tag for directory containing template noise sims to be averaged and</span>
-<span class="sd">        scaled similarly to the templates themselves.  These averaged sims</span>
-<span class="sd">        are used to debias template cross spectra due to correlations in the</span>
-<span class="sd">        way the noise ensembles are constructed.</span>
+<span class="sd">        scaled similarly to the templates themselves.  These averaged sims are</span>
+<span class="sd">        used to debias template cross spectra due to correlations in the way the</span>
+<span class="sd">        noise ensembles are constructed.  Typically, this would be a noise model</span>
+<span class="sd">        based on the Planck FFP10 ensemble for each half-mission foreground</span>
+<span class="sd">        template.</span>
 <span class="sd">    template_type_sim : string</span>
 <span class="sd">        Tag for directory containing foreground templates, to be scaled by a</span>
 <span class="sd">        scalar value per map tag and added to the simulated data.  The directory</span>
 <span class="sd">        contains one template per map tag.</span>
+<span class="sd">    reference_type : string</span>
+<span class="sd">        Tag for directory containing reobserved reference signals, to be</span>
+<span class="sd">        subtracted from each data map.  The reference signal maps should be two</span>
+<span class="sd">        datasets with uncorrelated noise, such as Planck half-mission maps.</span>
+<span class="sd">        This option is used for removing expected signal residuals from null</span>
+<span class="sd">        tests.</span>
 <span class="sd">    lmin : int</span>
 <span class="sd">       Minimum ell at which to start the lowest bin of the output spectra.</span>
 <span class="sd">    lmax : int</span>
@@ -329,16 +336,6 @@
 <span class="sd">        Scalar to be applied to template map for addition to each of the</span>
 <span class="sd">        simulated data maps with tags in the list ``template_alpha_tags``.</span>
 <span class="sd">        If None, use the same values as `template_alpha`.</span>
-<span class="sd">    subtract_template_noise : bool</span>
-<span class="sd">        If True, subtract average of cross spectra of an ensemble of noise</span>
-<span class="sd">        realizations corresponding to each template map, to debias</span>
-<span class="sd">        template-cleaned spectra.  Typically, this would be a noise model based</span>
-<span class="sd">        on the Planck FFP10 ensemble for each half-mission foreground template.</span>
-<span class="sd">    subtract_reference_signal : bool</span>
-<span class="sd">        If True, subtract a reobserved reference signal from each data map.</span>
-<span class="sd">        The reference signal maps should be two datasets with uncorrelated noise,</span>
-<span class="sd">        such as Planck half-mission maps.  This option is used for removing</span>
-<span class="sd">        expected signal residuals from null tests.</span>
 <span class="sd">    ensemble_mean : bool</span>
 <span class="sd">        If True, substitute S+N ensemble means for Cls to test for bias</span>
 <span class="sd">        in the estimator.</span>
@@ -579,8 +576,7 @@
         <span class="n">template_type</span><span class="o">=</span><span class="n">template_type</span><span class="p">,</span>
         <span class="n">template_noise_type</span><span class="o">=</span><span class="n">template_noise_type</span><span class="p">,</span>
         <span class="n">template_type_sim</span><span class="o">=</span><span class="n">template_type_sim</span><span class="p">,</span>
-        <span class="n">subtract_reference_signal</span><span class="o">=</span><span class="n">subtract_reference_signal</span><span class="p">,</span>
-        <span class="n">subtract_template_noise</span><span class="o">=</span><span class="n">subtract_template_noise</span><span class="p">,</span>
+        <span class="n">reference_type</span><span class="o">=</span><span class="n">reference_type</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">file_opts</span><span class="p">,</span> <span class="s2">&quot;File Options&quot;</span><span class="p">)</span>
 
@@ -616,8 +612,6 @@
 
     <span class="n">data_opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
         <span class="n">template_alpha</span><span class="o">=</span><span class="n">template_alpha</span><span class="p">,</span>
-        <span class="n">subtract_reference_signal</span><span class="o">=</span><span class="n">subtract_reference_signal</span><span class="p">,</span>
-        <span class="n">subtract_template_noise</span><span class="o">=</span><span class="n">subtract_template_noise</span><span class="p">,</span>
         <span class="n">ensemble_mean</span><span class="o">=</span><span class="n">ensemble_mean</span><span class="p">,</span>
         <span class="n">ensemble_median</span><span class="o">=</span><span class="n">ensemble_median</span><span class="p">,</span>
         <span class="n">sim</span><span class="o">=</span><span class="n">sim_data</span><span class="p">,</span>
@@ -708,7 +702,6 @@
         <span class="n">num_walkers</span><span class="o">=</span><span class="n">mcmc_walkers</span><span class="p">,</span>
         <span class="n">converge_criteria</span><span class="o">=</span><span class="n">like_converge_criteria</span><span class="p">,</span>
         <span class="n">file_tag</span><span class="o">=</span><span class="n">like_tag</span><span class="p">,</span>
-        <span class="n">subtract_template_noise</span><span class="o">=</span><span class="n">subtract_template_noise</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">like_opts</span><span class="p">,</span> <span class="s2">&quot;Likelihood Estimation Options&quot;</span><span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;like_lmin&quot;</span><span class="p">)</span>
@@ -1057,6 +1050,7 @@
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_type&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_noise_type&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_type_sim&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;reference_type&quot;</span><span class="p">)</span>
 
         <span class="c1"># binning options</span>
         <span class="n">G</span> <span class="o">=</span> <span class="n">PP</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;binning options&quot;</span><span class="p">)</span>
@@ -1085,9 +1079,7 @@
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_alpha&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_alpha_tags_sim&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;TAG&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_alpha_sim&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;subtract_template_noise&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;qb_file_data&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;subtract_reference_signal&quot;</span><span class="p">)</span>
         <span class="n">E</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">add_mutually_exclusive_group</span><span class="p">()</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;ensemble_mean&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;ensemble_median&quot;</span><span class="p">)</span>

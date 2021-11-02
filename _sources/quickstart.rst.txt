@@ -73,11 +73,11 @@ The code requires a certain directory structure for your input maps:
     │   ├── ...
     │   ├── mask_map_<tagN>.fits
     [[optional:]]
-    ├── foreground_<foreground_type> (same filenames as signal_<signal_type>
+    ├── foreground_<foreground_type> (same filenames as signal_<signal_type>)
     ├── templates_<template_type>
     │   ├── template1 (same filenames as data_<data_type>)
     │   ├── template2 (same filenames as data_<data_type>)
-    └── reobs_reference (used if subtract_reference_signal=True for null tests)
+    └── reference_<reference_type>
         ├── reference1 (same filenames as data_<data_type>)
         └── reference2 (same filenames as data_<data_type>)
 
