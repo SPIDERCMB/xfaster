@@ -3993,7 +3993,7 @@ class XFaster(object):
                 mspec = "{}_mix".format(spec)
                 mll[mspec] = OrderedDict()
 
-            if not use_transfer_matrix: 
+            if not use_transfer_matrix:
                 bw = self.beam_windows[spec]
                 if not transfer_run:
                     tf = self.transfer[spec]
@@ -5462,7 +5462,7 @@ class XFaster(object):
                     extra_tag=file_tag,
                 )
 
-                if "fg_tt" in self.bin_def:
+                if "fg_tt" in self.bin_def and not transfer_run:
                     out.update(
                         beta_fit=beta_fit,
                         beta_err=beta_err,
@@ -5579,7 +5579,7 @@ class XFaster(object):
             weighted_bins=self.weighted_bins,
         )
 
-        if "fg_tt" in self.bin_def:
+        if "fg_tt" in self.bin_def and not transfer_run:
             out.update(
                 delta_beta_prior=delta_beta_prior,
                 beta_fit=beta_fit,
@@ -5762,8 +5762,6 @@ class XFaster(object):
         iter_max=200,
         save_iters=False,
         fix_bb_transfer=False,
-        ref_freq=359.7,
-        beta_ref=.154,
     ):
         """
         Compute the transfer function from signal simulations created using
@@ -5862,15 +5860,6 @@ class XFaster(object):
             else:
                 self.transfer = expand_transfer(ret["qb_transfer"], ret["bin_def"])
             return self.transfer
-        
-        # foreground fitting, required in fisher_iterate: 
-        # TODO: JUST TO PASS CODE ERROR; REPEATED IN GET_GETBANDPOWER, CLEAN UP
-        if "fg_tt" in self.bin_def:
-            # reference frequency and spectral index
-            self.ref_freq = ref_freq
-            self.beta_ref = beta_ref
-            # priors on frequency spectral index
-            self.delta_beta_fix = 1.0e-8
 
         self.qb_transfer = OrderedDict()
         for spec in self.specs:
@@ -6035,8 +6024,6 @@ class XFaster(object):
                         # auto- => auto-
                         fname1 = fname.format(spec_in.upper(), spec_out.upper())
                         mat = np.loadtxt(fname1)
-                        # transpose for input axis on second dimension. 
-                        #mat = mat.T
 
                         # populate matrix up to lmax
                         dsi[spec_in] = np.zeros((self.lmax + 1, self.lmax + 1))
@@ -6163,11 +6150,11 @@ class XFaster(object):
 
         # foreground fitting
         if "fg_tt" in self.bin_def:
-            # reference frequency and spectral index, move to get_transfer
-            #self.ref_freq = ref_freq
-            #self.beta_ref = beta_ref
+            # reference frequency and spectral index
+            self.ref_freq = ref_freq
+            self.beta_ref = beta_ref
             # priors on frequency spectral index
-            #self.delta_beta_fix = 1.0e-8
+            self.delta_beta_fix = 1.0e-8
             opts.update(
                 delta_beta_prior=delta_beta_prior,
                 ref_freq=self.ref_freq,
