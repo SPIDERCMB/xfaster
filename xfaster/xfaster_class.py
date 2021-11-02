@@ -120,6 +120,7 @@ class XFaster(object):
         "sims",
         "beams",
         "data",
+        "sim_data",
         "template_noise",
         "shape",
         "bandpowers",
@@ -130,7 +131,14 @@ class XFaster(object):
     # if starting from KEY, force rerun all steps in VALUES
     checkpoint_tree = {
         "files": ["masks"],
-        "masks": ["kernels", "sims_transfer", "sims", "data", "template_noise"],
+        "masks": [
+            "kernels",
+            "sims_transfer",
+            "sims",
+            "data",
+            "sim_data",
+            "template_noise",
+        ],
         "kernels": ["transfer"],
         "sims_transfer": ["transfer"],
         "shape_transfer": ["transfer"],
@@ -139,13 +147,14 @@ class XFaster(object):
         "sims": ["bandpowers"],
         "beams": ["transfer"],
         "data": ["bandpowers"],
+        "sim_data": ["bandpowers"],
         "template_noise": ["bandpowers"],
         "shape": ["bandpowers"],
         "bandpowers": ["likelihood"],
         "beam_errors": ["likelihood"],
     }
 
-    data_version = 2
+    data_version = 3
 
     def __init__(
         self,
@@ -465,15 +474,240 @@ class XFaster(object):
             finally:
                 handler.release()
 
+    def _get_data_files(
+        self,
+        data_type,
+        data_root=None,
+        data_subset=None,
+        data_root2=None,
+        data_subset2=None,
+        config=False,
+    ):
+        """
+        Convenience function for finding all matching map data files.  Used
+        internally in ``get_files``.
+
+        This function runs in two modes, depending on the value of ``config``.
+
+        Arguments
+        ---------
+        data_type : string
+            The type of data to use, required.
+        data_root : string
+            Top level path containing subdirectories for data, signal sims,
+            noise sims, and masks.
+        data_subset : string
+            Subset of maps to use for spectrum estimation.  This should be
+            a string that is parseable using ``glob`` on the path
+            ``data_<data_type>/<data_subset>.fits``.  For example,
+            ``'full/*0'`` will expand to read in the 150 GHz and 90GHz maps.
+            Maps are then sorted in alphabetical order, and identified
+            by their file tag, where each filename is ``map_<tag>.fits``.
+        data_root2, data_subset2 : string
+            The root and subset for a second set of data.  If either of these is
+            keywords is supplied, then the two data sets are treated as two
+            halves of a null test.  In this case, XFaster computes the sum and
+            difference spectra for each map tag in order to estimate a null
+            spectrum.
+        config : bool
+            If True, return a dictionary of attributes for defining the run
+            configuration, such as properly constructed data roots, map tags and
+            cross-spectrum pairings.  If False, return a dictionary of map
+            filenames and file roots for building the appropriate cross spectra
+            with ``get_masked_data()``.
+
+        Returns
+        -------
+        opts : dict
+            Dictionary of configuration options.
+        """
+        if config:
+            num_maps = None
+            map_tags_check = None
+            null_run = False
+            if data_root2 is not None or data_subset2 is not None:
+                if data_root2 is None:
+                    data_root2 = data_root
+                if data_subset2 is None:
+                    data_subset2 = data_subset
+                if (data_root, data_subset) == (data_root2, data_subset2):
+                    raise ValueError(
+                        "Either data_root2 or data_subset2 must differ "
+                        "from data_root/data_subset"
+                    )
+                null_run = True
+        else:
+            num_maps = len(self.map_names)
+            mt = [os.path.splitext(os.path.basename(f))[0] for f in self.map_names]
+            map_tags_check = np.asarray([f.split("_", 1)[1] for f in mt])
+            null_run = self.null_run
+            data_root = data_root or self.data_root
+            data_subset = data_subset or self.data_subset
+            if null_run:
+                data_root2 = data_root2 or self.data_root2
+                data_subset2 = data_subset2 or self.data_subset2
+
+        if data_type is None:
+            raise ValueError("Argument `data_type` required")
+
+        sets = [(data_root, data_subset, "")]
+        if null_run:
+            sets += [(data_root2, data_subset2, "2")]
+
+        out = {}
+        if not config:
+            out.update(data_type=data_type)
+
+        for droot, dset, suffix in sets:
+            if not os.path.exists(droot):
+                raise OSError("Missing data root {}".format(droot))
+
+            # find all map files
+            map_root = os.path.join(droot, "data_{}".format(data_type))
+            map_files = []
+            for f in np.atleast_1d(dset.split(",")):
+                files = glob.glob(os.path.join(map_root, "{}.fits".format(f)))
+                if not len(files):
+                    raise OSError("Missing files in data subset {}".format(f))
+                map_files.extend(files)
+            map_files = sorted(map_files)
+            map_files = [f for f in map_files if os.path.basename(f).startswith("map_")]
+
+            if num_maps is None:
+                num_maps = len(map_files)
+            elif len(map_files) != num_maps:
+                raise ValueError(
+                    "Found {} maps in root {}/{}, expected {}".format(
+                        len(map_files), map_root, dset, num_maps
+                    )
+                )
+
+            # extract tag for each map
+            map_tags = [os.path.splitext(os.path.basename(f))[0] for f in map_files]
+            map_tags = np.asarray([f.split("_", 1)[1] for f in map_tags])
+            self.log("Map tags: {}".format(map_tags), "debug")
+
+            if map_tags_check is None:
+                map_tags_check = map_tags
+            else:
+                if (map_tags != map_tags_check).any():
+                    raise ValueError(
+                        "Found map tags {} in root {}/{}, expected {}".format(
+                            map_tags, map_root, dset, map_tags_check
+                        )
+                    )
+                if not config:
+                    out.update(
+                        {
+                            "map_root{}".format(suffix): map_root,
+                            "map_files{}".format(suffix): map_files,
+                        }
+                    )
+                    self.log(
+                        "Found {} map files in {}".format(num_maps, map_root), "info"
+                    )
+                    self.log("Map files: {}".format(map_files), "debug")
+                    continue
+
+            # file names relative to map_root
+            map_names = [os.path.relpath(f, map_root) for f in map_files]
+
+            out.update(
+                {
+                    "data_root{}".format(suffix): droot,
+                    "data_subset{}".format(suffix): dset,
+                    "map_names{}".format(suffix): map_names,
+                }
+            )
+
+            if "map_tags" in out:
+                continue
+
+            # Also need a list of unique map tags for populating dictionaries
+            # in data structures
+            map_tags_orig = list(map_tags)  # copy
+            map_tags = pt.unique_tags(map_tags)
+
+            # make a list of names corresponding to the order of the cross spectra
+            map_pairs = pt.tag_pairs(map_tags)
+            map_pairs_orig = pt.tag_pairs(map_tags, index=map_tags_orig)
+
+            # make a dictionary of map frequencies for each unique map tag
+            map_freqs = dict(zip(map_tags, [self.dict_freqs[t] for t in map_tags_orig]))
+            self.log("Map freqs: {}".format(map_freqs), "debug")
+
+            out.update(
+                null_run=null_run,
+                num_maps=num_maps,
+                map_names=map_names,
+                map_tags=map_tags,
+                map_pairs=map_pairs,
+                map_tags_orig=map_tags_orig,
+                map_pairs_orig=map_pairs_orig,
+                map_freqs=map_freqs,
+            )
+
+        return out
+
+    def _get_mask_files(self, mask_type):
+        """
+        Convenience function or finding mask file for each map.  Used internally
+        in ``get_files()``.
+
+        Arguments
+        ---------
+        mask_type : string
+            The variant of mask to use, e.g. 'rectangle', etc.  We assume a mask
+            per file tag in the masks_<mask_type> folder, corresponding to the
+            files in data.
+
+        Returns
+        -------
+        opts : dict
+            Dictionary of mask file options, including mask_type, mask_root, and
+            mask_files.
+        """
+        if mask_type is None:
+            raise ValueError("Argument `mask_type` required")
+
+        if os.path.splitext(mask_type)[1] == ".fits":
+            # use the same mask file for all maps
+            mask_file = mask_type
+            if not os.path.exists(mask_file):
+                mask_file = os.path.join(self.data_root, mask_type)
+            if not os.path.exists(mask_file):
+                mask_file = os.path.join(self.config_root, mask_type)
+            if not os.path.exists(mask_file):
+                raise OSError("Missing mask file {}".format(mask_type))
+
+            mask_files = np.tile(mask_type, len(self.map_names))
+            mask_root = os.path.dirname(mask_type)
+        else:
+            # find all masks corresponding to each map tag
+            mask_root = os.path.join(self.data_root, "masks_{}".format(mask_type))
+            # XXX Do this smarter
+            # e.g. allow different masks for different chunks?
+            mask_files = [
+                os.path.join(mask_root, "mask_{}".format(os.path.basename(f)))
+                for f in self.map_names
+            ]
+
+        # check that all mask files exist on disk
+        for f in mask_files:
+            if not os.path.exists(f):
+                raise OSError("Missing mask file {}".format(f))
+        self.log("Found {} masks in {}".format(len(mask_files), mask_root), "info")
+        self.log("Mask files: {}".format(mask_files), "debug")
+
+        return dict(mask_type=mask_type, mask_root=mask_root, mask_files=mask_files)
+
     def _get_sim_files(
         self,
         name,
-        root=None,
+        ctype=None,
         subset="*",
-        suffix="",
-        data_suffix="",
-        match_count=True,
-        fs=None,
+        root=None,
+        sim_data=False,
     ):
         """
         Convenience function for finding all matching sims per map.  Used
@@ -485,214 +719,291 @@ class XFaster(object):
         name : str
             Type of simulation files to collect (signal, noise, foreground,
             template)
-        root : str
-            Root of the simulation file tree, relative to data_root.  If not
-            supplied, the returned set of variables are set to null values.
+        ctype : str
+            The type value associated with ``name``.  If supplied, set ``root``
+            to ``<name>_<ctype>``, with ``name`` truncated before the first
+            underscore.
         subset : str
             Data subset to search for.  See ``get_files`` for details.
-        suffix : str
-            Suffix to apply to the output variables, e.g. "_sim" or "_sim2".
-        data_suffix : str
-            Suffix to apply to corresponding data variables to search for
-            matching files, e.g. "2".
-        match_count : bool
-            If True, make sure that the number of files found matches those
-            counted previously for the same dataset.  If False, stores the
-            minimum number of files found.
-        fs : dict
-            Dictionary of file options to search for the appropriate data
-            variables to check for consistency.  If not supplied, checks
-            for the corresponding attributes of the calling object.
+        root : str
+            Root of the simulation file tree, relative to data_root.  If not
+            supplied and ``ctype`` is None, the returned set of variables are
+            set to null values.
+        sim_data : bool
+            If True, build a list of files associated with the
+            ``signal_type_sim``, ``noise_type_sim``, etc options to
+            ``get_files()``, including the appropriate attribute names.  The
+            value of ``subset`` is ignored.  If False, ensure that the same
+            number of maps is selected for each map tag.
 
         Returns
         -------
         opts : dict
-            Dictionary of sim file options, with the following keys:
-            <name>_root<suffix>, <name>_files<suffix>, num_<name><suffix>.
+            Dictionary of sim file options for use with ``get_masked_sims()`` or
+            ``get_masked_data()``.
         """
-        if root is None:
-            return {
-                "{}_root{}".format(name, suffix): None,
-                "{}_files{}".format(name, suffix): None,
-                "num_{}{}".format(name, suffix): 0,
-            }
-
-        if fs is None:
-            data_root = getattr(self, "data_root{}".format(data_suffix))
-            map_root = getattr(self, "map_root{}".format(data_suffix))
-            map_files = getattr(self, "map_files{}".format(data_suffix))
-        else:
-            data_root = fs["data_root{}".format(data_suffix)]
-            map_root = fs["map_root{}".format(data_suffix)]
-            map_files = fs["map_files{}".format(data_suffix)]
-
-        root = os.path.join(data_root, root)
+        out = {}
         num_files = None
-        all_files = []
-        for f in map_files:
-            files = sorted(
-                glob.glob(
-                    f.replace(map_root, root).replace(
-                        ".fits", "_{}.fits".format(subset)
-                    )
+
+        if sim_data:
+            subset = "*"
+            suffix = "_sim"
+            match_count = False
+        else:
+            suffix = ""
+            match_count = True
+
+        if root is None:
+            out["{}_type{}".format(name, suffix)] = ctype
+        if not sim_data:
+            out["{}_subset".format(name.split("_")[0])] = subset
+
+        if ctype is not None:
+            root = "{}_{}".format(name.split("_")[0], ctype)
+
+        for suff in ["", "2"] if self.null_run else [""]:
+
+            if root is None:
+                out.update(
+                    {
+                        "{}_root{}{}".format(name, suffix, suff): None,
+                        "{}_files{}{}".format(name, suffix, suff): None,
+                        "num_{}{}".format(name, suffix): 0,
+                    }
                 )
-            )
-            nfiles = len(files)
-            if not nfiles:
-                raise OSError("Missing {} sims for {}".format(name, f))
-            if num_files is None:
-                num_files = nfiles
-            elif num_files != nfiles:
-                if match_count:
-                    raise OSError(
-                        "Found {} {} sims for map {}, expected {}".format(
-                            nfiles, name, f, num_files
+                continue
+
+            data_root = getattr(self, "data_root{}".format(suff))
+            map_files = getattr(self, "map_names{}".format(suff))
+
+            root1 = os.path.join(data_root, root)
+            all_files = []
+            for f in map_files:
+                files = sorted(
+                    glob.glob(
+                        os.path.join(
+                            root1, f.replace(".fits", "_{}.fits".format(subset))
                         )
                     )
-                elif nfiles < num_files:
+                )
+                nfiles = len(files)
+                if not nfiles:
+                    raise OSError("Missing {} sims for {}".format(name, f))
+                if num_files is None:
                     num_files = nfiles
+                elif num_files != nfiles:
+                    if match_count:
+                        raise OSError(
+                            "Found {} {} sims for map {}, expected {}".format(
+                                nfiles, name, f, num_files
+                            )
+                        )
+                    elif nfiles < num_files:
+                        num_files = nfiles
 
-            all_files.append(files)
+                all_files.append(files)
 
-        all_files = np.asarray([f[:num_files] for f in all_files])
-        self.log("Found {} {} sims in {}".format(num_files, name, root), "info")
-        self.log(
-            "First {} sim files: {}".format(name, all_files[:, 0].tolist()), "debug"
-        )
+            all_files = np.asarray([f[:num_files] for f in all_files])
+            self.log("Found {} {} sims in {}".format(num_files, name, root1), "info")
+            self.log(
+                "First {} sim files: {}".format(name, all_files[:, 0].tolist()), "debug"
+            )
+
+            out.update(
+                {
+                    "{}_root{}{}".format(name, suffix, suff): root1,
+                    "{}_files{}{}".format(name, suffix, suff): all_files,
+                    "num_{}{}".format(name, suffix): num_files,
+                }
+            )
+
+        return out
+
+    def _get_sim_data_files(self, name, ctype=None):
+        """
+        Convenience function for finding any matching sims per map to be used
+        for simulating the input data with ``get_masked_data()`` in sim mode.
+        Used internally in ``get_files()``.
+
+        Arguments
+        ---------
+        name : str
+            Type of simulation files to collect (signal, noise, foreground,
+            template)
+        ctype : str
+            The type value associated with ``name``.  If not supplied, the
+            returned set of variables are set to null values.
+
+        Returns
+        -------
+        opts : dict
+            Dictionary of sim file options for use with ``get_masked_data()``.
+        """
+        if name == "signal" and str(ctype) == "r":
+            out = self._get_sim_files(name, root="signal_r0", sim_data=True)
+            out.update(
+                self._get_sim_files("tensor", root="signal_r1tens", sim_data=True)
+            )
+            out["signal_type_sim"] = ctype
+            return out
+
+        if name == "template":
+            return self._get_template_files("template", ctype, suffix="_sim")
+
+        return self._get_sim_files(name, ctype, sim_data=True)
+
+    def _get_template_files(self, name, ctype=None, suffix=""):
+        """
+        Convenience function for finding matching template maps per map,
+        to be used for template subtraction in ``get_masked_data()``.
+        Used internally in ``get_files()``.
+
+        Arguments
+        ---------
+        name : str
+            Type of simulation files to collect (signal, noise, foreground,
+            template)
+        ctype : str
+            The type value associated with ``name``.  If not supplied, the
+            returned set of variables are set to null values.
+        suffix : str
+            Suffix to apply to variable names, e.g. ``"_sim"``.
+
+        Returns
+        -------
+        opts : dict
+            Dictionary of template file options for use with
+            ``get_masked_data()``.
+        """
+        out = {}
+        nfiles = None
+
+        root = None
+        out["{}_type{}".format(name, suffix)] = ctype
+        if ctype is not None:
+            root = "{}_{}".format(name.replace("template", "templates"), ctype)
+
+        for group in ["1", "2"]:
+            suffix1 = suffix + (group if group == "2" else "")
+
+            if root is None:
+                out.update(
+                    {
+                        "{}_root{}".format(name, suffix1): None,
+                        "{}_files{}".format(name, suffix1): None,
+                        "num_{}{}".format(name, suffix): 0,
+                    }
+                )
+                continue
+
+            root1 = os.path.join(self.data_root, root, "template{}".format(group))
+            files = []
+            for f in self.map_names:
+                # single template per map
+                tf = os.path.join(root1, f)
+                if os.path.exists(tf):
+                    files.append(tf)
+                    continue
+
+                # ensemble of templates per map
+                tf = sorted(glob.glob(tf.replace(".fits", "_*.fits")))
+                nfiles1 = len(tf)
+                if not nfiles1:
+                    raise OSError(
+                        "Missing temp{} {} files for {}".format(group, name, f)
+                    )
+                if nfiles is None:
+                    nfiles = nfiles1
+                elif nfiles1 != nfiles:
+                    raise OSError(
+                        "Wrong number of {} sims. Found {} files, expected {}.".format(
+                            name, nfiles1, nfiles
+                        )
+                    )
+
+                files.append(tf)
+
+            files = np.asarray(files)
+            if nfiles is None:
+                nfiles = len(files)
+            print('here', nfiles, files.shape[-1])
+            if files.shape[-1] != nfiles:
+                raise OSError(
+                    "Wrong number of {} files. Found {} files, expected {}.".format(
+                        name, files.shape[-1], nfiles
+                    )
+                )
+
+            self.log("Found {} templates in {}".format(nfiles, root1), "info")
+            out.update(
+                {
+                    "{}_root{}".format(name, suffix1): root1,
+                    "{}_files{}".format(name, suffix1): files,
+                    "num_{}{}".format(name, suffix): nfiles,
+                }
+            )
+
+        return out
+
+    def _get_reference_files(self, ctype=None):
+        """
+        Convenience function for finding all reference files per map, to be used
+        for reference signal subtraction for null tests in ``get_masked_data()``.
+        Used internally in ``get_files()``.
+
+        Arguments
+        ---------
+        ctype : str
+           The reference type to use.  If not supplied, the returned set of
+           variables are set to null values.
+
+        Returns
+        -------
+        opts : dict
+            Dictionary of reference file options for use with
+            ``get_masked_data()``.
+        """
+        if ctype is None:
+            return {
+                "reference_type": None,
+                "reference_root": None,
+                "reference_files": None,
+                "num_reference": 0,
+            }
+
+        ref_root = {}
+        ref_files = {}
+        num_ref = len(self.map_names)
+        root = "reference_{}".format(ctype)
+
+        for null_split in ["a", "b"]:
+            data_root = self.data_root if null_split == "a" else self.data_root2
+            map_names = self.map_names if null_split == "a" else self.map_names2
+
+            for group in ["1", "2"]:
+                group1 = "ref{}{}".format(group, null_split)
+                root1 = os.path.join(data_root, root, "reference{}".format(group))
+
+                files1 = np.asarray([os.path.join(root1, f) for f in map_names])
+                for f in files1:
+                    if not os.path.exists(f):
+                        raise OSError("Missing ref{} map {}".format(group, f))
+
+                ref_root[group1] = root1
+                ref_files[group1] = files1
+
+                self.log(
+                    "Found {} reference maps in {}".format(num_ref, ref_root[group1]),
+                    "info",
+                )
+                self.log("Reference files: {}".format(files1), "debug")
 
         return {
-            "{}_root{}".format(name, suffix): root,
-            "{}_files{}".format(name, suffix): all_files,
-            "num_{}{}".format(name, suffix): num_files,
+            "reference_type": ctype,
+            "reference_root": ref_root,
+            "reference_files": ref_files,
+            "num_reference": num_ref,
         }
-
-    def _get_files(
-        self,
-        data_root,
-        data_subset="full/*0",
-        data_type="raw",
-        mask_type="hitsmask_tailored",
-        signal_type="r0p03",
-        signal_transfer_type=None,
-        signal_subset="*",
-        noise_type="stationary",
-        noise_subset="*",
-        signal_type_sim=None,
-        noise_type_sim=None,
-        foreground_type_sim=None,
-        suffix="",
-    ):
-        """
-        Find all files for the given data root.  Internal function, see
-        ``get_files`` for a complete docstring.
-        """
-
-        # regularize data root
-        if not os.path.exists(data_root):
-            raise OSError("Missing data root {}".format(data_root))
-
-        # find all map files
-        map_root = os.path.join(data_root, "data_{}".format(data_type))
-        map_files = []
-        data_subset = data_subset.split(",")
-        for f in np.atleast_1d(data_subset):
-            files = glob.glob(os.path.join(map_root, "{}.fits".format(f)))
-            if not len(files):
-                raise OSError("Missing files in data subset {}".format(f))
-            map_files.extend(files)
-        data_subset = ",".join(data_subset)
-        map_files = sorted(map_files)
-        map_files = [f for f in map_files if os.path.basename(f).startswith("map_")]
-        map_tags = [
-            os.path.splitext(os.path.basename(f))[0].split("_", 1)[1] for f in map_files
-        ]
-        map_freqs = []
-        for t in map_tags:
-            # if map tag is not a plain frequency, extract plain frequency
-            map_freqs.append(self.dict_freqs[t])
-        self.log("Found {} map files in {}".format(len(map_files), map_root), "info")
-        self.log("Map files: {}".format(map_files), "debug")
-        self.log("Map freqs: {}".format(map_freqs), "debug")
-
-        # Also need a list of unique map tags for populating dictionaries
-        # in data structures
-        map_tags_orig = list(map_tags)  # copy
-        map_tags = pt.unique_tags(map_tags)
-
-        # make a list of names corresponding to the order of the cross spectra
-        map_pairs = pt.tag_pairs(map_tags)
-        map_pairs_orig = pt.tag_pairs(map_tags, index=map_tags_orig)
-
-        # make a dictionary of map freqs for each unique map tag
-        map_freqs_dict = {}
-        for im0, m0 in enumerate(map_tags):
-            map_freqs_dict[m0] = map_freqs[im0]
-        map_freqs = map_freqs_dict
-
-        # find all corresponding masks
-        if mask_type is None:
-            raise ValueError("Argument mask_type required")
-        # If mask is a fits file, use the same mask for all maps
-        if os.path.splitext(mask_type)[1] == ".fits":
-            if os.path.exists(mask_type):
-                # it's an absolute path
-                mask_files = np.tile(mask_type, len(map_tags))
-                mask_root = os.path.dirname(mask_type)
-            else:
-                # it's relative to base directory structure
-                mask_files = np.tile(os.path.join(data_root, mask_type), len(map_tags))
-                mask_root = os.path.dirname(os.path.join(data_root, mask_type))
-        else:
-            mask_root = os.path.join(data_root, "masks_{}".format(mask_type))
-            # XXX Do this smarter
-            mask_files = [
-                os.path.join(mask_root, "mask_map_{}.fits".format(tag))
-                for tag in map_tags_orig
-            ]
-        for f in mask_files:
-            if not os.path.exists(f):
-                raise OSError("Missing mask file {}".format(f))
-        self.log("Found {} masks in {}".format(len(mask_files), mask_root), "info")
-        self.log("Mask files: {}".format(mask_files), "debug")
-
-        fs = {
-            "data_root": data_root,
-            "data_subset": data_subset,
-            "map_root": map_root,
-            "map_files": map_files,
-            "num_maps": len(map_files),
-            "map_tags": map_tags,
-            "map_pairs": map_pairs,
-            "map_tags_orig": map_tags_orig,
-            "map_pairs_orig": map_pairs_orig,
-            "map_freqs": map_freqs,
-            "mask_root": mask_root,
-            "mask_files": mask_files,
-        }
-
-        # convenience function
-        def find_sim_files(name, root=None, subset="*"):
-            fs.update(self._get_sim_files(name, root, subset, fs=fs))
-
-        # signal and noise ensembles for building covariance model
-        find_sim_files("signal", "signal_{}".format(signal_type), signal_subset)
-        if noise_type is not None:
-            find_sim_files("noise", "noise_{}".format(noise_type), noise_subset)
-        else:
-            find_sim_files("noise", None)
-
-        # signal ensembles for transfer function covariance model
-        if signal_transfer_type is None:
-            signal_transfer_type = signal_type
-        find_sim_files(
-            "signal_transfer", "signal_{}".format(signal_transfer_type), signal_subset
-        )
-
-        # apply suffix
-        out = dict()
-        for k, v in fs.items():
-            out[k + suffix] = v
-        return out
 
     def get_files(
         self,
@@ -713,8 +1024,7 @@ class XFaster(object):
         template_type=None,
         template_noise_type=None,
         template_type_sim=None,
-        subtract_reference_signal=False,
-        subtract_template_noise=False,
+        reference_type=None,
     ):
         """
         Find all files for the given data root.  The data structure is::
@@ -748,7 +1058,7 @@ class XFaster(object):
                       (same filenames as data_<data_type>)
                    -> template2
                       (same filenames as data_<data_type>)
-                -> reobs_reference (if subtract_reference_signal=True)
+                -> reference_<reference_type>
                    -> reference1
                       (same filenames as data_<data_type>)
                    -> reference2
@@ -830,22 +1140,19 @@ class XFaster(object):
             Tag for directory containing template noise sims to be averaged and
             scaled similarly to the templates themselves.  These averaged sims
             are used to debias template cross spectra due to correlations in the
-            way the noise ensembles are constructed.
+            way the noise ensembles are constructed.  Typically, this would be a
+            noise model based on the Planck FFP10 ensemble for each half-mission
+            foreground template.  If not supplied, this debiasing step is not
+            performed.
         template_type_sim : string
             Tag for directory containing foreground templates, to be scaled by a
             scalar value per map tag and added to the simulated data.  The
             directory contains one template per map tag.
-        subtract_reference_signal : bool
-            If True, subtract a reobserved reference signal from each data map.
-            The reference signal maps should be two datasets with uncorrelated
-            noise, such as Planck half-mission maps.  This option is used for
-            removing expected signal residuals from null tests.
-        subtract_template_noise : bool
-            If True, subtract average of cross spectra of an ensemble of noise
-            realizations corresponding to each template map, to debias
-            template-cleaned spectra.  Typically, this would be a noise model
-            based on the Planck FFP10 ensemble for each half-mission foreground
-            template.
+        reference_type : string
+            If supplied, subtract a reobserved reference signal from each data
+            map.  The reference signal maps should be two datasets with
+            uncorrelated noise, such as Planck half-mission maps.  This option
+            is used for removing expected signal residuals from null tests.
 
         Returns
         -------
@@ -855,6 +1162,79 @@ class XFaster(object):
             and a subset are added to the run configuration file
             ``<output_root>/config_<output_tag>.txt``.
         """
+
+        null_run = data_root2 is not None or data_subset2 is not None
+
+        old_data_root = None
+        opts = dict(data_subset=data_subset, null_run=null_run)
+        if null_run:
+            old_data_root2 = None
+            opts.update(data_subset2=data_subset2)
+
+        save_name = "files"
+
+        # backward compatibility
+        alt_name = [save_name]
+        if data_type != "raw":
+            alt_name += [data_type]
+        if not null_run and template_type is not None:
+            alt_name += ["clean", template_type]
+        elif null_run and reference_type is not None:
+            alt_name += ["ref_sub"]
+        alt_name = "_".join(alt_name)
+        if alt_name == save_name:
+            alt_name = None
+
+        ret = self.load_data(
+            save_name, save_name, to_attrs=False, value_ref=opts, alt_name=alt_name
+        )
+        new = ret is None
+        update = new
+
+        #########################################
+        # update configuration options (data root, map names and tags)
+
+        if new:
+            ret = self._get_data_files(
+                data_type=data_type,
+                data_root=data_root,
+                data_subset=data_subset,
+                data_root2=data_root2,
+                data_subset2=data_subset2,
+                config=True,
+            )
+        else:
+            ret.pop("output_file")
+            ret.pop("data_version")
+
+            # fix data root
+            if data_root != ret["data_root"]:
+                old_data_root = ret["data_root"]
+                ret["data_root"] = data_root
+            if null_run:
+                if data_root2 != ret["data_root2"]:
+                    old_data_root2 = ret["data_root2"]
+                    ret["data_root2"] = data_root2
+
+        # update configuration attributes for later use
+        self.data_root = ret["data_root"]
+        self.data_subset = ret["data_subset"]
+        self.map_names = ret["map_names"]
+        self.null_run = null_run
+        if null_run:
+            self.data_root2 = ret["data_root2"]
+            self.data_subset2 = ret["data_subset2"]
+            self.map_names2 = ret["map_names2"]
+
+        #########################################
+        # update mask files
+        if new or ret["mask_type"] != mask_type:
+            update = True
+            self.force_rerun["masks"] = True
+            ret.update(self._get_mask_files(mask_type))
+
+        #########################################
+        # update sim options
 
         if signal_transfer_type is None:
             signal_transfer_type = signal_type
@@ -866,373 +1246,156 @@ class XFaster(object):
             if self.checkpoint == "sims":
                 self.checkpoint = "sims_transfer"
 
+        ret1 = {}
+
+        if (
+            new
+            or ret["signal_transfer_type"] != signal_transfer_type
+            or ret["signal_subset"] != signal_subset
+        ):
+            self.force_rerun["sims_transfer"] = True
+            ret1.update(
+                self._get_sim_files(
+                    "signal_transfer", signal_transfer_type, signal_subset
+                )
+            )
+
+        if (
+            new
+            or ret["signal_type"] != signal_type
+            or ret["signal_subset"] != signal_subset
+        ):
+            self.force_rerun["sims"] = True
+            ret1.update(self._get_sim_files("signal", signal_type, signal_subset))
+
+        if (
+            new
+            or ret["noise_type"] != noise_type
+            or ret["noise_subset"] != noise_subset
+        ):
+            self.force_rerun["sims"] = True
+            ret1.update(self._get_sim_files("noise", noise_type, noise_subset))
+
+        if len(ret1):
+            update = True
+            ret.update(ret1)
+
+        #########################################
+        # update data options
+
         if signal_type_sim is None:
             signal_type_sim = signal_type
-
         if noise_type_sim is None:
             noise_type_sim = noise_type
-
-        if template_noise_type is None:
-            template_noise_type = template_type
-
         if template_type_sim is None:
             template_type_sim = template_type
 
-        # one of these must be set to do a null test
-        null_run = False
-        if data_root2 is not None or data_subset2 is not None:
-            if data_root2 is None:
-                data_root2 = data_root
-            if data_subset2 is None:
-                data_subset2 = data_subset
-            if (data_root, data_subset) == (data_root2, data_subset2):
-                raise ValueError(
-                    "Either data_root2 or data_subset2 must differ "
-                    "from data_root/data_subset"
-                )
-            null_run = True
-
         if null_run:
             template_type = None
+            template_noise_type = None
+            template_type_sim = None
+        else:
+            reference_type = None
 
-        opts = dict(
-            data_type=data_type,
-            noise_type=noise_type,
-            mask_type=mask_type,
-            signal_type=signal_type,
-            signal_transfer_type=signal_transfer_type,
-            signal_subset=signal_subset,
-            noise_subset=noise_subset,
-        )
-        ref_opts = dict(data_subset=data_subset, **opts)
-        if null_run:
-            ref_opts.update(data_subset2=data_subset2)
+        ret1 = {}
 
-        def get_sim_data_files(fs):
-            """
-            Update options for simulated data
-            """
-            types = ["signal_type_sim", "noise_type_sim", "foreground_type_sim"]
-            g = locals()
-            if all([g[k] == fs.get(k, None) for k in types]):
-                return
+        # update data files
+        if new or ret["data_type"] != data_type:
+            self.force_rerun["data"] = True
+            ret1.update(self._get_data_files(data_type=data_type))
 
-            fs.update({k: g[k] for k in types})
+        # update template files
+        if new or ret["template_type"] != template_type:
+            # no need to force rerun since data filenames track template type
+            ret1.update(self._get_template_files("template", template_type))
 
-            def find_sim_files(name, root=None):
-                for suff in ["", "2"] if null_run else [""]:
-                    fs_temp = self._get_sim_files(
-                        name,
-                        root,
-                        suffix="_sim" + suff,
-                        data_suffix=suff,
-                        match_count=False,
-                        fs=fs,
-                    )
-                    for k, v in fs_temp.items():
-                        setattr(self, k, v)
-                    fs.update(**fs_temp)
+        if new or ret["template_noise_type"] != template_noise_type:
+            self.force_rerun["template_noise"] = True
+            self.force_rerun["sim_data"] = True
+            self.force_rerun["data"] = True
+            ret1.update(self._get_template_files("template_noise", template_noise_type))
 
-            if str(signal_type_sim) == "r":
-                find_sim_files("signal", "signal_r0")
-                find_sim_files("tensor", "signal_r1tens")
-            else:
-                find_sim_files("signal", "signal_{}".format(signal_type_sim))
-            if noise_type_sim is not None:
-                find_sim_files("noise", "noise_{}".format(noise_type_sim))
-            else:
-                find_sim_files("noise", None)
-            if foreground_type_sim is not None:
-                find_sim_files(
-                    "foreground", "foreground_{}".format(foreground_type_sim)
-                )
-            else:
-                find_sim_files("foreground", None)
+        # update reference files for null tests
+        if new or ret["reference_type"] != reference_type:
+            # no need to force rerun since data filenames track reference type
+            ret1.update(self._get_reference_files(reference_type))
 
-            return True
+        # update sim data files
+        if new or ret["signal_type_sim"] != signal_type_sim:
+            self.force_rerun["sim_data"] = True
+            ret1.update(self._get_sim_data_files("signal", signal_type_sim))
 
-        def get_template_files(fs):
-            """
-            Update options for template cleaning. Internal to get_files.
+        if new or ret["noise_type_sim"] != noise_type_sim:
+            self.force_rerun["sim_data"] = True
+            ret1.update(self._get_sim_data_files("noise", noise_type_sim))
 
-            Arguments
-            ---------
-            fs : dict
-                Dictionary of file options
-            """
-            types = ["template_type", "template_noise_type", "template_type_sim"]
-            g = locals()
-            if all([k in fs and g[k] == fs[k] for k in types]):
-                return
+        if new or ret["foreground_type_sim"] != foreground_type_sim:
+            self.force_rerun["sim_data"] = True
+            ret1.update(self._get_sim_data_files("foreground", foreground_type_sim))
 
-            if template_type is None:
-                fs_temp = {}
-                for name, suff in [
-                    ("template", ""),
-                    ("template_noise", ""),
-                    ("template", "_sim"),
-                ]:
-                    fs_temp["{}_type{}".format(name, suff)] = None
-                    fs_temp["num_{}{}".format(name, suff)] = 0
-                    for suff2 in ["", "2"]:
-                        fs_temp["{}_root{}".format(name, suff + suff2)] = None
-                        fs_temp["{}_files{}".format(name, suff + suff2)] = None
-                fs.update(**fs_temp)
-                for k, v in fs_temp.items():
-                    setattr(self, k, v)
-                return
+        if new or ret["template_type_sim"] != template_type_sim:
+            self.force_rerun["sim_data"] = True
+            ret1.update(self._get_sim_data_files("template", template_type_sim))
 
-            def find_templates(tname, troot, grp, ensemble=False, suffix=""):
-                tkey = "{}_type{}".format(tname, suffix)
-                nkey = "num_{}{}".format(tname, suffix)
-                ttype = g[tkey]
-                if tkey not in fs:
-                    fs[tkey] = ttype
+        if len(ret1):
+            update = True
+            ret.update(ret1)
 
-                nfiles = None
-                suffix = suffix + (grp if grp == "2" else "")
-                root = os.path.join(fs["data_root"], troot, "template{}".format(grp))
+        #########################################
+        # final consistency checks
 
-                files = []
-                for f in fs["map_files"]:
-                    tf = f.replace(fs["map_root"], root)
-
-                    if ensemble:
-                        tf = sorted(glob.glob(tf.replace(".fits", "_*.fits")))
-                        nfiles1 = len(tf)
-                        if not nfiles1:
-                            raise OSError(
-                                "Missing temp{} {} files for {}".format(grp, tname, f)
-                            )
-                        if nfiles is None:
-                            nfiles = nfiles1
-                        elif nfiles1 != nfiles:
-                            raise OSError(
-                                "Wrong number of {} sims. Found {} files, expected {}.".format(
-                                    tname, nfiles1, nfiles
-                                )
-                            )
-                    elif not os.path.exists(tf):
-                        raise OSError(
-                            "Missing temp{} {} file for {}".format(grp, tname, f)
-                        )
-
-                    files.append(tf)
-
-                files = np.asarray(files)
-                if nfiles is None:
-                    nfiles = len(files)
-
-                if nkey in fs:
-                    if fs[nkey] != nfiles:
-                        raise OSError(
-                            "Wrong number of {} sims. Found {} files, expected {}.".format(
-                                tname, nfiles, fs[nkey]
-                            )
-                        )
-
-                fs_temp = {
-                    "{}_root{}".format(tname, suffix): root,
-                    "{}_files{}".format(tname, suffix): files,
-                    nkey: nfiles,
-                }
-
-                fs.update(**fs_temp)
-                for k, v in fs_temp.items():
-                    setattr(self, k, v)
-
-                self.log("Found {} templates in {}".format(nfiles, root), "info")
-
-            for grp in ["1", "2"]:
-                find_templates("template", "templates_{}".format(template_type), grp)
-                if subtract_template_noise:
-                    find_templates(
-                        "template_noise",
-                        "templates_noise_{}".format(template_noise_type),
-                        grp,
-                        ensemble=True,
-                    )
-                else:
-                    suff = "2" if hm == "2" else ""
-                    fs.update(
-                        {
-                            "template_noise_root{}".format(suff): None,
-                            "template_noise_files{}".format(suff): None,
-                            "num_template_noise": None,
-                        }
-                    )
-                find_templates(
-                    "template",
-                    "templates_{}".format(template_type_sim),
-                    grp,
-                    suffix="_sim",
+        # check that file counts match
+        for k, v in ret.items():
+            if not k.startswith("num_") or k + "2" not in ret:
+                continue
+            v2 = ret[k + "2"]
+            if v != v2:
+                ftype = k.split("_", 1)[1]
+                raise RuntimeError(
+                    "Found {} {}2 files, expected {}".format(v2, ftype, v)
                 )
 
-            return True
-
-        def get_reference_files(fs):
-            """
-            Update options for reference signal subtraction. Internal to get_files.
-
-            Arguments
-            ---------
-            fs : dict
-                Dictionary of file options
-            """
-            if subtract_reference_signal and fs.get("reference_root", None) is not None:
-                return
-
-            if not subtract_reference_signal:
-                for k in ["reference_root", "reference_files", "num_reference"]:
-                    fs[k] = 0 if k.startswith("num_") else None
-                    setattr(self, k, fs[k])
-                return
-
-            reference_root = {}
-            reference_files = {}
-            num_reference = 0
-            for null_split in ["a", "b"]:
-                if null_split == "a":
-                    suff = ""
-                else:
-                    suff = 2
-                for grp in ["1", "2"]:
-                    pgrp = "ref{}{}".format(grp, null_split)
-                    proot = os.path.join(
-                        fs["data_root{}".format(suff)],
-                        "reobs_reference",
-                        "reference{}".format(hm),
-                    )
-                    pfiles = []
-                    for f in fs["map_files{}".format(suff)]:
-                        nfile = f.replace(fs["map_root{}".format(suff)], proot)
-                        if not os.path.exists(nfile):
-                            raise OSError("Missing ref{} map for {}".format(grp, f))
-                        pfiles.append(nfile)
-                    if num_reference == 0:
-                        num_reference = len(pfiles)
-                    elif len(pfiles) != num_reference:
-                        raise OSError(
-                            "Found {} files for reference group {}, expected {}".format(
-                                len(pfiles), pgrp, num_reference
-                            )
-                        )
-                    pfiles = np.asarray(pfiles)
-                    reference_root[pgrp] = proot
-                    reference_files[pgrp] = pfiles
-
-                    self.log(
-                        "Found {} reference maps in {}".format(
-                            num_reference,
-                            reference_root[pgrp],
-                        ),
-                        "info",
-                    )
-                    self.log("Reference files: {}".format(pfiles), "debug")
-
-            loc = locals()
-            for k in ["reference_root", "reference_files", "num_reference"]:
-                fs[k] = loc[k]
-                setattr(self, k, fs[k])
-
-            return True
-
-        def update_files(fs):
-            ret1 = get_template_files(fs)
-            ret2 = get_reference_files(fs)
-            ret3 = get_sim_data_files(fs)
-            return ret1 or ret2 or ret3
-
-        save_name = "files"
-        alt_name = None
-        if data_type != "raw":
-            alt_name = save_name
-            save_name = "{}_{}".format(save_name, data_type)
-        if template_type is not None:
-            alt_name = save_name
-            save_name = "{}_clean_{}".format(save_name, template_type)
-        if subtract_reference_signal:
-            alt_name = save_name
-            save_name = "{}_ref_sub".format(save_name)
-        # load file info from disk
-        ret = self.load_data(
-            save_name, "files", to_attrs=True, value_ref=ref_opts, alt_name=alt_name
-        )
-        if ret is not None:
-            # fix data root
-            ret_data_root = ret["data_root"]
-            ret_data_root2 = ret.get("data_root2", data_root2)
-            if data_root == ret_data_root and (
-                not null_run or data_root2 == ret_data_root2
-            ):
-                if update_files(ret):
-                    self.save_data(save_name, **ret)
-                return ret
+        # update data roots if necessary
+        if old_data_root is not None or (null_run and old_data_root2 is not None):
 
             def replace_root(k, v):
                 if not isinstance(v, str):
                     return v
-                if null_run and ret_data_root2 != ret_data_root:
-                    if k.endswith("2") and v.startswith(ret_data_root2):
-                        return v.replace(ret_data_root2, data_root2)
-                if v.startswith(ret_data_root):
-                    return v.replace(ret_data_root, data_root)
-                return v
+                if null_run and k.endswith("2") and "template" not in k:
+                    if old_data_root2 is None:
+                        return v
+                    if not v.startswith(old_data_root2):
+                        return v
+                    return os.path.join(data_root2, os.path.relpath(v, old_data_root2))
+                if old_data_root is None:
+                    return v
+                if not v.startswith(old_data_root):
+                    return v
+                return os.path.join(data_root, os.path.relpath(v, old_data_root))
 
             for k, v in list(ret.items()):
                 if isinstance(v, str):
                     ret[k] = replace_root(k, v)
-                    setattr(self, k, ret[k])
-                elif isinstance(v, np.ndarray) and isinstance(v[0], str):
-                    ret[k] = np.array(
-                        [replace_root(k, vv) for vv in v.ravel()]
-                    ).reshape(v.shape)
-                    setattr(self, k, ret[k])
+                elif isinstance(v, np.ndarray) and isinstance(v.ravel()[0], str):
+                    varr = [replace_root(k, vv) for vv in v.ravel()]
+                    ret[k] = np.array(varr).reshape(v.shape)
+                elif isinstance(v, dict):
+                    v1 = list(v.values())[0]
+                    if not isinstance(v1, np.ndarray):
+                        continue
+                    if not isinstance(v1.ravel()[0], str):
+                        continue
+                    for kk, vv in v.items():
+                        varr = [replace_root(k, vvv) for vvv in vv.ravel()]
+                        v[kk] = np.array(varr).reshape(vv.shape)
 
-            if update_files(ret):
-                self.save_data(save_name, **ret)
-            return ret
-
-        # find all map files
-        fs = self._get_files(data_root, data_subset, **opts)
-        fs.update(null_run=null_run, **opts)
-
-        if null_run:
-            # find all map files for null tests
-            fs2 = self._get_files(data_root2, data_subset2, suffix="2", **opts)
-
-            # make sure map tags match
-            if not fs["map_tags"] == fs2["map_tags2"]:
-                raise RuntimeError(
-                    "Found tags2 {}, expected {}".format(
-                        fs2["map_tags2"], fs["map_tags"]
-                    )
-                )
-
-            # make sure file counts match
-            for k, v in fs.items():
-                if not k.startswith("num_") or k + "2" not in fs2:
-                    continue
-                v2 = fs2[k + "2"]
-                if v != v2:
-                    ftype = k.split("_", 1)[1]
-                    raise RuntimeError(
-                        "Found {} {}2 files, expected {}".format(v2, ftype, v)
-                    )
-
-            # XXX make sure sim numbers match?
-
-            # we're doing a null test
-            fs.update(**fs2)
-
-        # update templates, reference and simulated data files
-        update_files(fs)
-
-        # store and return settings dictionary
-        self.save_data(save_name, **fs)
-        for k, v in fs.items():
+        # update all attributes
+        for k, v in ret.items():
             setattr(self, k, v)
-        return fs
+
+        if update:
+            self.save_data("files", **ret)
+        return ret
 
     def get_map(self, filename, check_nside=True, cache=False, **kwargs):
         """
@@ -1395,7 +1558,7 @@ class XFaster(object):
             If True, the output filename is constructed by checking the
             following list of options used in constructing data cross-spectra:
             ensemble_mean, ensemble_median, sim_index, sim_type, data_type,
-            template_cleaned, reference_subtracted.
+            template_cleaned, reference_type.
         bp_opts : bool
             If True, also check the following attributes (in addition to those
             checked if ``data_opts`` is True): weighted_bins, return_cls,
@@ -1432,8 +1595,8 @@ class XFaster(object):
                     name += [self.data_type]
                 if getattr(self, "template_cleaned", False):
                     name += ["clean", self.template_type]
-                if getattr(self, "reference_subtracted", False):
-                    name += ["ref_sub"]
+                if getattr(self, "reference_type", None) is not None:
+                    name += ["ref", self.reference_type]
         if bp_opts:
             if self.weighted_bins:
                 name += ["wbins"]
@@ -1455,6 +1618,17 @@ class XFaster(object):
         if not ext.startswith("."):
             ext = ".{}".format(ext)
         return os.path.join(self.output_root, "{}{}".format(name, ext))
+
+    def force_rerun_children(self, checkpoint):
+        """Trigger rerunning steps that depend on this checkpoint."""
+        for step in self.checkpoint_tree.get(checkpoint, []):
+            if step not in self.checkpoints:
+                raise ValueError(
+                    "Invalid checkpoint {}, must be one of {}".format(
+                        step, self.checkpoints
+                    )
+                )
+            self.force_rerun[step] = True
 
     def load_data(
         self,
@@ -1534,18 +1708,6 @@ class XFaster(object):
         """
 
         # checkpointing
-        def force_rerun_children():
-            """Trigger rerunning steps that depend on this checkpoint."""
-            for step in self.checkpoint_tree.get(checkpoint, []):
-                if step not in self.checkpoints:
-                    raise ValueError(
-                        "Invalid checkpoint {}, must be one of {}".format(
-                            step, self.checkpoints
-                        )
-                    )
-                self.force_rerun[step] = True
-            return None
-
         if checkpoint not in self.checkpoints:
             raise ValueError(
                 "Invalid checkpoint {}, must be one of {}".format(
@@ -1556,31 +1718,31 @@ class XFaster(object):
         if self.checkpoint == checkpoint:
             self.force_rerun[checkpoint] = True
         if self.force_rerun[checkpoint]:
-            return force_rerun_children()
+            return self.force_rerun_children(checkpoint)
 
         use_alt = False
         output_file = self.get_filename(name, ext=".npz", **file_opts)
         if not output_file:
-            return force_rerun_children()
+            return self.force_rerun_children(checkpoint)
         errmsg = "Error loading {}".format(output_file)
         if not os.path.exists(output_file):
-            self.warn("{}: Output file not found".format(errmsg))
+            self.warn("{}: File not found".format(errmsg))
             if alt_name is not None:
                 output_file = self.get_filename(alt_name, ext=".npz", **file_opts)
                 errmsg = "Error loading {}".format(output_file)
                 if not os.path.exists(output_file):
-                    self.warn("{}: Alternate output file not found".format(errmsg))
-                    return force_rerun_children()
+                    self.warn("{}: Alternate file not found".format(errmsg))
+                    return self.force_rerun_children(checkpoint)
                 else:
                     use_alt = True
             else:
-                return force_rerun_children()
+                return self.force_rerun_children(checkpoint)
 
         try:
             data = pt.load_and_parse(output_file)
         except Exception as e:
             self.warn("{}: {}".format(errmsg, str(e)))
-            return force_rerun_children()
+            return self.force_rerun_children(checkpoint)
 
         if fields is None:
             fields = list(data)
@@ -1590,7 +1752,7 @@ class XFaster(object):
 
         if shape_ref is not None and shape_ref not in fields:
             self.warn("{}: Field {} not found".format(errmsg, shape_ref))
-            return force_rerun_children()
+            return self.force_rerun_children(checkpoint)
 
         if to_attrs is True or to_attrs is False:
             to_attrs = [to_attrs] * len(fields)
@@ -1608,7 +1770,7 @@ class XFaster(object):
                     data[field] = None
                 else:
                     self.warn("{}: Field {} not found".format(errmsg, field))
-                    return force_rerun_children()
+                    return self.force_rerun_children(checkpoint)
             v = pt.dict_to_arr(data[field])
             try:
                 v.shape
@@ -1629,7 +1791,7 @@ class XFaster(object):
                                 errmsg, shape_ref, v.shape, shape
                             )
                         )
-                        return force_rerun_children()
+                        return self.force_rerun_children(checkpoint)
             if value_ref is not None:
                 for k in [field, attr]:
                     vref = value_ref.pop(k, "undef")
@@ -1645,15 +1807,16 @@ class XFaster(object):
                                 errmsg, k, v, vref
                             )
                         )
-                        return force_rerun_children()
+                        return self.force_rerun_children(checkpoint)
             ret[field] = data[field]
             if attr:
                 key = field if attr is True else attr
-                setattr(self, key, ret[field])
+                if key not in ["output_file", "data_version"]:
+                    setattr(self, key, ret[field])
 
         if value_ref:
             self.warn("{}: Missing reference fields {}".format(errmsg, list(value_ref)))
-            return force_rerun_children()
+            return self.force_rerun_children(checkpoint)
 
         self.log("Loaded input data from {}".format(output_file), "debug")
         if use_alt:
@@ -1891,7 +2054,6 @@ class XFaster(object):
             to_attrs=True,
             shape=mask_shape,
             shape_ref="wls",
-            alt_name="data_xcorr",
         )
 
         def process_gcorr(gcorr_file_in):
@@ -2110,8 +2272,6 @@ class XFaster(object):
     def get_masked_data(
         self,
         template_alpha=None,
-        subtract_reference_signal=False,
-        subtract_template_noise=True,
         template_specs=None,
         ensemble_mean=False,
         ensemble_median=False,
@@ -2153,16 +2313,6 @@ class XFaster(object):
             Dictionary of template scaling factors to apply to foreground
             templates to be subtracted from the data.  Keys should match
             original map tags in the data set.
-        subtract_reference_signal : bool
-            If True, subtract a reobserved reference signal from each data map.
-            The reference signal maps should be two datasets with uncorrelated
-            noise, such as Planck half-mission maps.  This option is used for
-            removing expected signal residuals from null tests.
-        subtract_template_noise : bool
-            If True, subtract average of cross spectra of an ensemble of noise
-            realizations corresponding to each template map, to debias
-            template-cleaned spectra.  Typically, this would be a noise model based
-            on the Planck FFP10 ensemble for each half-mission foreground template.
         template_specs : list
             Which spectra to use for alpha in the likelihood.
         ensemble_mean : bool
@@ -2223,7 +2373,7 @@ class XFaster(object):
                 map1-x-map2 cross spectra for every map pair. This contains the
                 sum cross spectra if constructing a null test.
             cls_data_clean:
-                template_subtracted spectra, if ``template_alpha`` is supplied.
+                template-subtracted spectra, if ``template_alpha`` is supplied.
             cls_template:
                 template cross spectra necessary to rebuild the
                 template-subtracted data when the ``template_alpha`` parameter
@@ -2232,8 +2382,7 @@ class XFaster(object):
                 (map1a-map1b)-x-(map2a-map2b) difference cross spectra for every
                 map pair, if computing a null test
             cls_ref, cls_ref_null:
-                reference cross spectra, if ``subtract_reference_signal`` is
-                True.
+                reference cross spectra, if ``reference_type`` is set.
         """
         import healpy as hp
 
@@ -2314,6 +2463,8 @@ class XFaster(object):
         # Check for output data on disk
         save_attrs = ["cls_data", "nside"]
         template_fit = False
+        subtract_reference_signal = self.reference_type is not None
+        subtract_template_noise = self.template_noise_type is not None
         if null_run:
             save_attrs += ["cls_data_null"]
             if subtract_reference_signal:
@@ -2325,7 +2476,6 @@ class XFaster(object):
         else:
             subtract_template_noise = False
         if subtract_reference_signal:
-            self.reference_subtracted = True
             save_attrs += ["cls_data_sub", "cls_ref"]
         if sim:
             if template_alpha_sim:
@@ -2369,32 +2519,6 @@ class XFaster(object):
             self.template_alpha = template_alpha
             self.template_cleaned = True
 
-        def subtract_reference_maps():
-            """
-            Internal data processing function to have reference maps subtracted from data map, useful for null tests
-            """
-            cls_data_sub = getattr(self, "cls_data_sub", OrderedDict())
-            if null_run:
-                cls_data_sub_null = getattr(self, "cls_data_sub_null", OrderedDict())
-
-            for spec in self.specs:
-                cls_data_sub[spec] = copy.deepcopy(self.cls_data[spec])
-                for xname, d in cls_data_sub[spec].items():
-                    t1, t2, t3 = self.cls_ref[spec][xname]
-                    d += -t1 - t2 + t3
-
-                # do null specs
-                if null_run:
-                    cls_data_sub_null[spec] = copy.deepcopy(self.cls_data_null[spec])
-                    for xname, d in cls_data_sub_null[spec].items():
-                        t1, t2, t3 = self.cls_ref_null[spec][xname]
-                        d += -t1 - t2 + t3
-
-            self.cls_data_sub = cls_data_sub
-            if null_run:
-                self.cls_data_sub_null = cls_data_sub_null
-            self.reference_subtracted = True
-
         # change template subtraction coefficients for pre-loaded data
         if all([hasattr(self, attr) for attr in save_attrs]):
             if not template_fit and not getattr(self, "template_cleaned", False):
@@ -2405,11 +2529,15 @@ class XFaster(object):
                     apply_template()
                 return {k: getattr(self, k) for k in save_attrs}
 
-        save_name = None if sim and not save_sim else "data"
-        if save_name is not None:
+        if sim and not save_sim:
+            # rerun dependent steps if not saving sims to disk
+            save_name = None
+            self.force_rerun_children("sim_data")
+        else:
+            save_name = "sim_data" if sim else "data"
             ret = self.load_data(
                 save_name,
-                "data",
+                save_name,
                 fields=save_attrs,
                 to_attrs=True,
                 shape=data_shape,
@@ -2418,12 +2546,9 @@ class XFaster(object):
                 extra_tag="xcorr",
             )
             if ret is not None:
-                self.reference_subtracted = False
-                self.template_cleaned = False
                 if null_run:
-                    if subtract_reference_signal and not self.reference_subtracted:
-                        subtract_reference_maps()
                     return ret
+                self.template_cleaned = False
                 if all([x is None for x in template_alpha.values()]):
                     self.template_cleaned = False
                     return ret
@@ -2677,9 +2802,25 @@ class XFaster(object):
         if subtract_reference_signal:
             self.cls_ref = cls_ref
             self.cls_ref_null = cls_ref_null
-            subtract_reference_maps()
-        else:
-            self.reference_subtracted = False
+
+            cls_data_sub = copy.deepcopy(self.cls_data)
+            if null_run:
+                cls_data_sub_null = copy.deepcopy(self.cls_data_null)
+
+            for spec in self.specs:
+                for xname, d in cls_data_sub[spec].items():
+                    t1, t2, t3 = self.cls_ref[spec][xname]
+                    d += -t1 - t2 + t3
+
+                # do null specs
+                if null_run:
+                    for xname, d in cls_data_sub_null[spec].items():
+                        t1, t2, t3 = self.cls_ref_null[spec][xname]
+                        d += -t1 - t2 + t3
+
+            self.cls_data_sub = cls_data_sub
+            if null_run:
+                self.cls_data_sub_null = cls_data_sub_null
 
         if not sim or save_sim:
             return self.save_data(
@@ -4380,7 +4521,7 @@ class XFaster(object):
         if transfer_run:
             obs_quant = self.cls_signal
         elif self.null_run:
-            if self.reference_subtracted:
+            if self.reference_type is not None:
                 obs_quant = self.cls_data_sub_null
             else:
                 obs_quant = self.cls_data_null
@@ -4410,7 +4551,7 @@ class XFaster(object):
                 debias[spec] = OrderedDict()
                 for xname in map_pairs:
                     nell[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
-                    if self.reference_subtracted:
+                    if self.reference_type is not None:
                         # signal term already subtracted with reference maps
                         debias[spec][xname] = np.copy(self.cls_noise_null[spec][xname])
                     else:
@@ -6102,7 +6243,6 @@ class XFaster(object):
         converge_criteria=0.01,
         reset_backend=None,
         file_tag=None,
-        subtract_template_noise=False,
         r_specs=["ee", "bb"],
         template_specs=["ee", "bb", "eb"],
     ):
@@ -6169,12 +6309,6 @@ class XFaster(object):
             set to True if the checkpoint has been forced to be rerun.
         file_tag : string
             If supplied, appended to the likelihood filename.
-        subtract_template_noise : bool
-            If True, subtract average of cross spectra of an ensemble of noise
-            realizations corresponding to each template map, to debias
-            template-cleaned spectra.  Typically, this would be a noise model
-            based on the Planck FFP10 ensemble for each half-mission foreground
-            template.
         r_specs : list
             Which spectra to use in the r likelihood.
         template_specs : list
@@ -6458,7 +6592,6 @@ class XFaster(object):
             else:
                 self.get_masked_data(
                     template_alpha=OrderedDict(zip(alpha_tags, alpha)),
-                    subtract_template_noise=subtract_template_noise,
                     template_specs=template_specs,
                 )
                 clsi = self.get_data_spectra(do_noise=False)
@@ -6511,7 +6644,6 @@ class XFaster(object):
                         for bn, bc in beam_coeffs[xname].items():
                             beam_term += bc * cls_mod_scal_beam[ctag][xname][bn]
                         dd[:] = cls_model_scalar[stag][xname] + beam_term
-
 
             # compute noise model terms
             if res is None:
