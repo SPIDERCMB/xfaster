@@ -5444,7 +5444,7 @@ class XFaster(object):
                     extra_tag=file_tag,
                 )
 
-                if "fg_tt" in self.bin_def:
+                if "fg_tt" in self.bin_def and not transfer_run:
                     out.update(
                         beta_fit=beta_fit,
                         beta_err=beta_err,
@@ -5561,7 +5561,7 @@ class XFaster(object):
             weighted_bins=self.weighted_bins,
         )
 
-        if "fg_tt" in self.bin_def:
+        if "fg_tt" in self.bin_def and not transfer_run:
             out.update(
                 delta_beta_prior=delta_beta_prior,
                 beta_fit=beta_fit,
