@@ -2719,9 +2719,11 @@ class XFaster(object):
 
             if self.ensemble_mean or self.ensemble_median:
                 for spec in self.specs:
-                    cls[spec][xname] = cls_ens[spec][xname]
+                    cls_dict = cls.setdefault(spec, OrderedDict())
+                    cls_dict[xname] = cls_ens[spec][xname]
                     if null_run:
-                        cls_null[spec][xname] = cls_ens_null[spec][xname]
+                        cls_dict = cls_null.setdefault(spec, OrderedDict())
+                        cls_dict[xname] = cls_ens_null[spec][xname]
                 continue
 
             imap_alms, inull_alms = process_index(idx)
