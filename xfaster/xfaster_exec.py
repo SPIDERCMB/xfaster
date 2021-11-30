@@ -46,6 +46,7 @@ def xfaster_run(
     template_type=None,
     template_noise_type=None,
     template_type_sim=None,
+    reference_type=None,
     # binning options
     lmin=2,
     lmax=500,
@@ -64,8 +65,6 @@ def xfaster_run(
     template_alpha=None,
     template_alpha_tags_sim=None,
     template_alpha_sim=None,
-    subtract_template_noise=True,
-    subtract_reference_signal=False,
     ensemble_mean=False,
     ensemble_median=False,
     sim_data=False,
@@ -200,13 +199,21 @@ def xfaster_run(
         containing one template per map tag.
     template_noise_type : string
         Tag for directory containing template noise sims to be averaged and
-        scaled similarly to the templates themselves.  These averaged sims
-        are used to debias template cross spectra due to correlations in the
-        way the noise ensembles are constructed.
+        scaled similarly to the templates themselves.  These averaged sims are
+        used to debias template cross spectra due to correlations in the way the
+        noise ensembles are constructed.  Typically, this would be a noise model
+        based on the Planck FFP10 ensemble for each half-mission foreground
+        template.
     template_type_sim : string
         Tag for directory containing foreground templates, to be scaled by a
         scalar value per map tag and added to the simulated data.  The directory
         contains one template per map tag.
+    reference_type : string
+        Tag for directory containing reobserved reference signals, to be
+        subtracted from each data map.  The reference signal maps should be two
+        datasets with uncorrelated noise, such as Planck half-mission maps.
+        This option is used for removing expected signal residuals from null
+        tests.
     lmin : int
        Minimum ell at which to start the lowest bin of the output spectra.
     lmax : int
@@ -258,16 +265,6 @@ def xfaster_run(
         Scalar to be applied to template map for addition to each of the
         simulated data maps with tags in the list ``template_alpha_tags``.
         If None, use the same values as `template_alpha`.
-    subtract_template_noise : bool
-        If True, subtract average of cross spectra of an ensemble of noise
-        realizations corresponding to each template map, to debias
-        template-cleaned spectra.  Typically, this would be a noise model based
-        on the Planck FFP10 ensemble for each half-mission foreground template.
-    subtract_reference_signal : bool
-        If True, subtract a reobserved reference signal from each data map.
-        The reference signal maps should be two datasets with uncorrelated noise,
-        such as Planck half-mission maps.  This option is used for removing
-        expected signal residuals from null tests.
     ensemble_mean : bool
         If True, substitute S+N ensemble means for Cls to test for bias
         in the estimator.
@@ -519,8 +516,7 @@ def xfaster_run(
         template_type=template_type,
         template_noise_type=template_noise_type,
         template_type_sim=template_type_sim,
-        subtract_reference_signal=subtract_reference_signal,
-        subtract_template_noise=subtract_template_noise,
+        reference_type=reference_type,
     )
     config_vars.update(file_opts, "File Options")
 
@@ -557,8 +553,6 @@ def xfaster_run(
 
     data_opts = dict(
         template_alpha=template_alpha,
-        subtract_reference_signal=subtract_reference_signal,
-        subtract_template_noise=subtract_template_noise,
         ensemble_mean=ensemble_mean,
         ensemble_median=ensemble_median,
         sim=sim_data,
@@ -652,7 +646,6 @@ def xfaster_run(
         num_walkers=mcmc_walkers,
         converge_criteria=like_converge_criteria,
         file_tag=like_tag,
-        subtract_template_noise=subtract_template_noise,
     )
     config_vars.update(like_opts, "Likelihood Estimation Options")
     config_vars.remove_option("XFaster General", "like_lmin")
@@ -1001,6 +994,7 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "template_type")
         add_arg(G, "template_noise_type")
         add_arg(G, "template_type_sim")
+        add_arg(G, "reference_type")
 
         # binning options
         G = PP.add_argument_group("binning options")
@@ -1029,9 +1023,7 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "template_alpha", nargs="+", argtype=float)
         add_arg(G, "template_alpha_tags_sim", nargs="+", metavar="TAG")
         add_arg(G, "template_alpha_sim", nargs="+", argtype=float)
-        add_arg(G, "subtract_template_noise")
         add_arg(G, "qb_file_data")
-        add_arg(G, "subtract_reference_signal")
         E = G.add_mutually_exclusive_group()
         add_arg(E, "ensemble_mean")
         add_arg(E, "ensemble_median")

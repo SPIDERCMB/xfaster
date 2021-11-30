@@ -1,5 +1,6 @@
 """ Module for parsing intermediate and output XFaster files. """
 import sys
+import os
 import numpy as np
 from warnings import warn
 from collections import OrderedDict
@@ -299,6 +300,18 @@ def load_and_parse(filename, check_version=True):
             data.pop("raw_root")
             data.pop("raw_files")
 
+        if "data_shape" in data:
+            for k in [
+                "data_shape",
+                "kern_shape",
+                "mask_shape",
+                "num_corr",
+                "num_kern",
+                "num_spec",
+                "num_spec_mask",
+            ]:
+                data.pop(k, None)
+
         if "foreground_type" in data:
             data["foreground_type_sim"] = data.pop("foreground_type")
         if "foreground_root" in data:
@@ -314,6 +327,19 @@ def load_and_parse(filename, check_version=True):
             ks = "{}_sim".format(k)
             if k in data and ks in data and data[ks] is None:
                 data[ks] = data[k]
+                for kk in [
+                    "{}_files",
+                    "{}_files2",
+                    "{}_root",
+                    "{}_root2",
+                    "num_{}",
+                    "num_{}2",
+                ]:
+                    if kk not in data:
+                        continue
+                    kk = kk.format(k.split("_")[0])
+                    kks = "{}_sim".format(kk)
+                    data[kks] = data[kk]
 
         if "clean_type" in data:
             data["data_type"] = data.pop("clean_type")
@@ -329,16 +355,18 @@ def load_and_parse(filename, check_version=True):
                 ref_root = None
 
             ref_files = {
-                "hm1a": data.pop("planck_files1_hm1"),
-                "hm1b": data.pop("planck_files2_hm1"),
-                "hm2a": data.pop("planck_files1_hm2"),
-                "hm2b": data.pop("planck_files2_hm2"),
+                "ref1a": data.pop("planck_files1_hm1"),
+                "ref1b": data.pop("planck_files2_hm1"),
+                "ref2a": data.pop("planck_files1_hm2"),
+                "ref2b": data.pop("planck_files2_hm2"),
             }
             if all([x is None for x in ref_files.values()]):
                 ref_files = None
 
+            data["reference_type"] = None if ref_root is None else "sub"
             data["reference_root"] = ref_root
             data["reference_files"] = ref_files
+            data["num_reference"] = data.pop("num_planck", 0)
 
         if "cls_noise0" in data:
             cls_res = OrderedDict()
@@ -362,7 +390,7 @@ def load_and_parse(filename, check_version=True):
             cbl = data["cbl"]
             for k in list(cbl):
                 if k.startswith("res0") or k.startswith("res1"):
-                    knew = "res_{}".format(k.split("_")[1], k[3])
+                    knew = "res_{}{}".format(k.split("_")[1], k[3])
                     cbl[knew] = cbl.pop(k)
 
         if "cls_tnoise_hm1" in data:
@@ -386,14 +414,39 @@ def load_and_parse(filename, check_version=True):
                         data[k2] = data[k1]
 
             if "template_noise_type" not in data:
-                data["template_noise_type"] = data["template_type"]
+                data["num_template_noise"] = 0
+                for k in ["type", "root", "files", "root2", "files2"]:
+                    data["template_noise_{}".format(k)] = None
 
         if "fix_bb_xfer" in data:
             data["fix_bb_transfer"] = data.pop("fix_bb_xfer")
 
         # update data version in memory
-        data["data_version"] = version = dv
+        data["data_version"] = dv
 
+    if version == 2:
+
+        if "reference_root" in data and "reference_type" not in data:
+            data["reference_type"] = None if data["reference_root"] is None else "sub"
+
+        # update data version in memory
+        data["data_version"] = dv
+
+    if version in [1, 2]:
+
+        if "map_files" in data:
+            data["map_names"] = np.asarray(
+                [os.path.relpath(f, data["map_root"]) for f in data["map_files"]]
+            )
+
+        if "map_files2" in data:
+            data["map_names2"] = np.asarray(
+                [os.path.relpath(f, data["map_root2"]) for f in data["map_files2"]]
+            )
+
+        data["data_version"] = dv
+
+    version = data.get("data_version", -1)
     if version != dv:
         raise ValueError(
             "Incompatible data file version.  Found {}, expected {}".format(version, dv)
