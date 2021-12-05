@@ -776,6 +776,7 @@ class XFaster(object):
 
             root1 = os.path.join(data_root, root)
             all_files = []
+            print("DEBUG: ", root1, name, subset)
             for f in map_files:
                 files = sorted(
                     glob.glob(
@@ -6569,7 +6570,8 @@ class XFaster(object):
 
             # load tensor and scalar terms separately
             # include all model components here
-            cbl_scalar = self.bin_cl_template(cls_shape_scalar, map_tag)
+            cbl_scalar = self.bin_cl_template(
+                cls_shape_scalar, map_tag, component="cmb")
             cls_model_scalar = self.get_model_spectra(
                 qb, cbl_scalar, cls_noise=cls_noise
             )
