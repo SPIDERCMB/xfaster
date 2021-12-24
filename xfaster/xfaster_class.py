@@ -1392,7 +1392,7 @@ class XFaster(object):
             setattr(self, k, v)
 
         if update:
-            self.save_data("files", **ret)
+            self.save_data(save_name, **ret)
         return ret
 
     def get_map(self, filename, check_nside=True, cache=False, **kwargs):
