@@ -1373,7 +1373,7 @@
 
         <span class="c1"># update data files</span>
         <span class="k">if</span> <span class="n">new</span> <span class="ow">or</span> <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;data_type&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">data_type</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">force_rerun</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="c1"># no need to force rerun since data filenames track data type</span>
             <span class="n">ret1</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_data_files</span><span class="p">(</span><span class="n">data_type</span><span class="o">=</span><span class="n">data_type</span><span class="p">))</span>
 
         <span class="c1"># update template files</span>
