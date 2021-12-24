@@ -1243,22 +1243,22 @@
             <span class="n">old_data_root2</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data_subset2</span><span class="o">=</span><span class="n">data_subset2</span><span class="p">)</span>
 
-        <span class="n">save_name</span> <span class="o">=</span> <span class="s2">&quot;files&quot;</span>
+        <span class="n">alt_name</span> <span class="o">=</span> <span class="s2">&quot;files&quot;</span>
 
         <span class="c1"># backward compatibility</span>
-        <span class="n">alt_name</span> <span class="o">=</span> <span class="p">[</span><span class="n">save_name</span><span class="p">]</span>
+        <span class="n">save_name</span> <span class="o">=</span> <span class="p">[</span><span class="n">alt_name</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">data_type</span> <span class="o">!=</span> <span class="s2">&quot;raw&quot;</span><span class="p">:</span>
-            <span class="n">alt_name</span> <span class="o">+=</span> <span class="p">[</span><span class="n">data_type</span><span class="p">]</span>
+            <span class="n">save_name</span> <span class="o">+=</span> <span class="p">[</span><span class="n">data_type</span><span class="p">]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">null_run</span> <span class="ow">and</span> <span class="n">template_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">alt_name</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;clean&quot;</span><span class="p">,</span> <span class="n">template_type</span><span class="p">]</span>
+            <span class="n">save_name</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;clean&quot;</span><span class="p">,</span> <span class="n">template_type</span><span class="p">]</span>
         <span class="k">elif</span> <span class="n">null_run</span> <span class="ow">and</span> <span class="n">reference_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">alt_name</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;ref_sub&quot;</span><span class="p">]</span>
-        <span class="n">alt_name</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">alt_name</span><span class="p">)</span>
+            <span class="n">save_name</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;ref_sub&quot;</span><span class="p">]</span>
+        <span class="n">save_name</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_name</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">alt_name</span> <span class="o">==</span> <span class="n">save_name</span><span class="p">:</span>
             <span class="n">alt_name</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span>
-            <span class="n">save_name</span><span class="p">,</span> <span class="n">save_name</span><span class="p">,</span> <span class="n">to_attrs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">value_ref</span><span class="o">=</span><span class="n">opts</span><span class="p">,</span> <span class="n">alt_name</span><span class="o">=</span><span class="n">alt_name</span>
+            <span class="n">save_name</span><span class="p">,</span> <span class="s2">&quot;files&quot;</span><span class="p">,</span> <span class="n">to_attrs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">value_ref</span><span class="o">=</span><span class="n">opts</span><span class="p">,</span> <span class="n">alt_name</span><span class="o">=</span><span class="n">alt_name</span>
         <span class="p">)</span>
         <span class="n">new</span> <span class="o">=</span> <span class="n">ret</span> <span class="ow">is</span> <span class="kc">None</span>
         <span class="n">update</span> <span class="o">=</span> <span class="n">new</span>
