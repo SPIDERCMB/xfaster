@@ -1299,7 +1299,7 @@ class XFaster(object):
 
         # update data files
         if new or ret["data_type"] != data_type:
-            self.force_rerun["data"] = True
+            # no need to force rerun since data filenames track data type
             ret1.update(self._get_data_files(data_type=data_type))
 
         # update template files
