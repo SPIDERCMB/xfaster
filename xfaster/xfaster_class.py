@@ -776,7 +776,6 @@ class XFaster(object):
 
             root1 = os.path.join(data_root, root)
             all_files = []
-            print("DEBUG: ", root1, name, subset)
             for f in map_files:
                 files = sorted(
                     glob.glob(
