@@ -1169,22 +1169,22 @@ class XFaster(object):
             old_data_root2 = None
             opts.update(data_subset2=data_subset2)
 
-        save_name = "files"
+        alt_name = "files"
 
         # backward compatibility
-        alt_name = [save_name]
+        save_name = [alt_name]
         if data_type != "raw":
-            alt_name += [data_type]
+            save_name += [data_type]
         if not null_run and template_type is not None:
-            alt_name += ["clean", template_type]
+            save_name += ["clean", template_type]
         elif null_run and reference_type is not None:
-            alt_name += ["ref_sub"]
-        alt_name = "_".join(alt_name)
+            save_name += ["ref_sub"]
+        save_name = "_".join(save_name)
         if alt_name == save_name:
             alt_name = None
 
         ret = self.load_data(
-            save_name, save_name, to_attrs=False, value_ref=opts, alt_name=alt_name
+            save_name, "files", to_attrs=False, value_ref=opts, alt_name=alt_name
         )
         new = ret is None
         update = new
@@ -1299,7 +1299,7 @@ class XFaster(object):
 
         # update data files
         if new or ret["data_type"] != data_type:
-            self.force_rerun["data"] = True
+            # no need to force rerun since data filenames track data type
             ret1.update(self._get_data_files(data_type=data_type))
 
         # update template files
@@ -1392,7 +1392,7 @@ class XFaster(object):
             setattr(self, k, v)
 
         if update:
-            self.save_data("files", **ret)
+            self.save_data(save_name, **ret)
         return ret
 
     def get_map(self, filename, check_nside=True, cache=False, **kwargs):
