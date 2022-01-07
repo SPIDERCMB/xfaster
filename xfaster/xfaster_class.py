@@ -4138,17 +4138,17 @@ class XFaster(object):
                 mstag = "{}_mix".format(stag)
                 mll[mstag] = OrderedDict()
 
-            beam = self.beam_windows[spec]
+            bw = self.beam_windows[spec]
             if not transfer:
-                xfer = self.transfer[stag]
+                tf = self.transfer[stag]
 
             for xname, (m0, m1) in map_pairs.items():
                 # beams
-                fb2 = beam[m0][lk] * beam[m1][lk]
+                fb2 = bw[m0][lk] * bw[m1][lk]
 
                 # transfer function
                 if not transfer:
-                    fb2 *= np.sqrt(xfer[m0][lk] * xfer[m1][lk])
+                    fb2 *= np.sqrt(tf[m0][lk] * tf[m1][lk])
 
                 # kernels
                 if spec == "tt":
