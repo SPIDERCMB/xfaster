@@ -3974,14 +3974,6 @@ class XFaster(object):
         specs = list(self.specs)
         lmax = self.lmax  # 2 * lmax
 
-        if not transfer_run:
-            # collect transfer function terms
-            transfer = OrderedDict()
-            for spec in specs:
-                transfer[spec] = OrderedDict()
-                for tag in map_tags:
-                    transfer[spec][tag] = self.transfer[spec][tag]
-
         lk = slice(0, lmax + 1)
         mll = OrderedDict()
 
@@ -3991,13 +3983,17 @@ class XFaster(object):
                 mspec = "{}_mix".format(spec)
                 mll[mspec] = OrderedDict()
 
+            bw = self.beam_windows[spec]
+            if not transfer_run:
+                tf = self.transfer[spec]
+
             for xname, (m0, m1) in map_pairs.items():
                 # beams
-                fb2 = self.beam_windows[spec][m0][lk] * self.beam_windows[spec][m1][lk]
+                fb2 = bw[m0][lk] * bw[m1][lk]
 
                 # transfer function
                 if not transfer_run:
-                    fb2 *= np.sqrt(transfer[spec][m0][lk] * transfer[spec][m1][lk])
+                    fb2 *= np.sqrt(tf[m0][lk] * tf[m1][lk])
 
                 # kernels
                 if spec == "tt":
