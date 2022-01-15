@@ -434,6 +434,9 @@ def load_and_parse(filename, check_version=True):
 
     if version in [1, 2]:
 
+        if "ref_freq" in data:
+            data["freq_ref"] = data.pop("ref_freq")
+
         if "map_files" in data:
             data["map_names"] = np.asarray(
                 [os.path.relpath(f, data["map_root"]) for f in data["map_files"]]
