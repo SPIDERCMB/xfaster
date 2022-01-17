@@ -657,11 +657,11 @@ def xfaster_run(
     spec_opts.pop("signal_transfer_spec")
     spec_opts.pop("foreground_spec")
     spec_opts.pop("foreground_transfer_spec")
+    spec_opts.pop("model_r")
     spec_opts.pop("freq_ref")
     spec_opts.pop("beta_ref")
     spec_opts.pop("freq_ref_transfer")
     spec_opts.pop("beta_ref_transfer")
-    spec_opts.pop("model_r")
     spec_opts.pop("qb_file")
     bandpwr_opts = spec_opts.copy()
     bandpwr_opts.pop("fix_bb_transfer")
@@ -1579,7 +1579,7 @@ class XFasterJobGroup(object):
             group_by=group_by,
             serial=True,
             verbose=verbose,
-            **self.batch_args,
+            **self.batch_args
         )
         self.reset()
         return job_ids

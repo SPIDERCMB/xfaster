@@ -2987,7 +2987,6 @@ class XFaster(object):
             shape=data_shape,
             shape_ref="cls_signal",
         )
-
         if ret is not None:
             if do_noise:
                 if self.cls_noise is not None:
@@ -3529,7 +3528,8 @@ class XFaster(object):
             search for a spectrum stored in
             ``foreground_<foreground_type>/spec_foreground_<foreground_type>.dat``.
             Otherwise, if the filename is a relative path and not found, the
-            config directory is searched.
+            config directory is searched.  If not supplied, a power law dust
+            model spectrum is assumed.
         freq_ref : float
             In GHz, reference frequency for dust model. Dust bandpowers output
             will be at this reference frequency.
@@ -3557,15 +3557,18 @@ class XFaster(object):
             Dictionary keyed by spectrum (cmb_tt, cmb_ee, ... , fg_tt, ...),
             each entry containing a vector of length 2 * lmax + 1.
         """
+
         lmax_kern = 2 * self.lmax
 
         specs = list(self.specs)
 
         comps = list(self.signal_components)
-        if self.null_run:
+        if self.null_run and "fg" in comps:
             comps.remove("fg")
         if component in self.signal_components:
             comps = [component]
+        elif component in ["scalar", "tensor"]:
+            comps = ["cmb"]
 
         if transfer:
             if "eb" in specs:
@@ -4272,7 +4275,7 @@ class XFaster(object):
             for comp in self.signal_components:
                 if any([k.startswith(comp + "_") for k in cls_shape]):
                     comps += [comp]
-            if "res" in self.components:
+            if "res" in self.components and not transfer:
                 comps += ["res"]
                 cls_noise = self.cls_noise_null if self.null_run else self.cls_noise
                 cls_res = self.cls_res_null if self.null_run else self.cls_res
@@ -4501,7 +4504,8 @@ class XFaster(object):
 
                     elif comp == "fg":
                         # beta scaling for foreground model
-                        beta_scale = self.fg_scales[xname][1] ** delta_beta
+                        # beta_scale = self.fg_scales[xname][1] ** delta_beta
+                        beta_scale = 1 + self.fg_scales[xname][2] * delta_beta
                         qbs = beta_scale * qb[stag]
                         if spec in ["ee", "bb"]:
                             qbm = beta_scale * qb[mstag]
@@ -4702,7 +4706,7 @@ class XFaster(object):
                         debias[spec][xname] = np.copy(self.cls_sim_null[spec][xname])
 
         # Non-nulls are debiased by average of N sims
-        elif self.cls_noise is not None:
+        elif not self.null_run and self.cls_noise is not None:
             for spec in specs:
                 nell[spec] = OrderedDict()
                 debias[spec] = OrderedDict()
@@ -4714,6 +4718,9 @@ class XFaster(object):
                     else:
                         nell[spec][xname] = np.copy(self.cls_noise[spec][xname])
                     debias[spec][xname] = np.copy(nell[spec][xname])
+
+        else:
+            nell = debias = None
 
         return obs, nell, debias
 
@@ -5137,17 +5144,18 @@ class XFaster(object):
                 # get foreground at pivot point spectral index
                 _, beta_scale, log_beta_scale = self.fg_scales[xname]
                 # separable beta correction
-                beta_scale = beta_scale ** delta_beta  # non-linear
-                # beta_scale = (1 + log_beta_scale * delta_beta)  # linear
+                # beta_scale = beta_scale ** delta_beta  # non-linear
+                beta_scale = 1 + log_beta_scale * delta_beta  # linear
+                beta_scale0 = log_beta_scale / beta_scale
 
                 # scale foreground model by frequency scaling adjusted for beta
                 for s1, sdat in dSdqb_mat1["fg"][xname].items():
                     for s2, sdat2 in sdat.items():
                         sdat2 *= beta_scale
 
-                    # with linearized derivative term
+                    # with linearized derivative term, evaluated at input beta
                     dSdqb_mat1["delta_beta"][xname][s1] = OrderedDict(
-                        {s1: cls_model["fg_{}".format(s1)][xname] * log_beta_scale}
+                        {s1: cls_model["fg_{}".format(s1)][xname] * beta_scale0}
                     )
 
         # Set up Dmat -- if it's not well conditioned, add noise to the
@@ -6022,7 +6030,7 @@ class XFaster(object):
                             continue
                         if spec == "bb" and fix_bb_transfer:
                             v = transfer["{}_ee".format(comp)][m0]
-                        elif spec in ["te", "tb", "eb"] and spec not in qb_transfer:
+                        elif spec in ["te", "tb", "eb"] and stag not in qb_transfer:
                             staga, stagb = ["{}_{}{}".format(comp, s, s) for s in spec]
                             v = np.sqrt(
                                 np.abs(transfer[staga][m0] * transfer[stagb][m0])
@@ -6252,10 +6260,10 @@ class XFaster(object):
                 freq_ref=self.freq_ref,
                 beta_ref=self.beta_ref,
             )
-        if "delta_beta" in self.bin_def:
-            # priors on frequency spectral index
-            self.delta_beta_fix = 1.0e-8
-            opts.update(delta_beta_prior=delta_beta_prior)
+            if "delta_beta" in self.bin_def:
+                # priors on frequency spectral index
+                self.delta_beta_fix = 1.0e-8
+                opts.update(delta_beta_prior=delta_beta_prior)
 
         if self.template_cleaned:
             opts.update(template_alpha=self.template_alpha)
@@ -6564,31 +6572,30 @@ class XFaster(object):
             cls_shape_scalar = self.get_signal_shape(
                 r=1.0, save=False, component="scalar"
             )
+            if "fg" in self.signal_components:
+                cls_shape_scalar.update(
+                    {k: cls for k, cls in self.cls_shape.items() if k.startswith("fg_")}
+                )
 
             cls_shape_tensor = self.get_signal_shape(
                 r=1.0, save=False, component="tensor"
             )
 
             # load tensor and scalar terms separately
-            # include all model components here
-            cbl_scalar = self.bin_cl_template(
-                cls_shape_scalar, map_tag, component="cmb")
+            cbl_scalar = self.bin_cl_template(cls_shape_scalar, map_tag)
             cls_model_scalar = self.get_model_spectra(
                 qb, cbl_scalar, cls_noise=cls_noise
             )
-            # include only CMB components for all additive terms below
-            cbl_tensor = self.bin_cl_template(
-                cls_shape_tensor, map_tag, component="cmb"
-            )
+            cbl_tensor = self.bin_cl_template(cls_shape_tensor, map_tag)
             cls_model_tensor = self.get_model_spectra(qb_cmb, cbl_tensor)
             if beam_prior is not None:
                 # load beam error term for tensor and scalar
                 cbl_scalar_beam = self.bin_cl_template(
-                    cls_shape_scalar, map_tag, component="cmb", beam_error=True
+                    cls_shape_scalar, map_tag, beam_error=True
                 )
-                cls_mod_scal_beam = self.get_model_spectra(qb_cmb, cbl_scalar_beam)
+                cls_mod_scal_beam = self.get_model_spectra(qb, cbl_scalar_beam)
                 cbl_tensor_beam = self.bin_cl_template(
-                    cls_shape_tensor, map_tag, component="cmb", beam_error=True
+                    cls_shape_tensor, map_tag, beam_error=True
                 )
                 cls_mod_tens_beam = self.get_model_spectra(qb_cmb, cbl_tensor_beam)
 
@@ -6690,6 +6697,7 @@ class XFaster(object):
                     beam_coeffs[xname] = d
 
             # compute new signal shape by scaling tensor component by r
+            # XXX handle beam fg terms here too
             if r is not None:
                 for stag, d in cls_model0.items():
                     comp, spec = stag.split("_", 1)

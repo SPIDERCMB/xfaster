@@ -424,7 +424,18 @@ def load_and_parse(filename, check_version=True):
         if "fix_bb_xfer" in data:
             data["fix_bb_transfer"] = data.pop("fix_bb_xfer")
 
-    if version >= 1:
+        # update data version in memory
+        data["data_version"] = dv
+
+    if version == 2:
+
+        if "reference_root" in data and "reference_type" not in data:
+            data["reference_type"] = None if data["reference_root"] is None else "sub"
+
+        # update data version in memory
+        data["data_version"] = dv
+
+    if version in [1, 2]:
 
         if "ref_freq" in data:
             data["freq_ref"] = data.pop("ref_freq")
@@ -439,19 +450,6 @@ def load_and_parse(filename, check_version=True):
 
         if "cls_sim" in data and "cls_fg" not in data:
             data["cls_fg"] = None
-
-        # update data version in memory
-        data["data_version"] = dv
-
-    if version == 2:
-
-        if "reference_root" in data and "reference_type" not in data:
-            data["reference_type"] = None if data["reference_root"] is None else "sub"
-
-        # update data version in memory
-        data["data_version"] = dv
-
-    if version in [1, 2]:
 
         if "map_files" in data:
             data["map_names"] = np.asarray(

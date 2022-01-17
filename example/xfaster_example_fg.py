@@ -59,7 +59,7 @@ xfaster_opts = {
     # beams
     "pixwin": True,
     "verbose": "info",
-    "checkpoint": "transfer",
+    "checkpoint": None,
 }
 
 if submit:
