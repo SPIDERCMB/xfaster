@@ -125,7 +125,7 @@ def sim_signal(isim, itag):
 
 def sim_noise(isim, itag):
     np.random.seed(nsim * (1 + itag) + isim)
-    noise = np.tile((3, 1), np.zeros(mask.size, dtype=float))
+    noise = np.tile(np.zeros(mask.size, dtype=float), (3, 1))
     noise[0][mask] = np.random.normal(scale=gnoise[itag], size=np.sum(mask))
     noise[1][mask] = np.random.normal(
         scale=gnoise[itag] * np.sqrt(2), size=np.sum(mask)  # pol
@@ -155,7 +155,7 @@ for i in range(nsim + 1):
             data_fg_file = os.path.join(data_fg_path, "map_{}.fits".format(tag))
             data = None
             if not os.path.exists(data_file):
-                data = sim_sig(i, ti) + data_noise_scale * sim_noise(i, ti)
+                data = sim_signal(i, ti) + data_noise_scale * sim_noise(i, ti)
                 write_map(data_file, data, mask)
                 print("Wrote data signal+noise map {}".format(tag))
             if do_fg and not os.path.exists(data_fg_file):
@@ -172,7 +172,7 @@ for i in range(nsim + 1):
 
             comps = []
             if not os.path.exists(sig_file):
-                write_map(sig_file, sim_sig(i, ti), mask)
+                write_map(sig_file, sim_signal(i, ti), mask)
                 comps += ["sig"]
             if not os.path.exists(noise_file):
                 write_map(noise_file, sim_noise(i, ti), mask)
