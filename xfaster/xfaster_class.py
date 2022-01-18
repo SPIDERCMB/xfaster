@@ -4378,7 +4378,7 @@ class XFaster(object):
                         if spec in ["ee", "bb"]:
                             qbm = qb[mstag]
 
-                    elif comp == "fg":
+                    elif comp == "fg" and delta_beta != 0.0:
                         # beta scaling for foreground model
                         # beta_scale = self.fg_scales[xname][1] ** delta_beta
                         beta_scale = 1 + self.fg_scales[xname][2] * delta_beta
@@ -5138,7 +5138,7 @@ class XFaster(object):
 
             # include priors in likelihood
             if "delta_beta" in qb and delta_beta_prior is not None:
-                chi = (qb["delta_beta"] - self.delta_beta_fix) / delta_beta_prior
+                chi = (delta_beta - self.delta_beta_fix) / delta_beta_prior
                 like -= chi ** 2 / 2.0
 
             if null_first_cmb:
@@ -5175,6 +5175,18 @@ class XFaster(object):
             wbl = OrderedDict()
             bin_index = pt.dict_to_index(qb)
 
+            # compute foreground scaling per frequency
+            if "fg" in self.signal_components:
+                fmat = OrderedDict()
+                for xname, (a, b, c) in self.fg_scales.items():
+                    fmat[xname] = OrderedDict()
+                    amp = a
+                    if "delta_beta" in qb:
+                        amp *= 1.0 + delta_beta * c
+                        # amp *= b ** delta_beta
+                    fmat[xname] = OrderedDict([(s, amp) for s in self.specs])
+                fmat = pt.dict_to_dmat(fmat, pol=self.pol)
+
             # compute window functions for each spectrum
             for k, (left, right) in bin_index.items():
                 comp, spec = k.split("_", 1)
@@ -5186,6 +5198,10 @@ class XFaster(object):
 
                 # construct Mll' matrix
                 marg = pt.dict_to_dmat(Mmat[spec], pol=self.pol)[..., ell, :]
+
+                # apply frequency scaling
+                if comp == "fg":
+                    marg = np.einsum("ij,ijlm->ijlm", fmat, marg)
 
                 # qb window function
                 wbl1 = np.einsum("iil,ijkl,jilm->km", gmat, sarg, marg) / 2.0 / norm
