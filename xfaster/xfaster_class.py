@@ -3604,7 +3604,7 @@ class XFaster(object):
                     cls_fg = np.tile(cls_fg, (len(specs), 1))
                 cls_shape.update({"fg_" + s: cls for s, cls in zip(specs, cls_fg)})
 
-            if self.pol and "fg_eb" not in cls_shape:
+            if self.pol:
                 if tbeb:
                     tbeb_flat = np.abs(cls_shape["fg_ee"][100]) * 1e-4
                     tbeb_flat = np.ones_like(cls_shape["fg_ee"]) * tbeb_flat
