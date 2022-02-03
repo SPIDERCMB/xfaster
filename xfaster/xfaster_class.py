@@ -3806,6 +3806,8 @@ class XFaster(object):
         foreground_fit=False,
         beta_fit=False,
         bin_width_fg=25,
+        lmin_fg=None,
+        lmax_fg=None,
     ):
         """
         Construct the bin definition array that defines the bins for each output
@@ -3858,6 +3860,12 @@ class XFaster(object):
             is applied to all cross spectra.  Otherwise, must be a list of up to
             six elements, listing bin widths for the spectra in the order (TT,
             EE, BB, TE, EB, TB).
+        lmin_fg : int
+            Minimum ell to use for defining foreground bins.  If not set,
+            defaults to ``lmin``.
+        lmax_fg : int
+            Maximum ell to use for defining foreground bins.  If not set,
+            defaults to ``lmax``.
 
         Returns
         -------
@@ -3916,9 +3924,14 @@ class XFaster(object):
             if self.pol and bin_width_fg[1] != bin_width_fg[2]:
                 raise ValueError("Foreground {}".format(bwerr))
 
+            lmin_fg = lmin_fg or lmin
+            assert lmin_fg >= lmin
+            lmax_fg = lmax_fg or self.lmax
+            assert lmax_fg <= lmax
+
             for spec, bw in zip(specs, bin_width_fg):
-                bins = np.arange(lmin, self.lmax, bw)
-                bins = np.append(bins, self.lmax + 1)
+                bins = np.arange(lmin_fg, lmax_fg, bw)
+                bins = np.append(bins, lmax_fg + 1)
                 bin_def["fg_{}".format(spec)] = np.column_stack((bins[:-1], bins[1:]))
                 nbins_fg += len(bins) - 1
             if beta_fit:
@@ -5104,7 +5117,8 @@ class XFaster(object):
             self.log(
                 "Found negative eigenvalues at ells {}".format(bad_ells), "warning"
             )
-            gmat[..., bad_idx] = 0
+            if likelihood:
+                gmat[..., bad_idx] = 0
         inv_lam = 1.0 / lam
         Dinv = np.einsum("...ij,...j,...kj->...ik", R, inv_lam, R).swapaxes(0, -1)
         del inv_lam

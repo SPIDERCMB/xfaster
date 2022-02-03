@@ -61,6 +61,8 @@ def xfaster_run(
     foreground_fit=False,
     beta_fit=False,
     bin_width_fg=30,
+    lmin_fg=None,
+    lmax_fg=None,
     # data options
     template_alpha_tags=None,
     template_alpha=None,
@@ -251,6 +253,12 @@ def xfaster_run(
         Width of each ell bin for each of the six output foreground spectra
         (TT, EE, BB, TE, EB, TB).  EE/BB bins should be the same
         in order to handle mixing correctly.
+    lmin_fg : int
+        Minimum ell to use for defining foreground bins.  If not set, defaults
+        to ``lmin``.
+    lmax_fg : int
+        Maximum ell to use for defining foreground bins.  If not set, defaults
+        to ``lmax``.
     template_alpha_tags : list of strings
         List of map tags from which foreground template maps should be
         subtracted.  These should be the original map tags, not
@@ -544,6 +552,8 @@ def xfaster_run(
         foreground_fit=foreground_fit,
         beta_fit=beta_fit,
         bin_width_fg=bin_width_fg,
+        lmin_fg=lmin_fg,
+        lmax_fg=lmax_fg,
     )
     config_vars.update(bin_opts, "Binning Options")
 
@@ -1018,6 +1028,8 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "foreground_fit")
         add_arg(G, "beta_fit")
         add_arg(G, "bin_width_fg", nargs="+")
+        add_arg(G, "lmin_fg", argtype=int)
+        add_arg(G, "lmax_fg", argtype=int)
 
         # data options
         G = PP.add_argument_group("data options")

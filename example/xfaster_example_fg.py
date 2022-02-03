@@ -43,6 +43,8 @@ xfaster_opts = {
     "foreground_fit": True,
     "beta_fit": False,
     "bin_width_fg": 40,
+    "lmin_fg": None,
+    "lmax_fg": None,
     "beta_ref": 1.54,
     "freq_ref": 359.7,
     # spectrum
