@@ -447,6 +447,12 @@ def load_and_parse(filename, check_version=True):
                 [os.path.relpath(f, data["map_root2"]) for f in data["map_files2"]]
             )
 
+        if "transfer" in data and "qb_transfer" in data:
+            xfer = data["transfer"]
+            for spec in ["tt", "ee", "bb", "te", "tb", "eb"]:
+                if spec in xfer:
+                    xfer["cmb_{}".format(spec)] = xfer.pop(spec)
+
         data["data_version"] = dv
 
     version = data.get("data_version", -1)
@@ -711,13 +717,14 @@ def dict_to_dsdqb_mat(dsdqb_dict, bin_def):
         in the Fisher iteration.
     """
     # get the unique map tags in order from the keys map1:map2
-    mtags = [x.split(":")[0] for x in dsdqb_dict["cmb"]]
+    mkeys = list(list(dsdqb_dict.values())[0].keys())
+    mtags = [x.split(":")[0] for x in mkeys]
     _, uind = np.unique(mtags, return_index=True)
     map_tags = np.asarray(mtags)[sorted(uind)]
     map_pairs = tag_pairs(map_tags, index=True)
 
     nmaps = len(map_tags)
-    pol_dim = 3 if "cmb_ee" in bin_def else 1
+    pol_dim = 3 if any(["ee" in x.split("_")[1] for x in bin_def]) else 1
 
     inds = spec_index()
     bin_index = dict_to_index(bin_def)

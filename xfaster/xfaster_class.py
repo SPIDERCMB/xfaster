@@ -4016,7 +4016,7 @@ class XFaster(object):
         Returns
         -------
         mll : OrderedDict
-            Dictionary of M_ll' matrices, keyed by spec and xname.
+            Dictionary of M_ll' matrices, keyed by component spec and xname.
         """
 
         map_pairs = None
@@ -4037,15 +4037,24 @@ class XFaster(object):
         lk = slice(0, lmax + 1)
         mll = OrderedDict()
 
-        for spec in specs:
-            mll[spec] = OrderedDict()
+        if transfer_run:
+            comps = ["cmb"]
+        else:
+            comps = list(self.signal_components)
+
+        for stag in self.bin_def:
+            comp, spec = stag.split("_", 1)
+            if comp not in comps:
+                continue
+
+            mll[stag] = OrderedDict()
             if spec in ["ee", "bb"]:
-                mspec = "{}_mix".format(spec)
-                mll[mspec] = OrderedDict()
+                mstag = "{}_mix".format(stag)
+                mll[mstag] = OrderedDict()
 
             bw = self.beam_windows[spec]
             if not transfer_run:
-                tf = self.transfer[spec]
+                tf = self.transfer[stag]
 
             for xname, (m0, m1) in map_pairs.items():
                 # beams
@@ -4067,9 +4076,9 @@ class XFaster(object):
                     k = self.pkern[xname][:, lk] - self.mkern[xname][:, lk]
 
                 # store final product
-                mll[spec][xname] = k * fb2
+                mll[stag][xname] = k * fb2
                 if spec in ["ee", "bb"]:
-                    mll[mspec][xname] = mk * fb2
+                    mll[mstag][xname] = mk * fb2
 
         return mll
 
@@ -4253,10 +4262,10 @@ class XFaster(object):
                         b_arr["b2"][xi] = beam_error[spec][tag2][lk]
 
                     # apply cross spectrum kernel terms
-                    d_arr[xi, ls] = mll[spec][xname][ls, lk]
+                    d_arr[xi, ls] = mll[stag][xname][ls, lk]
                     if spec in ["ee", "bb"]:
-                        mspec = spec + "_mix"
-                        md_arr[xi, ls] = mll[mspec][xname][ls, lk]
+                        mstag = stag + "_mix"
+                        md_arr[xi, ls] = mll[mstag][xname][ls, lk]
 
                 if "res" in comp:
                     continue
@@ -4749,9 +4758,12 @@ class XFaster(object):
         dim1 = pol_dim * num_maps
 
         comps = []
+        sig_comps = []
         for comp in self.components:
             if any([k.startswith(comp + "_") for k in cbl]):
                 comps += [comp]
+                if comp in self.signal_components:
+                    sig_comps += [comp]
 
         specs = list(cls_input)
 
@@ -4764,8 +4776,9 @@ class XFaster(object):
             if windows:
                 Dmat_obs = None
                 Mmat = OrderedDict()
-                for spec in specs:
-                    Mmat[spec] = OrderedDict()
+                for comp in sig_comps:
+                    for spec in specs:
+                        Mmat["{}_{}".format(comp, spec)] = OrderedDict()
                 mll = getattr(self, "mll", None)
                 if mll is None:
                     mll = self.kernel_precalc()
@@ -4783,8 +4796,9 @@ class XFaster(object):
             if likelihood:
                 Dmat_obs_b[xname] = OrderedDict()
             elif windows:
-                for spec in specs:
-                    Mmat[spec][xname] = OrderedDict()
+                for comp in sig_comps:
+                    for spec in specs:
+                        Mmat["{}_{}".format(comp, spec)][xname] = OrderedDict()
             else:
                 Dmat_obs[xname] = OrderedDict()
 
@@ -4793,10 +4807,12 @@ class XFaster(object):
                     # without bias subtraction for likelihood
                     Dmat_obs_b[xname][spec] = cls_input[spec][xname]
                 elif windows:
-                    Mmat[spec][xname][spec] = mll[spec][xname]
-                    if spec in ["ee", "bb"]:
-                        mspec = "bb" if spec == "ee" else "ee"
-                        Mmat[spec][xname][mspec] = mll["{}_mix".format(spec)][xname]
+                    for comp in sig_comps:
+                        stag = "{}_{}".format(comp, spec)
+                        Mmat[stag][xname][spec] = mll[stag][xname]
+                        if spec in ["ee", "bb"]:
+                            mspec = "bb" if spec == "ee" else "ee"
+                            Mmat[stag][xname][mspec] = mll["{}_mix".format(stag)][xname]
                 else:
                     if cls_debias is not None:
                         Dmat_obs[xname][spec] = (
@@ -5203,15 +5219,15 @@ class XFaster(object):
 
             # compute window functions for each spectrum
             for k, (left, right) in bin_index.items():
-                comp, spec = k.split("_", 1)
-                if comp not in self.signal_components:
+                if k not in Mmat:
                     continue
+                comp, spec = k.split("_", 1)
 
                 # select bins for corresponding spectrum
                 sarg = arg[:, :, left:right]
 
                 # construct Mll' matrix
-                marg = pt.dict_to_dmat(Mmat[spec], pol=self.pol)[..., ell, :]
+                marg = pt.dict_to_dmat(Mmat[k], pol=self.pol)[..., ell, :]
 
                 # apply frequency scaling
                 if comp == "fg":
@@ -5843,10 +5859,7 @@ class XFaster(object):
         Additionally the final output of ``fisher_iterate`` is stored in a
         dictionary called ``transfer_map<idx>`` for each map.
         """
-        transfer_shape = (
-            self.num_maps * len(self.specs),
-            self.nbins_cmb / len(self.specs),
-        )
+        comps = list(self.signal_components)
 
         opts = dict(
             converge_criteria=converge_criteria,
@@ -5863,8 +5876,6 @@ class XFaster(object):
             save_name,
             "transfer",
             to_attrs=False,
-            shape_ref="qb_transfer",
-            shape=transfer_shape,
             value_ref=opts,
         )
 
@@ -5872,40 +5883,52 @@ class XFaster(object):
         def expand_transfer(qb_transfer, bin_def, check_only=False):
             if not check_only:
                 transfer = OrderedDict()
-            for spec in self.specs:
-                stag = "cmb_{}".format(spec)
-                if stag not in bin_def or stag not in qb_transfer:
-                    raise KeyError(stag)
-                if not check_only:
-                    transfer[spec] = OrderedDict()
-                bd = bin_def[stag]
-                for m0 in self.map_tags:
-                    if m0 not in qb_transfer[stag]:
-                        raise KeyError(m0)
-                    lq = len(qb_transfer[stag][m0])
-                    lb = len(bin_def[stag])
-                    if lq != lb:
-                        raise ValueError(
-                            "Found {} transfer bins for component {} map {}, expected {}".format(
-                                lq, stag, m0, lb
+            if not check_only and "fg" in comps:
+                for stag in [k for k in qb_transfer if k.startswith("cmb_")]:
+                    ftag = stag.replace("cmb_", "fg_")
+                    qb_transfer[ftag] = OrderedDict()
+                    for m0, v in qb_transfer[stag].items():
+                        cb = np.mean(bin_def[stag], axis=1)
+                        fb = np.mean(bin_def[ftag], axis=1)
+                        vint = np.interp(fb, np.append([0], cb), np.append([0], v))
+                        qb_transfer[ftag][m0] = vint
+            for comp in comps:
+                for spec in self.specs:
+                    stag = "{}_{}".format(comp, spec)
+                    if stag not in bin_def or stag not in qb_transfer:
+                        raise KeyError(stag)
+                    if not check_only:
+                        transfer[stag] = OrderedDict()
+                    bd = bin_def[stag]
+                    for m0 in self.map_tags:
+                        if m0 not in qb_transfer[stag]:
+                            raise KeyError(m0)
+                        lq = len(qb_transfer[stag][m0])
+                        lb = len(bin_def[stag])
+                        if lq != lb:
+                            raise ValueError(
+                                "Found {} transfer bins for component {} map {}, expected {}".format(
+                                    lq, stag, m0, lb
+                                )
                             )
-                        )
-                    if check_only:
-                        continue
-                    if spec == "bb" and fix_bb_transfer:
-                        v = transfer["ee"][m0]
-                    elif spec in ["tb", "eb"] and stag not in qb_transfer:
-                        speca, specb = [s + s for s in spec]
-                        v = np.sqrt(np.abs(transfer[speca][m0] * transfer[specb][m0]))
-                    else:
-                        v = pt.expand_qb(qb_transfer[stag][m0], bd, self.lmax + 1)
-                    transfer[spec][m0] = v
+                        if check_only:
+                            continue
+                        if spec == "bb" and fix_bb_transfer:
+                            v = transfer["{}_ee".format(comp)][m0]
+                        elif spec in ["tb", "eb"] and stag not in qb_transfer:
+                            staga, stagb = ["{}_{}{}".format(comp, s, s) for s in spec]
+                            v = np.sqrt(np.abs(transfer[staga][m0] * transfer[stagb][m0]))
+                        else:
+                            v = pt.expand_qb(qb_transfer[stag][m0], bd, self.lmax + 1)
+                        transfer[stag][m0] = v
             if not check_only:
                 return transfer
 
         if ret is not None:
             try:
                 check_only = ret.get("transfer", None) is not None
+                if "fg" in comps:
+                    check_only &= any(k.startswith("fg_") for k in ret["qb_transfer"])
                 xfer = expand_transfer(ret["qb_transfer"], ret["bin_def"], check_only)
             except:
                 ret = None
