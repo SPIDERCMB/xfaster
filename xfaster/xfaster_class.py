@@ -5426,7 +5426,7 @@ class XFaster(object):
                     # so expect that it should be small if beta_ref is close
                     # (zeroes cause singular matrix problems)
                     qb[k] = [self.delta_beta_fix]
-                elif k.startswith("res_") or k.startswith("fg_"):
+                elif k.startswith("res_"):
                     # res qb=0 means noise model is 100% accurate.
                     qb[k] = 1e-5 * np.ones(len(v))
                 else:
