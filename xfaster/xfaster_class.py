@@ -5130,8 +5130,19 @@ class XFaster(object):
             # this should happen only far from max like
             bad_idx = np.unique(np.where(bad)[0])
             bad_ells = np.arange(ell.start, ell.stop)[bad_idx]
+            bads = (lam <= 0).sum(axis=0).astype(bool)
+            bad_specs = np.array(
+                [
+                    "{}_{}".format(m, s)
+                    for m in self.map_tags
+                    for s in ["tt", "ee", "bb"]
+                ]
+            )[bads]
             self.log(
-                "Found negative eigenvalues at ells {}".format(bad_ells), "warning"
+                "Found negative eigenvalues in specs {} at ells {}".format(
+                    bad_specs, bad_ells
+                ),
+                "warning",
             )
             if likelihood:
                 gmat[..., bad_idx] = 0
@@ -5917,7 +5928,9 @@ class XFaster(object):
                             v = transfer["{}_ee".format(comp)][m0]
                         elif spec in ["tb", "eb"] and stag not in qb_transfer:
                             staga, stagb = ["{}_{}{}".format(comp, s, s) for s in spec]
-                            v = np.sqrt(np.abs(transfer[staga][m0] * transfer[stagb][m0]))
+                            v = np.sqrt(
+                                np.abs(transfer[staga][m0] * transfer[stagb][m0])
+                            )
                         else:
                             v = pt.expand_qb(qb_transfer[stag][m0], bd, self.lmax + 1)
                         transfer[stag][m0] = v
