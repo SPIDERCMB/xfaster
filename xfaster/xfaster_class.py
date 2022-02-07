@@ -5906,11 +5906,17 @@ class XFaster(object):
                     if not check_only:
                         transfer[stag] = OrderedDict()
                     bd = bin_def[stag]
+                    if len(self.bin_def[stag]) != len(bd):
+                        raise ValueError(
+                            "Found {} transfer bins for component {}, expected {}".format(
+                                len(self.bin_def[stag]), len(bd)
+                            )
+                        )
                     for m0 in self.map_tags:
                         if m0 not in qb_transfer[stag]:
                             raise KeyError(m0)
                         lq = len(qb_transfer[stag][m0])
-                        lb = len(bin_def[stag])
+                        lb = len(self.bin_def[stag])
                         if lq != lb:
                             raise ValueError(
                                 "Found {} transfer bins for component {} map {}, expected {}".format(
