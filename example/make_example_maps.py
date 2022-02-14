@@ -28,12 +28,14 @@ data_noise_scale = 0.85  # make data noise less than sims by 15%
 
 mask_path = "maps_example/masks_rectangle"
 data_path = "maps_example/data_raw/full"
+data_nores_path = "maps_example/data_nores/full"
 data_fg_path = "maps_example/data_cmbfg/full"
+data_fg_nores_path = "maps_example/data_cmbfg_nores/full"
 sig_path = "maps_example/signal_synfast/full"
 noise_path = "maps_example/noise_gaussian/full"
 fg_path = "maps_example/foreground_gaussian/full"
 
-for p0 in [mask_path, data_path, data_fg_path, sig_path, noise_path, fg_path]:
+for p0 in [mask_path, data_path, data_nores_path, data_fg_path, data_fg_nores_path, sig_path, noise_path, fg_path]:
     if not os.path.exists(p0):
         os.makedirs(p0)
 
@@ -152,6 +154,7 @@ def sim_fg(isim, itag):
 for i in range(nsim + 1):
     for ti, tag in enumerate(tags):
         if i == 0:
+            # with residual noise
             data_file = os.path.join(data_path, "map_{}.fits".format(tag))
             data_fg_file = os.path.join(data_fg_path, "map_{}.fits".format(tag))
             data = None
@@ -164,6 +167,20 @@ for i in range(nsim + 1):
                     data = read_map(data_file)
                 write_map(data_fg_file, data + sim_fg(i, ti), mask)
                 print("Wrote data signal+noise+fg map {}".format(tag))
+
+            # without residual noise
+            data_file = os.path.join(data_nores_path, "map_{}.fits".format(tag))
+            data_fg_file = os.path.join(data_fg_nores_path, "map_{}.fits".format(tag))
+            data = None
+            if not os.path.exists(data_file):
+                data = sim_signal(i, ti) + sim_noise(i, ti)
+                write_map(data_file, data, mask)
+                print("Wrote data nores signal+noise map {}".format(tag))
+            if do_fg and not os.path.exists(data_fg_file):
+                if data is None:
+                    data = read_map(data_file)
+                write_map(data_fg_file, data + sim_fg(i, ti), mask)
+                print("Wrote data nores signal+noise+fg map {}".format(tag))
         else:
             sig_file = os.path.join(sig_path, "map_{}_{:04}.fits".format(tag, i - 1))
             noise_file = os.path.join(
