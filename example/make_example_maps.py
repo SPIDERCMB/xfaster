@@ -54,10 +54,11 @@ else:
 
 # spectrum for foreground sims
 fg_spec_file = os.path.join(*fg_path.split("/")[:-1], "spec_foreground_gaussian.dat")
-if os.path.exists(spec_file):
-    cls_fg = xf.spec_tools.load_camb_cl(spec_file, lfac=False)
+if os.path.exists(fg_spec_file):
+    cls_fg = xf.spec_tools.load_camb_cl(fg_spec_file, lfac=False)
 else:
     cls_fg = xf.spec_tools.dust_model(ell, lfac=False)
+    cls_fg = cls_fg[None, :] * np.array([50.0, 1.0, 0.5, 1e-4])[:, None]
     # write to disk for transfer function
     dls_fg = np.vstack([ell[2:], (lfac * cls_fg)[:, 2:]])
     np.savetxt(fg_spec_file, dls_fg.T)

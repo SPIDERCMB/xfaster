@@ -3585,7 +3585,7 @@ class XFaster(object):
             if filename_fg is None:
                 # From Planck LIV EE dust
                 cls_dust = st.dust_model(ell, lfac=True)
-                for spec in specs:
+                for spec in specs[:4 if self.pol else 1]:
                     cls_shape["fg_" + spec] = cls_dust
                 self.log(
                     "Added simple foregrounds to cls shape {}".format(list(cls_shape)),
@@ -3600,19 +3600,17 @@ class XFaster(object):
                     )
 
                 cls_fg = st.load_camb_cl(filename_fg, lmax=lmax_kern, pol=None)
-                if len(cls_fg) == 1:
-                    cls_fg = np.tile(cls_fg, (len(specs), 1))
                 cls_shape.update({"fg_" + s: cls for s, cls in zip(specs, cls_fg)})
 
             if self.pol:
-                if tbeb:
+                if tbeb and "fg_eb" not in cls_shape:
                     tbeb_flat = np.abs(cls_shape["fg_ee"][100]) * 1e-4
                     tbeb_flat = np.ones_like(cls_shape["fg_ee"]) * tbeb_flat
                     cls_shape["fg_eb"] = np.copy(tbeb_flat)
                     cls_shape["fg_tb"] = np.copy(tbeb_flat)
                 else:
-                    cls_shape["fb_eb"] = np.zeros_like(ell, dtype=float)
-                    cls_shape["fb_tb"] = np.zeros_like(ell, dtype=float)
+                    cls_shape["fg_eb"] = np.zeros_like(ell, dtype=float)
+                    cls_shape["fg_tb"] = np.zeros_like(ell, dtype=float)
 
             # frequency scaling for cross spectra
             fg_scales = OrderedDict()
