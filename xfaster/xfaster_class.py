@@ -4297,7 +4297,8 @@ class XFaster(object):
                                 cbl[mstag][xname][k] = md[xi]
                 else:
                     d = binup2(d_arr, bd, bw)
-                    md = binup2(md_arr, bd, bw)
+                    if mstag:
+                        md = binup2(md_arr, bd, bw)
                     for xi, xname in enumerate(map_pairs):
                         cbl[stag][xname] = d[xi]
                         if mstag:
