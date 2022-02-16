@@ -888,7 +888,7 @@ def bin_spec_simple(qb, cls_shape, bin_def, inv_fish=None, lfac=True):
             v = np.sum(shape[il])
             qb2cb[stag][idx] = v / np.sum(fac3[il])
             av = np.abs(shape[il])
-	    ellb[stag][idx] = np.sum(av * ell[il]) / np.sum(av)
+            ellb[stag][idx] = np.sum(av * ell[il]) / np.sum(av)
 
         cb[stag] = qb1 * qb2cb[stag]
 
