@@ -133,7 +133,10 @@
     <span class="n">bin_width_res</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
     <span class="n">res_specs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">foreground_fit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">beta_fit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">bin_width_fg</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">lmin_fg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">lmax_fg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="c1"># data options</span>
     <span class="n">template_alpha_tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">template_alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -170,8 +173,9 @@
     <span class="n">qb_file_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">signal_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">signal_transfer_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">foreground_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">model_r</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">ref_freq</span><span class="o">=</span><span class="mf">359.7</span><span class="p">,</span>
+    <span class="n">freq_ref</span><span class="o">=</span><span class="mf">359.7</span><span class="p">,</span>
     <span class="n">beta_ref</span><span class="o">=</span><span class="mf">1.54</span><span class="p">,</span>
     <span class="n">delta_beta_prior</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
     <span class="n">like_profiles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -316,10 +320,19 @@
 <span class="sd">        polarized maps, or TT for unpolarized maps.</span>
 <span class="sd">    foreground_fit : bool</span>
 <span class="sd">        Include foreground residuals in the estimator.</span>
+<span class="sd">    beta_fit : bool</span>
+<span class="sd">        If True, include a fit for ``delta_beta`` in the estimator.  Otherwise,</span>
+<span class="sd">        only fit for foreground amplitudes.</span>
 <span class="sd">    bin_width_fg : int or array_like of 6 ints</span>
 <span class="sd">        Width of each ell bin for each of the six output foreground spectra</span>
 <span class="sd">        (TT, EE, BB, TE, EB, TB).  EE/BB bins should be the same</span>
 <span class="sd">        in order to handle mixing correctly.</span>
+<span class="sd">    lmin_fg : int</span>
+<span class="sd">        Minimum ell to use for defining foreground bins.  If not set, defaults</span>
+<span class="sd">        to ``lmin``.</span>
+<span class="sd">    lmax_fg : int</span>
+<span class="sd">        Maximum ell to use for defining foreground bins.  If not set, defaults</span>
+<span class="sd">        to ``lmax``.</span>
 <span class="sd">    template_alpha_tags : list of strings</span>
 <span class="sd">        List of map tags from which foreground template maps should be</span>
 <span class="sd">        subtracted.  These should be the original map tags, not</span>
@@ -418,17 +431,22 @@
 <span class="sd">        to correct the noise ensemble by an appropriate set of residual ``qb``</span>
 <span class="sd">        values.</span>
 <span class="sd">    signal_spec : str</span>
-<span class="sd">        The spectrum data file to use for estimating bandpowers.  If not</span>
-<span class="sd">        supplied, will search for ``spec_signal_&lt;signal_type&gt;.dat`` in the signal</span>
-<span class="sd">        sim directory.</span>
+<span class="sd">        The spectrum data file to use for estimating signal component</span>
+<span class="sd">        bandpowers.  If not supplied, will search for</span>
+<span class="sd">        ``spec_signal_&lt;signal_type&gt;.dat`` in the signal sim directory.</span>
 <span class="sd">    signal_transfer_spec : str</span>
-<span class="sd">        The spectrum data file used to generate signal sims.  If not</span>
-<span class="sd">        supplied, will search for ``spec_signal_&lt;signal_type&gt;.dat`` in the</span>
-<span class="sd">        transfer signal sim directory. Used for computing transfer functions.</span>
+<span class="sd">        The spectrum data file used to generate signal sims for computing the</span>
+<span class="sd">        signal transfer function.  If not supplied, will search for</span>
+<span class="sd">        ``spec_signal_&lt;signal_transfer_type&gt;.dat`` in the transfer signal sim</span>
+<span class="sd">        directory.</span>
+<span class="sd">    foreground_spec : string</span>
+<span class="sd">        The spectrum data file to use for estimating foreground component</span>
+<span class="sd">        bandpowers.  If not supplied, use a simple power law model for dust</span>
+<span class="sd">        foregrounds.</span>
 <span class="sd">    model_r : float</span>
 <span class="sd">        The ``r`` value to use to compute a spectrum for estimating bandpowers.</span>
 <span class="sd">        Overrides ``signal_spec``.</span>
-<span class="sd">    ref_freq : float</span>
+<span class="sd">    freq_ref : float</span>
 <span class="sd">        In GHz, reference frequency for dust model. Dust bandpowers output</span>
 <span class="sd">        will be at this reference frequency.</span>
 <span class="sd">    beta_ref : float</span>
@@ -606,7 +624,10 @@
         <span class="n">res_specs</span><span class="o">=</span><span class="n">res_specs</span><span class="p">,</span>
         <span class="n">bin_width_res</span><span class="o">=</span><span class="n">bin_width_res</span><span class="p">,</span>
         <span class="n">foreground_fit</span><span class="o">=</span><span class="n">foreground_fit</span><span class="p">,</span>
+        <span class="n">beta_fit</span><span class="o">=</span><span class="n">beta_fit</span><span class="p">,</span>
         <span class="n">bin_width_fg</span><span class="o">=</span><span class="n">bin_width_fg</span><span class="p">,</span>
+        <span class="n">lmin_fg</span><span class="o">=</span><span class="n">lmin_fg</span><span class="p">,</span>
+        <span class="n">lmax_fg</span><span class="o">=</span><span class="n">lmax_fg</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">bin_opts</span><span class="p">,</span> <span class="s2">&quot;Binning Options&quot;</span><span class="p">)</span>
 
@@ -647,8 +668,9 @@
         <span class="n">fix_bb_transfer</span><span class="o">=</span><span class="n">fix_bb_transfer</span><span class="p">,</span>
         <span class="n">signal_spec</span><span class="o">=</span><span class="n">signal_spec</span><span class="p">,</span>
         <span class="n">signal_transfer_spec</span><span class="o">=</span><span class="n">signal_transfer_spec</span><span class="p">,</span>
+        <span class="n">foreground_spec</span><span class="o">=</span><span class="n">foreground_spec</span><span class="p">,</span>
         <span class="n">model_r</span><span class="o">=</span><span class="n">model_r</span><span class="p">,</span>
-        <span class="n">ref_freq</span><span class="o">=</span><span class="n">ref_freq</span><span class="p">,</span>
+        <span class="n">freq_ref</span><span class="o">=</span><span class="n">freq_ref</span><span class="p">,</span>
         <span class="n">beta_ref</span><span class="o">=</span><span class="n">beta_ref</span><span class="p">,</span>
         <span class="n">delta_beta_prior</span><span class="o">=</span><span class="n">delta_beta_prior</span><span class="p">,</span>
         <span class="n">cond_noise</span><span class="o">=</span><span class="n">cond_noise</span><span class="p">,</span>
@@ -667,7 +689,10 @@
     <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;multi_map&quot;</span><span class="p">)</span>
     <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;signal_spec&quot;</span><span class="p">)</span>
     <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;signal_transfer_spec&quot;</span><span class="p">)</span>
+    <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;foreground_spec&quot;</span><span class="p">)</span>
     <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;model_r&quot;</span><span class="p">)</span>
+    <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;freq_ref&quot;</span><span class="p">)</span>
+    <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;beta_ref&quot;</span><span class="p">)</span>
     <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;qb_file&quot;</span><span class="p">)</span>
     <span class="n">bandpwr_opts</span> <span class="o">=</span> <span class="n">spec_opts</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">bandpwr_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;fix_bb_transfer&quot;</span><span class="p">)</span>
@@ -676,8 +701,6 @@
     <span class="n">transfer_opts</span> <span class="o">=</span> <span class="n">spec_opts</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;cond_noise&quot;</span><span class="p">)</span>
     <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;cond_criteria&quot;</span><span class="p">)</span>
-    <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;ref_freq&quot;</span><span class="p">)</span>
-    <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;beta_ref&quot;</span><span class="p">)</span>
     <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;delta_beta_prior&quot;</span><span class="p">)</span>
     <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;null_first_cmb&quot;</span><span class="p">)</span>
     <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;return_cls&quot;</span><span class="p">)</span>
@@ -761,7 +784,13 @@
         <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Loading spectrum shape for bandpowers...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-        <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">signal_spec</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="n">model_r</span><span class="p">)</span>
+        <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span>
+            <span class="n">filename</span><span class="o">=</span><span class="n">signal_spec</span><span class="p">,</span>
+            <span class="n">r</span><span class="o">=</span><span class="n">model_r</span><span class="p">,</span>
+            <span class="n">filename_fg</span><span class="o">=</span><span class="n">foreground_spec</span><span class="p">,</span>
+            <span class="n">freq_ref</span><span class="o">=</span><span class="n">freq_ref</span><span class="p">,</span>
+            <span class="n">beta_ref</span><span class="o">=</span><span class="n">beta_ref</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">multi_map</span><span class="p">:</span>
         <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing multi-map bandpowers...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
@@ -1071,7 +1100,10 @@
             <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;SPEC&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;foreground_fit&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;beta_fit&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;bin_width_fg&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;lmin_fg&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;lmax_fg&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
 
         <span class="c1"># data options</span>
         <span class="n">G</span> <span class="o">=</span> <span class="n">PP</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;data options&quot;</span><span class="p">)</span>
@@ -1123,7 +1155,8 @@
         <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;signal_spec&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;model_r&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;signal_transfer_spec&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;ref_freq&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;foreground_spec&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;freq_ref&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;beta_ref&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;delta_beta_prior&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;like_profiles&quot;</span><span class="p">)</span>
