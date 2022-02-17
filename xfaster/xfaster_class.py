@@ -3677,7 +3677,7 @@ class XFaster(object):
             if filename_fg is None:
                 # From Planck LIV EE dust
                 cls_dust = st.dust_model(ell, lfac=True)
-                for spec in specs:
+                for spec in specs[:4 if self.pol else 1]:
                     cls_shape["fg_" + spec] = cls_dust
                 self.log(
                     "Added simple foregrounds to cls shape {}".format(list(cls_shape)),
@@ -3685,24 +3685,24 @@ class XFaster(object):
                 )
             else:
                 if not os.path.exists(filename_fg):
+                    filename_fg = os.path.join(self.config_root, filename_fg)
+                if not os.path.exists(filename_fg):
                     raise OSError(
                         "Missing foreground model file {}".format(filename_fg)
                     )
 
                 cls_fg = st.load_camb_cl(filename_fg, lmax=lmax_kern, pol=None)
-                if len(cls_fg) == 1:
-                    cls_fg = np.tile(cls_fg, (len(specs), 1))
                 cls_shape.update({"fg_" + s: cls for s, cls in zip(specs, cls_fg)})
 
-            if self.pol and "fg_eb" not in cls_shape:
-                if tbeb:
+            if self.pol:
+                if tbeb and "fg_eb" not in cls_shape:
                     tbeb_flat = np.abs(cls_shape["fg_ee"][100]) * 1e-4
                     tbeb_flat = np.ones_like(cls_shape["fg_ee"]) * tbeb_flat
                     cls_shape["fg_eb"] = np.copy(tbeb_flat)
                     cls_shape["fg_tb"] = np.copy(tbeb_flat)
-                elif not transfer:
-                    cls_shape["fb_eb"] = np.zeros_like(ell, dtype=float)
-                    cls_shape["fb_tb"] = np.zeros_like(ell, dtype=float)
+                else:
+                    cls_shape["fg_eb"] = np.zeros_like(ell, dtype=float)
+                    cls_shape["fg_tb"] = np.zeros_like(ell, dtype=float)
 
             # frequency scaling for cross spectra
             fg_scales = OrderedDict()
@@ -3896,6 +3896,8 @@ class XFaster(object):
         foreground_fit=False,
         beta_fit=False,
         bin_width_fg=25,
+        lmin_fg=None,
+        lmax_fg=None,
     ):
         """
         Construct the bin definition array that defines the bins for each output
@@ -3948,6 +3950,12 @@ class XFaster(object):
             is applied to all cross spectra.  Otherwise, must be a list of up to
             six elements, listing bin widths for the spectra in the order (TT,
             EE, BB, TE, EB, TB).
+        lmin_fg : int
+            Minimum ell to use for defining foreground bins.  If not set,
+            defaults to ``lmin``.
+        lmax_fg : int
+            Maximum ell to use for defining foreground bins.  If not set,
+            defaults to ``lmax``.
 
         Returns
         -------
@@ -4006,9 +4014,14 @@ class XFaster(object):
             if self.pol and bin_width_fg[1] != bin_width_fg[2]:
                 raise ValueError("Foreground {}".format(bwerr))
 
+            lmin_fg = lmin_fg or lmin
+            assert lmin_fg >= lmin
+            lmax_fg = lmax_fg or self.lmax
+            assert lmax_fg <= lmax
+
             for spec, bw in zip(specs, bin_width_fg):
-                bins = np.arange(lmin, self.lmax, bw)
-                bins = np.append(bins, self.lmax + 1)
+                bins = np.arange(lmin_fg, lmax_fg, bw)
+                bins = np.append(bins, lmax_fg + 1)
                 bin_def["fg_{}".format(spec)] = np.column_stack((bins[:-1], bins[1:]))
                 nbins_fg += len(bins) - 1
             if beta_fit:
@@ -4184,7 +4197,7 @@ class XFaster(object):
         Compute the Cbl matrix from the input shape spectrum.
 
         This method requires beam windows, kernels and transfer functions
-        (if ``transfer=False``) to have been precomputed.
+        (if ``transfer`` is False) to have been precomputed.
 
         Arguments
         ---------
@@ -4401,7 +4414,8 @@ class XFaster(object):
                                 cbl[mstag][xname][k] = md[xi]
                 else:
                     d = binup2(d_arr, bd, bw)
-                    md = binup2(md_arr, bd, bw)
+                    if mstag:
+                        md = binup2(md_arr, bd, bw)
                     for xi, xname in enumerate(map_pairs):
                         cbl[stag][xname] = d[xi]
                         if mstag:
@@ -4634,9 +4648,10 @@ class XFaster(object):
         obs : OrderedDict
             Dictionary of data cross spectra
         nell : OrderedDict
-            Dictionary of noise cross spectra, or None if transfer_comp is True.
+            Dictionary of noise cross spectra, or None if ``transfer_comp`` is set.
         debias : OrderedDict
-            Dictionary of debiased data cross spectra
+            Dictionary of debiased data cross spectra, or None if
+            ``transfer_comp`` is set.
         """
         # select map pairs
         if map_tag is not None:
@@ -5243,10 +5258,22 @@ class XFaster(object):
             # this should happen only far from max like
             bad_idx = np.unique(np.where(bad)[0])
             bad_ells = np.arange(ell.start, ell.stop)[bad_idx]
+            bads = (lam <= 0).sum(axis=0).astype(bool)
+            bad_specs = np.array(
+                [
+                    "{}_{}".format(m, s)
+                    for m in self.map_tags
+                    for s in ["tt", "ee", "bb"]
+                ]
+            )[bads]
             self.log(
-                "Found negative eigenvalues at ells {}".format(bad_ells), "warning"
+                "Found negative eigenvalues in specs {} at ells {}".format(
+                    bad_specs, bad_ells
+                ),
+                "warning",
             )
-            gmat[..., bad_idx] = 0
+            if likelihood:
+                gmat[..., bad_idx] = 0
         inv_lam = 1.0 / lam
         Dinv = np.einsum("...ij,...j,...kj->...ik", R, inv_lam, R).swapaxes(0, -1)
         del inv_lam
@@ -6018,6 +6045,7 @@ class XFaster(object):
             if not check_only and fix_fg_transfer and "fg" in comps:
                 for stag in [k for k in qb_transfer if k.startswith("cmb_")]:
                     ftag = stag.replace("cmb_", "fg_")
+                    qb_transfer[ftag] = OrderedDict()
                     for m0, v in qb_transfer[stag].items():
                         cb = np.mean(bin_def[stag], axis=1)
                         fb = np.mean(bin_def[ftag], axis=1)
@@ -6031,11 +6059,17 @@ class XFaster(object):
                     if not check_only:
                         transfer[stag] = OrderedDict()
                     bd = bin_def[stag]
+                    if len(self.bin_def[stag]) != len(bd):
+                        raise ValueError(
+                            "Found {} transfer bins for component {}, expected {}".format(
+                                len(self.bin_def[stag]), len(bd)
+                            )
+                        )
                     for m0 in self.map_tags:
                         if m0 not in qb_transfer[stag]:
                             raise KeyError(m0)
                         lq = len(qb_transfer[stag][m0])
-                        lb = len(bin_def[stag])
+                        lb = len(self.bin_def[stag])
                         if lq != lb:
                             raise ValueError(
                                 "Found {} transfer bins for component {} map {}, expected {}".format(
@@ -6052,7 +6086,7 @@ class XFaster(object):
                                 np.abs(transfer[staga][m0] * transfer[stagb][m0])
                             )
                         else:
-                            v = pt.expand_qb(qb_transfer[stag][m0], bd, self.lmax)
+                            v = pt.expand_qb(qb_transfer[stag][m0], bd, self.lmax + 1)
                         transfer[stag][m0] = v
             if not check_only:
                 return transfer
