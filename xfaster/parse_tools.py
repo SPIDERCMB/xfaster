@@ -22,6 +22,7 @@ __all__ = [
     "num_maps",
     "num_corr",
     "expand_qb",
+    "bin_spec_simple",
 ]
 
 
@@ -434,6 +435,9 @@ def load_and_parse(filename, check_version=True):
 
     if version in [1, 2]:
 
+        if "ref_freq" in data:
+            data["freq_ref"] = data.pop("ref_freq")
+
         if "map_files" in data:
             data["map_names"] = np.asarray(
                 [os.path.relpath(f, data["map_root"]) for f in data["map_files"]]
@@ -443,6 +447,12 @@ def load_and_parse(filename, check_version=True):
             data["map_names2"] = np.asarray(
                 [os.path.relpath(f, data["map_root2"]) for f in data["map_files2"]]
             )
+
+        if "transfer" in data and "qb_transfer" in data:
+            xfer = data["transfer"]
+            for spec in ["tt", "ee", "bb", "te", "tb", "eb"]:
+                if spec in xfer:
+                    xfer["cmb_{}".format(spec)] = xfer.pop(spec)
 
         data["data_version"] = dv
 
@@ -708,13 +718,14 @@ def dict_to_dsdqb_mat(dsdqb_dict, bin_def):
         in the Fisher iteration.
     """
     # get the unique map tags in order from the keys map1:map2
-    mtags = [x.split(":")[0] for x in dsdqb_dict["cmb"]]
+    mkeys = list(list(dsdqb_dict.values())[0].keys())
+    mtags = [x.split(":")[0] for x in mkeys]
     _, uind = np.unique(mtags, return_index=True)
     map_tags = np.asarray(mtags)[sorted(uind)]
     map_pairs = tag_pairs(map_tags, index=True)
 
     nmaps = len(map_tags)
-    pol_dim = 3 if "cmb_ee" in bin_def else 1
+    pol_dim = 3 if any(["ee" in x.split("_")[1] for x in bin_def]) else 1
 
     inds = spec_index()
     bin_index = dict_to_index(bin_def)
@@ -806,3 +817,89 @@ def expand_qb(qb, bin_def, lmax=None):
         cl[left:right] = qb[idx]
 
     return cl
+
+
+def bin_spec_simple(qb, cls_shape, bin_def, inv_fish=None, lfac=True):
+    """
+    Compute binned output spectra and covariances by averaging the shape
+    spectrum over each bin, and applying the appropriate `qb` bandpower
+    amplitude.  NB: this does *not* use the true window functions to compute
+    bandpowers, and the results should be treated as an approximation.
+
+    Arguments
+    ---------
+    qb : dict
+        Bandpower amplitudes for each spectrum bin.
+    cls_shape : dict
+        Shape spectrum
+    bin_def : dict
+        Bin definition dictionary
+    inv_fish : array_like, (nbins, nbins)
+        Inverse fisher matrix for computing the bin errors and covariance.  If
+        not supplied, these are not computed.
+    lfac : bool
+        If False, return binned C_l spectrum rather than the default D_l
+
+    Returns
+    -------
+    cb : dict of arrays
+        Binned spectrum
+    dcb : dict of arrays
+        Binned spectrum error, if `inv_fish` is not None
+    ellb : dict of arrays
+        Average bin center
+    cov : array_like, (nbins, nbins)
+        Binned spectrum covariance, if `inv_fish` is not None
+    qb2cb : dict
+        The conversion factor from `qb` to `cb`, computed by averaging over the
+        input shape spectrum.
+    """
+
+    lmax = dict_to_arr(bin_def).max()
+
+    qb2cb = OrderedDict()
+    ellb = OrderedDict()
+    cb = OrderedDict()
+
+    ell = np.arange(lmax + 1)
+    fac1 = (2 * ell + 1) / 4.0 / np.pi
+    fac2 = ell * (ell + 1) / 2.0 / np.pi
+    fac3 = fac1.copy()
+    fac3[ell > 0] /= fac2[ell > 0]
+    fac = fac1 if lfac else fac3
+
+    ecls_shape = {k: fac * v[: lmax + 1] for k, v in cls_shape.items()}
+
+    bin_index = dict_to_index(bin_def)
+    nbins =  0
+
+    for stag, qb1 in qb.items():
+        if stag not in ecls_shape:
+            continue
+
+        shape = ecls_shape[stag]
+        ellb[stag] = np.zeros_like(qb1)
+        qb2cb[stag] = np.zeros_like(qb1)
+
+        nbins = max([nbins, bin_index[stag][1]])
+
+        for idx, (left, right) in enumerate(bin_def[stag]):
+            il = slice(left, right)
+            v = np.sum(shape[il])
+            qb2cb[stag][idx] = v / np.sum(fac3[il])
+            av = np.abs(shape[il])
+            ellb[stag][idx] = np.sum(av * ell[il]) / np.sum(av)
+
+        cb[stag] = qb1 * qb2cb[stag]
+
+    if inv_fish is not None:
+        inv_fish = inv_fish[:nbins, :nbins]
+        qb2cb_arr = dict_to_arr(qb2cb, flatten=True)
+        dcb_arr = np.sqrt(qb2cb_arr * np.abs(np.diag(inv_fish)) * qb2cb_arr)
+        dcb = arr_to_dict(dcb_arr, qb2cb)
+        cov = np.outer(qb2cb_arr, qb2cb_arr) * inv_fish
+    else:
+        dcb = None
+        cov = None
+
+    return cb, dcb, ellb, cov, qb2cb

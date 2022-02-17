@@ -59,7 +59,10 @@ def xfaster_run(
     bin_width_res=25,
     res_specs=None,
     foreground_fit=False,
+    beta_fit=False,
     bin_width_fg=30,
+    lmin_fg=None,
+    lmax_fg=None,
     # data options
     template_alpha_tags=None,
     template_alpha=None,
@@ -96,8 +99,9 @@ def xfaster_run(
     qb_file_sim=None,
     signal_spec=None,
     signal_transfer_spec=None,
+    foreground_spec=None,
     model_r=None,
-    ref_freq=359.7,
+    freq_ref=359.7,
     beta_ref=1.54,
     delta_beta_prior=0.5,
     like_profiles=False,
@@ -242,10 +246,19 @@ def xfaster_run(
         polarized maps, or TT for unpolarized maps.
     foreground_fit : bool
         Include foreground residuals in the estimator.
+    beta_fit : bool
+        If True, include a fit for ``delta_beta`` in the estimator.  Otherwise,
+        only fit for foreground amplitudes.
     bin_width_fg : int or array_like of 6 ints
         Width of each ell bin for each of the six output foreground spectra
         (TT, EE, BB, TE, EB, TB).  EE/BB bins should be the same
         in order to handle mixing correctly.
+    lmin_fg : int
+        Minimum ell to use for defining foreground bins.  If not set, defaults
+        to ``lmin``.
+    lmax_fg : int
+        Maximum ell to use for defining foreground bins.  If not set, defaults
+        to ``lmax``.
     template_alpha_tags : list of strings
         List of map tags from which foreground template maps should be
         subtracted.  These should be the original map tags, not
@@ -344,17 +357,22 @@ def xfaster_run(
         to correct the noise ensemble by an appropriate set of residual ``qb``
         values.
     signal_spec : str
-        The spectrum data file to use for estimating bandpowers.  If not
-        supplied, will search for ``spec_signal_<signal_type>.dat`` in the signal
-        sim directory.
+        The spectrum data file to use for estimating signal component
+        bandpowers.  If not supplied, will search for
+        ``spec_signal_<signal_type>.dat`` in the signal sim directory.
     signal_transfer_spec : str
-        The spectrum data file used to generate signal sims.  If not
-        supplied, will search for ``spec_signal_<signal_type>.dat`` in the
-        transfer signal sim directory. Used for computing transfer functions.
+        The spectrum data file used to generate signal sims for computing the
+        signal transfer function.  If not supplied, will search for
+        ``spec_signal_<signal_transfer_type>.dat`` in the transfer signal sim
+        directory.
+    foreground_spec : string
+        The spectrum data file to use for estimating foreground component
+        bandpowers.  If not supplied, use a simple power law model for dust
+        foregrounds.
     model_r : float
         The ``r`` value to use to compute a spectrum for estimating bandpowers.
         Overrides ``signal_spec``.
-    ref_freq : float
+    freq_ref : float
         In GHz, reference frequency for dust model. Dust bandpowers output
         will be at this reference frequency.
     beta_ref : float
@@ -532,7 +550,10 @@ def xfaster_run(
         res_specs=res_specs,
         bin_width_res=bin_width_res,
         foreground_fit=foreground_fit,
+        beta_fit=beta_fit,
         bin_width_fg=bin_width_fg,
+        lmin_fg=lmin_fg,
+        lmax_fg=lmax_fg,
     )
     config_vars.update(bin_opts, "Binning Options")
 
@@ -573,8 +594,9 @@ def xfaster_run(
         fix_bb_transfer=fix_bb_transfer,
         signal_spec=signal_spec,
         signal_transfer_spec=signal_transfer_spec,
+        foreground_spec=foreground_spec,
         model_r=model_r,
-        ref_freq=ref_freq,
+        freq_ref=freq_ref,
         beta_ref=beta_ref,
         delta_beta_prior=delta_beta_prior,
         cond_noise=cond_noise,
@@ -593,7 +615,10 @@ def xfaster_run(
     spec_opts.pop("multi_map")
     spec_opts.pop("signal_spec")
     spec_opts.pop("signal_transfer_spec")
+    spec_opts.pop("foreground_spec")
     spec_opts.pop("model_r")
+    spec_opts.pop("freq_ref")
+    spec_opts.pop("beta_ref")
     spec_opts.pop("qb_file")
     bandpwr_opts = spec_opts.copy()
     bandpwr_opts.pop("fix_bb_transfer")
@@ -602,8 +627,6 @@ def xfaster_run(
     transfer_opts = spec_opts.copy()
     transfer_opts.pop("cond_noise")
     transfer_opts.pop("cond_criteria")
-    transfer_opts.pop("ref_freq")
-    transfer_opts.pop("beta_ref")
     transfer_opts.pop("delta_beta_prior")
     transfer_opts.pop("null_first_cmb")
     transfer_opts.pop("return_cls")
@@ -687,7 +710,13 @@ def xfaster_run(
         X.get_signal_shape(flat=True)
     else:
         X.log("Loading spectrum shape for bandpowers...", "notice")
-        X.get_signal_shape(filename=signal_spec, r=model_r)
+        X.get_signal_shape(
+            filename=signal_spec,
+            r=model_r,
+            filename_fg=foreground_spec,
+            freq_ref=freq_ref,
+            beta_ref=beta_ref,
+        )
 
     if multi_map:
         X.log("Computing multi-map bandpowers...", "notice")
@@ -997,7 +1026,10 @@ def xfaster_parse(args=None, test=False):
             metavar="SPEC",
         )
         add_arg(G, "foreground_fit")
+        add_arg(G, "beta_fit")
         add_arg(G, "bin_width_fg", nargs="+")
+        add_arg(G, "lmin_fg", argtype=int)
+        add_arg(G, "lmax_fg", argtype=int)
 
         # data options
         G = PP.add_argument_group("data options")
@@ -1049,7 +1081,8 @@ def xfaster_parse(args=None, test=False):
         add_arg(E, "signal_spec")
         add_arg(E, "model_r")
         add_arg(G, "signal_transfer_spec")
-        add_arg(G, "ref_freq")
+        add_arg(G, "foreground_spec")
+        add_arg(G, "freq_ref", argtype=float)
         add_arg(G, "beta_ref", argtype=float)
         add_arg(G, "delta_beta_prior", argtype=float)
         add_arg(G, "like_profiles")
