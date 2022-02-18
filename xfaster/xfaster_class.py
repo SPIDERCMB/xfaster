@@ -4071,10 +4071,10 @@ class XFaster(object):
                 # extract transfer matrix terms
                 if use_transfer_matrix:
                     tm = self.transfer_matrix[xname][spec]
-                    mll[spec][xname] = tm[spec][:, lk]
+                    mll[stag][xname] = tm[spec][:, lk]
                     if spec in ["ee", "bb"]:
                         spec2 = "bb" if spec == "ee" else "ee"
-                        mll[mspec][xname] = tm[spec2][:, lk]
+                        mll[mstag][xname] = tm[spec2][:, lk]
                     continue
 
                 # beams
