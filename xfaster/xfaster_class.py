@@ -2595,7 +2595,7 @@ class XFaster(object):
             return files[fidx.index(sidx)]
 
         def get_map_alms(idx, suffix=""):
-            m = mn = mr = None
+            m = mn_alms = None
             if sim and "noise" in sim_type:
                 rls1 = rls.get(self.map_tags[idx], None)
 
@@ -2617,12 +2617,18 @@ class XFaster(object):
                 if "noise" in sim_type:
                     f = get_map_file("noise_files_sim", idx, suffix)
                     mn = self.get_map(f)
-                    if m is None:
-                        m = mn
-                    else:
-                        m += mn
                     if rls1 is None:
-                        mn = None
+                        if m is None:
+                            m = mn
+                        else:
+                            m += mn
+                    else:
+                        self.apply_mask(mn, mask)
+                        mn_alms = self.map2alm(mn, self.pol)
+                        for s, spec in enumerate(self.specs):
+                            if spec in rls1:
+                                mn_alms[s] += hp.almxfl(mn_alms[s], rls1[spec])
+                    del mn
 
                 if "foreground" in sim_type:
                     f = get_map_file("foreground_files_sim", idx, suffix)
@@ -2647,14 +2653,9 @@ class XFaster(object):
             self.apply_mask(m, mask)
             m_alms = self.map2alm(m, self.pol)
 
-            if sim and "noise" in sim_type:
-                # add noise residuals
-                if rls1 is not None:
-                    self.apply_mask(mn, mask)
-                    mn_alms = self.map2alm(mn, self.pol)
-                    for s, spec in enumerate(self.specs):
-                        if spec in rls1:
-                            m_alms[s] += hp.almxfl(mn_alms[s], rls1[spec])
+            if sim and "noise" in sim_type and rls1 is not None:
+                # add noise rescaled by residuals
+                m_alms += mn_alms
 
             return m_alms
 
