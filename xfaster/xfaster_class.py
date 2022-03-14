@@ -2249,11 +2249,11 @@ class XFaster(object):
             _, specs, map_tag = k.split("_", 2)
             specs = [x + x for x in np.unique(list(specs))]
 
-            res_qb = np.sqrt(1.0 + data["qb"][k]) - 1.0
+            res_qb = np.sqrt(1.0 + data["qb"][k])
             (bad,) = np.where(np.isnan(res_qb))
             if len(bad):
                 self.warn("Unphysical residuals fit, nulling {} bins {}".format(k, bad))
-                res_qb[bad] = 0.0
+                res_qb[bad] = 1.0
             rl = pt.expand_qb(res_qb, bd)
 
             if map_tag not in rls:
@@ -2627,7 +2627,7 @@ class XFaster(object):
                         mn_alms = self.map2alm(mn, self.pol)
                         for s, spec in enumerate(self.specs):
                             if spec in rls1:
-                                mn_alms[s] += hp.almxfl(mn_alms[s], rls1[spec])
+                                mn_alms[s] = hp.almxfl(mn_alms[s], rls1[spec])
                     del mn
 
                 if "foreground" in sim_type:
@@ -2987,7 +2987,7 @@ class XFaster(object):
             if rls is not None:
                 for s, spec in enumerate(self.specs):
                     if spec in rls:
-                        m_alms[s] += hp.almxfl(m_alms[s], rls[spec])
+                        m_alms[s] = hp.almxfl(m_alms[s], rls[spec])
 
             return m_alms
 
