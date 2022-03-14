@@ -527,9 +527,11 @@
     <span class="n">all_opts</span><span class="p">[</span><span class="s2">&quot;template_alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">template_alpha</span>
     <span class="n">all_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;template_alpha_tags&quot;</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">template_alpha_tags_sim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">template_alpha_sim</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">else</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">template_alpha_tags_sim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">template_alpha_sim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">template_alpha_tags_sim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">template_alpha_tags_sim</span> <span class="o">=</span> <span class="n">template_alpha_tags</span>
+        <span class="k">if</span> <span class="n">template_alpha_sim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">template_alpha_sim</span> <span class="o">=</span> <span class="p">[</span><span class="n">template_alpha</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">template_alpha_tags</span><span class="p">]</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">template_alpha_tags_sim</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">template_alpha_sim</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="s2">&quot;template_alpha_tags_sim and template_alpha_sim must be the same length&quot;</span>
