@@ -458,9 +458,11 @@ def xfaster_run(
     all_opts["template_alpha"] = template_alpha
     all_opts.pop("template_alpha_tags")
 
-    if template_alpha_tags_sim is None:
-        template_alpha_sim = None
-    else:
+    if template_alpha_tags_sim is not None or template_alpha_sim is not None:
+        if template_alpha_tags_sim is None:
+            template_alpha_tags_sim = template_alpha_tags
+        if template_alpha_sim is None:
+            template_alpha_sim = [template_alpha[k] for k in template_alpha_tags]
         if len(template_alpha_tags_sim) != len(template_alpha_sim):
             raise ValueError(
                 "template_alpha_tags_sim and template_alpha_sim must be the same length"
