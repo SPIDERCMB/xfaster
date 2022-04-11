@@ -2644,10 +2644,6 @@ class XFaster(object):
             return files[fidx.index(sidx)]
 
         def get_map_alms(idx, suffix=""):
-            m = mn_alms = None
-            if sim and "noise" in sim_type:
-                rls1 = rls.get(self.map_tags[idx], None)
-
             mask = self.get_mask(self.mask_files[idx])
             if not sim:
                 # data from disk
@@ -2656,21 +2652,23 @@ class XFaster(object):
 
             else:
                 # simulated data constructed from individual components
+                shape = (3, self.npix) if self.pol else (self.npix, )
+                m = np.zeros(shape, dtype=float)
+
                 if "signal" in sim_type:
                     f = get_map_file("signal_files_sim", idx, suffix)
-                    m = self.get_map(f)
+                    m += self.get_map(f)
                     if r is not None:
                         f = get_map_file("tensor_files_sim", idx, suffix)
                         m += np.sqrt(r) * self.get_map(f)
 
                 if "noise" in sim_type:
+                    mn_alms = None
+                    rls1 = rls.get(self.map_tags[idx], None)
                     f = get_map_file("noise_files_sim", idx, suffix)
                     mn = self.get_map(f)
                     if rls1 is None:
-                        if m is None:
-                            m = mn
-                        else:
-                            m += mn
+                        m += mn
                     else:
                         self.apply_mask(mn, mask)
                         mn_alms = self.map2alm(mn, self.pol)
@@ -2681,28 +2679,18 @@ class XFaster(object):
 
                 if "foreground" in sim_type:
                     f = get_map_file("foreground_files_sim", idx, suffix)
-                    mf = self.get_map(f)
-                    if m is None:
-                        m = mf
-                    else:
-                        m += mf
-                    del mf
+                    m += self.get_map(f)
 
                 if "template" in sim_type:
                     alpha = template_alpha_sim.get(self.map_tags_orig[idx], None)
                     if alpha is not None:
                         f = get_map_file("template_files_sim", idx)
-                        mt = alpha * self.get_map(f)
-                        if m is None:
-                            m = mt
-                        else:
-                            m += mt
-                        del mt
+                        m += alpha * self.get_map(f)
 
             self.apply_mask(m, mask)
             m_alms = self.map2alm(m, self.pol)
 
-            if sim and "noise" in sim_type and rls1 is not None:
+            if sim and "noise" in sim_type and mn_alms is not None:
                 # add noise rescaled by residuals
                 m_alms += mn_alms
 
