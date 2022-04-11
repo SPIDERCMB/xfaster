@@ -2603,7 +2603,8 @@ class XFaster(object):
 
             else:
                 # simulated data constructed from individual components
-                m = np.zeros_like(mask, dtype=float)
+                shape = (3, self.npix) if self.pol else (self.npix, )
+                m = np.zeros(shape, dtype=float)
 
                 if "signal" in sim_type:
                     f = get_map_file("signal_files_sim", idx, suffix)
