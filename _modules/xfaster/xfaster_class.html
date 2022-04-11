@@ -2677,7 +2677,8 @@
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># simulated data constructed from individual components</span>
-                <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span> <span class="k">else</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">,</span> <span class="p">)</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="s2">&quot;signal&quot;</span> <span class="ow">in</span> <span class="n">sim_type</span><span class="p">:</span>
                     <span class="n">f</span> <span class="o">=</span> <span class="n">get_map_file</span><span class="p">(</span><span class="s2">&quot;signal_files_sim&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">suffix</span><span class="p">)</span>
