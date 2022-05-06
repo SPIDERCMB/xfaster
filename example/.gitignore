@@ -1,3 +1,4 @@
 *.fits
 spec_*.dat
 outputs_example
+templates_gaussian
