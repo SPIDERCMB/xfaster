@@ -1438,7 +1438,7 @@ class XFaster(object):
         kwargs.setdefault("dtype", None)
 
         self.log("Reading map from {}".format(filename), "all")
-        m = np.atleast_2d(hp.read_map(filename, verbose=False, **kwargs))
+        m = np.atleast_2d(hp.read_map(filename, **kwargs))
         m[hp.mask_bad(m)] = 0
         m[np.isnan(m)] = 0
 
