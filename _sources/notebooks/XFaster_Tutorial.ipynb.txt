@@ -11,7 +11,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "This tutorial is also a Jupyter notebook, which can be found in [the example notebooks directory](https://github.com/annegambrel/xfaster/tree/main/example/notebooks). If you're running the notebook, rather than looking at the documentation produced from it, the links will not work. [Look at the docs for working links](https://annegambrel.github.io/xfaster/notebooks/XFaster_Tutorial.html).\n",
+    "This tutorial is also a Jupyter notebook, which can be found in [the example notebooks directory](https://github.com/SPIDER-CMB/xfaster/tree/main/example/notebooks). If you're running the notebook, rather than looking at the documentation produced from it, the links will not work. [Look at the docs for working links](https://annegambrel.github.io/xfaster/notebooks/XFaster_Tutorial.html).\n",
     "\n",
     "The notebook reads intermediate output npz files from disk. To instead run the pieces starting from maps, first generate the example maps by running the script `xfaster/example/make_example_maps.py`, and set the checkpoint to something other than `None`.  This script generates sample signal (CMB), noise and foreground ensembles for the two SPIDER frequency bands, as well as two sets of simulated data maps (one with signal, noise and foreground components; and one with just signal and noise components)."
    ]
@@ -236,7 +236,7 @@
    "source": [
     "Now we'll proceed to stepping through each function in [xfaster_exec](../api.rst#module-xfaster.xfaster_exec). You'll never run the code this way--you'll just call [xfaster_run](../api.rst#xfaster.xfaster_exec.xfaster_run) or [xfaster_submit](../api.rst#xfaster.xfaster_exec.xfaster_submit) with the arguments that then get passed to these functions. But we'll do it this way so we can illustrate some of the intermediate data products as we go.\n",
     "\n",
-    "This tutorial will follow the example script in [xfaster/example](https://github.com/annegambrel/xfaster/tree/main/example). Note however that becasue maps are not stored in the repository, this notebook is instead reading from the intermediate files written to disk. \n",
+    "This tutorial will follow the example script in [xfaster/example](https://github.com/SPIDER-CMB/xfaster/tree/main/example). Note however that becasue maps are not stored in the repository, this notebook is instead reading from the intermediate files written to disk. \n",
     "\n",
     "First, we'll import XFaster and initialize our XFaster class with some arguments."
    ]
@@ -790,7 +790,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "We now have everything we need to compute the transfer function, which is computed per map per spectrum per CMB bin in [get_transfer()](../api.rst#xfaster.xfaster_class.XFaster.get_transfer). As a refresher, we're trying to get $q_b^{transfer}$, which is the same as our original expression for $q_b$ in [Equation 17 of the Algorithm page](https://annegambrel.github.io/xfaster/algorithm.html#equation-qb), except now we set noise=0, transfer function=1, and instead of using data for our observed signal, we use the ensemble average of our signal sims:\n",
+    "We now have everything we need to compute the transfer function, which is computed per map per spectrum per CMB bin in [get_transfer()](../api.rst#xfaster.xfaster_class.XFaster.get_transfer). As a refresher, we're trying to get $q_b^{transfer}$, which is the same as our original expression for $q_b$ in [Equation 17 of the Algorithm page](https://spider-cmb.github.io/xfaster/algorithm.html#equation-qb), except now we set noise=0, transfer function=1, and instead of using data for our observed signal, we use the ensemble average of our signal sims:\n",
     "\n",
     "\\begin{equation}\n",
     "q_{b}^{transfer}=\\frac{1}{2} \\sum_{b^{\\prime}} \\mathcal{F}_{b b^{\\prime}}^{-1} \\sum_{\\ell} (2 \\ell+1) g_\\ell^k\\left[ \\left(\\tilde{\\mathbf{C}}_{\\ell}^{-1} \\frac{\\partial \\tilde{\\mathbf{S}}_{\\ell}}{\\partial q_{b^{\\prime}}} \\tilde{\\mathbf{C}}_{\\ell}^{-1}\\right)\\tilde{\\mathbf{C}}_{\\ell}^{signal}\\right]_{kk}\n",
@@ -1174,11 +1174,11 @@
    "source": [
     "#### Computing the Fisher matrix\n",
     "\n",
-    "Ok! Now that we have all the pieces in place, all that's left is to do some matrix math and iterate over the equations for [q_b](https://annegambrel.github.io/xfaster/algorithm.html#equation-qb) and the [Fisher matrix]([qb](https://annegambrel.github.io/xfaster/algorithm.html#equation-qb) until the results converge.  The two equations are constructed in the function [fisher_calc()](../api.rst#xfaster.xfaster_class.XFaster.fisher_calc), which is called iteratively by [fisher_iterate()](../api.rst#xfaster.xfaster_class.XFaster.fisher_iterate) until convergence is reached.\n",
+    "Ok! Now that we have all the pieces in place, all that's left is to do some matrix math and iterate over the equations for [q_b](https://spider-cmb.github.io/xfaster/algorithm.html#equation-qb) and the [Fisher matrix](https://spider-cmb.github.io/xfaster/algorithm.html#equation-qb) until the results converge.  The two equations are constructed in the function [fisher_calc()](../api.rst#xfaster.xfaster_class.XFaster.fisher_calc), which is called iteratively by [fisher_iterate()](../api.rst#xfaster.xfaster_class.XFaster.fisher_iterate) until convergence is reached.\n",
     "\n",
     "In order to make all the quantities we've computed look like matrices, we have two utility functions, [dict_to_dmat()](../api.rst#xfaster.parse_tools.dict_to_dmat) and [dict_to_dsdqb_mat()](../api.rst#xfaster.parse_tools.dict_to_dsdqb_mat), that convert the dictionaries `Dmat1` (corresponding to $\\mathbf{\\tilde{C}}_\\ell$ in the equations) and `dSdqb_mat1_freq` ($\\partial \\mathbf{\\tilde{S}}_\\ell / \\partial q_b$) into matrices.\n",
     "\n",
-    "The `Dmat1` matrix has shape `(3 * num_maps, 3 * num_maps, lmax + 1)` and contains the `total` model terms for each map cross spectrum, ordered as [shown here](https://annegambrel.github.io/xfaster/algorithm.html#equation-dell).  The `dSdqb_mat1_freq` matrix has shape `(3 * num_maps, 3 * num_maps, nbins, lmax + 1)` and includes the CMB, residuals and frequency-corrected foreground components for all the crosses. We then compute the quantity\n",
+    "The `Dmat1` matrix has shape `(3 * num_maps, 3 * num_maps, lmax + 1)` and contains the `total` model terms for each map cross spectrum, ordered as [shown here](https://spider-cmb.github.io/xfaster/algorithm.html#equation-dell).  The `dSdqb_mat1_freq` matrix has shape `(3 * num_maps, 3 * num_maps, nbins, lmax + 1)` and includes the CMB, residuals and frequency-corrected foreground components for all the crosses. We then compute the quantity\n",
     "\n",
     "\\begin{equation}\n",
     "\\mathbf{\\tilde{C}}^{-1} \\frac{\\partial \\mathbf{\\tilde{S}}}{\\partial q_b} \\mathbf{\\tilde{C}}^{-1}\n",
