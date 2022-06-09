@@ -11,7 +11,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "This tutorial is also a Jupyter notebook, which can be found in [the example notebooks directory](https://github.com/SPIDER-CMB/xfaster/tree/main/example/notebooks). If you're running the notebook, rather than looking at the documentation produced from it, the links will not work. [Look at the docs for working links](https://annegambrel.github.io/xfaster/notebooks/XFaster_Tutorial.html).\n",
+    "This tutorial is also a Jupyter notebook, which can be found in [the example notebooks directory](https://github.com/SPIDER-CMB/xfaster/tree/main/example/notebooks). If you're running the notebook, rather than looking at the documentation produced from it, the links will not work. [Look at the docs for working links](https://spider-cmb.github.io/xfaster/notebooks/XFaster_Tutorial.html).\n",
     "\n",
     "The notebook reads intermediate output npz files from disk. To instead run the pieces starting from maps, first generate the example maps by running the script `xfaster/example/make_example_maps.py`, and set the checkpoint to something other than `None`.  This script generates sample signal (CMB), noise and foreground ensembles for the two SPIDER frequency bands, as well as two sets of simulated data maps (one with signal, noise and foreground components; and one with just signal and noise components)."
    ]
