@@ -184,3 +184,6 @@ epub_exclude_files = ['search.html']
 
 
 # -- Extension configuration -------------------------------------------------
+
+# concatenate class and __init__ docstrings
+autoclass_content = "both"
