@@ -101,6 +101,8 @@
     <span class="n">verbose</span><span class="o">=</span><span class="s2">&quot;notice&quot;</span><span class="p">,</span>
     <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">checkpoint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">alm_pixel_weights</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">alm_iter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">add_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="c1"># file options</span>
     <span class="n">data_root</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span>
@@ -218,6 +220,18 @@
 <span class="sd">    checkpoint : str</span>
 <span class="sd">        If supplied, re-compute all steps of the algorithm from this point</span>
 <span class="sd">        forward.  Valid checkpoints are {checkpoints}.</span>
+<span class="sd">    alm_pixel_weights : bool</span>
+<span class="sd">        If True, set the ``use_pixel_weights`` option to True when computing map</span>
+<span class="sd">        Alms using ``healpy.map2alm``.  If False, sets the ``use_weights``</span>
+<span class="sd">        option to True instead.  Note: pixel weights ensure accurate Alm</span>
+<span class="sd">        computation, but can only be used for analyses where ``lmax &lt; 1.5 *</span>
+<span class="sd">        nside``.</span>
+<span class="sd">    alm_iter : int</span>
+<span class="sd">        If given, set the ``iter`` option to the given value when computing map</span>
+<span class="sd">        Alms using ``healpy.map2alm``.  Using more iterations improves the</span>
+<span class="sd">        accuracy of the output Alms.  If not set, uses the default number of</span>
+<span class="sd">        iterations (3) as defined in healpy.  Ignored if ``alm_pixel_weights``</span>
+<span class="sd">        is True.</span>
 <span class="sd">    add_log : bool</span>
 <span class="sd">        If True, write log output to a file instead of to STDOUT.</span>
 <span class="sd">        The log will be in ``&lt;output_root&gt;/xfaster-&lt;output_tag&gt;.log``.</span>
@@ -569,6 +583,8 @@
         <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
         <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span>
         <span class="n">checkpoint</span><span class="o">=</span><span class="n">checkpoint</span><span class="p">,</span>
+        <span class="n">alm_pixel_weights</span><span class="o">=</span><span class="n">alm_pixel_weights</span><span class="p">,</span>
+        <span class="n">alm_iter</span><span class="o">=</span><span class="n">alm_iter</span><span class="p">,</span>
         <span class="n">add_log</span><span class="o">=</span><span class="n">add_log</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">common_opts</span><span class="p">,</span> <span class="s2">&quot;XFaster Common&quot;</span><span class="p">)</span>
@@ -1061,6 +1077,9 @@
             <span class="n">choices</span><span class="o">=</span><span class="n">xfc</span><span class="o">.</span><span class="n">XFaster</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">,</span>
             <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;CHECKPOINT&quot;</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="n">E</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">add_mutually_exclusive_group</span><span class="p">()</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;alm_pixel_weights&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;alm_iter&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
 
         <span class="c1"># file options</span>
         <span class="n">G</span> <span class="o">=</span> <span class="n">PP</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;file options&quot;</span><span class="p">)</span>

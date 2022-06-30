@@ -236,6 +236,8 @@
         <span class="n">verbose</span><span class="o">=</span><span class="s2">&quot;notice&quot;</span><span class="p">,</span>
         <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">checkpoint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">alm_pixel_weights</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">alm_iter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">add_log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -261,6 +263,17 @@
 <span class="sd">            If output data from this step forward exist on disk, they are</span>
 <span class="sd">            are re-computed rather than loading from file.</span>
 <span class="sd">            Options are {checkpoints}.</span>
+<span class="sd">        alm_pixel_weights : bool</span>
+<span class="sd">            If True, set the ``use_pixel_weights`` option to True when computing</span>
+<span class="sd">            map Alms using ``healpy.map2alm``.  If False, sets the</span>
+<span class="sd">            ``use_weights`` option to True instead.  Note: pixel weights ensure</span>
+<span class="sd">            accurate Alm computation, but can only be used for analyses where</span>
+<span class="sd">            ``lmax &lt; 1.5 * nside``.</span>
+<span class="sd">        alm_iter : int</span>
+<span class="sd">            If given, set the ``iter`` option to the given value when computing</span>
+<span class="sd">            map Alms using ``healpy.map2alm``.  Using more iterations improves</span>
+<span class="sd">            the accuracy of the output Alms.  If not set, uses the default</span>
+<span class="sd">            number of iterations (3) as defined in healpy.</span>
 <span class="sd">        add_log : bool</span>
 <span class="sd">            If True, write log output to a file instead of to STDOUT.</span>
 <span class="sd">            The log will be in ``&lt;output_root&gt;/run_&lt;output_tag&gt;.log``.</span>
@@ -286,6 +299,16 @@
                 <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">checkpoint</span> <span class="o">=</span> <span class="n">checkpoint</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">force_rerun</span> <span class="o">=</span> <span class="p">{</span><span class="n">cp</span><span class="p">:</span> <span class="kc">False</span> <span class="k">for</span> <span class="n">cp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">}</span>
+
+        <span class="c1"># map2alm options</span>
+        <span class="k">if</span> <span class="n">alm_pixel_weights</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+
+            <span class="k">if</span> <span class="n">hp</span><span class="o">.</span><span class="n">__version__</span> <span class="o">&lt;</span> <span class="s2">&quot;1.12.0&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;healpy &gt; 1.11.0 required for alm_pixel_weights, disabling&quot;</span><span class="p">)</span>
+                <span class="n">alm_pixel_weights</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alm_pixel_weights</span> <span class="o">=</span> <span class="n">alm_pixel_weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alm_iter</span> <span class="o">=</span> <span class="n">alm_iter</span>
 
         <span class="k">if</span> <span class="n">output_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">output_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
@@ -2035,9 +2058,20 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
 
-        <span class="k">if</span> <span class="n">pol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">pol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hp</span><span class="o">.</span><span class="n">map2alm</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lmax</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="n">pol</span><span class="p">,</span> <span class="n">use_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span></div>
+        <span class="n">opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">pol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pol</span> <span class="k">if</span> <span class="n">pol</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">pol</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alm_pixel_weights</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lmax</span> <span class="o">&gt;</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s2">&quot;Cannot use pixel weights for map2alm, lmax </span><span class="si">{}</span><span class="s2"> is &gt; &quot;</span>
+                    <span class="s2">&quot;1.5 * nside for nside=</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lmax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">use_pixel_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">use_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alm_iter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">iter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">alm_iter</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">hp</span><span class="o">.</span><span class="n">map2alm</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lmax</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="XFaster.alm2cl"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.alm2cl">[docs]</a>    <span class="k">def</span> <span class="nf">alm2cl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lmin</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">lmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">symmetric</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -2114,6 +2148,14 @@
         <span class="n">mask_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_shape</span>
         <span class="n">save_attrs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;wls&quot;</span><span class="p">,</span> <span class="s2">&quot;fsky&quot;</span><span class="p">,</span> <span class="s2">&quot;w1&quot;</span><span class="p">,</span> <span class="s2">&quot;w2&quot;</span><span class="p">,</span> <span class="s2">&quot;w4&quot;</span><span class="p">,</span> <span class="s2">&quot;gmat&quot;</span><span class="p">,</span> <span class="s2">&quot;nside&quot;</span><span class="p">,</span> <span class="s2">&quot;npix&quot;</span><span class="p">,</span> <span class="s2">&quot;gcorr&quot;</span><span class="p">]</span>
         <span class="n">save_name</span> <span class="o">=</span> <span class="s2">&quot;masks_xcorr&quot;</span>
+
+        <span class="n">opts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alm_pixel_weights</span><span class="p">:</span>
+            <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;alm_pixel_weights&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alm_pixel_weights</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">alm_iter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;alm_iter&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alm_iter</span>
+        <span class="n">save_attrs</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
+
         <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span>
             <span class="n">save_name</span><span class="p">,</span>
             <span class="s2">&quot;masks&quot;</span><span class="p">,</span>
@@ -2122,6 +2164,7 @@
             <span class="n">to_attrs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">shape</span><span class="o">=</span><span class="n">mask_shape</span><span class="p">,</span>
             <span class="n">shape_ref</span><span class="o">=</span><span class="s2">&quot;wls&quot;</span><span class="p">,</span>
+            <span class="n">value_ref</span><span class="o">=</span><span class="n">opts</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">process_gcorr</span><span class="p">(</span><span class="n">gcorr_file_in</span><span class="p">):</span>
