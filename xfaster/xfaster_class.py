@@ -162,6 +162,8 @@ class XFaster(object):
         verbose="notice",
         debug=False,
         checkpoint=None,
+        alm_pixel_weights=False,
+        alm_iter=None,
         add_log=False,
     ):
         """
@@ -187,6 +189,17 @@ class XFaster(object):
             If output data from this step forward exist on disk, they are
             are re-computed rather than loading from file.
             Options are {checkpoints}.
+        alm_pixel_weights : bool
+            If True, set the ``use_pixel_weights`` option to True when computing
+            map Alms using ``healpy.map2alm``.  If False, sets the
+            ``use_weights`` option to True instead.  Note: pixel weights ensure
+            accurate Alm computation, but can only be used for analyses where
+            ``lmax < 1.5 * nside``.
+        alm_iter : int
+            If given, set the ``iter`` option to the given value when computing
+            map Alms using ``healpy.map2alm``.  Using more iterations improves
+            the accuracy of the output Alms.  If not set, uses the default
+            number of iterations (3) as defined in healpy.
         add_log : bool
             If True, write log output to a file instead of to STDOUT.
             The log will be in ``<output_root>/run_<output_tag>.log``.
@@ -212,6 +225,16 @@ class XFaster(object):
                 )
         self.checkpoint = checkpoint
         self.force_rerun = {cp: False for cp in self.checkpoints}
+
+        # map2alm options
+        if alm_pixel_weights:
+            import healpy as hp
+
+            if hp.__version__ < "1.12.0":
+                self.warn("healpy > 1.11.0 required for alm_pixel_weights, disabling")
+                alm_pixel_weights = False
+        self.alm_pixel_weights = alm_pixel_weights
+        self.alm_iter = alm_iter
 
         if output_root is None:
             output_root = os.getcwd()
@@ -1438,7 +1461,7 @@ class XFaster(object):
         kwargs.setdefault("dtype", None)
 
         self.log("Reading map from {}".format(filename), "all")
-        m = np.atleast_2d(hp.read_map(filename, verbose=False, **kwargs))
+        m = np.atleast_2d(hp.read_map(filename, **kwargs))
         m[hp.mask_bad(m)] = 0
         m[np.isnan(m)] = 0
 
@@ -1961,9 +1984,20 @@ class XFaster(object):
         """
         import healpy as hp
 
-        if pol is None:
-            pol = self.pol
-        return np.asarray(hp.map2alm(m, self.lmax, pol=pol, use_weights=True))
+        opts = dict(pol=self.pol if pol is None else pol)
+        if self.alm_pixel_weights:
+            if self.lmax > 1.5 * self.nside:
+                raise RuntimeError(
+                    "Cannot use pixel weights for map2alm, lmax {} is > "
+                    "1.5 * nside for nside={}".format(self.lmax, self.nside)
+                )
+            opts.update(use_pixel_weights=True)
+        else:
+            opts.update(use_weights=True)
+            if self.alm_iter is not None:
+                opts.update(iter=self.alm_iter)
+
+        return np.asarray(hp.map2alm(m, self.lmax, **opts))
 
     def alm2cl(self, m1, m2=None, lmin=2, lmax=None, symmetric=True):
         """
@@ -2040,6 +2074,14 @@ class XFaster(object):
         mask_shape = self.mask_shape
         save_attrs = ["wls", "fsky", "w1", "w2", "w4", "gmat", "nside", "npix", "gcorr"]
         save_name = "masks_xcorr"
+
+        opts = {}
+        if self.alm_pixel_weights:
+            opts["alm_pixel_weights"] = self.alm_pixel_weights
+        elif self.alm_iter is not None:
+            opts["alm_iter"] = self.alm_iter
+        save_attrs += list(opts)
+
         ret = self.load_data(
             save_name,
             "masks",
@@ -2048,6 +2090,7 @@ class XFaster(object):
             to_attrs=True,
             shape=mask_shape,
             shape_ref="wls",
+            value_ref=opts or None,
         )
 
         def process_gcorr(gcorr_file_in):
