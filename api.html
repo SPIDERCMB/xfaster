@@ -232,7 +232,39 @@ in parallel. This will also work with MPI/OpenMP parallel jobs.</p></li>
 <dl class="class">
 <dt id="xfaster.batch_tools.JobArgumentParser">
 <em class="property">class </em><code class="sig-prename descclassname">xfaster.batch_tools.</code><code class="sig-name descname">JobArgumentParser</code><span class="sig-paren">(</span><em class="sig-param">name=None</em>, <em class="sig-param">mem=None</em>, <em class="sig-param">time=None</em>, <em class="sig-param">workdir=None</em>, <em class="sig-param">outkey=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#JobArgumentParser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.batch_tools.JobArgumentParser" title="Permalink to this definition"></a></dt>
-<dd><dl class="method">
+<dd><p>Standardized way to add job submission arguments to a script.</p>
+<p>Keyword arguments are used to fix values for parameters not needed by a
+script. The corresponding command line arguments will not be added. For
+example, if not using MPI, pass <code class="docutils literal notranslate"><span class="pre">mpi_procs=None</span></code> and then there will
+be no <code class="docutils literal notranslate"><span class="pre">--mpi-procs</span></code> argument on the command line.  See the
+<code class="docutils literal notranslate"><span class="pre">.opt_list</span></code> attribute for a complete list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>string</em>) – This will be the name of the jobs.</p></li>
+<li><p><strong>mem</strong> (<em>float</em>) – Memory per job in GB. Will scale up for grouped jobs.</p></li>
+<li><p><strong>time</strong> (<em>float</em>) – Time per job in hours.</p></li>
+<li><p><strong>workdir</strong> (<em>string</em>) – Fixed location to use as working directory (ie place for job
+scripts and logs).</p></li>
+<li><p><strong>outkey</strong> (<em>string</em>) – Alternative to <code class="docutils literal notranslate"><span class="pre">workdir</span></code>. The key/name of an argument added to
+normal argparse that indicates output path. A “logs” subfolder
+of that path will be used as <code class="docutils literal notranslate"><span class="pre">workdir</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">jp</span> <span class="o">=</span> <span class="n">sa</span><span class="o">.</span><span class="n">batch</span><span class="o">.</span><span class="n">JobArgumentParser</span><span class="p">(</span><span class="s2">&quot;some_serial_job&quot;</span><span class="p">,</span> <span class="n">mem</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+<span class="go">            mpi_procs=None, omp_threads=1, workdir=&quot;/path/to/logs&quot;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">AP</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Do some job&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">AP</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>  <span class="c1"># other non-job arguments</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">jp</span><span class="o">.</span><span class="n">add_arguments</span><span class="p">(</span><span class="n">AP</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">args</span> <span class="o">=</span> <span class="n">AP</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">jp</span><span class="o">.</span><span class="n">set_job_opts</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">jobs</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>  <span class="c1"># list of commands to run in jobs</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">jp</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">jobs</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="method">
 <dt id="xfaster.batch_tools.JobArgumentParser.add_arguments">
 <code class="sig-name descname">add_arguments</code><span class="sig-paren">(</span><em class="sig-param">parser=None</em>, <em class="sig-param">add_group=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#JobArgumentParser.add_arguments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.batch_tools.JobArgumentParser.add_arguments" title="Permalink to this definition"></a></dt>
 <dd><p>Add job submission arguments to an argparse.ArgumentParser.</p>
@@ -735,6 +767,16 @@ input shape spectrum.</p></li>
 <dt id="xfaster.xfaster_class.XFasterConfig">
 <em class="property">class </em><code class="sig-prename descclassname">xfaster.xfaster_class.</code><code class="sig-name descname">XFasterConfig</code><span class="sig-paren">(</span><em class="sig-param">defaults=None</em>, <em class="sig-param">default_sec='Uncategorized'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFasterConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFasterConfig" title="Permalink to this definition"></a></dt>
 <dd><p>ConfigParser subclass for storing command line options and config.</p>
+<p>Class that tracks command-line options for storage to disk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>defaults</strong> (<em>dict</em>) – Dictionary of overall configuration values.
+Eg: locals() at beginning of function, or vars(args) from argparse</p></li>
+<li><p><strong>default_sec</strong> (<em>string</em><em>, </em><em>optional</em>) – The name of the default section in the configuration file.</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFasterConfig.sort">
 <code class="sig-name descname">sort</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFasterConfig.sort"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFasterConfig.sort" title="Permalink to this definition"></a></dt>
@@ -777,7 +819,37 @@ Keys are stored alphabetically if <cite>sort</cite> is True.</p>
 <dl class="class">
 <dt id="xfaster.xfaster_class.XFaster">
 <em class="property">class </em><code class="sig-prename descclassname">xfaster.xfaster_class.</code><code class="sig-name descname">XFaster</code><span class="sig-paren">(</span><em class="sig-param">config</em>, <em class="sig-param">output_root=None</em>, <em class="sig-param">output_tag=None</em>, <em class="sig-param">verbose='notice'</em>, <em class="sig-param">debug=False</em>, <em class="sig-param">checkpoint=None</em>, <em class="sig-param">alm_pixel_weights=False</em>, <em class="sig-param">alm_iter=None</em>, <em class="sig-param">add_log=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster" title="Permalink to this definition"></a></dt>
-<dd><dl class="method">
+<dd><p>Initialize an XFaster instance for computing binned power spectra
+using a set of data maps along with signal and noise simulations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>string</em>) – Configuration file. If path doesn’t exist, assumed
+to be in xfaster/config/&lt;config&gt;</p></li>
+<li><p><strong>output_root</strong> (<em>string</em>) – Path to data output directory</p></li>
+<li><p><strong>output_tag</strong> (<em>string</em>) – Tag to use for output data.  Results are typically stored in
+the form <code class="docutils literal notranslate"><span class="pre">&lt;output_root&gt;/&lt;output_tag&gt;/&lt;name&gt;_&lt;output_tag&gt;.npz</span></code></p></li>
+<li><p><strong>verbose</strong> (<em>string</em>) – Verbosity level to use for log messages.  Can be one of
+[“critical”, “error”, “warning”, “notice”, “info”, “debug”, “all”].</p></li>
+<li><p><strong>debug</strong> (<em>bool</em>) – Store extra data in output files for debugging.</p></li>
+<li><p><strong>checkpoint</strong> (<em>string</em>) – If output data from this step forward exist on disk, they are
+are re-computed rather than loading from file.
+Options are [‘files’, ‘masks’, ‘kernels’, ‘sims_transfer’, ‘shape_transfer’, ‘transfer’, ‘sims’, ‘beams’, ‘data’, ‘sim_data’, ‘template_noise’, ‘shape’, ‘bandpowers’, ‘beam_errors’, ‘likelihood’].</p></li>
+<li><p><strong>alm_pixel_weights</strong> (<em>bool</em>) – If True, set the <code class="docutils literal notranslate"><span class="pre">use_pixel_weights</span></code> option to True when computing
+map Alms using <code class="docutils literal notranslate"><span class="pre">healpy.map2alm</span></code>.  If False, sets the
+<code class="docutils literal notranslate"><span class="pre">use_weights</span></code> option to True instead.  Note: pixel weights ensure
+accurate Alm computation, but can only be used for analyses where
+<code class="docutils literal notranslate"><span class="pre">lmax</span> <span class="pre">&lt;</span> <span class="pre">1.5</span> <span class="pre">*</span> <span class="pre">nside</span></code>.</p></li>
+<li><p><strong>alm_iter</strong> (<em>int</em>) – If given, set the <code class="docutils literal notranslate"><span class="pre">iter</span></code> option to the given value when computing
+map Alms using <code class="docutils literal notranslate"><span class="pre">healpy.map2alm</span></code>.  Using more iterations improves
+the accuracy of the output Alms.  If not set, uses the default
+number of iterations (3) as defined in healpy.</p></li>
+<li><p><strong>add_log</strong> (<em>bool</em>) – If True, write log output to a file instead of to STDOUT.
+The log will be in <code class="docutils literal notranslate"><span class="pre">&lt;output_root&gt;/run_&lt;output_tag&gt;.log</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.alm2cl">
 <code class="sig-name descname">alm2cl</code><span class="sig-paren">(</span><em class="sig-param">m1</em>, <em class="sig-param">m2=None</em>, <em class="sig-param">lmin=2</em>, <em class="sig-param">lmax=None</em>, <em class="sig-param">symmetric=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.alm2cl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.alm2cl" title="Permalink to this definition"></a></dt>
 <dd><p>Wrapper for healpy.alm2cl.</p>
@@ -2432,7 +2504,9 @@ with the command line flags for submit mode, with kwargs passed to
 <dl class="class">
 <dt id="xfaster.xfaster_exec.XFasterJobGroup">
 <em class="property">class </em><code class="sig-prename descclassname">xfaster.xfaster_exec.</code><code class="sig-name descname">XFasterJobGroup</code><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#XFasterJobGroup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.XFasterJobGroup" title="Permalink to this definition"></a></dt>
-<dd><dl class="method">
+<dd><p>Class for parsing xfaster options into a job script, and optionally
+grouping the jobs together.</p>
+<dl class="method">
 <dt id="xfaster.xfaster_exec.XFasterJobGroup.add_job">
 <code class="sig-name descname">add_job</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#XFasterJobGroup.add_job"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_exec.XFasterJobGroup.add_job" title="Permalink to this definition"></a></dt>
 <dd><p>Add xfaster job to script.</p>
