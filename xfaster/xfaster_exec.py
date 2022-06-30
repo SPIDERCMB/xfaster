@@ -27,6 +27,8 @@ def xfaster_run(
     verbose="notice",
     debug=False,
     checkpoint=None,
+    alm_pixel_weights=False,
+    alm_iter=None,
     add_log=False,
     # file options
     data_root="all",
@@ -151,6 +153,18 @@ def xfaster_run(
     checkpoint : str
         If supplied, re-compute all steps of the algorithm from this point
         forward.  Valid checkpoints are {checkpoints}.
+    alm_pixel_weights : bool
+        If True, set the ``use_pixel_weights`` option to True when computing map
+        Alms using ``healpy.map2alm``.  If False, sets the ``use_weights``
+        option to True instead.  Note: pixel weights ensure accurate Alm
+        computation, but can only be used for analyses where ``lmax < 1.5 *
+        nside``.
+    alm_iter : int
+        If given, set the ``iter`` option to the given value when computing map
+        Alms using ``healpy.map2alm``.  Using more iterations improves the
+        accuracy of the output Alms.  If not set, uses the default number of
+        iterations (3) as defined in healpy.  Ignored if ``alm_pixel_weights``
+        is True.
     add_log : bool
         If True, write log output to a file instead of to STDOUT.
         The log will be in ``<output_root>/xfaster-<output_tag>.log``.
@@ -534,6 +548,8 @@ def xfaster_run(
         verbose=verbose,
         debug=debug,
         checkpoint=checkpoint,
+        alm_pixel_weights=alm_pixel_weights,
+        alm_iter=alm_iter,
         add_log=add_log,
     )
     config_vars.update(common_opts, "XFaster Common")
@@ -1049,6 +1065,9 @@ def xfaster_parse(args=None, test=False):
             choices=xfc.XFaster.checkpoints,
             metavar="CHECKPOINT",
         )
+        E = G.add_mutually_exclusive_group()
+        add_arg(E, "alm_pixel_weights")
+        add_arg(E, "alm_iter", argtype=int)
 
         # file options
         G = PP.add_argument_group("file options")

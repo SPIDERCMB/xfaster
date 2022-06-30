@@ -34,10 +34,13 @@ data_fg_nores_path = "maps_example/data_cmbfg_nores/full"
 sig_path = "maps_example/signal_synfast/full"
 noise_path = "maps_example/noise_gaussian/full"
 fg_path = "maps_example/foreground_gaussian/full"
+temp_path = "maps_example/templates_gaussian/template1/full"
+temp_path2 = "maps_example/templates_gaussian/template2/full"
 
-for p0 in [mask_path, data_path, data_nores_path, data_fg_path, data_fg_nores_path, sig_path, noise_path, fg_path]:
+for p0 in [mask_path, data_path, data_nores_path, data_fg_path, data_fg_nores_path, sig_path, noise_path, fg_path, temp_path]:
     if not os.path.exists(p0):
         os.makedirs(p0)
+os.symlink("template1", os.path.dirname(temp_path2))
 
 # code expects CAMB default outputs (with ell*(ell+1)/(2pi) factor)
 # with ell vector, and only ell>=2
@@ -157,16 +160,25 @@ for i in range(nsim + 1):
             # with residual noise
             data_file = os.path.join(data_path, "map_{}.fits".format(tag))
             data_fg_file = os.path.join(data_fg_path, "map_{}.fits".format(tag))
+            fg_file = os.path.join(temp_path, "map_{}.fits".format(tag))
             data = None
             if not os.path.exists(data_file):
                 data = sim_signal(i, ti) + data_noise_scale * sim_noise(i, ti)
                 write_map(data_file, data, mask)
                 print("Wrote data signal+noise map {}".format(tag))
-            if do_fg and not os.path.exists(data_fg_file):
-                if data is None:
-                    data = read_map(data_file)
-                write_map(data_fg_file, data + sim_fg(i, ti), mask)
-                print("Wrote data signal+noise+fg map {}".format(tag))
+            if do_fg:
+                fg = None
+                if not os.path.exists(fg_file):
+                    fg = sim_fg(i, ti)
+                    write_map(fg_file, fg, mask)
+                    print("Wrote template map {}".format(tag))
+                if not os.path.exists(data_fg_file):
+                    if data is None:
+                        data = read_map(data_file)
+                    if fg is None:
+                        fg = read_map(fg_file)
+                    write_map(data_fg_file, data + fg, mask)
+                    print("Wrote data signal+noise+fg map {}".format(tag))
 
             # without residual noise
             data_file = os.path.join(data_nores_path, "map_{}.fits".format(tag))
@@ -179,7 +191,9 @@ for i in range(nsim + 1):
             if do_fg and not os.path.exists(data_fg_file):
                 if data is None:
                     data = read_map(data_file)
-                write_map(data_fg_file, data + sim_fg(i, ti), mask)
+                if fg is None:
+                    fg = read_map(fg_file)
+                write_map(data_fg_file, data + fg, mask)
                 print("Wrote data nores signal+noise+fg map {}".format(tag))
         else:
             sig_file = os.path.join(sig_path, "map_{}_{:04}.fits".format(tag, i - 1))
