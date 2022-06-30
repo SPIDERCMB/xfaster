@@ -76,9 +76,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 pygments_style = None
 
 # Automatic equation numbering
-mathjax_config = {
-'TeX': {'equationNumbers': {'autoNumber': 'AMS', 'useLabelIds': True}},
-}
+mathjax3_config = {'tex': {'tags': 'ams', 'useLabelIds': True}}
 
 # -- Options for HTML output -------------------------------------------------
 
