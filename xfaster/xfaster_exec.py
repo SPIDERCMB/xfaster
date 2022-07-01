@@ -1713,7 +1713,7 @@ def xfaster_dump(
                     if isinstance(v, dict):
                         txt = repr(v.keys())
                     elif isinstance(v, np.ndarray):
-                        if v.ndim == 1 and v.dtype.char == 'U':
+                        if v.ndim == 1 and v.dtype.char == "U":
                             txt = str(list(v))
                         else:
                             txt = "shape {} array of {}".format(v.shape, repr(v.dtype))

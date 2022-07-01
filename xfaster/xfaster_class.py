@@ -2338,7 +2338,12 @@ class XFaster(object):
                     "reference_files",
                     "num_reference",
                 ]
-                save_attrs += ["cls_data_sub", "cls_ref", "cls_data_sub_null", "cls_ref_null"]
+                save_attrs += [
+                    "cls_data_sub",
+                    "cls_ref",
+                    "cls_data_sub_null",
+                    "cls_ref_null",
+                ]
         elif template_type is not None:
             opts["template_type"] = template_type
             file_attrs += [
@@ -2470,13 +2475,16 @@ class XFaster(object):
                 if comp == "signal" and r is not None:
                     ret.update(
                         self._get_sim_files(
-                            "signal", "signal_r0", sim_data=True, index=index["signal"]
+                            "signal",
+                            root="signal_r0",
+                            sim_data=True,
+                            index=index["signal"],
                         )
                     )
                     ret.update(
                         self._get_sim_files(
                             "tensor",
-                            "signal_r1tens",
+                            root="signal_r1tens",
                             sim_data=True,
                             index=index["tensor"],
                         )
