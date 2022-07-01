@@ -152,7 +152,7 @@ class XFaster(object):
         "beam_errors": ["likelihood"],
     }
 
-    data_version = 3
+    data_version = 4
 
     def __init__(
         self,
@@ -497,7 +497,7 @@ class XFaster(object):
 
     def _get_data_files(
         self,
-        data_type,
+        data_type=None,
         data_root=None,
         data_subset=None,
         data_root2=None,
@@ -513,7 +513,8 @@ class XFaster(object):
         Arguments
         ---------
         data_type : string
-            The type of data to use, required.
+            The type of data to use, required if ``config`` is False.
+            Otherwise, default to ``'raw'``.
         data_root : string
             Top level path containing subdirectories for data, signal sims,
             noise sims, and masks.
@@ -546,6 +547,7 @@ class XFaster(object):
             num_maps = None
             map_tags_check = None
             null_run = False
+            data_type = data_type or "raw"
             if data_root2 is not None or data_subset2 is not None:
                 if data_root2 is None:
                     data_root2 = data_root
@@ -701,8 +703,8 @@ class XFaster(object):
             if not os.path.exists(mask_file):
                 raise OSError("Missing mask file {}".format(mask_type))
 
-            mask_files = np.tile(mask_type, len(self.map_names))
-            mask_root = os.path.dirname(mask_type)
+            mask_files = np.tile(mask_file, len(self.map_names))
+            mask_root = os.path.dirname(mask_file)
         else:
             # find all masks corresponding to each map tag
             mask_root = os.path.join(self.data_root, "masks_{}".format(mask_type))
@@ -729,6 +731,7 @@ class XFaster(object):
         subset="*",
         root=None,
         sim_data=False,
+        index=None,
     ):
         """
         Convenience function for finding all matching sims per map.  Used
@@ -756,6 +759,9 @@ class XFaster(object):
             ``get_files()``, including the appropriate attribute names.  The
             value of ``subset`` is ignored.  If False, ensure that the same
             number of maps is selected for each map tag.
+        index : bool
+            If set, return the list of files corresponding to the given
+            index.  Ignored if ``sim_data`` is False.
 
         Returns
         -------
@@ -773,6 +779,7 @@ class XFaster(object):
         else:
             suffix = ""
             match_count = True
+            index = None
 
         if root is None:
             out["{}_type{}".format(name, suffix)] = ctype
@@ -811,8 +818,8 @@ class XFaster(object):
                 if not nfiles:
                     raise OSError("Missing {} sims for {}".format(name, f))
                 if num_files is None:
-                    num_files = nfiles
-                elif num_files != nfiles:
+                    num_files = out.get("num_{}{}".format(name, suffix), nfiles)
+                if num_files != nfiles:
                     if match_count:
                         raise OSError(
                             "Found {} {} sims for map {}, expected {}".format(
@@ -822,13 +829,21 @@ class XFaster(object):
                     elif nfiles < num_files:
                         num_files = nfiles
 
-                all_files.append(files)
+                if index is not None:
+                    all_files.append(files[index])
+                else:
+                    all_files.append(files)
 
-            all_files = np.asarray([f[:num_files] for f in all_files])
             self.log("Found {} {} sims in {}".format(num_files, name, root1), "info")
-            self.log(
-                "First {} sim files: {}".format(name, all_files[:, 0].tolist()), "debug"
-            )
+
+            if index is None:
+                all_files = np.asarray([f[:num_files] for f in all_files])
+                self.log(
+                    "First {} sim files: {}".format(name, all_files[:, 0].tolist()),
+                    "debug",
+                )
+            else:
+                self.log("Selected {} files: {}".format(name, all_files), "debug")
 
             out.update(
                 {
@@ -839,39 +854,6 @@ class XFaster(object):
             )
 
         return out
-
-    def _get_sim_data_files(self, name, ctype=None):
-        """
-        Convenience function for finding any matching sims per map to be used
-        for simulating the input data with ``get_masked_data()`` in sim mode.
-        Used internally in ``get_files()``.
-
-        Arguments
-        ---------
-        name : str
-            Type of simulation files to collect (signal, noise, foreground,
-            template)
-        ctype : str
-            The type value associated with ``name``.  If not supplied, the
-            returned set of variables are set to null values.
-
-        Returns
-        -------
-        opts : dict
-            Dictionary of sim file options for use with ``get_masked_data()``.
-        """
-        if name == "signal" and str(ctype) == "r":
-            out = self._get_sim_files(name, root="signal_r0", sim_data=True)
-            out.update(
-                self._get_sim_files("tensor", root="signal_r1tens", sim_data=True)
-            )
-            out["signal_type_sim"] = ctype
-            return out
-
-        if name == "template":
-            return self._get_template_files("template", ctype, suffix="_sim")
-
-        return self._get_sim_files(name, ctype, sim_data=True)
 
     def _get_template_files(self, name, ctype=None, suffix=""):
         """
@@ -934,8 +916,8 @@ class XFaster(object):
                         "Missing temp{} {} files for {}".format(group, name, f)
                     )
                 if nfiles is None:
-                    nfiles = nfiles1
-                elif nfiles1 != nfiles:
+                    nfiles = out.get("num_{}{}".format(name, suffix), nfiles1)
+                if nfiles1 != nfiles:
                     raise OSError(
                         "Wrong number of {} sims. Found {} files, expected {}.".format(
                             name, nfiles1, nfiles
@@ -1029,25 +1011,18 @@ class XFaster(object):
         self,
         data_root,
         data_subset="full/*0",
-        signal_subset="*",
-        noise_subset="*",
-        data_type="raw",
-        noise_type="gaussian",
-        noise_type_sim=None,
-        mask_type="rectangle",
-        signal_type="synfast",
-        signal_type_sim=None,
-        signal_transfer_type=None,
         data_root2=None,
         data_subset2=None,
-        foreground_type_sim=None,
-        template_type=None,
-        template_noise_type=None,
-        template_type_sim=None,
-        reference_type=None,
     ):
         """
-        Find all files for the given data root.  The data structure is::
+        Find all files for the given data root and subset.  Finds all files with
+        data_type ``'raw'`` that match the subset criterion and stores their
+        file tag and frequency information.  Subsequent data selection for
+        signal/noise/foreground/template components or other data types should
+        match the set of file tags found here. This method is called at the
+        ``'files'`` checkpoint.
+
+        The expected data structure is::
 
             <data_root>
                 -> data_<data_type>
@@ -1086,6 +1061,9 @@ class XFaster(object):
             <data_root2> (If provided, same structure as data_root)
                 ...
 
+        See ``get_mask_weights``, ``get_masked_data``, ``get_masked_sims``
+        for documentation of the various file types.
+
         Arguments
         ---------
         data_root : string
@@ -1098,81 +1076,12 @@ class XFaster(object):
             ``'full/*0'`` will expand to read in the 150 GHz and 90GHz maps.
             Maps are then sorted in alphabetical order, and identified
             by their file tag, where each filename is ``map_<tag>.fits``.
-        signal_subset : string
-            Subset of map tags to use for spectrum estimation for signal
-            sims.  This should be a string that is parseable using ``glob``
-            that is added onto the data_subset path to indicate which sims
-            to use. For example, for all, use ``'*'``. For the first 300 sims,
-            use ``'0[0-2]*'``.
-        noise_subset : string
-            Subset of map tags to use for spectrum estimation for noise
-            sims.  This should be a string that is parseable using ``glob``
-            that is added onto the data_subset path to indicate which sims
-            to use. For example, for all, use ``'*'``. For the first 300 sims,
-            use ``'0[0-2]*'``.
-        data_type : string
-            The type of data to use, default: "raw"
-        noise_type: string
-            The variant of noise simulation to use, e.g. 'gaussian',
-            'stationary', etc.  The directory should contain the same number
-            of simulations for each map tag.
-        noise_type_sim : string
-            The variant of noise sims to use for sim_index simulated data map.
-            This enables having a different noise sim ensemble to use for
-            sim_index run than the ensemble from which the noise is computed.
-        mask_type : string
-            The variant of mask to use, e.g. 'rectangle', etc.
-            We assume a mask per file tag in the mask_<mask_type> folder,
-            corresponding to the files in data.
-        signal_type : string
-            The variant of signal simulation to use, typically identified
-            by the input spectrum model used to generate it, e.g 'synfast'.
-        signal_type_sim : string
-            The variant of signal sims to use for sim_index simulated data map.
-            This enables having a different signal sim ensemble to use for
-            sim_index run than the ensemble from which the signal is computed.
-            If this is set to 'r', then two signal types are searched:
-            'signal_r0' for a scalar component, and 'signal_r1tens' for a tensor
-            component.  The two maps are linearly combined with a scalar r value
-            to construct a signal map for a simulated dataset.
-        signal_transfer_type : string
-            The variant of signal simulation to use for transfer function
-            calculation, typically identified by the input spectrum model used
-            to generate it, e.g 'synfast'. This directory may also contain a
-            copy of the input spectrum, to make sure that the correct spectrum
-            is used to compute the transfer function.
         data_root2, data_subset2 : string
             The root and subset for a second set of data.  If either of these is
             keywords is supplied, then the two data sets are treated as two
             halves of a null test.  In this case, XFaster computes the sum and
             difference spectra for each map tag in order to estimate a null
             spectrum.
-        foreground_type_sim : string
-            Tag for directory (foreground_<foreground_type_sim>) where
-            foreground sims are that should be added to the signal and noise
-            sims when running in sim_index mode.
-        template_type : string
-            Tag for directory (templates_<template_type>) containing templates
-            (e.g. a foreground model) to be scaled by a scalar value per map tag
-            and subtracted from the data. The directory contains one template
-            per map tag.
-        template_noise_type : string
-            Tag for directory containing template noise sims to be averaged and
-            scaled similarly to the templates themselves.  These averaged sims
-            are used to debias template cross spectra due to correlations in the
-            way the noise ensembles are constructed.  Typically, this would be a
-            noise model based on the Planck FFP10 ensemble for each half-mission
-            foreground template.  If not supplied, this debiasing step is not
-            performed.
-        template_type_sim : string
-            Tag for directory containing foreground templates, to be scaled by a
-            scalar value per map tag and added to the simulated data.  The
-            directory contains one template per map tag.
-        reference_type : string
-            If supplied, subtract a reobserved reference signal from each data
-            map.  The reference signal maps should be two datasets with
-            uncorrelated noise, such as Planck half-mission maps.  This option
-            is used for removing expected signal residuals from null tests.
 
         Returns
         -------
@@ -1185,237 +1094,42 @@ class XFaster(object):
 
         null_run = data_root2 is not None or data_subset2 is not None
 
-        old_data_root = None
         opts = dict(data_subset=data_subset, null_run=null_run)
+        save_attrs = [
+            "data_root",
+            "data_subset",
+            "null_run",
+            "num_maps",
+            "map_names",
+            "map_tags",
+            "map_pairs",
+            "map_tags_orig",
+            "map_pairs_orig",
+            "map_freqs",
+        ]
         if null_run:
-            old_data_root2 = None
             opts.update(data_subset2=data_subset2)
+            save_attrs += ["data_root2", "data_subset2", "map_names2"]
 
-        alt_name = "files"
-
-        # backward compatibility
-        save_name = [alt_name]
-        if data_type != "raw":
-            save_name += [data_type]
-        if not null_run and template_type is not None:
-            save_name += ["clean", template_type]
-        elif null_run and reference_type is not None:
-            save_name += ["ref_sub"]
-        save_name = "_".join(save_name)
-        if alt_name == save_name:
-            alt_name = None
-
+        save_name = "files"
         ret = self.load_data(
-            save_name, "files", to_attrs=False, value_ref=opts, alt_name=alt_name
+            save_name, "files", fields=save_attrs, to_attrs=True, value_ref=opts
         )
-        new = ret is None
-        update = new
 
-        #########################################
-        # update configuration options (data root, map names and tags)
+        if ret is not None:
+            return ret
 
-        if new:
-            ret = self._get_data_files(
-                data_type=data_type,
-                data_root=data_root,
-                data_subset=data_subset,
-                data_root2=data_root2,
-                data_subset2=data_subset2,
-                config=True,
-            )
-        else:
-            ret.pop("output_file")
-            ret.pop("data_version")
+        ret = self._get_data_files(
+            data_root=data_root,
+            data_subset=data_subset,
+            data_root2=data_root2,
+            data_subset2=data_subset2,
+            config=True,
+        )
+        for k in save_attrs:
+            setattr(self, k, ret[k])
 
-            # fix data root
-            if data_root != ret["data_root"]:
-                old_data_root = ret["data_root"]
-                ret["data_root"] = data_root
-            if null_run:
-                if data_root2 != ret["data_root2"]:
-                    old_data_root2 = ret["data_root2"]
-                    ret["data_root2"] = data_root2
-
-        # update configuration attributes for later use
-        self.data_root = ret["data_root"]
-        self.data_subset = ret["data_subset"]
-        self.map_names = ret["map_names"]
-        self.null_run = null_run
-        if null_run:
-            self.data_root2 = ret["data_root2"]
-            self.data_subset2 = ret["data_subset2"]
-            self.map_names2 = ret["map_names2"]
-
-        #########################################
-        # update mask files
-        if new or ret["mask_type"] != mask_type:
-            update = True
-            self.force_rerun["masks"] = True
-            ret.update(self._get_mask_files(mask_type))
-
-        #########################################
-        # update sim options
-
-        if signal_transfer_type is None:
-            signal_transfer_type = signal_type
-
-        # make sure sims get rerun correctly
-        if signal_transfer_type == signal_type:
-            # if signal types match, then sims are run before computing the
-            # transfer function, so need to set the correct checkpoint to rerun
-            if self.checkpoint == "sims":
-                self.checkpoint = "sims_transfer"
-
-        ret1 = {}
-
-        if (
-            new
-            or ret["signal_transfer_type"] != signal_transfer_type
-            or ret["signal_subset"] != signal_subset
-        ):
-            self.force_rerun["sims_transfer"] = True
-            ret1.update(
-                self._get_sim_files(
-                    "signal_transfer", signal_transfer_type, signal_subset
-                )
-            )
-
-        if (
-            new
-            or ret["signal_type"] != signal_type
-            or ret["signal_subset"] != signal_subset
-        ):
-            self.force_rerun["sims"] = True
-            ret1.update(self._get_sim_files("signal", signal_type, signal_subset))
-
-        if (
-            new
-            or ret["noise_type"] != noise_type
-            or ret["noise_subset"] != noise_subset
-        ):
-            self.force_rerun["sims"] = True
-            ret1.update(self._get_sim_files("noise", noise_type, noise_subset))
-
-        if len(ret1):
-            update = True
-            ret.update(ret1)
-
-        #########################################
-        # update data options
-
-        if signal_type_sim is None:
-            signal_type_sim = signal_type
-        if noise_type_sim is None:
-            noise_type_sim = noise_type
-        if template_type_sim is None:
-            template_type_sim = template_type
-
-        if null_run:
-            template_type = None
-            template_noise_type = None
-            template_type_sim = None
-        else:
-            reference_type = None
-
-        ret1 = {}
-
-        # update data files
-        if new or ret["data_type"] != data_type:
-            # no need to force rerun since data filenames track data type
-            ret1.update(self._get_data_files(data_type=data_type))
-
-        # update template files
-        if new or ret["template_type"] != template_type:
-            # no need to force rerun since data filenames track template type
-            ret1.update(self._get_template_files("template", template_type))
-
-        if new or ret["template_noise_type"] != template_noise_type:
-            self.force_rerun["template_noise"] = True
-            self.force_rerun["sim_data"] = True
-            self.force_rerun["data"] = True
-            ret1.update(self._get_template_files("template_noise", template_noise_type))
-
-        # update reference files for null tests
-        if new or ret["reference_type"] != reference_type:
-            # no need to force rerun since data filenames track reference type
-            ret1.update(self._get_reference_files(reference_type))
-
-        # update sim data files
-        if new or ret["signal_type_sim"] != signal_type_sim:
-            self.force_rerun["sim_data"] = True
-            ret1.update(self._get_sim_data_files("signal", signal_type_sim))
-
-        if new or ret["noise_type_sim"] != noise_type_sim:
-            self.force_rerun["sim_data"] = True
-            ret1.update(self._get_sim_data_files("noise", noise_type_sim))
-
-        if new or ret["foreground_type_sim"] != foreground_type_sim:
-            self.force_rerun["sim_data"] = True
-            ret1.update(self._get_sim_data_files("foreground", foreground_type_sim))
-
-        if new or ret["template_type_sim"] != template_type_sim:
-            self.force_rerun["sim_data"] = True
-            ret1.update(self._get_sim_data_files("template", template_type_sim))
-
-        if len(ret1):
-            update = True
-            ret.update(ret1)
-
-        #########################################
-        # final consistency checks
-
-        # check that file counts match
-        for k, v in ret.items():
-            if not k.startswith("num_") or k + "2" not in ret:
-                continue
-            v2 = ret[k + "2"]
-            if v != v2:
-                ftype = k.split("_", 1)[1]
-                raise RuntimeError(
-                    "Found {} {}2 files, expected {}".format(v2, ftype, v)
-                )
-
-        # update data roots if necessary
-        if old_data_root is not None or (null_run and old_data_root2 is not None):
-
-            def replace_root(k, v):
-                if not isinstance(v, str):
-                    return v
-                if null_run and k.endswith("2") and "template" not in k:
-                    if old_data_root2 is None:
-                        return v
-                    if not v.startswith(old_data_root2):
-                        return v
-                    return os.path.join(data_root2, os.path.relpath(v, old_data_root2))
-                if old_data_root is None:
-                    return v
-                if not v.startswith(old_data_root):
-                    return v
-                return os.path.join(data_root, os.path.relpath(v, old_data_root))
-
-            for k, v in list(ret.items()):
-                if isinstance(v, str):
-                    ret[k] = replace_root(k, v)
-                elif isinstance(v, np.ndarray) and isinstance(v.ravel()[0], str):
-                    varr = [replace_root(k, vv) for vv in v.ravel()]
-                    ret[k] = np.array(varr).reshape(v.shape)
-                elif isinstance(v, dict):
-                    v1 = list(v.values())[0]
-                    if not isinstance(v1, np.ndarray):
-                        continue
-                    if not isinstance(v1.ravel()[0], str):
-                        continue
-                    for kk, vv in v.items():
-                        varr = [replace_root(k, vvv) for vvv in vv.ravel()]
-                        v[kk] = np.array(varr).reshape(vv.shape)
-
-        # update all attributes
-        for k, v in ret.items():
-            setattr(self, k, v)
-
-        if update:
-            self.save_data(save_name, **ret)
-        return ret
+        return self.save_data(save_name, from_attrs=save_attrs)
 
     def get_map(self, filename, check_nside=True, cache=False, **kwargs):
         """
@@ -1578,7 +1292,7 @@ class XFaster(object):
             If True, the output filename is constructed by checking the
             following list of options used in constructing data cross-spectra:
             ensemble_mean, ensemble_median, sim_index, sim_type, data_type,
-            template_cleaned, reference_type.
+            template_type, reference_type.
         bp_opts : bool
             If True, also check the following attributes (in addition to those
             checked if ``data_opts`` is True): weighted_bins, return_cls.
@@ -1612,7 +1326,7 @@ class XFaster(object):
                             name += ["t{:04d}".format(self.sim_index["tensor"])]
                 elif self.data_type != "raw":
                     name += [self.data_type]
-                if getattr(self, "template_cleaned", False):
+                if getattr(self, "template_type", None) is not None:
                     name += ["clean", self.template_type]
                 if getattr(self, "reference_type", None) is not None:
                     name += ["ref", self.reference_type]
@@ -1658,6 +1372,7 @@ class XFaster(object):
         alt_name=None,
         value_ref=None,
         optional=None,
+        file_fields=None,
         **file_opts
     ):
         """
@@ -1708,7 +1423,10 @@ class XFaster(object):
         optional : list of strings
             Fields that, if missing from the data loaded from disk, will not
             trigger force rerunning of any checkpoints.
-
+        file_fields : list of strings
+            Fields that, if missing from the data loaded from disk, will be
+            searched for in a separate ``files`` checkpoint file.  This is for
+            backwards compatibility.
 
         Remaining options are passed to ``get_filename`` for constructing the
         output file path.
@@ -1766,6 +1484,26 @@ class XFaster(object):
 
         if not isinstance(fields, list):
             fields = [fields]
+
+        if file_fields is not None:
+            file_data = None
+            for k in file_fields:
+                if k not in fields:
+                    fields += [k]
+                if k in data:
+                    continue
+                if file_data is None:
+                    file_data = self.load_data("files", "files", to_attrs=False)
+                if k in file_data:
+                    data[k] = file_data[k]
+            # complete file paths with correct data roots
+            pt.fix_data_roots(
+                data,
+                mode="load",
+                root=self.data_root,
+                root2=getattr(self, "data_root2", None),
+                inplace=True,
+            )
 
         if shape_ref is not None and shape_ref not in fields:
             self.warn("{}: Field {} not found".format(errmsg, shape_ref))
@@ -1845,7 +1583,7 @@ class XFaster(object):
         ret["output_file"] = output_file
         return ret
 
-    def save_data(self, name, from_attrs=[], **data):
+    def save_data(self, name, from_attrs=[], file_attrs=[], **data):
         """
         Save xfaster data to an output .npz file on disk.
 
@@ -1857,6 +1595,11 @@ class XFaster(object):
             then the data are recomputed.
         from_attrs : list of strings
             A list of object attributes which should be stored in the data file.
+        file_attrs : list of strings
+            A list of object attributes which contain file paths. The data root
+            is stripped from each path to ensure that only relative paths are
+            written to disk, such that the data root may be changed in the
+            future without triggering rerunning of the entire checkpoint.
         map_tag : str
             Load the dataset corresponding to this map.
             See ``get_filename`` for documentation.
@@ -1893,7 +1636,20 @@ class XFaster(object):
             if hasattr(self, attr):
                 data[attr] = getattr(self, attr)
 
-        np.savez_compressed(output_file, **data)
+        if len(file_attrs):
+            data = data.copy()
+            file_data = {k: data[k] for k in file_attrs}
+            # strip data roots for storing to disk
+            pt.fix_data_roots(
+                file_data,
+                mode="save",
+                root=self.data_root,
+                root2=getattr(self, "data_root2", None),
+                inplace=False,
+            )
+            data.update(file_data)
+
+        pt.save(output_file, **data)
         self.log("Saved output data to {}".format(output_file), "debug")
         data["output_file"] = output_file
         return data
@@ -2036,7 +1792,13 @@ class XFaster(object):
             cls[..., :lmin] = 0
         return np.atleast_2d(cls)
 
-    def get_mask_weights(self, apply_gcorr=False, reload_gcorr=False, gcorr_file=None):
+    def get_mask_weights(
+        self,
+        mask_type="rectangle",
+        apply_gcorr=False,
+        reload_gcorr=False,
+        gcorr_file=None,
+    ):
         """
         Compute cross spectra of the masks for each data map.
 
@@ -2044,6 +1806,10 @@ class XFaster(object):
 
         Arguments
         ---------
+        mask_type : string
+            The variant of mask to use, e.g. 'rectangle', etc.
+            We assume a mask per file tag in the mask_<mask_type> folder,
+            corresponding to the files in data.
         apply_gcorr : bool
             If True, a correction factor is applied to the g (mode counting)
             matrix.  The correction factor should have been pre-computed for
@@ -2069,28 +1835,31 @@ class XFaster(object):
                 mode-counting matrix, computed from ``g = fsky * w2 ** 2 / w4``
         """
 
-        mask_files = self.mask_files
         num_maps = self.num_maps
         mask_shape = self.mask_shape
         save_attrs = ["wls", "fsky", "w1", "w2", "w4", "gmat", "nside", "npix", "gcorr"]
+        file_attrs = ["mask_type", "mask_root", "mask_files"]
+        save_attrs += file_attrs
         save_name = "masks_xcorr"
 
-        opts = {}
+        opts = {"mask_type": mask_type}
         if self.alm_pixel_weights:
             opts["alm_pixel_weights"] = self.alm_pixel_weights
+            save_attrs += ["alm_pixel_weights"]
         elif self.alm_iter is not None:
             opts["alm_iter"] = self.alm_iter
-        save_attrs += list(opts)
+            save_attrs += ["alm_iter"]
 
         ret = self.load_data(
             save_name,
             "masks",
             fields=save_attrs,
+            file_fields=file_attrs,
             optional=["gcorr"],
             to_attrs=True,
             shape=mask_shape,
             shape_ref="wls",
-            value_ref=opts or None,
+            value_ref=opts,
         )
 
         def process_gcorr(gcorr_file_in):
@@ -2165,9 +1934,16 @@ class XFaster(object):
         if ret is not None:
             process_gcorr(gcorr_file)
             if apply_gcorr and (reload_gcorr or ret.get("gcorr", None) is None):
-                return self.save_data(save_name, from_attrs=save_attrs)
+                return self.save_data(
+                    save_name, from_attrs=save_attrs, file_attrs=file_attrs
+                )
             ret["gcorr"] = self.gcorr
             return ret
+
+        # find mask data files
+        ret = self._get_mask_files(mask_type)
+        for k, v in ret.items():
+            setattr(self, k, v)
 
         # mask spectra
         wls = OrderedDict()
@@ -2193,7 +1969,7 @@ class XFaster(object):
 
             self.log("Computing Alms for mask {}/{}".format(idx + 1, num_maps), "all")
 
-            mask = self.get_mask(mask_files[idx])
+            mask = self.get_mask(self.mask_files[idx])
             mask_alms = self.map2alm(mask, False)
 
             cache[idx] = (mask_alms, mask)
@@ -2308,50 +2084,76 @@ class XFaster(object):
 
     def get_masked_data(
         self,
+        data_type="raw",
+        template_type=None,
+        template_noise_type=None,
         template_alpha=None,
         template_specs=None,
+        reference_type=None,
         ensemble_mean=False,
         ensemble_median=False,
         sim=False,
         components=["signal", "noise", "foreground"],
         index=None,
+        signal_type_sim=None,
         r=None,
+        noise_type_sim=None,
         qb_file=None,
+        foreground_type_sim=None,
+        template_type_sim=None,
         template_alpha_sim=None,
         save_sim=False,
     ):
         """
         Compute cross spectra of the data maps.
 
-        Map and mask files must have been loaded in by calling the ``get_files``
-        method with the appropriate file selection options.
-
         If only one dataset is selected, spectra are computed for every
         combination of pairs of data maps. This results in N * (N + 1) / 2
         cross spectra for N maps. A unique mask is used for each input map.
 
-        If two datasets are selected for a null test, then sum and difference cross-spectra are
-        computed by summing and differencing the two datasets.  A unique mask is
-        used for each map in the first dataset, and the same mask is applied to
-        the corresponding map in the second dataset, so that both halves are
-        masked identically.
+        If two datasets are selected for a null test, then sum and difference
+        cross-spectra are computed by summing and differencing the two datasets.
+        A unique mask is used for each map in the first dataset, and the same
+        mask is applied to the corresponding map in the second dataset, so that
+        both halves are masked identically.
 
-        If ``template_alpha`` is supplied, the values given are applied to an
-        appropriate template, and the result is subtracted from the data alms
-        with map tags in the dictionary.  Map alms are cached to speed up
-        processing, if this method is called repeatedly with different values.
+        If ``template_type`` and ``template_alpha`` is supplied, the values
+        given are applied to an appropriate template, and the result is
+        subtracted from the data alms with map tags in the dictionary.  Map alms
+        are cached to speed up processing, if this method is called repeatedly
+        with different values of ``template_alpha``.
 
         The remaining options handle subtraction of additional biases from the
         data, or constructing simulated datasets from sim ensembles.
 
         Arguments
         ---------
+        data_type : string
+            The type of data to use, default: "raw"
+        template_type : string
+            Tag for directory (templates_<template_type>) containing templates
+            (e.g. a foreground model) to be scaled by a scalar value per map tag
+            and subtracted from the data. The directory contains one template
+            per map tag.
+        template_noise_type : string
+            Tag for directory containing template noise sims to be averaged and
+            scaled similarly to the templates themselves.  These averaged sims
+            are used to debias template cross spectra due to correlations in the
+            way the noise ensembles are constructed.  Typically, this would be a
+            noise model based on the Planck FFP10 ensemble for each half-mission
+            foreground template.  If not supplied, this debiasing step is not
+            performed.
         template_alpha : dict
             Dictionary of template scaling factors to apply to foreground
             templates to be subtracted from the data.  Keys should match
             original map tags in the data set.
         template_specs : list
             Which spectra to use for alpha in the likelihood.
+        reference_type : string
+            If supplied, subtract a reobserved reference signal from each data
+            map.  The reference signal maps should be two datasets with
+            uncorrelated noise, such as Planck half-mission maps.  This option
+            is used for removing expected signal residuals from null tests.
         ensemble_mean : bool
             If True, use the mean of the ``signal_type`` and ``noise_type``
             ensembles, rather than using maps from the ``data_type`` directory
@@ -2378,6 +2180,15 @@ class XFaster(object):
             ``default`` can be used to indicate the index to use for components
             that are not explicitly enumerated in the dictionary.  If not
             supplied, and ``sim`` is True, index 0 is used for all ensembles.
+        signal_type_sim : string
+            The variant of signal sims to include in the simulated data maps.
+            This enables having a different signal sim ensemble to use for
+            simulated data than the ensemble from which the signal model
+            component is computed.  If this is not supplied and ``r`` is not
+            ``None``, then two signal types are searched: 'signal_r0' for a
+            scalar component, and 'signal_r1tens' for a tensor component.  The
+            two maps are linearly combined with a scalar r value to construct a
+            signal map for a simulated dataset.
         r : float
             If supplied, the simulated signal maps are constructed by combining
             ``signal_scalar + r * signal_tensor``, where the scalar maps are
@@ -2385,12 +2196,22 @@ class XFaster(object):
             stored in the directory ``tensor_root_sim``.  A separate sim index
             is assumed for the ``signal`` (scalar) ensemble and the ``tensor``
             ensemble.
+        noise_type_sim : string
+            The variant of noise sims to include in the simulated data maps.
+            This enables having a different noise sim ensemble to use for
+            simulated data than the ensemble from which the noise is computed.
         qb_file : str
             If supplied and noise is included in ``components``, correct the
             simulated noise spectra using the noise residuals stored in this
             file.  Typically, this is the output of a separate data run used to
             determine the appropriate noise correction.  See
             ``get_noise_residuals`` for more details.
+        foreground_type_sim : string
+            The variant of foreground sims to include in the simulated data maps.
+        template_type_sim : string
+            Tag for directory containing foreground templates, to be scaled by a
+            scalar value per map tag and added to the simulated data.  The
+            directory contains one template per map tag.
         template_alpha_sim : dict
             Dictionary of template scaling factors to apply to foreground
             templates to be added to the simulated the data.  Keys should match
@@ -2427,11 +2248,18 @@ class XFaster(object):
         data_shape = self.data_shape
         null_run = self.null_run
 
+        if null_run:
+            template_type = None
+            template_noise_type = None
+            template_type_sim = None
+        else:
+            reference_type = None
+
         if template_specs is None:
             template_specs = self.specs
 
         # ensure dictionary
-        if template_alpha is None or null_run or self.template_type is None:
+        if template_alpha is None or null_run or template_type is None:
             template_alpha = OrderedDict()
         else:
             # ensure tagged by original tags
@@ -2455,11 +2283,11 @@ class XFaster(object):
                 index = index.copy()
             default_index = index.pop("default", 0)
             sim_type = {}
-            if (
-                null_run or self.template_type_sim is None
-            ) and "template" in components:
+            if (null_run or template_type_sim is None) and "template" in components:
                 components.remove("template")
             for comp in ["signal", "noise", "foreground", "template"]:
+                type_key = "{}_type_sim".format(comp)
+                type_value = locals()[type_key]
                 if comp not in components:
                     if comp == "signal":
                         r = None
@@ -2467,17 +2295,17 @@ class XFaster(object):
                         qb_file = None
                     elif comp == "template":
                         template_alpha_sim = None
+                    type_value = None
                     continue
-                root = getattr(self, "{}_root_sim".format(comp), None)
-                if root is None:
-                    raise ValueError("Missing {} sim files".format(comp))
                 if comp == "signal" and r is not None:
-                    if self.tensor_root_sim is None:
-                        raise ValueError("Missing tensor signal sim files")
-                    sim_type[comp] = "rp{:03d}".format(int(r * 1000))
-                    index.setdefault("tensor", default_index)
-                else:
-                    sim_type[comp] = getattr(self, "{}_type_sim".format(comp))
+                    type_value = "rp{:03d}".format(int(r * 1000))
+                    index.setdefault("tensor", index.get("signal", default_index))
+                if type_value is None and comp != "foreground":
+                    v = getattr(self, type_key.replace("_sim", ""))
+                    type_value = v
+                if type_value is None:
+                    continue
+                sim_type[comp] = type_value
                 if comp == "template":
                     if template_alpha_sim is None:
                         template_alpha_sim = template_alpha
@@ -2492,40 +2320,73 @@ class XFaster(object):
                 else:
                     index.setdefault(comp, default_index)
 
-        self.ensemble_mean = ensemble_mean
-        self.ensemble_median = ensemble_median
-        self.sim_type = sim_type
-        self.sim_index = index
-
         # Check for output data on disk
+        opts = {"data_type": data_type}
+        file_attrs = ["data_type", "map_root", "map_files"]
         save_attrs = ["cls_data", "nside"]
-        template_fit = False
-        subtract_reference_signal = self.reference_type is not None
-        subtract_template_noise = self.template_noise_type is not None
+        template_fit = template_type is not None
+        subtract_reference_signal = null_run and reference_type is not None
+        subtract_template_noise = template_noise_type is not None
         if null_run:
+            file_attrs += ["map_root2", "map_files2"]
             save_attrs += ["cls_data_null"]
-            if subtract_reference_signal:
-                save_attrs += ["cls_data_sub_null", "cls_ref_null"]
-        elif any([x is not None for x in template_alpha.values()]):
-            template_fit = True
-            self.template_cleaned = True
+            if reference_type is not None:
+                opts["reference_type"] = reference_type
+                file_attrs += [
+                    "reference_type",
+                    "reference_root",
+                    "reference_files",
+                    "num_reference",
+                ]
+                save_attrs += [
+                    "cls_data_sub",
+                    "cls_ref",
+                    "cls_data_sub_null",
+                    "cls_ref_null",
+                ]
+        elif template_type is not None:
+            opts["template_type"] = template_type
+            file_attrs += [
+                "template_type",
+                "template_root",
+                "template_root2",
+                "template_files",
+                "template_files2",
+                "num_template",
+            ]
             save_attrs += ["cls_data_clean", "cls_template", "template_alpha"]
         else:
             subtract_template_noise = False
-        if subtract_reference_signal:
-            save_attrs += ["cls_data_sub", "cls_ref"]
+
         if sim:
-            if template_alpha_sim:
-                self.template_alpha_sim = template_alpha_sim
-                save_attrs += ["template_alpha_sim"]
+            for comp, comp_type in sim_type.items():
+                k = "{}_type_sim".format(comp)
+                opts[k] = comp_type
+                file_attrs += [
+                    "{}_type_sim".format(comp),
+                    "{}_root_sim".format(comp),
+                    "{}_files_sim".format(comp),
+                    "num_{}_sim".format(comp),
+                ]
+                if null_run or comp == "template":
+                    file_attrs += [
+                        "{}_root_sim2".format(comp),
+                        "{}_files_sim2".format(comp),
+                    ]
+                if comp == "template":
+                    self.template_alpha_sim = template_alpha_sim
+                    save_attrs += ["template_alpha_sim"]
+
+        save_attrs += file_attrs
 
         def apply_template():
             """
-            Internal data processing function to have scaled foreground template subtracted from data map.
+            Internal data processing function to have scaled foreground template
+            subtracted from data map.
             """
             if subtract_template_noise:
                 if getattr(self, "cls_template_noise", None) is None:
-                    self.cls_template_noise = self.get_masked_template_noise()
+                    self.get_masked_template_noise(template_noise_type)
 
             cls_clean = getattr(self, "cls_data_clean", OrderedDict())
 
@@ -2554,17 +2415,27 @@ class XFaster(object):
 
             self.cls_data_clean = cls_clean
             self.template_alpha = template_alpha
-            self.template_cleaned = True
 
         # change template subtraction coefficients for pre-loaded data
         if all([hasattr(self, attr) for attr in save_attrs]):
-            if not template_fit and not getattr(self, "template_cleaned", False):
+            template_type_attr = getattr(self, "template_type", None)
+
+            if not template_fit and template_type_attr is None:
                 return {k: getattr(self, k) for k in save_attrs}
 
-            if template_fit and getattr(self, "template_cleaned", False):
+            if template_fit and template_type_attr is not None:
                 if not np.all(template_alpha == self.template_alpha):
                     apply_template()
                 return {k: getattr(self, k) for k in save_attrs}
+
+        # set attributes
+        self.data_type = data_type
+        self.ensemble_mean = ensemble_mean
+        self.ensemble_median = ensemble_median
+        self.sim_type = sim_type
+        self.sim_index = index
+        self.template_type = template_type
+        self.reference_type = reference_type
 
         if sim and not save_sim:
             # rerun dependent steps if not saving sims to disk
@@ -2575,25 +2446,67 @@ class XFaster(object):
             ret = self.load_data(
                 save_name,
                 save_name,
+                file_fields=file_attrs,
                 fields=save_attrs,
                 to_attrs=True,
                 shape=data_shape,
                 shape_ref="cls_data",
+                value_ref=opts,
                 data_opts=True,
                 extra_tag="xcorr",
             )
             if ret is not None:
-                if null_run:
-                    return ret
-                self.template_cleaned = False
-                if all([x is None for x in template_alpha.values()]):
-                    self.template_cleaned = False
+                if null_run or not template_fit:
                     return ret
                 if np.all(template_alpha == self.template_alpha):
-                    self.template_cleaned = True
                     return ret
                 apply_template()
                 return ret
+
+        # set up filenames
+        ret = self._get_data_files(data_type=data_type)
+        if template_type is not None:
+            ret.update(self._get_template_files("template", template_type))
+        if null_run and reference_type is not None:
+            ret.update(self._get_reference_files(reference_type))
+
+        if sim:
+            for comp, comp_type in sim_type.items():
+                if comp == "signal" and r is not None:
+                    ret.update(
+                        self._get_sim_files(
+                            "signal",
+                            root="signal_r0",
+                            sim_data=True,
+                            index=index["signal"],
+                        )
+                    )
+                    ret.update(
+                        self._get_sim_files(
+                            "tensor",
+                            root="signal_r1tens",
+                            sim_data=True,
+                            index=index["tensor"],
+                        )
+                    )
+                elif comp == "template":
+                    ret.update(self._get_template_files(comp, comp_type, suffix="_sim"))
+                else:
+                    ret.update(
+                        self._get_sim_files(
+                            comp, comp_type, sim_data=True, index=index[comp]
+                        )
+                    )
+            for comp, idx in index.items():
+                k = "{}_files".format(comp)
+                if k in ret:
+                    ret[k] = [f[idx] for f in ret[k]]
+                k2 = k + "2"
+                if k2 in ret:
+                    ret[k2] = [f[idx] for f in ret[k2]]
+
+        for k, v in ret.items():
+            setattr(self, k, v)
 
         # map spectra
         cls = OrderedDict()
@@ -2609,7 +2522,7 @@ class XFaster(object):
         cls_ref = None
         if subtract_reference_signal:
             cls_ref = OrderedDict()
-            cls_ref_null = OrderedDict() if null_run else None
+            cls_ref_null = OrderedDict()
             reference_files_split = list(
                 zip(
                     self.reference_files[x]
@@ -2646,7 +2559,7 @@ class XFaster(object):
 
             else:
                 # simulated data constructed from individual components
-                shape = (3, self.npix) if self.pol else (self.npix, )
+                shape = (3, self.npix) if self.pol else (self.npix,)
                 m = np.zeros(shape, dtype=float)
 
                 if "signal" in sim_type:
@@ -2824,16 +2737,13 @@ class XFaster(object):
         if template_fit:
             self.cls_template = cls_tmp
             apply_template()
-        else:
-            self.template_cleaned = False
 
         if subtract_reference_signal:
             self.cls_ref = cls_ref
             self.cls_ref_null = cls_ref_null
 
             cls_data_sub = copy.deepcopy(self.cls_data)
-            if null_run:
-                cls_data_sub_null = copy.deepcopy(self.cls_data_null)
+            cls_data_sub_null = copy.deepcopy(self.cls_data_null)
 
             for spec in self.specs:
                 for xname, d in cls_data_sub[spec].items():
@@ -2841,21 +2751,31 @@ class XFaster(object):
                     d += -t1 - t2 + t3
 
                 # do null specs
-                if null_run:
-                    for xname, d in cls_data_sub_null[spec].items():
-                        t1, t2, t3 = self.cls_ref_null[spec][xname]
-                        d += -t1 - t2 + t3
+                for xname, d in cls_data_sub_null[spec].items():
+                    t1, t2, t3 = self.cls_ref_null[spec][xname]
+                    d += -t1 - t2 + t3
 
             self.cls_data_sub = cls_data_sub
-            if null_run:
-                self.cls_data_sub_null = cls_data_sub_null
+            self.cls_data_sub_null = cls_data_sub_null
 
         if not sim or save_sim:
             return self.save_data(
-                save_name, from_attrs=save_attrs, extra_tag="xcorr", data_opts=True
+                save_name,
+                from_attrs=save_attrs,
+                file_attrs=file_attrs,
+                extra_tag="xcorr",
+                data_opts=True,
             )
 
-    def get_masked_sims(self, transfer=False, do_noise=True, qb_file=None):
+    def get_masked_sims(
+        self,
+        transfer=False,
+        signal_type="synfast",
+        signal_subset="*",
+        noise_type=None,
+        noise_subset="*",
+        qb_file=None,
+    ):
         """
         Compute average signal and noise spectra for a given ensemble of sim
         maps.  The same procedure that is used for computing data cross spectra
@@ -2868,13 +2788,31 @@ class XFaster(object):
         Arguments
         ---------
         transfer : bool
-            If True, use the signal ensemble corresponding to
-            `signal_transfer_type`.  Otherwise, uses the standard `signal_type`
-            ensemble.
-        do_noise : bool
-            If True, include noise spectra in the output, as long as
-            `noise_type` is supplied.  Otherwise, only the signal component is
-            computed.
+            If True, use the 'sims_transfer' checkpoint, otherwise use the
+            'sims' checkpoint.
+        signal_type : string
+            The variant of signal simulation to use, typically identified by the
+            input spectrum model used to generate it, e.g 'synfast'.  If
+            ``transfer`` is True, this signal ensemble is used for the transfer
+            function calculation.  The directory may also contain the input Cl
+            spectrum as a ``camb`` file, to be used for constructing the
+            kernel-convolved signal model.
+        signal_subset : string
+            Subset of map tags to use for spectrum estimation for signal
+            sims.  This should be a string that is parseable using ``glob``
+            that is added onto the data_subset path to indicate which sims
+            to use. For example, for all, use ``'*'``. For the first 300 sims,
+            use ``'0[0-2]*'``.
+        noise_type: string
+            The variant of noise simulation to use, e.g. 'gaussian',
+            'stationary', etc.  The directory should contain the same number
+            of simulations for each map tag.
+        noise_subset : string
+            Subset of map tags to use for spectrum estimation for noise
+            sims.  This should be a string that is parseable using ``glob``
+            that is added onto the data_subset path to indicate which sims
+            to use. For example, for all, use ``'*'``. For the first 300 sims,
+            use ``'0[0-2]*'``.
         qb_file : string
             Pointer to a bandpowers.npz file in the output directory, used
             to correct the ensemble mean noise spectrum by the appropriate
@@ -2882,8 +2820,8 @@ class XFaster(object):
 
         Notes
         -----
-        This method is called at the 'sims' checkpoint, and loads or saves
-        a data dictionary with the following keys:
+        This method is called at the 'sims' or 'sims_transfer' checkpoint, and
+        loads or saves a data dictionary with the following keys:
 
             cls_signal, cls_signal_null:
                 Mean signal spectra
@@ -2911,69 +2849,83 @@ class XFaster(object):
         data_shape = self.data_shape
         null_run = self.null_run
 
-        if transfer:
-            signal_files = self.signal_transfer_files
-            signal_files2 = self.signal_transfer_files2 if null_run else None
-            num_signal = self.num_signal_transfer
-        else:
-            signal_files = self.signal_files
-            signal_files2 = self.signal_files2 if null_run else None
-            num_signal = self.num_signal
-
-        noise_files = self.noise_files
-        noise_files2 = self.noise_files2 if null_run else None
-        num_noise = self.num_noise
-
-        if do_noise:
-            do_noise = noise_files is not None
-
-        save_attrs = [
-            "cls_signal",
-            "cls_noise",
-            "cls_sim",
-            "cls_med",
-            "cls_res",
+        opts = dict(signal_type=signal_type, signal_subset=signal_subset)
+        file_attrs = [
+            "signal_type",
+            "signal_subset",
+            "signal_root",
+            "signal_files",
+            "num_signal",
         ]
+        save_attrs = ["cls_signal", "cls_sim", "cls_med"]
         if null_run:
-            save_attrs += [
-                "cls_signal_null",
-                "cls_noise_null",
-                "cls_sim_null",
-                "cls_med_null",
-                "cls_res_null",
-            ]
+            file_attrs += ["signal_root2", "signal_files2"]
+            save_attrs += ["cls_signal_null", "cls_sim_null", "cls_med_null"]
 
-        if transfer:
-            save_name = "sims_xcorr_{}".format(self.signal_transfer_type)
-            cp = "sims_transfer"
-        else:
-            save_name = "sims_xcorr_{}".format(self.signal_type)
-            cp = "sims"
+        do_noise = noise_type is not None
+        if do_noise:
+            opts.update(noise_type=noise_type, noise_subset=noise_subset)
+            if qb_file is not None:
+                opts["qb_file"] = qb_file
+            file_attrs += [
+                "noise_type",
+                "noise_subset",
+                "noise_root",
+                "noise_files",
+                "num_noise",
+            ]
+            save_attrs += ["cls_noise", "cls_res"]
+            if null_run:
+                file_attrs += ["noise_root2", "noise_files2"]
+                save_attrs += ["cls_noise_null", "cls_res_null"]
+
+        save_attrs += file_attrs
+
+        alt_name = None
+        save_name = "sims_xcorr_{}".format(signal_type)
+        if do_noise:
+            alt_name = save_name
+            save_name = "{}_{}".format(save_name, noise_type)
+        cp = "sims_transfer" if transfer else "sims"
+
+        # don't force rerun the signal sims if previously loaded sims are of the
+        # same type
+        if hasattr(self, "signal_type") and self.signal_type == signal_type:
+            self.force_rerun[cp] = False
 
         ret = self.load_data(
             save_name,
             cp,
+            file_fields=file_attrs,
             fields=save_attrs,
             to_attrs=True,
             shape=data_shape,
             shape_ref="cls_signal",
+            value_ref=opts,
+            alt_name=alt_name,
         )
         if ret is not None:
-            if do_noise:
-                if self.cls_noise is not None:
-                    return ret
-            else:
-                if self.cls_noise is not None:
-                    self.cls_noise = None
-                    self.cls_noise_null = None
-                    ret["cls_noise"] = None
-                    ret["cls_noise_null"] = None
-                return ret
-        else:
-            # don't rerun sims a second time if they've already been run once
-            # with the same signal type
-            if transfer and self.signal_transfer_type == self.signal_type:
-                self.force_rerun["sims"] = False
+            if not do_noise:
+                self.cls_noise = self.cls_noise_null = None
+                ret["cls_noise"] = ret["cls_noise_null"] = None
+            return ret
+
+        # find sim ensemble files
+        ret = {}
+        ret.update(self._get_sim_files("signal", signal_type, signal_subset))
+        if do_noise:
+            ret.update(self._get_sim_files("noise", noise_type, noise_subset))
+        for k, v in ret.items():
+            setattr(self, k, v)
+
+        signal_files = self.signal_files
+        signal_files2 = self.signal_files2 if null_run else None
+        num_signal = self.num_signal
+
+        if do_noise:
+            noise_files = self.noise_files
+            noise_files2 = self.noise_files2 if null_run else None
+            num_noise = self.num_noise
 
         # process signal, noise, and S+N
         cls_sig = OrderedDict()
@@ -3205,12 +3157,22 @@ class XFaster(object):
         self.cls_res_null = cls_null_res
 
         # save and return
-        return self.save_data(save_name, from_attrs=save_attrs)
+        return self.save_data(save_name, from_attrs=save_attrs, file_attrs=file_attrs)
 
-    def get_masked_template_noise(self):
+    def get_masked_template_noise(self, template_noise_type):
         """
         Compute all combinations of template noise cross spectra from the ensemble
         of template noise sims.
+
+        Arguments
+        ---------
+        template_noise_type : string
+            Tag for directory containing template noise sims to be averaged and
+            scaled similarly to the templates themselves.  These averaged sims
+            are used to debias template cross spectra due to correlations in the
+            way the noise ensembles are constructed.  Typically, this would be a
+            noise model based on the Planck FFP10 ensemble for each half-mission
+            foreground template.
 
         Returns
         -------
@@ -3225,27 +3187,40 @@ class XFaster(object):
         saves a data dictionary containing the ``cls_template_noise`` attribute
         that is returned.
         """
-        template_type = self.template_noise_type
         mask_files = self.mask_files
-        map_files = [self.template_noise_files, self.template_noise_files2]
         map_tags = self.map_tags
         map_pairs = pt.tag_pairs(map_tags, index=True)
         num_maps = self.num_maps
         data_shape = (3 * self.data_shape[0], self.data_shape[1])
 
         save_attrs = ["cls_template_noise"]
-        save_name = "template_noise_{}".format(template_type)
+        file_attrs = [
+            "template_noise_type",
+            "template_noise_root",
+            "template_noise_root2",
+            "template_noise_files",
+            "template_noise_files2",
+            "num_template_noise",
+        ]
+        save_attrs += file_attrs
+        save_name = "template_noise_{}".format(template_noise_type)
 
         ret = self.load_data(
             save_name,
             "template_noise",
             fields=save_attrs,
+            file_fields=file_attrs,
             to_attrs=True,
             shape=data_shape,
             shape_ref="cls_template_noise",
         )
         if ret is not None:
             return ret["cls_template_noise"]
+
+        ret = self._get_template_files("template_noise", template_noise_type)
+        for k, v in ret.items():
+            setattr(self, k, v)
+        map_files = [self.template_noise_files, self.template_noise_files2]
 
         cls_template_noise = OrderedDict()
         for k in ["temp1:temp1", "temp2:temp2", "temp1:temp2"]:
@@ -3307,7 +3282,7 @@ class XFaster(object):
                         d[:] += (q1[s] - d) / float(isim + 1)  # in-place
 
         self.cls_template_noise = cls_template_noise
-        self.save_data(save_name, from_attrs=save_attrs)
+        self.save_data(save_name, from_attrs=save_attrs, file_attrs=file_attrs)
         return cls_template_noise
 
     def get_kernels(self, window_lmax=None):
@@ -3586,9 +3561,7 @@ class XFaster(object):
             else:
                 # signal sim model or custom filename
                 if filename is None:
-                    signal_root = (
-                        self.signal_transfer_root if transfer else self.signal_root
-                    )
+                    signal_root = self.signal_root
                     filename = "spec_{}.dat".format(os.path.basename(signal_root))
                     filename = os.path.join(signal_root, filename)
                 elif not os.path.exists(filename):
@@ -3617,7 +3590,7 @@ class XFaster(object):
             if filename_fg is None:
                 # From Planck LIV EE dust
                 cls_dust = st.dust_model(ell, lfac=True)
-                for spec in specs[:4 if self.pol else 1]:
+                for spec in specs[: 4 if self.pol else 1]:
                     cls_shape["fg_" + spec] = cls_dust
                 self.log(
                     "Added simple foregrounds to cls shape {}".format(list(cls_shape)),
@@ -4590,7 +4563,7 @@ class XFaster(object):
                 obs_quant = self.cls_data_sub_null
             else:
                 obs_quant = self.cls_data_null
-        elif self.template_cleaned:
+        elif self.template_type is not None:
             obs_quant = self.cls_data_clean
         else:
             obs_quant = self.cls_data
@@ -5699,7 +5672,7 @@ class XFaster(object):
                 qb_transfer=self.qb_transfer,
                 transfer=self.transfer,
             )
-            if self.template_cleaned:
+            if self.template_type is not None:
                 out.update(template_alpha=self.template_alpha)
 
         if success and not transfer:
@@ -6178,7 +6151,7 @@ class XFaster(object):
                 self.delta_beta_fix = 1.0e-8
                 opts.update(delta_beta_prior=delta_beta_prior)
 
-        if self.template_cleaned:
+        if self.template_type is not None:
             opts.update(template_alpha=self.template_alpha)
         self.return_cls = return_cls
 
@@ -6344,7 +6317,7 @@ class XFaster(object):
             beam_prior = None
 
         # no template cleaning if there aren't any templates specified
-        if not getattr(self, "template_cleaned", False):
+        if getattr(self, "template_type", None) is None:
             alpha_prior = None
 
         # null out unused priors

@@ -165,6 +165,22 @@ The files written to disk are:
 
 For a detailed overview of the various fields contained in each dictionary, see :ref:`Tutorial<Tutorial>`.
 
+To get a quick look at the data, you can use the ``xfaster dump`` command-line utility.  For example, to see the contents of the ``data_xcorr.npz`` checkpoint file for the example dataset:
+
+.. code-block:: bash
+
+    % xfaster dump -r example/outputs_example -t 95x150 -c data
+    ***** example/outputs_example/95x150/data_xcorr_95x150.npz *****
+    {
+        'data_version': 4,
+        'cls_data': odict_keys(['tt', 'ee', 'bb', 'te', 'eb', 'tb']),
+        'nside': 256,
+        'data_type': 'raw',
+        'map_root': 'data_raw',
+        'map_files': ['data_raw/full/map_150.fits', 'data_raw/full/map_95.fits'],
+    }
+
+
 Whenever you want to read in some data the XFaster code wrote, you'll want to use the function ``load_and_parse``.
 This includes all the files detailed in the list above.
 You can then look through keys, where the dictionaries are all structured as ``main field name`` -> ``spectrum type`` -> ``map/cross spectrum``.

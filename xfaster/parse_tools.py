@@ -18,6 +18,8 @@ __all__ = [
     "load_compat",
     "load_pickle_compat",
     "load_and_parse",
+    "save",
+    "fix_data_roots",
     "corr_index",
     "num_maps",
     "num_corr",
@@ -456,11 +458,121 @@ def load_and_parse(filename, check_version=True):
 
         data["data_version"] = dv
 
+    if version in [1, 2, 3]:
+
+        if "data_root" in data:
+            fix_data_roots(data, mode="save", inplace=True)
+
+        data["data_version"] = dv
+
     version = data.get("data_version", -1)
     if version != dv:
         raise ValueError(
             "Incompatible data file version.  Found {}, expected {}".format(version, dv)
         )
+
+    return data
+
+
+def save(output_file, **data):
+    """
+    Save a numpy archive file to disk.
+
+    Arguments
+    ---------
+    filename : str
+        Path to output npz file.
+    data : dict
+        Dictionary of data to store.
+    """
+    np.savez_compressed(output_file, **data)
+
+
+def fix_data_roots(data, mode="save", root=None, root2=None, inplace=False):
+    """
+    Remove or apply the data root to a set of file paths in an output checkpoint
+    file.
+
+    Arguments
+    ---------
+    data : dict
+        Dictionary of file data to update, including lists of map files and file
+        roots, as returned by ``XFaster.get_files`` and related functions.
+    mode : str
+        If ``'save'``, remove the appropriate data root from any file paths, so
+        that only relative paths are stored to disk.  If ``'load'``, add the
+        appropriate data root to any file paths, so that all paths point to
+        existing files within the given data roots.
+    root, root2 : str
+        The data root (and second data root, for null tests) to be removed or
+        applied to the file path items in ``data``.
+    inplace : bool
+        If True, updates the input data dictionary.  Otherwise, creates a copy
+        before making any changes.
+
+    Returns
+    -------
+    data : dict
+        Updated data dictionary
+    """
+
+    assert mode in ["load", "save"]
+
+    if root is None and "data_root" in data:
+        root = data["data_root"]
+    if root2 is None and "data_root2" in data:
+        root2 = data["data_root2"]
+
+    if not inplace:
+        data = data.copy()
+
+    def replace_root(k, v):
+        if not isinstance(v, str):
+            return v
+        if root2 is not None and k.endswith("2") and "template" not in k:
+            if mode == "load":
+                if os.path.isabs(v):
+                    return v
+                return os.path.join(root2, v)
+            elif mode == "save":
+                if not v.startswith(root2):
+                    return v
+                return os.path.relpath(v, root2)
+        else:
+            if mode == "load":
+                if os.path.isabs(v):
+                    return v
+                return os.path.join(root, v)
+            elif mode == "save":
+                if not v.startswith(root):
+                    return v
+                return os.path.relpath(v, root)
+        raise RuntimeError("Something has gone horribly wrong, why are you here?")
+
+    for k in list(data):
+        if k in ["data_root", "data_root2"]:
+            continue
+        if "_files" not in k and "_root" not in k:
+            continue
+        v = data[k]
+        if isinstance(v, str):
+            data[k] = replace_root(k, v)
+        elif isinstance(v, np.ndarray) and isinstance(v.ravel()[0], str):
+            varr = [replace_root(k, vv) for vv in v.ravel()]
+            data[k] = np.array(varr).reshape(v.shape)
+        elif isinstance(v, dict):
+            v1 = list(v.values())[0]
+            if not isinstance(v1, np.ndarray):
+                continue
+            if not isinstance(v1.ravel()[0], str):
+                continue
+            if not inplace:
+                v = v.copy()
+            for kk, vv in v.items():
+                varr = [replace_root(k, vvv) for vvv in vv.ravel()]
+                v[kk] = np.array(varr).reshape(vv.shape)
+            if not inplace:
+                data[k] = v
 
     return data
 
@@ -871,7 +983,7 @@ def bin_spec_simple(qb, cls_shape, bin_def, inv_fish=None, lfac=True):
     ecls_shape = {k: fac * v[: lmax + 1] for k, v in cls_shape.items()}
 
     bin_index = dict_to_index(bin_def)
-    nbins =  0
+    nbins = 0
 
     for stag, qb1 in qb.items():
         if stag not in ecls_shape:
