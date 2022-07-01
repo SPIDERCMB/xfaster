@@ -2103,6 +2103,7 @@ class XFaster(object):
         template_type_sim=None,
         template_alpha_sim=None,
         save_sim=False,
+        update_template=False,
     ):
         """
         Compute cross spectra of the data maps.
@@ -2221,6 +2222,9 @@ class XFaster(object):
             sim options, write the simulated dataset to disk using an
             appropriate ``'data_xcorr.npz'`` filename.  If False, only
             non-simulated datasets are written to disk.
+        update_template : bool
+            If True, just apply the loaded template with updated
+            ``template_alpha`` and ``template_spec`` parameters and return.
 
         Notes
         -----
@@ -2266,6 +2270,45 @@ class XFaster(object):
             template_alpha = OrderedDict(
                 [(k, v) for k, v in template_alpha.items() if k in self.map_tags_orig]
             )
+
+        def apply_template():
+            """
+            Internal data processing function to have scaled foreground template
+            subtracted from data map.
+            """
+            subtract_template_noise = hasattr(self, "cls_template_noise")
+            cls_clean = getattr(self, "cls_data_clean", OrderedDict())
+
+            for spec in set(self.specs) & set(template_specs):
+                cls_clean[spec] = copy.deepcopy(self.cls_data[spec])
+                if spec not in self.cls_template:
+                    continue
+                for xname, d in cls_clean[spec].items():
+                    if xname not in self.cls_template[spec]:
+                        continue
+                    m0, m1 = self.map_pairs_orig[xname]
+                    alphas = [template_alpha.get(m, None) for m in (m0, m1)]
+
+                    t1, t2, t3 = self.cls_template[spec][xname]
+
+                    if alphas[0] is not None:
+                        d -= alphas[0] * t1
+                    if alphas[1] is not None:
+                        d -= alphas[1] * t2
+                        if alphas[0] is not None:
+                            d += alphas[0] * alphas[1] * t3
+                            # subtract average template noise spectrum to debias
+                            if subtract_template_noise:
+                                n = self.cls_template_noise["temp1:temp2"][spec][xname]
+                                d -= alphas[0] * alphas[1] * n
+
+            self.cls_data_clean = cls_clean
+            self.template_alpha = template_alpha
+
+        # change template subtraction coefficients for pre-loaded data
+        if update_template:
+            apply_template()
+            return
 
         # set sim attributes
         if ensemble_mean or ensemble_median or not sim:
@@ -2379,55 +2422,6 @@ class XFaster(object):
 
         save_attrs += file_attrs
 
-        def apply_template():
-            """
-            Internal data processing function to have scaled foreground template
-            subtracted from data map.
-            """
-            if subtract_template_noise:
-                if getattr(self, "cls_template_noise", None) is None:
-                    self.get_masked_template_noise(template_noise_type)
-
-            cls_clean = getattr(self, "cls_data_clean", OrderedDict())
-
-            for spec in set(self.specs) & set(template_specs):
-                cls_clean[spec] = copy.deepcopy(self.cls_data[spec])
-                if spec not in self.cls_template:
-                    continue
-                for xname, d in cls_clean[spec].items():
-                    if xname not in self.cls_template[spec]:
-                        continue
-                    m0, m1 = self.map_pairs_orig[xname]
-                    alphas = [template_alpha.get(m, None) for m in (m0, m1)]
-
-                    t1, t2, t3 = self.cls_template[spec][xname]
-
-                    if alphas[0] is not None:
-                        d -= alphas[0] * t1
-                    if alphas[1] is not None:
-                        d -= alphas[1] * t2
-                        if alphas[0] is not None:
-                            d += alphas[0] * alphas[1] * t3
-                            # subtract average template noise spectrum to debias
-                            if subtract_template_noise:
-                                n = self.cls_template_noise["temp1:temp2"][spec][xname]
-                                d -= alphas[0] * alphas[1] * n
-
-            self.cls_data_clean = cls_clean
-            self.template_alpha = template_alpha
-
-        # change template subtraction coefficients for pre-loaded data
-        if all([hasattr(self, attr) for attr in save_attrs]):
-            template_type_attr = getattr(self, "template_type", None)
-
-            if not template_fit and template_type_attr is None:
-                return {k: getattr(self, k) for k in save_attrs}
-
-            if template_fit and template_type_attr is not None:
-                if not np.all(template_alpha == self.template_alpha):
-                    apply_template()
-                return {k: getattr(self, k) for k in save_attrs}
-
         # set attributes
         self.data_type = data_type
         self.ensemble_mean = ensemble_mean
@@ -2517,6 +2511,8 @@ class XFaster(object):
         if template_fit:
             cls_tmp = OrderedDict()
             template_files = list(zip(self.template_files, self.template_files2))
+            if subtract_template_noise:
+                self.get_masked_template_noise(template_noise_type)
 
         # set up reference subtraction
         cls_ref = None
@@ -6563,6 +6559,7 @@ class XFaster(object):
                 clsi = cls_input
             else:
                 self.get_masked_data(
+                    update_template=True,
                     template_alpha=OrderedDict(zip(alpha_tags, alpha)),
                     template_specs=template_specs,
                 )
