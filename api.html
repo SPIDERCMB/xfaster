@@ -1680,7 +1680,7 @@ data dictionary with the following keys:</p>
 
 <dl class="method">
 <dt id="xfaster.xfaster_class.XFaster.get_masked_data">
-<code class="sig-name descname">get_masked_data</code><span class="sig-paren">(</span><em class="sig-param">data_type='raw', template_type=None, template_noise_type=None, template_alpha=None, template_specs=None, reference_type=None, ensemble_mean=False, ensemble_median=False, sim=False, components=['signal', 'noise', 'foreground'], index=None, signal_type_sim=None, r=None, noise_type_sim=None, qb_file=None, foreground_type_sim=None, template_type_sim=None, template_alpha_sim=None, save_sim=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_masked_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_masked_data" title="Permalink to this definition"></a></dt>
+<code class="sig-name descname">get_masked_data</code><span class="sig-paren">(</span><em class="sig-param">data_type='raw', template_type=None, template_noise_type=None, template_alpha=None, template_specs=None, reference_type=None, ensemble_mean=False, ensemble_median=False, sim=False, components=['signal', 'noise', 'foreground'], index=None, signal_type_sim=None, r=None, noise_type_sim=None, qb_file=None, foreground_type_sim=None, template_type_sim=None, template_alpha_sim=None, save_sim=False, update_template=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster.get_masked_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster.get_masked_data" title="Permalink to this definition"></a></dt>
 <dd><p>Compute cross spectra of the data maps.</p>
 <p>If only one dataset is selected, spectra are computed for every
 combination of pairs of data maps. This results in N * (N + 1) / 2
@@ -1774,6 +1774,8 @@ original map tags in the data set.</p></li>
 sim options, write the simulated dataset to disk using an
 appropriate <code class="docutils literal notranslate"><span class="pre">'data_xcorr.npz'</span></code> filename.  If False, only
 non-simulated datasets are written to disk.</p></li>
+<li><p><strong>update_template</strong> (<em>bool</em>) – If True, just apply the loaded template with updated
+<code class="docutils literal notranslate"><span class="pre">template_alpha</span></code> and <code class="docutils literal notranslate"><span class="pre">template_spec</span></code> parameters and return.</p></li>
 </ul>
 </dd>
 </dl>
