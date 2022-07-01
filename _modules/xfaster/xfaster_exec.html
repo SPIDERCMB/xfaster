@@ -74,6 +74,7 @@
   <h1>Source code for xfaster.xfaster_exec</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">glob</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
 <span class="kn">import</span> <span class="nn">subprocess</span> <span class="k">as</span> <span class="nn">sp</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -81,6 +82,7 @@
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">xfaster_class</span> <span class="k">as</span> <span class="n">xfc</span>
 <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">batch_tools</span> <span class="k">as</span> <span class="n">bt</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">parse_tools</span> <span class="k">as</span> <span class="n">pt</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 
 
@@ -88,6 +90,7 @@
     <span class="s2">&quot;xfaster_run&quot;</span><span class="p">,</span>
     <span class="s2">&quot;xfaster_parse&quot;</span><span class="p">,</span>
     <span class="s2">&quot;xfaster_submit&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;xfaster_dump&quot;</span><span class="p">,</span>
     <span class="s2">&quot;xfaster_main&quot;</span><span class="p">,</span>
     <span class="s2">&quot;XFasterJobGroup&quot;</span><span class="p">,</span>
 <span class="p">]</span>
@@ -109,20 +112,6 @@
     <span class="n">data_subset</span><span class="o">=</span><span class="s2">&quot;full/*0&quot;</span><span class="p">,</span>
     <span class="n">data_root2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">data_subset2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">data_type</span><span class="o">=</span><span class="s2">&quot;raw&quot;</span><span class="p">,</span>
-    <span class="n">mask_type</span><span class="o">=</span><span class="s2">&quot;rectangle&quot;</span><span class="p">,</span>
-    <span class="n">signal_type</span><span class="o">=</span><span class="s2">&quot;synfast&quot;</span><span class="p">,</span>
-    <span class="n">signal_subset</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
-    <span class="n">signal_transfer_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">signal_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">noise_type</span><span class="o">=</span><span class="s2">&quot;stationary&quot;</span><span class="p">,</span>
-    <span class="n">noise_subset</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
-    <span class="n">noise_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">foreground_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">template_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">template_noise_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">template_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">reference_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="c1"># binning options</span>
     <span class="n">lmin</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
     <span class="n">lmax</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
@@ -139,28 +128,51 @@
     <span class="n">bin_width_fg</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
     <span class="n">lmin_fg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">lmax_fg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="c1"># data options</span>
-    <span class="n">template_alpha_tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">template_alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">template_alpha_tags_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">template_alpha_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">ensemble_mean</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">ensemble_median</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">sim_data</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">sim_data_components</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;signal&quot;</span><span class="p">,</span> <span class="s2">&quot;noise&quot;</span><span class="p">,</span> <span class="s2">&quot;foreground&quot;</span><span class="p">],</span>
-    <span class="n">sim_data_r</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">qb_file_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">sim_index_signal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">sim_index_noise</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">sim_index_foreground</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">sim_index_default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-    <span class="n">save_sim_data</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="c1"># beam and kernel options</span>
     <span class="n">pixwin</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">mask_type</span><span class="o">=</span><span class="s2">&quot;rectangle&quot;</span><span class="p">,</span>
     <span class="n">window_lmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">apply_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">reload_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">gcorr_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="c1"># sim ensemble options</span>
+    <span class="n">signal_type</span><span class="o">=</span><span class="s2">&quot;synfast&quot;</span><span class="p">,</span>
+    <span class="n">signal_subset</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+    <span class="n">signal_transfer_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">noise_type</span><span class="o">=</span><span class="s2">&quot;stationary&quot;</span><span class="p">,</span>
+    <span class="n">noise_subset</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+    <span class="n">qb_file_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="c1"># shape spectrum options</span>
+    <span class="n">signal_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">signal_transfer_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">foreground_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">model_r</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">freq_ref</span><span class="o">=</span><span class="mf">359.7</span><span class="p">,</span>
+    <span class="n">beta_ref</span><span class="o">=</span><span class="mf">1.54</span><span class="p">,</span>
+    <span class="c1"># data options</span>
+    <span class="n">data_type</span><span class="o">=</span><span class="s2">&quot;raw&quot;</span><span class="p">,</span>
+    <span class="n">template_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">template_noise_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">template_alpha_tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">template_alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">reference_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">ensemble_mean</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">ensemble_median</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">sim_data</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">sim_data_components</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;signal&quot;</span><span class="p">,</span> <span class="s2">&quot;noise&quot;</span><span class="p">,</span> <span class="s2">&quot;foreground&quot;</span><span class="p">],</span>
+    <span class="n">sim_index_signal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">sim_index_noise</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">sim_index_foreground</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">sim_index_default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">signal_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">sim_data_r</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">noise_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">qb_file_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">foreground_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">template_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">template_alpha_tags_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">template_alpha_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">save_sim_data</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="c1"># spectrum estimation options</span>
     <span class="n">multi_map</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">bandpower_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -172,13 +184,6 @@
     <span class="n">return_cls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">fix_bb_transfer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">null_first_cmb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">qb_file_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">signal_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">signal_transfer_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">foreground_spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">model_r</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">freq_ref</span><span class="o">=</span><span class="mf">359.7</span><span class="p">,</span>
-    <span class="n">beta_ref</span><span class="o">=</span><span class="mf">1.54</span><span class="p">,</span>
     <span class="n">delta_beta_prior</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
     <span class="n">like_profiles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">like_profile_sigma</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span>
@@ -249,60 +254,6 @@
 <span class="sd">    data_subset2 : str</span>
 <span class="sd">        The subset of the data maps to include from each data split for the</span>
 <span class="sd">        second half of a null split.</span>
-<span class="sd">    data_type : str</span>
-<span class="sd">        The data type to use</span>
-<span class="sd">    mask_type : str</span>
-<span class="sd">        The variant of mask to use</span>
-<span class="sd">    signal_type : str</span>
-<span class="sd">        The variant of signal sims to use for the signal component of the</span>
-<span class="sd">        covariance model.</span>
-<span class="sd">    signal_subset : str</span>
-<span class="sd">        The subset of the signal sims to include.  Must be a glob-parseable</span>
-<span class="sd">        string.</span>
-<span class="sd">    signal_transfer_type : str</span>
-<span class="sd">        The variant of signal sims to use for computing the transfer function.</span>
-<span class="sd">        If not set, defaults to ``signal_type``.</span>
-<span class="sd">    signal_type_sim : str</span>
-<span class="sd">        The variant of signal sims to use for sim_index data maps.</span>
-<span class="sd">        This enables having a different noise sim ensemble to use for</span>
-<span class="sd">        sim_index run than the ensemble from which the signal is computed.</span>
-<span class="sd">    noise_type : str</span>
-<span class="sd">        The variant of noise sims to use for the noise component of the</span>
-<span class="sd">        covariance model.</span>
-<span class="sd">    noise_subset : str</span>
-<span class="sd">        The subset of the noise sims to include.  Must be a glob-parseable</span>
-<span class="sd">        string.</span>
-<span class="sd">    noise_type_sim : str</span>
-<span class="sd">        The variant of noise sims to use for sim_index fake data map.</span>
-<span class="sd">        This enables having a different noise sim ensemble to use for</span>
-<span class="sd">        sim_index run than the ensemble from which the noise is computed.</span>
-<span class="sd">    foreground_type_sim : str</span>
-<span class="sd">        Tag for directory (foreground_&lt;foreground_type_sim&gt;) where foreground</span>
-<span class="sd">        sims are stored that should be added to the signal and noise sims</span>
-<span class="sd">        when running in sim_index mode.</span>
-<span class="sd">    template_type : str</span>
-<span class="sd">        Tag for directory (templates_&lt;template_type&gt;) containing templates</span>
-<span class="sd">        (e.g. a foreground model) to be scaled by a scalar value per</span>
-<span class="sd">        map tag and subtracted from the data. The directory is assumed</span>
-<span class="sd">        to contain reference1 and reference2 subdirectories, each</span>
-<span class="sd">        containing one template per map tag.</span>
-<span class="sd">    template_noise_type : string</span>
-<span class="sd">        Tag for directory containing template noise sims to be averaged and</span>
-<span class="sd">        scaled similarly to the templates themselves.  These averaged sims are</span>
-<span class="sd">        used to debias template cross spectra due to correlations in the way the</span>
-<span class="sd">        noise ensembles are constructed.  Typically, this would be a noise model</span>
-<span class="sd">        based on the Planck FFP10 ensemble for each half-mission foreground</span>
-<span class="sd">        template.</span>
-<span class="sd">    template_type_sim : string</span>
-<span class="sd">        Tag for directory containing foreground templates, to be scaled by a</span>
-<span class="sd">        scalar value per map tag and added to the simulated data.  The directory</span>
-<span class="sd">        contains one template per map tag.</span>
-<span class="sd">    reference_type : string</span>
-<span class="sd">        Tag for directory containing reobserved reference signals, to be</span>
-<span class="sd">        subtracted from each data map.  The reference signal maps should be two</span>
-<span class="sd">        datasets with uncorrelated noise, such as Planck half-mission maps.</span>
-<span class="sd">        This option is used for removing expected signal residuals from null</span>
-<span class="sd">        tests.</span>
 <span class="sd">    lmin : int</span>
 <span class="sd">       Minimum ell at which to start the lowest bin of the output spectra.</span>
 <span class="sd">    lmax : int</span>
@@ -347,62 +298,10 @@
 <span class="sd">    lmax_fg : int</span>
 <span class="sd">        Maximum ell to use for defining foreground bins.  If not set, defaults</span>
 <span class="sd">        to ``lmax``.</span>
-<span class="sd">    template_alpha_tags : list of strings</span>
-<span class="sd">        List of map tags from which foreground template maps should be</span>
-<span class="sd">        subtracted.  These should be the original map tags, not</span>
-<span class="sd">        those generated for chunk sets.</span>
-<span class="sd">    template_alpha : list of floats</span>
-<span class="sd">        Scalar to be applied to template map for subtraction from each of the</span>
-<span class="sd">        data with tags in the list ``template_alpha_tags``.</span>
-<span class="sd">    template_alpha_tags_sim : list of str</span>
-<span class="sd">        List of map tags to which foreground template maps should be added, if</span>
-<span class="sd">        the template component is included in ``sim_data_components``.  These</span>
-<span class="sd">        should be the original map tags, not those generated for chunk sets.</span>
-<span class="sd">        If None, use the same values as `template_alpha_tags`.</span>
-<span class="sd">    template_alpha_sim : list of floats</span>
-<span class="sd">        Scalar to be applied to template map for addition to each of the</span>
-<span class="sd">        simulated data maps with tags in the list ``template_alpha_tags``.</span>
-<span class="sd">        If None, use the same values as `template_alpha`.</span>
-<span class="sd">    ensemble_mean : bool</span>
-<span class="sd">        If True, substitute S+N ensemble means for Cls to test for bias</span>
-<span class="sd">        in the estimator.</span>
-<span class="sd">    ensemble_median : bool</span>
-<span class="sd">        If True, substitute S+N ensemble median for Cls to test for bias</span>
-<span class="sd">        in the estimator.</span>
-<span class="sd">    sim_data : bool</span>
-<span class="sd">        If True, construct simulated data spectra using the options below.</span>
-<span class="sd">    sim_data_components : list of strings</span>
-<span class="sd">        List of components to include in simulated data.  May include signal,</span>
-<span class="sd">        noise, foreground or template components.</span>
-<span class="sd">    sim_data_r : float</span>
-<span class="sd">        If not None, construct the signal component of the simulated data by</span>
-<span class="sd">        selecting the appropriate index from an ensemble of scalar and tensor</span>
-<span class="sd">        maps, such that the signal component is ``scalar + r * tensor``.  This</span>
-<span class="sd">        assumes that the tensor simulations are constructed with ``nt=0``, so</span>
-<span class="sd">        that the linear relationship holds.</span>
-<span class="sd">    qb_file_data : str</span>
-<span class="sd">        If not None, pointer to a bandpowers.npz file in the output directory,</span>
-<span class="sd">        to correct the noise component of the simulated data by an appropriate</span>
-<span class="sd">        set of residual ``qb`` values.</span>
-<span class="sd">    sim_index_signal : int</span>
-<span class="sd">        Sim index to use for the signal component that is included in</span>
-<span class="sd">        ``sim_data_components``.  If None or &lt; 0, takes the value of</span>
-<span class="sd">        ``sim_index_default``.</span>
-<span class="sd">    sim_index_noise : int</span>
-<span class="sd">        Sim index to use for the noise component that is included in</span>
-<span class="sd">        ``sim_data_components``.  If None or &lt; 0, takes the value of</span>
-<span class="sd">        ``sim_index_default``.</span>
-<span class="sd">    sim_index_foreground : int</span>
-<span class="sd">        Sim index to use for the foreground component that is included in</span>
-<span class="sd">        ``sim_data_components``.  If None or &lt; 0, takes the value of</span>
-<span class="sd">        ``sim_index_default``.</span>
-<span class="sd">    sim_index_default : int</span>
-<span class="sd">        Default sim index to use for any component with index &lt; 0 or None</span>
-<span class="sd">        in ``sim_index_&lt;comp&gt;``.</span>
-<span class="sd">    save_sim_data : bool</span>
-<span class="sd">        If True, save data_xcorr file to disk for simulated data.</span>
 <span class="sd">    pixwin : bool</span>
 <span class="sd">        If True, apply pixel window functions to beam windows.</span>
+<span class="sd">    mask_type : str</span>
+<span class="sd">        The variant of mask to use</span>
 <span class="sd">    window_lmax : int</span>
 <span class="sd">        The size of the window used in computing the mask kernels</span>
 <span class="sd">    apply_gcorr : bool</span>
@@ -416,30 +315,21 @@
 <span class="sd">        If not None, path to gcorr file. Otherwise, use file labeled</span>
 <span class="sd">        mask_map_&lt;tag&gt;_gcorr.npy in mask directory for signal, or</span>
 <span class="sd">        mask_map_&lt;tag&gt;_gcorr_null.npy for nulls.</span>
-<span class="sd">    multi_map : bool</span>
-<span class="sd">        If True, compute all cross-spectra between maps</span>
-<span class="sd">    bandpower_tag : str</span>
-<span class="sd">        Tag to append to bandpowers output file</span>
-<span class="sd">    converge_criteria : float</span>
-<span class="sd">        The maximum fractional change in qb to signal convergence and</span>
-<span class="sd">        end iteration</span>
-<span class="sd">    cond_noise : float</span>
-<span class="sd">        The level of regularizing noise to add to EE and BB diagonals.</span>
-<span class="sd">    cond_criteria : float</span>
-<span class="sd">        Threshold on covariance condition number. Above this, regularizing noise</span>
-<span class="sd">        will be added to covariance to condition it.</span>
-<span class="sd">    iter_max : int</span>
-<span class="sd">        The maximum number of iterations</span>
-<span class="sd">    save_iters : bool</span>
-<span class="sd">        If True, store the output of each Fisher iteration, in addition to</span>
-<span class="sd">        the end result.</span>
-<span class="sd">    return_cls : bool</span>
-<span class="sd">        If True, return C_l spectrum rather than the D_l spectrum</span>
-<span class="sd">    fix_bb_transfer : bool</span>
-<span class="sd">        If True, after transfer functions have been calculated, impose that the</span>
-<span class="sd">        BB transfer function is exactly equal to the EE transfer function.</span>
-<span class="sd">    null_first_cmb : bool</span>
-<span class="sd">        If True, keep first CMB bandpowers fixed to input shape (qb=1).</span>
+<span class="sd">    signal_type : str</span>
+<span class="sd">        The variant of signal sims to use for the signal component of the</span>
+<span class="sd">        covariance model.</span>
+<span class="sd">    signal_subset : str</span>
+<span class="sd">        The subset of the signal sims to include.  Must be a glob-parseable</span>
+<span class="sd">        string.</span>
+<span class="sd">    signal_transfer_type : str</span>
+<span class="sd">        The variant of signal sims to use for computing the transfer function.</span>
+<span class="sd">        If not set, defaults to ``signal_type``.</span>
+<span class="sd">    noise_type : str</span>
+<span class="sd">        The variant of noise sims to use for the noise component of the</span>
+<span class="sd">        covariance model.</span>
+<span class="sd">    noise_subset : str</span>
+<span class="sd">        The subset of the noise sims to include.  Must be a glob-parseable</span>
+<span class="sd">        string.</span>
 <span class="sd">    qb_file_sim : str</span>
 <span class="sd">        If not None, pointer to a bandpowers.npz file in the output directory,</span>
 <span class="sd">        to correct the noise ensemble by an appropriate set of residual ``qb``</span>
@@ -467,6 +357,121 @@
 <span class="sd">        The spectral index of the dust model. This is a fixed value, with</span>
 <span class="sd">        an additive deviation from this value fit for in foreground fitting</span>
 <span class="sd">        mode.</span>
+<span class="sd">    data_type : str</span>
+<span class="sd">        The data type to use</span>
+<span class="sd">    template_type : str</span>
+<span class="sd">        Tag for directory (templates_&lt;template_type&gt;) containing templates</span>
+<span class="sd">        (e.g. a foreground model) to be scaled by a scalar value per</span>
+<span class="sd">        map tag and subtracted from the data. The directory is assumed</span>
+<span class="sd">        to contain reference1 and reference2 subdirectories, each</span>
+<span class="sd">        containing one template per map tag.</span>
+<span class="sd">    template_noise_type : string</span>
+<span class="sd">        Tag for directory containing template noise sims to be averaged and</span>
+<span class="sd">        scaled similarly to the templates themselves.  These averaged sims are</span>
+<span class="sd">        used to debias template cross spectra due to correlations in the way the</span>
+<span class="sd">        noise ensembles are constructed.  Typically, this would be a noise model</span>
+<span class="sd">        based on the Planck FFP10 ensemble for each half-mission foreground</span>
+<span class="sd">        template.</span>
+<span class="sd">    template_alpha_tags : list of strings</span>
+<span class="sd">        List of map tags from which foreground template maps should be</span>
+<span class="sd">        subtracted.  These should be the original map tags, not</span>
+<span class="sd">        those generated for chunk sets.</span>
+<span class="sd">    template_alpha : list of floats</span>
+<span class="sd">        Scalar to be applied to template map for subtraction from each of the</span>
+<span class="sd">        data with tags in the list ``template_alpha_tags``.</span>
+<span class="sd">    reference_type : string</span>
+<span class="sd">        Tag for directory containing reobserved reference signals, to be</span>
+<span class="sd">        subtracted from each data map.  The reference signal maps should be two</span>
+<span class="sd">        datasets with uncorrelated noise, such as Planck half-mission maps.</span>
+<span class="sd">        This option is used for removing expected signal residuals from null</span>
+<span class="sd">        tests.</span>
+<span class="sd">    ensemble_mean : bool</span>
+<span class="sd">        If True, substitute S+N ensemble means for Cls to test for bias</span>
+<span class="sd">        in the estimator.</span>
+<span class="sd">    ensemble_median : bool</span>
+<span class="sd">        If True, substitute S+N ensemble median for Cls to test for bias</span>
+<span class="sd">        in the estimator.</span>
+<span class="sd">    sim_data : bool</span>
+<span class="sd">        If True, construct simulated data spectra using the options below.</span>
+<span class="sd">    sim_data_components : list of strings</span>
+<span class="sd">        List of components to include in simulated data.  May include signal,</span>
+<span class="sd">        noise, foreground or template components.</span>
+<span class="sd">    sim_index_signal : int</span>
+<span class="sd">        Sim index to use for the signal component that is included in</span>
+<span class="sd">        ``sim_data_components``.  If None or &lt; 0, takes the value of</span>
+<span class="sd">        ``sim_index_default``.</span>
+<span class="sd">    sim_index_noise : int</span>
+<span class="sd">        Sim index to use for the noise component that is included in</span>
+<span class="sd">        ``sim_data_components``.  If None or &lt; 0, takes the value of</span>
+<span class="sd">        ``sim_index_default``.</span>
+<span class="sd">    sim_index_foreground : int</span>
+<span class="sd">        Sim index to use for the foreground component that is included in</span>
+<span class="sd">        ``sim_data_components``.  If None or &lt; 0, takes the value of</span>
+<span class="sd">        ``sim_index_default``.</span>
+<span class="sd">    sim_index_default : int</span>
+<span class="sd">        Default sim index to use for any component with index &lt; 0 or None</span>
+<span class="sd">        in ``sim_index_&lt;comp&gt;``.</span>
+<span class="sd">    signal_type_sim : str</span>
+<span class="sd">        The variant of signal sims to use for sim_index data maps.</span>
+<span class="sd">        This enables having a different noise sim ensemble to use for</span>
+<span class="sd">        sim_index run than the ensemble from which the signal is computed.</span>
+<span class="sd">    sim_data_r : float</span>
+<span class="sd">        If not None, construct the signal component of the simulated data by</span>
+<span class="sd">        selecting the appropriate index from an ensemble of scalar and tensor</span>
+<span class="sd">        maps, such that the signal component is ``scalar + r * tensor``.  This</span>
+<span class="sd">        assumes that the tensor simulations are constructed with ``nt=0``, so</span>
+<span class="sd">        that the linear relationship holds.</span>
+<span class="sd">    noise_type_sim : str</span>
+<span class="sd">        The variant of noise sims to use for sim_index fake data map.</span>
+<span class="sd">        This enables having a different noise sim ensemble to use for</span>
+<span class="sd">        sim_index run than the ensemble from which the noise is computed.</span>
+<span class="sd">    qb_file_data : str</span>
+<span class="sd">        If not None, pointer to a bandpowers.npz file in the output directory,</span>
+<span class="sd">        to correct the noise component of the simulated data by an appropriate</span>
+<span class="sd">        set of residual ``qb`` values.</span>
+<span class="sd">    foreground_type_sim : str</span>
+<span class="sd">        Tag for directory (foreground_&lt;foreground_type_sim&gt;) where foreground</span>
+<span class="sd">        sims are stored that should be added to the signal and noise sims</span>
+<span class="sd">        when running in sim_index mode.</span>
+<span class="sd">    template_type_sim : string</span>
+<span class="sd">        Tag for directory containing foreground templates, to be scaled by a</span>
+<span class="sd">        scalar value per map tag and added to the simulated data.  The directory</span>
+<span class="sd">        contains one template per map tag.</span>
+<span class="sd">    template_alpha_tags_sim : list of str</span>
+<span class="sd">        List of map tags to which foreground template maps should be added, if</span>
+<span class="sd">        the template component is included in ``sim_data_components``.  These</span>
+<span class="sd">        should be the original map tags, not those generated for chunk sets.</span>
+<span class="sd">        If None, use the same values as `template_alpha_tags`.</span>
+<span class="sd">    template_alpha_sim : list of floats</span>
+<span class="sd">        Scalar to be applied to template map for addition to each of the</span>
+<span class="sd">        simulated data maps with tags in the list ``template_alpha_tags``.</span>
+<span class="sd">        If None, use the same values as `template_alpha`.</span>
+<span class="sd">    save_sim_data : bool</span>
+<span class="sd">        If True, save data_xcorr file to disk for simulated data.</span>
+<span class="sd">    multi_map : bool</span>
+<span class="sd">        If True, compute all cross-spectra between maps</span>
+<span class="sd">    bandpower_tag : str</span>
+<span class="sd">        Tag to append to bandpowers output file</span>
+<span class="sd">    converge_criteria : float</span>
+<span class="sd">        The maximum fractional change in qb to signal convergence and</span>
+<span class="sd">        end iteration</span>
+<span class="sd">    cond_noise : float</span>
+<span class="sd">        The level of regularizing noise to add to EE and BB diagonals.</span>
+<span class="sd">    cond_criteria : float</span>
+<span class="sd">        Threshold on covariance condition number. Above this, regularizing noise</span>
+<span class="sd">        will be added to covariance to condition it.</span>
+<span class="sd">    iter_max : int</span>
+<span class="sd">        The maximum number of iterations</span>
+<span class="sd">    save_iters : bool</span>
+<span class="sd">        If True, store the output of each Fisher iteration, in addition to</span>
+<span class="sd">        the end result.</span>
+<span class="sd">    return_cls : bool</span>
+<span class="sd">        If True, return C_l spectrum rather than the D_l spectrum</span>
+<span class="sd">    fix_bb_transfer : bool</span>
+<span class="sd">        If True, after transfer functions have been calculated, impose that the</span>
+<span class="sd">        BB transfer function is exactly equal to the EE transfer function.</span>
+<span class="sd">    null_first_cmb : bool</span>
+<span class="sd">        If True, keep first CMB bandpowers fixed to input shape (qb=1).</span>
 <span class="sd">    delta_beta_prior : float</span>
 <span class="sd">        The width of the prior on the additive change from beta_ref. If you</span>
 <span class="sd">        don&#39;t want the code to fit for a spectral index different</span>
@@ -529,6 +534,18 @@
     <span class="n">cpu_time</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="s2">&quot;process_time&quot;</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="s2">&quot;clock&quot;</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">))</span>
     <span class="n">cpu_start</span> <span class="o">=</span> <span class="n">cpu_time</span><span class="p">()</span>
     <span class="n">time_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">signal_transfer_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">signal_transfer_type</span> <span class="o">=</span> <span class="n">signal_type</span>
+        <span class="n">all_opts</span><span class="p">[</span><span class="s2">&quot;signal_transfer_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">signal_transfer_type</span>
+
+    <span class="c1"># make sure sims get rerun correctly</span>
+    <span class="k">if</span> <span class="n">signal_transfer_type</span> <span class="o">==</span> <span class="n">signal_type</span><span class="p">:</span>
+        <span class="c1"># if signal types match, then sims are run before computing the</span>
+        <span class="c1"># transfer function, so need to set the correct checkpoint to rerun</span>
+        <span class="k">if</span> <span class="n">checkpoint</span> <span class="o">==</span> <span class="s2">&quot;sims&quot;</span><span class="p">:</span>
+            <span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">&quot;sims_transfer&quot;</span>
+            <span class="n">all_opts</span><span class="p">[</span><span class="s2">&quot;checkpoint&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">checkpoint</span>
 
     <span class="k">if</span> <span class="n">template_alpha_tags</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">template_alpha_tags</span> <span class="o">=</span> <span class="p">[]</span>
@@ -597,22 +614,8 @@
     <span class="n">file_opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
         <span class="n">data_root</span><span class="o">=</span><span class="n">data_root</span><span class="p">,</span>
         <span class="n">data_subset</span><span class="o">=</span><span class="n">data_subset</span><span class="p">,</span>
-        <span class="n">signal_subset</span><span class="o">=</span><span class="n">signal_subset</span><span class="p">,</span>
-        <span class="n">noise_subset</span><span class="o">=</span><span class="n">noise_subset</span><span class="p">,</span>
-        <span class="n">data_type</span><span class="o">=</span><span class="n">data_type</span><span class="p">,</span>
-        <span class="n">noise_type</span><span class="o">=</span><span class="n">noise_type</span><span class="p">,</span>
-        <span class="n">noise_type_sim</span><span class="o">=</span><span class="n">noise_type_sim</span><span class="p">,</span>
-        <span class="n">mask_type</span><span class="o">=</span><span class="n">mask_type</span><span class="p">,</span>
-        <span class="n">signal_type</span><span class="o">=</span><span class="n">signal_type</span><span class="p">,</span>
-        <span class="n">signal_type_sim</span><span class="o">=</span><span class="n">signal_type_sim</span> <span class="k">if</span> <span class="n">sim_data_r</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span>
-        <span class="n">signal_transfer_type</span><span class="o">=</span><span class="n">signal_transfer_type</span><span class="p">,</span>
         <span class="n">data_root2</span><span class="o">=</span><span class="n">data_root2</span><span class="p">,</span>
         <span class="n">data_subset2</span><span class="o">=</span><span class="n">data_subset2</span><span class="p">,</span>
-        <span class="n">foreground_type_sim</span><span class="o">=</span><span class="n">foreground_type_sim</span><span class="p">,</span>
-        <span class="n">template_type</span><span class="o">=</span><span class="n">template_type</span><span class="p">,</span>
-        <span class="n">template_noise_type</span><span class="o">=</span><span class="n">template_noise_type</span><span class="p">,</span>
-        <span class="n">template_type_sim</span><span class="o">=</span><span class="n">template_type_sim</span><span class="p">,</span>
-        <span class="n">reference_type</span><span class="o">=</span><span class="n">reference_type</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">file_opts</span><span class="p">,</span> <span class="s2">&quot;File Options&quot;</span><span class="p">)</span>
 
@@ -650,14 +653,22 @@
     <span class="n">config_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">bin_opts</span><span class="p">,</span> <span class="s2">&quot;Binning Options&quot;</span><span class="p">)</span>
 
     <span class="n">data_opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">data_type</span><span class="o">=</span><span class="n">data_type</span><span class="p">,</span>
+        <span class="n">template_type</span><span class="o">=</span><span class="n">template_type</span><span class="p">,</span>
+        <span class="n">template_noise_type</span><span class="o">=</span><span class="n">template_noise_type</span><span class="p">,</span>
         <span class="n">template_alpha</span><span class="o">=</span><span class="n">template_alpha</span><span class="p">,</span>
+        <span class="n">reference_type</span><span class="o">=</span><span class="n">reference_type</span><span class="p">,</span>
         <span class="n">ensemble_mean</span><span class="o">=</span><span class="n">ensemble_mean</span><span class="p">,</span>
         <span class="n">ensemble_median</span><span class="o">=</span><span class="n">ensemble_median</span><span class="p">,</span>
         <span class="n">sim</span><span class="o">=</span><span class="n">sim_data</span><span class="p">,</span>
         <span class="n">components</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">sim_data</span> <span class="k">else</span> <span class="n">sim_data_components</span><span class="p">,</span>
         <span class="n">index</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">sim_data</span> <span class="k">else</span> <span class="n">sim_index</span><span class="p">,</span>
+        <span class="n">signal_type_sim</span><span class="o">=</span><span class="n">signal_type_sim</span> <span class="k">if</span> <span class="n">sim_data_r</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span>
         <span class="n">r</span><span class="o">=</span><span class="n">sim_data_r</span><span class="p">,</span>
+        <span class="n">noise_type_sim</span><span class="o">=</span><span class="n">noise_type_sim</span><span class="p">,</span>
         <span class="n">qb_file</span><span class="o">=</span><span class="n">qb_file_data</span><span class="p">,</span>
+        <span class="n">foreground_type_sim</span><span class="o">=</span><span class="n">foreground_type_sim</span><span class="p">,</span>
+        <span class="n">template_type_sim</span><span class="o">=</span><span class="n">template_type_sim</span><span class="p">,</span>
         <span class="n">template_alpha_sim</span><span class="o">=</span><span class="n">template_alpha_sim</span><span class="p">,</span>
         <span class="n">save_sim</span><span class="o">=</span><span class="n">save_sim_data</span><span class="p">,</span>
     <span class="p">)</span>
@@ -671,6 +682,7 @@
 
     <span class="n">kernel_opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
         <span class="n">pixwin</span><span class="o">=</span><span class="n">pixwin</span><span class="p">,</span>
+        <span class="n">mask_type</span><span class="o">=</span><span class="n">mask_type</span><span class="p">,</span>
         <span class="n">window_lmax</span><span class="o">=</span><span class="n">window_lmax</span><span class="p">,</span>
         <span class="n">apply_gcorr</span><span class="o">=</span><span class="n">apply_gcorr</span><span class="p">,</span>
         <span class="n">reload_gcorr</span><span class="o">=</span><span class="n">reload_gcorr</span><span class="p">,</span>
@@ -678,24 +690,50 @@
     <span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kernel_opts</span><span class="p">,</span> <span class="s2">&quot;Beam and Kernel Options&quot;</span><span class="p">)</span>
 
+    <span class="n">sim_opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">signal_type</span><span class="o">=</span><span class="n">signal_type</span><span class="p">,</span>
+        <span class="n">signal_transfer_type</span><span class="o">=</span><span class="n">signal_transfer_type</span><span class="p">,</span>
+        <span class="n">signal_subset</span><span class="o">=</span><span class="n">signal_subset</span><span class="p">,</span>
+        <span class="n">noise_type</span><span class="o">=</span><span class="n">noise_type</span><span class="p">,</span>
+        <span class="n">noise_subset</span><span class="o">=</span><span class="n">noise_subset</span><span class="p">,</span>
+        <span class="n">qb_file</span><span class="o">=</span><span class="n">qb_file_sim</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">config_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">sim_opts</span><span class="p">,</span> <span class="s2">&quot;Simulation Ensemble Options&quot;</span><span class="p">)</span>
+    <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;qb_file_sim&quot;</span><span class="p">)</span>
+    <span class="n">sim_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;signal_transfer_type&quot;</span><span class="p">)</span>
+    <span class="n">sim_transfer_opts</span> <span class="o">=</span> <span class="n">sim_opts</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">signal_transfer_type</span> <span class="o">!=</span> <span class="n">signal_type</span><span class="p">:</span>
+        <span class="n">sim_transfer_opts</span><span class="p">[</span><span class="s2">&quot;signal_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">signal_transfer_type</span>
+        <span class="n">sim_transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;noise_type&quot;</span><span class="p">)</span>
+        <span class="n">sim_transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;noise_subset&quot;</span><span class="p">)</span>
+        <span class="n">sim_transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;qb_file&quot;</span><span class="p">)</span>
+
+    <span class="n">shape_opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">filename</span><span class="o">=</span><span class="n">signal_spec</span><span class="p">,</span>
+        <span class="n">filename_transfer</span><span class="o">=</span><span class="n">signal_transfer_spec</span><span class="p">,</span>
+        <span class="n">filename_fg</span><span class="o">=</span><span class="n">foreground_spec</span><span class="p">,</span>
+        <span class="n">r</span><span class="o">=</span><span class="n">model_r</span><span class="p">,</span>
+        <span class="n">freq_ref</span><span class="o">=</span><span class="n">freq_ref</span><span class="p">,</span>
+        <span class="n">beta_ref</span><span class="o">=</span><span class="n">beta_ref</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">config_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">shape_opts</span><span class="p">,</span> <span class="s2">&quot;Shape Spectrum Options&quot;</span><span class="p">)</span>
+    <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;signal_spec&quot;</span><span class="p">)</span>
+    <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;signal_transfer_spec&quot;</span><span class="p">)</span>
+    <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;foreground_spec&quot;</span><span class="p">)</span>
+    <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;model_r&quot;</span><span class="p">)</span>
+    <span class="n">shape_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;filename_transfer&quot;</span><span class="p">)</span>
+
     <span class="n">spec_opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
         <span class="n">multi_map</span><span class="o">=</span><span class="n">multi_map</span><span class="p">,</span>
         <span class="n">converge_criteria</span><span class="o">=</span><span class="n">converge_criteria</span><span class="p">,</span>
         <span class="n">iter_max</span><span class="o">=</span><span class="n">iter_max</span><span class="p">,</span>
         <span class="n">save_iters</span><span class="o">=</span><span class="n">save_iters</span><span class="p">,</span>
         <span class="n">fix_bb_transfer</span><span class="o">=</span><span class="n">fix_bb_transfer</span><span class="p">,</span>
-        <span class="n">signal_spec</span><span class="o">=</span><span class="n">signal_spec</span><span class="p">,</span>
-        <span class="n">signal_transfer_spec</span><span class="o">=</span><span class="n">signal_transfer_spec</span><span class="p">,</span>
-        <span class="n">foreground_spec</span><span class="o">=</span><span class="n">foreground_spec</span><span class="p">,</span>
-        <span class="n">model_r</span><span class="o">=</span><span class="n">model_r</span><span class="p">,</span>
-        <span class="n">freq_ref</span><span class="o">=</span><span class="n">freq_ref</span><span class="p">,</span>
-        <span class="n">beta_ref</span><span class="o">=</span><span class="n">beta_ref</span><span class="p">,</span>
         <span class="n">delta_beta_prior</span><span class="o">=</span><span class="n">delta_beta_prior</span><span class="p">,</span>
         <span class="n">cond_noise</span><span class="o">=</span><span class="n">cond_noise</span><span class="p">,</span>
         <span class="n">cond_criteria</span><span class="o">=</span><span class="n">cond_criteria</span><span class="p">,</span>
         <span class="n">null_first_cmb</span><span class="o">=</span><span class="n">null_first_cmb</span><span class="p">,</span>
         <span class="n">return_cls</span><span class="o">=</span><span class="n">return_cls</span><span class="p">,</span>
-        <span class="n">qb_file</span><span class="o">=</span><span class="n">qb_file_sim</span><span class="p">,</span>
         <span class="n">like_profiles</span><span class="o">=</span><span class="n">like_profiles</span><span class="p">,</span>
         <span class="n">like_profile_sigma</span><span class="o">=</span><span class="n">like_profile_sigma</span><span class="p">,</span>
         <span class="n">like_profile_points</span><span class="o">=</span><span class="n">like_profile_points</span><span class="p">,</span>
@@ -703,15 +741,7 @@
     <span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">spec_opts</span><span class="p">,</span> <span class="s2">&quot;Spectrum Estimation Options&quot;</span><span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;bandpower_tag&quot;</span><span class="p">)</span>
-    <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;qb_file_sim&quot;</span><span class="p">)</span>
     <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;multi_map&quot;</span><span class="p">)</span>
-    <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;signal_spec&quot;</span><span class="p">)</span>
-    <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;signal_transfer_spec&quot;</span><span class="p">)</span>
-    <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;foreground_spec&quot;</span><span class="p">)</span>
-    <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;model_r&quot;</span><span class="p">)</span>
-    <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;freq_ref&quot;</span><span class="p">)</span>
-    <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;beta_ref&quot;</span><span class="p">)</span>
-    <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;qb_file&quot;</span><span class="p">)</span>
     <span class="n">bandpwr_opts</span> <span class="o">=</span> <span class="n">spec_opts</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">bandpwr_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;fix_bb_transfer&quot;</span><span class="p">)</span>
     <span class="n">spec_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;file_tag&quot;</span><span class="p">)</span>
@@ -764,19 +794,20 @@
 
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing mask cross-spectra and weights...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
     <span class="n">X</span><span class="o">.</span><span class="n">get_mask_weights</span><span class="p">(</span>
-        <span class="n">apply_gcorr</span><span class="o">=</span><span class="n">apply_gcorr</span><span class="p">,</span> <span class="n">reload_gcorr</span><span class="o">=</span><span class="n">reload_gcorr</span><span class="p">,</span> <span class="n">gcorr_file</span><span class="o">=</span><span class="n">gcorr_file</span>
+        <span class="n">mask_type</span><span class="o">=</span><span class="n">mask_type</span><span class="p">,</span>
+        <span class="n">apply_gcorr</span><span class="o">=</span><span class="n">apply_gcorr</span><span class="p">,</span>
+        <span class="n">reload_gcorr</span><span class="o">=</span><span class="n">reload_gcorr</span><span class="p">,</span>
+        <span class="n">gcorr_file</span><span class="o">=</span><span class="n">gcorr_file</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing kernels...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
     <span class="n">X</span><span class="o">.</span><span class="n">get_kernels</span><span class="p">(</span><span class="n">window_lmax</span><span class="o">=</span><span class="n">window_lmax</span><span class="p">)</span>
 
-    <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing sim ensemble averages for transfer function...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-    <span class="c1"># Do all the sims at once to also get the S+N sim ensemble average</span>
-    <span class="n">do_noise</span> <span class="o">=</span> <span class="n">signal_transfer_type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">signal_type</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
-    <span class="n">X</span><span class="o">.</span><span class="n">get_masked_sims</span><span class="p">(</span><span class="n">transfer</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">do_noise</span><span class="o">=</span><span class="n">do_noise</span><span class="p">,</span> <span class="n">qb_file</span><span class="o">=</span><span class="n">qb_file_sim</span><span class="p">)</span>
-
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing beam window functions...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
     <span class="n">X</span><span class="o">.</span><span class="n">get_beams</span><span class="p">(</span><span class="n">pixwin</span><span class="o">=</span><span class="n">pixwin</span><span class="p">)</span>
+
+    <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing sim ensemble averages for transfer function...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
+    <span class="n">X</span><span class="o">.</span><span class="n">get_masked_sims</span><span class="p">(</span><span class="n">transfer</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">sim_transfer_opts</span><span class="p">)</span>
 
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Loading spectrum shape for transfer function...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
     <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">signal_transfer_spec</span><span class="p">,</span> <span class="n">transfer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -785,7 +816,14 @@
     <span class="n">X</span><span class="o">.</span><span class="n">get_transfer</span><span class="p">(</span><span class="o">**</span><span class="n">transfer_opts</span><span class="p">)</span>
 
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing sim ensemble averages...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-    <span class="n">X</span><span class="o">.</span><span class="n">get_masked_sims</span><span class="p">(</span><span class="n">qb_file</span><span class="o">=</span><span class="n">qb_file_sim</span><span class="p">)</span>
+    <span class="n">X</span><span class="o">.</span><span class="n">get_masked_sims</span><span class="p">(</span><span class="o">**</span><span class="n">sim_opts</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">X</span><span class="o">.</span><span class="n">null_run</span><span class="p">:</span>
+        <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Loading flat spectrum for null test...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
+        <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Loading spectrum shape for bandpowers...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
+        <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="o">**</span><span class="n">shape_opts</span><span class="p">)</span>
 
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
         <span class="s2">&quot;Computing masked </span><span class="si">{}</span><span class="s2"> cross-spectra...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -794,21 +832,6 @@
         <span class="s2">&quot;notice&quot;</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">X</span><span class="o">.</span><span class="n">get_masked_data</span><span class="p">(</span><span class="o">**</span><span class="n">data_opts</span><span class="p">)</span>
-
-    <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing spectra...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">X</span><span class="o">.</span><span class="n">null_run</span><span class="p">:</span>
-        <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Loading flat spectrum for null test...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-        <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Loading spectrum shape for bandpowers...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-        <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span>
-            <span class="n">filename</span><span class="o">=</span><span class="n">signal_spec</span><span class="p">,</span>
-            <span class="n">r</span><span class="o">=</span><span class="n">model_r</span><span class="p">,</span>
-            <span class="n">filename_fg</span><span class="o">=</span><span class="n">foreground_spec</span><span class="p">,</span>
-            <span class="n">freq_ref</span><span class="o">=</span><span class="n">freq_ref</span><span class="p">,</span>
-            <span class="n">beta_ref</span><span class="o">=</span><span class="n">beta_ref</span><span class="p">,</span>
-        <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">multi_map</span><span class="p">:</span>
         <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing multi-map bandpowers...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
@@ -1012,7 +1035,7 @@
         <span class="n">altname</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;altname&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">default</span> <span class="o">=</span> <span class="n">defaults</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="n">default</span> <span class="o">=</span> <span class="n">defaults</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">rem_args</span><span class="p">:</span>
             <span class="n">rem_args</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
 
@@ -1028,10 +1051,11 @@
         <span class="k">elif</span> <span class="n">default</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
             <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;action&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;store_true&quot;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">argtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
-                    <span class="n">argtype</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">default</span><span class="p">)</span>
-            <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">argtype</span>
+            <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;action&quot;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="s2">&quot;store_false&quot;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">argtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">default</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+                        <span class="n">argtype</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">default</span><span class="p">)</span>
+                <span class="n">opts</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">argtype</span>
 
         <span class="n">argnames</span> <span class="o">=</span> <span class="p">(</span><span class="n">argname</span><span class="p">,)</span>
         <span class="k">if</span> <span class="n">short</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1053,9 +1077,43 @@
     <span class="n">parser_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">)</span>
 
     <span class="c1"># populate subparsers</span>
-    <span class="k">for</span> <span class="n">mode</span><span class="p">,</span> <span class="n">helptext</span> <span class="ow">in</span> <span class="p">[(</span><span class="s2">&quot;run&quot;</span><span class="p">,</span> <span class="s2">&quot;run xfaster&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;submit&quot;</span><span class="p">,</span> <span class="s2">&quot;submit xfaster job&quot;</span><span class="p">)]:</span>
+    <span class="k">for</span> <span class="n">mode</span><span class="p">,</span> <span class="n">helptext</span> <span class="ow">in</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;run&quot;</span><span class="p">,</span> <span class="s2">&quot;run xfaster&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;submit&quot;</span><span class="p">,</span> <span class="s2">&quot;submit xfaster job&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;dump&quot;</span><span class="p">,</span> <span class="s2">&quot;dump archive from xfaster job to stdout&quot;</span><span class="p">),</span>
+    <span class="p">]:</span>
 
         <span class="n">PP</span> <span class="o">=</span> <span class="n">S</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="n">helptext</span><span class="p">,</span> <span class="o">**</span><span class="n">parser_opts</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;dump&quot;</span><span class="p">:</span>
+            <span class="n">E</span> <span class="o">=</span> <span class="n">PP</span><span class="o">.</span><span class="n">add_mutually_exclusive_group</span><span class="p">(</span><span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;output_file&quot;</span><span class="p">,</span> <span class="n">short</span><span class="o">=</span><span class="s2">&quot;-f&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Archive filename to print&quot;</span><span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;output_root&quot;</span><span class="p">,</span> <span class="n">short</span><span class="o">=</span><span class="s2">&quot;-r&quot;</span><span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span><span class="n">PP</span><span class="p">,</span> <span class="s2">&quot;output_tag&quot;</span><span class="p">,</span> <span class="n">short</span><span class="o">=</span><span class="s2">&quot;-t&quot;</span><span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span>
+                <span class="n">PP</span><span class="p">,</span>
+                <span class="s2">&quot;checkpoint&quot;</span><span class="p">,</span>
+                <span class="n">short</span><span class="o">=</span><span class="s2">&quot;-c&quot;</span><span class="p">,</span>
+                <span class="n">choices</span><span class="o">=</span><span class="n">xfc</span><span class="o">.</span><span class="n">XFaster</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">,</span>
+                <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;CHECKPOINT&quot;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Print all files for this checkpoint&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span>
+                <span class="n">PP</span><span class="p">,</span>
+                <span class="s2">&quot;keys&quot;</span><span class="p">,</span>
+                <span class="n">short</span><span class="o">=</span><span class="s2">&quot;-k&quot;</span><span class="p">,</span>
+                <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Select keys to print from each file&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span>
+                <span class="n">PP</span><span class="p">,</span>
+                <span class="s2">&quot;verbose&quot;</span><span class="p">,</span>
+                <span class="n">short</span><span class="o">=</span><span class="s2">&quot;-v&quot;</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Print complete entries&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">continue</span>
 
         <span class="c1"># common options</span>
         <span class="n">G</span> <span class="o">=</span> <span class="n">PP</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;common options&quot;</span><span class="p">)</span>
@@ -1087,20 +1145,6 @@
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;data_subset&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;data_root2&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;data_subset2&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;data_type&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;mask_type&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;signal_type&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;signal_subset&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;signal_transfer_type&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;signal_type_sim&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;noise_type&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;noise_subset&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;noise_type_sim&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;foreground_type_sim&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_type&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_noise_type&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_type_sim&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;reference_type&quot;</span><span class="p">)</span>
 
         <span class="c1"># binning options</span>
         <span class="n">G</span> <span class="o">=</span> <span class="n">PP</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;binning options&quot;</span><span class="p">)</span>
@@ -1126,13 +1170,42 @@
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;lmin_fg&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;lmax_fg&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
 
+        <span class="c1"># beam and kernel options</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">PP</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;beam and kernel options&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;pixwin&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;mask_type&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;window_lmax&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;apply_gcorr&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;reload_gcorr&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;gcorr_file&quot;</span><span class="p">)</span>
+
+        <span class="c1"># sim ensemble options</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">PP</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;sim ensemble options&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;signal_type&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;signal_subset&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;signal_transfer_type&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;noise_type&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;noise_subset&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;qb_file_sim&quot;</span><span class="p">)</span>
+
+        <span class="c1"># shape spectrum options</span>
+        <span class="n">G</span> <span class="o">=</span> <span class="n">PP</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;shape spectrum options&quot;</span><span class="p">)</span>
+        <span class="n">E</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">add_mutually_exclusive_group</span><span class="p">()</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;signal_spec&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;model_r&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;signal_transfer_spec&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;foreground_spec&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;freq_ref&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;beta_ref&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
         <span class="c1"># data options</span>
         <span class="n">G</span> <span class="o">=</span> <span class="n">PP</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;data options&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;data_type&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_type&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_noise_type&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_alpha_tags&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;TAG&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_alpha&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_alpha_tags_sim&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;TAG&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_alpha_sim&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;qb_file_data&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;reference_type&quot;</span><span class="p">)</span>
         <span class="n">E</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">add_mutually_exclusive_group</span><span class="p">()</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;ensemble_mean&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;ensemble_median&quot;</span><span class="p">)</span>
@@ -1144,20 +1217,19 @@
             <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;signal&quot;</span><span class="p">,</span> <span class="s2">&quot;noise&quot;</span><span class="p">,</span> <span class="s2">&quot;foreground&quot;</span><span class="p">,</span> <span class="s2">&quot;template&quot;</span><span class="p">],</span>
             <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;COMP&quot;</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;sim_data_r&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;sim_index_default&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;sim_index_signal&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;sim_index_noise&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;sim_index_foreground&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;signal_type_sim&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;sim_data_r&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;noise_type_sim&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;qb_file_data&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;foreground_type_sim&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_type_sim&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_alpha_tags_sim&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;TAG&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;template_alpha_sim&quot;</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;save_sim_data&quot;</span><span class="p">)</span>
-
-        <span class="c1"># beam and kernel options</span>
-        <span class="n">G</span> <span class="o">=</span> <span class="n">PP</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;beam and kernel options&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;pixwin&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;window_lmax&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;apply_gcorr&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;reload_gcorr&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;gcorr_file&quot;</span><span class="p">)</span>
 
         <span class="c1"># spectrum estimation options</span>
         <span class="n">G</span> <span class="o">=</span> <span class="n">PP</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;spectrum estimation options&quot;</span><span class="p">)</span>
@@ -1171,14 +1243,6 @@
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;return_cls&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;fix_bb_transfer&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;null_first_cmb&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;qb_file_sim&quot;</span><span class="p">)</span>
-        <span class="n">E</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">add_mutually_exclusive_group</span><span class="p">()</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;signal_spec&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;model_r&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;signal_transfer_spec&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;foreground_spec&quot;</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;freq_ref&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;beta_ref&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;delta_beta_prior&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;like_profiles&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;like_profile_sigma&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
@@ -1321,7 +1385,7 @@
             <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="c1"># test mode</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">mode</span> <span class="o">!=</span> <span class="s2">&quot;submit&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;submit&quot;</span><span class="p">,</span> <span class="s2">&quot;dump&quot;</span><span class="p">]:</span>
         <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">test</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;,</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
                 <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">=</span><span class="si">{!r}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">vars</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
@@ -1635,6 +1699,104 @@
     <span class="k">return</span> <span class="n">xg</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">group_by</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
+<div class="viewcode-block" id="xfaster_dump"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_dump">[docs]</a><span class="k">def</span> <span class="nf">xfaster_dump</span><span class="p">(</span>
+    <span class="n">output_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">output_root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">output_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">checkpoint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">keys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Print the contents of a set of output archive files.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    output_file : str</span>
+<span class="sd">        Path to an output npz archive file.</span>
+<span class="sd">    output_root : str</span>
+<span class="sd">        Path to an xfaster output directory containing npz archive files.</span>
+<span class="sd">        Ignored if ``output_file`` is set.</span>
+<span class="sd">    output_tag : str</span>
+<span class="sd">        Optional file tag.  Ignored if ``output_file`` is set.</span>
+<span class="sd">    checkpoint : str</span>
+<span class="sd">        Checkpoint for which to print all matching archive files.  Ignored if</span>
+<span class="sd">        ``output_file`` is set.</span>
+<span class="sd">    keys : list of str</span>
+<span class="sd">        List of keys to print for each matching archive file.</span>
+<span class="sd">    verbose : bool</span>
+<span class="sd">        If True, print the entire contents of the dictionary.  Otherwise,</span>
+<span class="sd">        truncate each entry to a single line.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">assert</span> <span class="n">output_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">output_root</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">output_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="n">output_file</span><span class="p">]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">output_tag</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_root</span><span class="p">,</span> <span class="n">output_tag</span><span class="p">)</span>
+            <span class="n">output_tag</span> <span class="o">=</span> <span class="s2">&quot;_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">output_tag</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">patterns</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;all&quot;</span><span class="p">:</span> <span class="s2">&quot;*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;files&quot;</span><span class="p">:</span> <span class="s2">&quot;files*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;masks&quot;</span><span class="p">:</span> <span class="s2">&quot;masks_xcorr*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;kernels&quot;</span><span class="p">:</span> <span class="s2">&quot;kernels*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;sims_transfer&quot;</span><span class="p">:</span> <span class="s2">&quot;simx_xcorr*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;shape_transfer&quot;</span><span class="p">:</span> <span class="s2">&quot;shape_transfer*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;transfer&quot;</span><span class="p">:</span> <span class="s2">&quot;transfer_all*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;sims&quot;</span><span class="p">:</span> <span class="s2">&quot;sims_xcorr*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;beams&quot;</span><span class="p">:</span> <span class="s2">&quot;beams</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="s2">&quot;data*xcorr*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;sim_data&quot;</span><span class="p">:</span> <span class="s2">&quot;sim_data*xcorr*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;template_noise&quot;</span><span class="p">:</span> <span class="s2">&quot;template_noise*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="s2">&quot;shape*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;bandpowers&quot;</span><span class="p">:</span> <span class="s2">&quot;bandpowers*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;beam_errors&quot;</span><span class="p">:</span> <span class="s2">&quot;beam_errors*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+            <span class="s2">&quot;likelihood&quot;</span><span class="p">:</span> <span class="s2">&quot;like_mcmc*</span><span class="si">{}</span><span class="s2">.npz&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_tag</span><span class="p">),</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">checkpoint</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">checkpoint</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span>
+
+        <span class="n">files</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_root</span><span class="p">,</span> <span class="n">patterns</span><span class="p">[</span><span class="n">checkpoint</span><span class="p">])))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span>
+                <span class="s2">&quot;No files found for checkpoint </span><span class="si">{}</span><span class="s2"> in directory </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">checkpoint</span><span class="p">,</span> <span class="n">output_root</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">pt</span><span class="o">.</span><span class="n">load_and_parse</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">}</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;***** </span><span class="si">{}</span><span class="s2"> *****&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;{&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">txt</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="n">txt</span> <span class="o">=</span> <span class="n">txt</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">txt</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">txt</span> <span class="o">=</span> <span class="n">txt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                        <span class="n">txt</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;U&quot;</span><span class="p">:</span>
+                            <span class="n">txt</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">txt</span> <span class="o">=</span> <span class="s2">&quot;shape </span><span class="si">{}</span><span class="s2"> array of </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">txt</span> <span class="o">=</span> <span class="n">txt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot; ...&quot;</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;    &#39;</span><span class="si">{}</span><span class="s2">&#39;: </span><span class="si">{}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">txt</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="xfaster_main"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_main">[docs]</a><span class="k">def</span> <span class="nf">xfaster_main</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Main entry point for command-line interface.</span>
@@ -1649,7 +1811,11 @@
 
     <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;run&quot;</span><span class="p">:</span>
         <span class="c1"># run the analysis</span>
-        <span class="n">xfaster_run</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span></div>
+        <span class="n">xfaster_run</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;dump&quot;</span><span class="p">:</span>
+        <span class="c1"># dump archive files to stdout</span>
+        <span class="n">xfaster_dump</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span></div>
 </pre></div>
 
            </div>

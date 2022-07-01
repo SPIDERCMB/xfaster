@@ -586,7 +586,7 @@ This is not a problem unique to XFaster, and this option allows the user more fl
 </div>
 <div class="section" id="get_files">
 <h3>get_files<a class="headerlink" href="#get_files" title="Permalink to this headline"></a></h3>
-<p>The first function called after initializing the XFaster class is <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_files"><span class="std std-ref">get_files()</span></a>. This takes all your arguments specifying what maps to use and finds them all on disk/checks that they’re there.</p>
+<p>The first function called after initializing the XFaster class is <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_files"><span class="std std-ref">get_files()</span></a>. This finds all of the raw data files in the data root that match the data subset criteria and constructs the map dimensions of the estimator. All other file type arguments (<code class="docutils literal notranslate"><span class="pre">mask_type</span></code>, <code class="docutils literal notranslate"><span class="pre">signal_type</span></code>, <code class="docutils literal notranslate"><span class="pre">noise_type</span></code>, etc) must include files that match the set of map names found here.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
@@ -594,12 +594,8 @@ This is not a problem unique to XFaster, and this option allows the user more fl
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">file_opts</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;data_root&quot;</span><span class="p">:</span> <span class="s2">&quot;../../example/maps_example&quot;</span><span class="p">,</span>
     <span class="s2">&quot;data_subset&quot;</span><span class="p">:</span> <span class="s2">&quot;full/*95,full/*150&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;data_type&quot;</span><span class="p">:</span> <span class="s2">&quot;raw&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;noise_type&quot;</span><span class="p">:</span> <span class="s2">&quot;gaussian&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;mask_type&quot;</span><span class="p">:</span> <span class="s2">&quot;rectangle&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;signal_type&quot;</span><span class="p">:</span> <span class="s2">&quot;synfast&quot;</span><span class="p">,</span>
 <span class="p">}</span>
-<br/></pre></div>
+</pre></div>
 </div>
 </div>
 <div class="nbinput nblast docutils container">
@@ -624,16 +620,15 @@ This is not a problem unique to XFaster, and this option allows the user more fl
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-dict_keys([&#39;data_root&#39;, &#39;data_subset&#39;, &#39;map_root&#39;, &#39;map_files&#39;, &#39;map_tags&#39;, &#39;map_pairs&#39;, &#39;map_tags_orig&#39;, &#39;map_pairs_orig&#39;, &#39;map_freqs&#39;, &#39;signal_root&#39;, &#39;signal_files&#39;, &#39;signal_root_sim&#39;, &#39;signal_files_sim&#39;, &#39;signal_transfer_root&#39;, &#39;signal_transfer_files&#39;, &#39;noise_root&#39;, &#39;noise_files&#39;, &#39;noise_root_sim&#39;, &#39;noise_files_sim&#39;, &#39;mask_root&#39;, &#39;mask_files&#39;, &#39;data_type&#39;, &#39;noise_type&#39;, &#39;noise_type_sim&#39;, &#39;mask_type&#39;, &#39;signal_type&#39;, &#39;signal_type_sim&#39;, &#39;signal_transfer_type&#39;, &#39;signal_subset&#39;, &#39;noise_subset&#39;, &#39;foreground_type_sim&#39;, &#39;num_maps&#39;, &#39;num_signal&#39;, &#39;num_signal_transfer&#39;, &#39;num_noise&#39;, &#39;num_noise_sim&#39;, &#39;num_signal_sim&#39;, &#39;null_run&#39;, &#39;template_type&#39;, &#39;template_root&#39;, &#39;template_root2&#39;, &#39;template_files&#39;, &#39;template_files2&#39;, &#39;template_noise_root&#39;, &#39;template_noise_root2&#39;, &#39;template_noise_files&#39;, &#39;template_noise_files2&#39;, &#39;num_template&#39;, &#39;num_template_noise&#39;, &#39;foreground_root_sim&#39;, &#39;foreground_files_sim&#39;, &#39;num_foreground_sim&#39;, &#39;reference_type&#39;, &#39;reference_root&#39;, &#39;reference_files&#39;, &#39;num_reference&#39;, &#39;template_type_sim&#39;, &#39;template_root_sim&#39;, &#39;template_root_sim2&#39;, &#39;template_files_sim&#39;, &#39;template_files_sim2&#39;, &#39;num_template_sim&#39;, &#39;template_noise_type&#39;, &#39;map_names&#39;])
+dict_keys([&#39;data_root&#39;, &#39;data_subset&#39;, &#39;null_run&#39;, &#39;num_maps&#39;, &#39;map_names&#39;, &#39;map_tags&#39;, &#39;map_pairs&#39;, &#39;map_tags_orig&#39;, &#39;map_pairs_orig&#39;, &#39;map_freqs&#39;, &#39;output_file&#39;])
 </pre></div></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">file_vars</span></code> is a dictionary returned by <code class="docutils literal notranslate"><span class="pre">get_files</span></code> that is also written to disk to finish the checkpoint. There are a lot of things stored in this dictionary that are mainly used internally by the code and aren’t useful to an end user. For example, <code class="docutils literal notranslate"><span class="pre">num_corr</span></code> is the number of crosss-correlations of maps, which is used as a dimension to set up data structures later on. But, some of these things might be useful for debuggin. For example, all of the files found using your glob-parseable file
-tags are stored here, so you can see exactly what maps are being used for data:</p>
+<p><code class="docutils literal notranslate"><span class="pre">file_vars</span></code> is a dictionary returned by <code class="docutils literal notranslate"><span class="pre">get_files</span></code> that is also written to disk to finish the checkpoint. For example, all of the files found using your glob-parseable file tags are stored here, so you can see exactly what maps are being used for data:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">file_vars</span><span class="p">[</span><span class="s1">&#39;map_files&#39;</span><span class="p">]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">file_vars</span><span class="p">[</span><span class="s1">&#39;map_names&#39;</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -643,20 +638,9 @@ tags are stored here, so you can see exactly what maps are being used for data:<
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-array([&#39;../../example/maps_example/data_raw/full/map_150.fits&#39;,
-       &#39;../../example/maps_example/data_raw/full/map_95.fits&#39;],
-      dtype=&#39;&lt;U53&#39;)
+array([&#39;full/map_150.fits&#39;, &#39;full/map_95.fits&#39;], dtype=&#39;&lt;U17&#39;)
 </pre></div></div>
 </div>
-<p>Other options you might use here are</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">template_type</span></code>, which points to files stored in <code class="docutils literal notranslate"><span class="pre">templates_&lt;template_type&gt;</span></code> for foreground template subtraction</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">template_noise_type</span></code>, which points to files stored in <code class="docutils literal notranslate"><span class="pre">templates_noise_&lt;template_noise_type&gt;</span></code> for subtracting a correlated noise component from the template terms</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">reference_type</span></code>, which points to files stored in <code class="docutils literal notranslate"><span class="pre">reference_&lt;reference_type&gt;</span></code> for reference signal subtraction for debiasing null tests</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">data_root2</span></code>, which is used for null tests. This points to a second full map directory (data, signal and noise sims) for a set of data to be subtracted from the maps in data_root1.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">signal_type_sim</span></code>/<code class="docutils literal notranslate"><span class="pre">noise_type_sim</span></code>/<code class="docutils literal notranslate"><span class="pre">foreground_type_sim</span></code>/<code class="docutils literal notranslate"><span class="pre">template_type_sim</span></code> – these are tags corresponding to directories <code class="docutils literal notranslate"><span class="pre">signal_&lt;signal_type_sim&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">noise_&lt;noise_type_sim&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">foreground_&lt;foreground_type_sim&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">template_&lt;template_type_sim&gt;</span></code> that are used when the <code class="docutils literal notranslate"><span class="pre">sim_data</span></code> argument is used in the <code class="docutils literal notranslate"><span class="pre">data</span></code> checkpoint. This mode chooses one of the sims for each each component in place of data maps. It adds the signal, noise, and/or foreground or template sims in alm-space.
-These options are not required to run in <code class="docutils literal notranslate"><span class="pre">sim_data</span></code> mode– if they are not set, they default to <code class="docutils literal notranslate"><span class="pre">signal_type_sim=signal_type</span></code>, <code class="docutils literal notranslate"><span class="pre">noise_type_sim=noise_type</span></code>, <code class="docutils literal notranslate"><span class="pre">foreground_type_sim=None</span></code> and <code class="docutils literal notranslate"><span class="pre">template_type_sim=template_type</span></code>.</p></li>
-</ul>
 </div>
 <div class="section" id="get_bin_def">
 <h3>get_bin_def<a class="headerlink" href="#get_bin_def" title="Permalink to this headline"></a></h3>
@@ -738,7 +722,7 @@ component dust model as defined in <a class="reference internal" href="../api.ht
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">w_stuff</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_mask_weights</span><span class="p">(</span><span class="n">apply_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reload_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">w_stuff</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_mask_weights</span><span class="p">(</span><span class="n">mask_type</span><span class="o">=</span><span class="s2">&quot;rectangle&quot;</span><span class="p">,</span> <span class="n">apply_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reload_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -756,7 +740,7 @@ component dust model as defined in <a class="reference internal" href="../api.ht
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-dict_keys([&#39;wls&#39;, &#39;fsky&#39;, &#39;w1&#39;, &#39;w2&#39;, &#39;w4&#39;, &#39;gmat&#39;, &#39;nside&#39;, &#39;npix&#39;, &#39;gcorr&#39;, &#39;output_file&#39;])
+dict_keys([&#39;wls&#39;, &#39;fsky&#39;, &#39;w1&#39;, &#39;w2&#39;, &#39;w4&#39;, &#39;gmat&#39;, &#39;nside&#39;, &#39;npix&#39;, &#39;gcorr&#39;, &#39;mask_type&#39;, &#39;mask_root&#39;, &#39;mask_files&#39;, &#39;output_file&#39;])
 </pre></div></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">w1</span></code>, <code class="docutils literal notranslate"><span class="pre">w2</span></code>, and <code class="docutils literal notranslate"><span class="pre">w4</span></code> are the first, second, and fourth moments of the mask. <code class="docutils literal notranslate"><span class="pre">fsky</span></code> is the fraction of sky the mask covers. These are needed for computing the <span class="math notranslate nohighlight">\(g_\ell\)</span> mode-counting term, labeled <code class="docutils literal notranslate"><span class="pre">gmat</span></code> in the outputs. <code class="docutils literal notranslate"><span class="pre">gmat</span></code> includes the <span class="math notranslate nohighlight">\(2\ell+1\)</span> factor and a correction factor, if desired.</p>
@@ -786,7 +770,7 @@ Text(0.5, 0, &#39;$\\ell$&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_36_1.png" src="../_images/notebooks_XFaster_Tutorial_36_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_35_1.png" src="../_images/notebooks_XFaster_Tutorial_35_1.png" />
 </div>
 </div>
 <p><strong>Note:</strong> most of the quantities in XFaster are ordered dictionaries with the following nested structure: 1. Spectra (either plain [‘tt’, ‘ee’], etc, or [‘cmb_tt’, ‘cmb_ee’, …, ‘fg_tt’, ‘fg_ee’, …, ‘res_tt’, …] 2. Map/map cross. Crosses are indicated with a colon and are in alphabetical order (so 95 comes after 150, for example): [‘150:150’, ‘150:95’, ‘95:95’] 3. Stuff. Typically an array, though depending on the data structure, it could be a more deeply nested dictionary.</p>
@@ -839,7 +823,7 @@ dict_keys([&#39;kern&#39;, &#39;pkern&#39;, &#39;mkern&#39;, &#39;xkern&#39;, &#
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_41_0.png" src="../_images/notebooks_XFaster_Tutorial_41_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_40_0.png" src="../_images/notebooks_XFaster_Tutorial_40_0.png" />
 </div>
 </div>
 <p>Note that the shorter dimension (<span class="math notranslate nohighlight">\(\ell\)</span>) of each kernel goes up to <span class="math notranslate nohighlight">\(\ell_{max}\)</span>, and the longer dimension (<span class="math notranslate nohighlight">\(\ell^\prime\)</span>) extends to <span class="math notranslate nohighlight">\(2 \ell_{max} + 1\)</span>. The kernels are apodized, so that for any row <span class="math notranslate nohighlight">\(\ell\)</span>, the kernels are zero for values <span class="math notranslate nohighlight">\(\ell^\prime &gt; \ell + \ell_{max}\)</span>. The longer dimension is summed over in computing the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span> terms.</p>
@@ -855,12 +839,11 @@ dict_keys([&#39;kern&#39;, &#39;pkern&#39;, &#39;mkern&#39;, &#39;xkern&#39;, &#
 <li><p>Adds the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_\ell\)</span>s to a running average for that particular map cross and spectrum.</p></li>
 </ol>
 <p>It only does <code class="docutils literal notranslate"><span class="pre">map2alm</span></code> once per map and caches the result for use in other cross spectra since this is the slowest step in the function.</p>
-<p>Below, we call the function with <code class="docutils literal notranslate"><span class="pre">transfer=True</span></code>– this tells the code to use the sims specified in <code class="docutils literal notranslate"><span class="pre">signal_type_transfer</span></code>, which defaults to being <code class="docutils literal notranslate"><span class="pre">signal_type</span></code> if the former is not specified.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sims</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_masked_sims</span><span class="p">(</span><span class="n">transfer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sims</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_masked_sims</span><span class="p">(</span><span class="n">signal_type</span><span class="o">=</span><span class="s2">&quot;synfast&quot;</span><span class="p">,</span> <span class="n">noise_type</span><span class="o">=</span><span class="s2">&quot;gaussian&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">sims</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 </pre></div>
 </div>
@@ -870,7 +853,7 @@ dict_keys([&#39;kern&#39;, &#39;pkern&#39;, &#39;mkern&#39;, &#39;xkern&#39;, &#
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-dict_keys([&#39;cls_signal&#39;, &#39;cls_noise&#39;, &#39;cls_sim&#39;, &#39;cls_med&#39;, &#39;cls_res&#39;, &#39;output_file&#39;])
+dict_keys([&#39;cls_signal&#39;, &#39;cls_sim&#39;, &#39;cls_med&#39;, &#39;cls_noise&#39;, &#39;cls_res&#39;, &#39;signal_type&#39;, &#39;signal_subset&#39;, &#39;signal_root&#39;, &#39;signal_files&#39;, &#39;num_signal&#39;, &#39;noise_type&#39;, &#39;noise_subset&#39;, &#39;noise_root&#39;, &#39;noise_files&#39;, &#39;num_noise&#39;, &#39;output_file&#39;])
 </pre></div></div>
 </div>
 <p>The resulting outputs are:</p>
@@ -926,7 +909,7 @@ Text(0.5, 0.98, &#39;cls_signal&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_48_1.png" src="../_images/notebooks_XFaster_Tutorial_48_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_47_1.png" src="../_images/notebooks_XFaster_Tutorial_47_1.png" />
 </div>
 </div>
 <p>In this example, we use the same idealized transfer function to make both 95 and 150 GHz maps, so their low-<span class="math notranslate nohighlight">\(\ell\)</span> signal is similar. However, for 150 GHz we use a 29 arcmin beam, and for 95 GHz, we use a broader 41 arcmin beam. The difference is evident at high <span class="math notranslate nohighlight">\(\ell\)</span>, where the 150 GHz signal spectra recover more power.</p>
@@ -966,7 +949,7 @@ Text(0.5, 0.98, &#39;cls_noise&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_50_1.png" src="../_images/notebooks_XFaster_Tutorial_50_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_49_1.png" src="../_images/notebooks_XFaster_Tutorial_49_1.png" />
 </div>
 </div>
 <p>In making the example maps, we have set the noise amplitude to be a bit higher for 95 GHz, which is evident in the noise auto-spectra. As expected, the cross-spectra is uncorrelated and mean-zero.</p>
@@ -1019,7 +1002,7 @@ Text(0.5, 0, &#39;$\\ell$&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_56_1.png" src="../_images/notebooks_XFaster_Tutorial_56_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_55_1.png" src="../_images/notebooks_XFaster_Tutorial_55_1.png" />
 </div>
 </div>
 </div>
@@ -1073,7 +1056,7 @@ odict_keys([&#39;cmb_tt&#39;, &#39;cmb_ee&#39;, &#39;cmb_bb&#39;, &#39;cmb_te&#3
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_61_0.png" src="../_images/notebooks_XFaster_Tutorial_61_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_60_0.png" src="../_images/notebooks_XFaster_Tutorial_60_0.png" />
 </div>
 </div>
 </div>
@@ -1161,7 +1144,7 @@ odict_keys([&#39;cmb_tt&#39;, &#39;cmb_ee&#39;, &#39;cmb_bb&#39;, &#39;cmb_te&#3
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_66_1.png" src="../_images/notebooks_XFaster_Tutorial_66_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_65_1.png" src="../_images/notebooks_XFaster_Tutorial_65_1.png" />
 </div>
 </div>
 <p>Note that the BB transfer function (and the EB/TB terms computed from it) start to diverge at high multipole. This is due to the lack of signal power in our input spectrum combined with the reduction in power of the beam. For this reason, you might choose to use a model spectrum with more BB power in computing your BB transfer functions.</p>
@@ -1173,7 +1156,7 @@ odict_keys([&#39;cmb_tt&#39;, &#39;cmb_ee&#39;, &#39;cmb_bb&#39;, &#39;cmb_te&#3
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cls_data</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_masked_data</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cls_data</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_masked_data</span><span class="p">(</span><span class="n">data_type</span><span class="o">=</span><span class="s2">&quot;raw&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">cls_data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 </pre></div>
 </div>
@@ -1183,7 +1166,7 @@ odict_keys([&#39;cmb_tt&#39;, &#39;cmb_ee&#39;, &#39;cmb_bb&#39;, &#39;cmb_te&#3
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-dict_keys([&#39;cls_data&#39;, &#39;nside&#39;, &#39;output_file&#39;])
+dict_keys([&#39;cls_data&#39;, &#39;nside&#39;, &#39;data_type&#39;, &#39;map_root&#39;, &#39;map_files&#39;, &#39;output_file&#39;])
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -1221,21 +1204,24 @@ Text(0.5, 0.98, &#39;cls_data&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_71_1.png" src="../_images/notebooks_XFaster_Tutorial_71_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_70_1.png" src="../_images/notebooks_XFaster_Tutorial_70_1.png" />
 </div>
 </div>
 <p>There are several options for manipulating the constructed data before they are passed to the estimator.</p>
 <ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">template_type</span></code>, which points to files stored in <code class="docutils literal notranslate"><span class="pre">templates_&lt;template_type&gt;</span></code> for foreground template subtraction</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">template_alpha</span></code>: not used for null tests. This is a dictionary of scalar values, keyed by map tag, to scale foreground templates to be subtracted from the data. The subtraction is done in alm-space for each tag that is included in the dictionary.</p></li>
-<li><p>If <code class="docutils literal notranslate"><span class="pre">reference_type</span></code> is set at the <code class="docutils literal notranslate"><span class="pre">files</span></code> checkpoint, then some reference signal is subtracted from each half of a null split. Typically the reference would be something like <em>Planck</em> half-mission datasets, where the <em>Planck</em> instrument noise between the two sets is uncorrelated, such that the cross spectrum of the two reference signals is independent of <em>Planck</em> instrument noise.</p></li>
-<li><p>If <code class="docutils literal notranslate"><span class="pre">template_noise_type</span></code> is set at the <code class="docutils literal notranslate"><span class="pre">files</span></code> checkpoint, then an ensemble of noise simulations is used to construct an estimate of the instrument noise contribution to the template subtraction and remove it from the data. Typically this is an ensemble of <em>Planck</em> FFP10 simulations, which by construction introduces a slight correlation in the noise between template halves. This option accounts for that correlation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reference_type</span></code>, which points to files stored in <code class="docutils literal notranslate"><span class="pre">reference_&lt;reference_type&gt;</span></code> for reference signal subtraction for debiasing null tests. If <code class="docutils literal notranslate"><span class="pre">reference_type</span></code> is set, then some reference signal is subtracted from each half of a null split. Typically the reference would be something like <em>Planck</em> half-mission datasets, where the <em>Planck</em> instrument noise between the two sets is uncorrelated, such that the cross spectrum of the two reference signals is independent of <em>Planck</em> instrument
+noise.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">template_noise_type</span></code>, which points to files stored in <code class="docutils literal notranslate"><span class="pre">templates_noise_&lt;template_noise_type&gt;</span></code> for subtracting a correlated noise component from the template terms. If <code class="docutils literal notranslate"><span class="pre">template_noise_type</span></code> is set, then an ensemble of noise simulations is used to construct an estimate of the instrument noise contribution to the template subtraction and remove it from the data. Typically this is an ensemble of <em>Planck</em> FFP10 simulations, which by construction introduces a slight correlation in the noise
+between template halves. This option accounts for that correlation.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">template_specs</span></code>: A list of spectra for which the template subtraction is applied. By default, this is done for all spectra that the XFaster estimator is computing. However, when excluding TT/TE signal from the likelihood, it is necessary to avoid subtracting foreground templates from the TT/TE spectra as well.</p></li>
 </ul>
 <p>Now, computing things for data is typically the final thing you’ll be wanting to do. The first way you’ll probably run the code is on simulations to make sure things make sense. The options for doing this are explained below.</p>
 </div>
 <div class="section" id="Sim-options-for-get_masked_data">
 <h3>Sim options for get_masked_data<a class="headerlink" href="#Sim-options-for-get_masked_data" title="Permalink to this headline"></a></h3>
-<p>There are several options to <code class="docutils literal notranslate"><span class="pre">get_masked_data()</span></code> that dictate how to build a simulated data set from an ensemble of components on disk. Note that these options may be passed to this function differently from <code class="docutils literal notranslate"><span class="pre">xfaster_run</span></code>. We’ll go through all of them here.</p>
+<p>There are several options to <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_masked_data"><span class="std std-ref">get_masked_data()</span></a> that dictate how to build a simulated data set from an ensemble of components on disk. Note that these options may be passed to this function differently from <a class="reference internal" href="../api.html#xfaster.xfaster_exec.xfaster_run"><span class="std std-ref">xfaster_run()</span></a>. We’ll go through all of them here.</p>
 <p>First, there are three options that determine whether any simulated dataset is to be used at all in place of data. If these are all <code class="docutils literal notranslate"><span class="pre">False</span></code>, then the data maps are loaded from disk as usual.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">ensemble_mean</span></code>: use <code class="docutils literal notranslate"><span class="pre">cls_sim</span></code> in place of the data spectra. This quantity, computed in <a class="reference external" href="#get_masked_sims">the previous sims step</a> is the average of the signal+noise sims.</p></li>
@@ -1244,6 +1230,8 @@ Text(0.5, 0.98, &#39;cls_data&#39;)
 </ul>
 <p>The following options control the construction of the dataset when <code class="docutils literal notranslate"><span class="pre">sim=True</span></code>.</p>
 <ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">signal_type_sim</span></code>/<code class="docutils literal notranslate"><span class="pre">noise_type_sim</span></code>/<code class="docutils literal notranslate"><span class="pre">foreground_type_sim</span></code>/<code class="docutils literal notranslate"><span class="pre">template_type_sim</span></code> – these are tags corresponding to directories <code class="docutils literal notranslate"><span class="pre">signal_&lt;signal_type_sim&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">noise_&lt;noise_type_sim&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">foreground_&lt;foreground_type_sim&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">template_&lt;template_type_sim&gt;</span></code>. These options are not required to run in <code class="docutils literal notranslate"><span class="pre">sim_data</span></code> mode– if they are not set, they default to <code class="docutils literal notranslate"><span class="pre">signal_type_sim=signal_type</span></code>, <code class="docutils literal notranslate"><span class="pre">noise_type_sim=noise_type</span></code>, <code class="docutils literal notranslate"><span class="pre">foreground_type_sim=None</span></code> and <code class="docutils literal notranslate"><span class="pre">template_type_sim=template_type</span></code>, as
+determined in <code class="docutils literal notranslate"><span class="pre">get_masked_sims()</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">components</span></code>: A list of components to include in the simulation. These may include <code class="docutils literal notranslate"><span class="pre">signal</span></code>, <code class="docutils literal notranslate"><span class="pre">noise</span></code>, <code class="docutils literal notranslate"><span class="pre">foreground</span></code> or <code class="docutils literal notranslate"><span class="pre">template</span></code>, and require the appropriate <code class="docutils literal notranslate"><span class="pre">&lt;component&gt;_type_sim</span></code> variable to have been set in <code class="docutils literal notranslate"><span class="pre">get_files()</span></code> above. In <code class="docutils literal notranslate"><span class="pre">xfaster_run</span></code>, this option is called <code class="docutils literal notranslate"><span class="pre">sim_data_components</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">index</span></code>: A dictionary of indices keyed by component name that determine which file from each ensemble to use to construct the data. For example, <code class="docutils literal notranslate"><span class="pre">{&quot;signal&quot;:</span> <span class="pre">0,</span> <span class="pre">&quot;noise&quot;:</span> <span class="pre">10}</span></code> uses difference sim indices for the signal and noise components. A <code class="docutils literal notranslate"><span class="pre">default</span></code> key sets the sim index to use for any component not included in the dictionary. If no default is given, then <code class="docutils literal notranslate"><span class="pre">0</span></code> is assumed. NB: in the <code class="docutils literal notranslate"><span class="pre">xfaster_run</span></code> function, this dictionary is constructed from the arguments <code class="docutils literal notranslate"><span class="pre">sim_index_default</span></code>,
 <code class="docutils literal notranslate"><span class="pre">sim_index_signal</span></code>, <code class="docutils literal notranslate"><span class="pre">sim_index_noise</span></code> and <code class="docutils literal notranslate"><span class="pre">sim_index_foreground</span></code>.</p></li>
@@ -1259,7 +1247,7 @@ disk. In <code class="docutils literal notranslate"><span class="pre">xfaster_ru
 </div>
 <div class="section" id="get_bandpowers">
 <h3>get_bandpowers<a class="headerlink" href="#get_bandpowers" title="Permalink to this headline"></a></h3>
-<p>Now we put it all together! The function <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_bandpowers"><span class="std std-ref">get_bandpowers()</span></a> works just like <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>, with the transfer function terms no longer set to unity, and instead constructed from the <span class="math notranslate nohighlight">\(q_b\)</span>s computed by <code class="docutils literal notranslate"><span class="pre">get_transfer</span></code>.</p>
+<p>Now we put it all together! The function <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_bandpowers"><span class="std std-ref">get_bandpowers()</span></a> works just like <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_transfer"><span class="std std-ref">get_transfer()</span></a>, with the transfer function terms no longer set to unity, and instead constructed from the <span class="math notranslate nohighlight">\(q_b\)</span>s computed by <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_transfer"><span class="std std-ref">get_transfer()</span></a>.</p>
 <div class="section" id="Constructing-the-model-spectrum">
 <h4>Constructing the model spectrum<a class="headerlink" href="#Constructing-the-model-spectrum" title="Permalink to this headline"></a></h4>
 <p>The first step is to construct the <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span>’s including all of the additional components in the model. This is done with <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.bin_cl_template"><span class="std std-ref">bin_cl_template()</span></a>.</p>
@@ -1301,7 +1289,7 @@ amplitude. This is due to the shape of the <span class="math notranslate nohighl
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_80_0.png" src="../_images/notebooks_XFaster_Tutorial_80_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_79_0.png" src="../_images/notebooks_XFaster_Tutorial_79_0.png" />
 </div>
 </div>
 <p>The next model component that we include accounts for residual noise in the auto-spectra. These <span class="math notranslate nohighlight">\(\tilde{\mathcal{C}}_{b\ell}\)</span> terms do not include any transfer functions, beams or mode mixing kernels. They are derived from the <em>simulated</em> noise spectra <span class="math notranslate nohighlight">\(\tilde{N}_\ell\)</span>. These terms act as corrections to the noise model by adjusting the auto-spectrum noise components to agree with the cross terms.</p>
@@ -1354,7 +1342,7 @@ amplitude. This is due to the shape of the <span class="math notranslate nohighl
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_82_0.png" src="../_images/notebooks_XFaster_Tutorial_82_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_81_0.png" src="../_images/notebooks_XFaster_Tutorial_81_0.png" />
 </div>
 </div>
 <p>Next we add our actual noise simulations to the model. The residual noise terms discussed above are designed to account for inaccuracies in this model. For both the fiducial noise model and the noise residuals, we assume 0 average noise in cross-spectra, and so only add them to the auto-terms of the model.</p>
@@ -1401,7 +1389,7 @@ automatically adjusted to be the lowest level possible while still having the al
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_84_0.png" src="../_images/notebooks_XFaster_Tutorial_84_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_83_0.png" src="../_images/notebooks_XFaster_Tutorial_83_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
@@ -1434,7 +1422,7 @@ automatically adjusted to be the lowest level possible while still having the al
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_85_0.png" src="../_images/notebooks_XFaster_Tutorial_85_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_84_0.png" src="../_images/notebooks_XFaster_Tutorial_84_0.png" />
 </div>
 </div>
 <p>Note that neither conditioning noise nor residual terms are present in the cross-spectra.</p>
@@ -1533,7 +1521,7 @@ W_{b\ell}^{XY(\mathcal{D})} = \sum_B W_{B\ell}^{XY(q)} \frac{\partial\langle \ma
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_93_0.png" src="../_images/notebooks_XFaster_Tutorial_93_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_92_0.png" src="../_images/notebooks_XFaster_Tutorial_92_0.png" />
 </div>
 </div>
 <p>Now let’s see how the total model (summing up the <span class="math notranslate nohighlight">\(q_b\mathcal{C}_{b\ell}\)</span> terms for every component) to see how it converges to fit the data. Within a few iterations, it’s quite close.</p>
@@ -1583,7 +1571,7 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_95_1.png" src="../_images/notebooks_XFaster_Tutorial_95_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_94_1.png" src="../_images/notebooks_XFaster_Tutorial_94_1.png" />
 </div>
 </div>
 <p>Now let’s look at just the <span class="math notranslate nohighlight">\(q_b\)</span> values for each of the different component and see how they converge as a function of iteration and bin. The lowest bins tend to have the biggest moves, but for all components, everything gets close to its final value within a handful of iterations.</p>
@@ -1625,7 +1613,7 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_97_0.png" src="../_images/notebooks_XFaster_Tutorial_97_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_96_0.png" src="../_images/notebooks_XFaster_Tutorial_96_0.png" />
 </div>
 </div>
 <p>Now we’ll look at the noise residuals that were fit. In the script where we make the example maps, we made the “data” maps have 15% less noise in them than the those used for the noise model. So, we should expect the total noise, <span class="math notranslate nohighlight">\((1+n_b)\left&lt;N\right&gt;\)</span>, to be <span class="math notranslate nohighlight">\(0.85^2\left&lt;N\right&gt;\)</span>, where the square comes because we’re fitting in the power spectrum. So, <span class="math notranslate nohighlight">\(n_b\)</span>s should converge to about -0.28.</p>
@@ -1664,14 +1652,14 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7fbf29f17eb0&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7fdd5df88280&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_99_1.png" src="../_images/notebooks_XFaster_Tutorial_99_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_98_1.png" src="../_images/notebooks_XFaster_Tutorial_98_1.png" />
 </div>
 </div>
 <p>Now that everything has converged, let’s plot up what the final bandpowers and error bars look like. XFaster saves the binned bandpowers as <span class="math notranslate nohighlight">\(D_\ell\)</span>s by default, though they are labeled <code class="docutils literal notranslate"><span class="pre">cb</span></code>. The error bars are in <code class="docutils literal notranslate"><span class="pre">dcb</span></code>, and those are also computed without sample variance in <code class="docutils literal notranslate"><span class="pre">dcb_nosampvar</span></code>. Covariance is in <code class="docutils literal notranslate"><span class="pre">cov</span></code>, and it also has a no sample variance version, <code class="docutils literal notranslate"><span class="pre">cov_nosampvar</span></code>.</p>
@@ -1702,7 +1690,7 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_101_0.png" src="../_images/notebooks_XFaster_Tutorial_101_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_100_0.png" src="../_images/notebooks_XFaster_Tutorial_100_0.png" />
 </div>
 </div>
 <p>The error bars are just the diagonal of the covariance matrix. Let’s look at the covariance matrix with and without sample variance.</p>
@@ -1736,7 +1724,7 @@ Text(0.5, 1.0, &#39;Without sample variance&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_103_1.png" src="../_images/notebooks_XFaster_Tutorial_103_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_102_1.png" src="../_images/notebooks_XFaster_Tutorial_102_1.png" />
 </div>
 </div>
 <p>This is a 120 x 120 bin matrix, with each of the 20 CMB bins for each spectrum in order (TT, EE, BB, TE, EB, TB).</p>
@@ -1759,7 +1747,7 @@ just vary <span class="math notranslate nohighlight">\(r\)</span>. For this exam
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[ 2022-06-30 06:22:49UTC ] INFO: Computing brute-force r profile likelihood
+[ 2022-07-01 21:07:06UTC ] INFO: Computing brute-force r profile likelihood
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -1785,7 +1773,7 @@ Text(0.5, 0, &#39;$r$&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_108_1.png" src="../_images/notebooks_XFaster_Tutorial_108_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_107_1.png" src="../_images/notebooks_XFaster_Tutorial_107_1.png" />
 </div>
 </div>
 <p>We can see that we recover something pretty close to 1, our input <span class="math notranslate nohighlight">\(r\)</span> value for the example. If we ran this for many signal+noise sims, we should get precisely 1 in the average.</p>

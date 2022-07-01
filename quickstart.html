@@ -273,6 +273,19 @@ The files written to disk are:</p>
 </li>
 </ul>
 <p>For a detailed overview of the various fields contained in each dictionary, see <a class="reference internal" href="notebooks/XFaster_Tutorial.html#Tutorial"><span class="std std-ref">Tutorial</span></a>.</p>
+<p>To get a quick look at the data, you can use the <code class="docutils literal notranslate"><span class="pre">xfaster</span> <span class="pre">dump</span></code> command-line utility.  For example, to see the contents of the <code class="docutils literal notranslate"><span class="pre">data_xcorr.npz</span></code> checkpoint file for the example dataset:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>% xfaster dump -r example/outputs_example -t 95x150 -c data
+***** example/outputs_example/95x150/data_xcorr_95x150.npz *****
+<span class="o">{</span>
+    <span class="s1">&#39;data_version&#39;</span>: <span class="m">4</span>,
+    <span class="s1">&#39;cls_data&#39;</span>: odict_keys<span class="o">([</span><span class="s1">&#39;tt&#39;</span>, <span class="s1">&#39;ee&#39;</span>, <span class="s1">&#39;bb&#39;</span>, <span class="s1">&#39;te&#39;</span>, <span class="s1">&#39;eb&#39;</span>, <span class="s1">&#39;tb&#39;</span><span class="o">])</span>,
+    <span class="s1">&#39;nside&#39;</span>: <span class="m">256</span>,
+    <span class="s1">&#39;data_type&#39;</span>: <span class="s1">&#39;raw&#39;</span>,
+    <span class="s1">&#39;map_root&#39;</span>: <span class="s1">&#39;data_raw&#39;</span>,
+    <span class="s1">&#39;map_files&#39;</span>: <span class="o">[</span><span class="s1">&#39;data_raw/full/map_150.fits&#39;</span>, <span class="s1">&#39;data_raw/full/map_95.fits&#39;</span><span class="o">]</span>,
+<span class="o">}</span>
+</pre></div>
+</div>
 <p>Whenever you want to read in some data the XFaster code wrote, you’ll want to use the function <code class="docutils literal notranslate"><span class="pre">load_and_parse</span></code>.
 This includes all the files detailed in the list above.
 You can then look through keys, where the dictionaries are all structured as <code class="docutils literal notranslate"><span class="pre">main</span> <span class="pre">field</span> <span class="pre">name</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">spectrum</span> <span class="pre">type</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">map/cross</span> <span class="pre">spectrum</span></code>.</p>
