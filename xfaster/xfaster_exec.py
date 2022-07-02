@@ -1,5 +1,6 @@
 import os
 import sys
+import glob
 import inspect
 import subprocess as sp
 import numpy as np
@@ -7,6 +8,7 @@ import time
 import warnings
 from . import xfaster_class as xfc
 from . import batch_tools as bt
+from . import parse_tools as pt
 from collections import OrderedDict
 
 
@@ -14,6 +16,7 @@ __all__ = [
     "xfaster_run",
     "xfaster_parse",
     "xfaster_submit",
+    "xfaster_dump",
     "xfaster_main",
     "XFasterJobGroup",
 ]
@@ -35,23 +38,6 @@ def xfaster_run(
     data_subset="full/*0",
     data_root2=None,
     data_subset2=None,
-    data_type="raw",
-    mask_type="rectangle",
-    signal_type="synfast",
-    signal_subset="*",
-    signal_transfer_type=None,
-    signal_type_sim=None,
-    noise_type="stationary",
-    noise_subset="*",
-    noise_type_sim=None,
-    foreground_type=None,
-    foreground_subset="*",
-    foreground_transfer_type=None,
-    foreground_type_sim=None,
-    template_type=None,
-    template_noise_type=None,
-    template_type_sim=None,
-    reference_type=None,
     # binning options
     lmin=2,
     lmax=500,
@@ -68,28 +54,57 @@ def xfaster_run(
     bin_width_fg=30,
     lmin_fg=None,
     lmax_fg=None,
-    # data options
-    template_alpha_tags=None,
-    template_alpha=None,
-    template_alpha_tags_sim=None,
-    template_alpha_sim=None,
-    ensemble_mean=False,
-    ensemble_median=False,
-    sim_data=False,
-    sim_data_components=["signal", "noise", "foreground"],
-    sim_data_r=None,
-    qb_file_data=None,
-    sim_index_signal=None,
-    sim_index_noise=None,
-    sim_index_foreground=None,
-    sim_index_default=0,
-    save_sim_data=False,
     # beam and kernel options
     pixwin=True,
+    mask_type="rectangle",
     window_lmax=None,
     apply_gcorr=False,
     reload_gcorr=False,
     gcorr_file=None,
+    # sim ensemble options
+    signal_type="synfast",
+    signal_subset="*",
+    signal_transfer_type=None,
+    foreground_type=None,
+    foreground_subset="*",
+    foreground_transfer_type=None,
+    noise_type="stationary",
+    noise_subset="*",
+    qb_file_sim=None,
+    # shape spectrum options
+    signal_spec=None,
+    signal_transfer_spec=None,
+    foreground_spec=None,
+    foreground_transfer_spec=None,
+    model_r=None,
+    freq_ref=359.7,
+    beta_ref=1.54,
+    freq_ref_transfer=None,
+    beta_ref_transfer=None,
+    # data options
+    data_type="raw",
+    template_type=None,
+    template_noise_type=None,
+    template_alpha_tags=None,
+    template_alpha=None,
+    reference_type=None,
+    ensemble_mean=False,
+    ensemble_median=False,
+    sim_data=False,
+    sim_data_components=["signal", "noise", "foreground"],
+    sim_index_signal=None,
+    sim_index_noise=None,
+    sim_index_foreground=None,
+    sim_index_default=0,
+    signal_type_sim=None,
+    sim_data_r=None,
+    noise_type_sim=None,
+    qb_file_data=None,
+    foreground_type_sim=None,
+    template_type_sim=None,
+    template_alpha_tags_sim=None,
+    template_alpha_sim=None,
+    save_sim_data=False,
     # spectrum estimation options
     multi_map=True,
     bandpower_tag=None,
@@ -102,16 +117,6 @@ def xfaster_run(
     fix_bb_transfer=False,
     fix_fg_transfer=False,
     null_first_cmb=False,
-    qb_file_sim=None,
-    signal_spec=None,
-    signal_transfer_spec=None,
-    foreground_spec=None,
-    foreground_transfer_spec=None,
-    model_r=None,
-    freq_ref=359.7,
-    beta_ref=1.54,
-    freq_ref_transfer=None,
-    beta_ref_transfer=None,
     delta_beta_prior=0.5,
     like_profiles=False,
     like_profile_sigma=3.0,
@@ -182,70 +187,6 @@ def xfaster_run(
     data_subset2 : str
         The subset of the data maps to include from each data split for the
         second half of a null split.
-    data_type : str
-        The data type to use
-    mask_type : str
-        The variant of mask to use
-    signal_type : str
-        The variant of signal sims to use for the signal component of the
-        covariance model.
-    signal_subset : str
-        The subset of the signal sims to include.  Must be a glob-parseable
-        string.
-    signal_transfer_type : str
-        The variant of signal sims to use for computing the transfer function.
-        If not set, defaults to ``signal_type``.
-    signal_type_sim : str
-        The variant of signal sims to use for sim_index data maps.
-        This enables having a different noise sim ensemble to use for
-        sim_index run than the ensemble from which the signal is computed.
-    noise_type : str
-        The variant of noise sims to use for the noise component of the
-        covariance model.
-    noise_subset : str
-        The subset of the noise sims to include.  Must be a glob-parseable
-        string.
-    noise_type_sim : str
-        The variant of noise sims to use for sim_index fake data map.
-        This enables having a different noise sim ensemble to use for
-        sim_index run than the ensemble from which the noise is computed.
-    foreground_type : str
-        The variant of foreground sims to use for the foreground component of
-        the covariance model.  If not supplied, and ``foreground_fit`` is False,
-        no foreground component is included.
-    foreground_subset : str
-        The subset of the foreground sims to include.  Must be a glob-parseable
-        string.
-    foreground_transfer_type : string
-        The variant of foreground sims to use for the transfer function for a
-        foreground component.  If not set, defaults to ``foreground_type``.
-    foreground_type_sim : str
-        Tag for directory (foreground_<foreground_type_sim>) where foreground
-        sims are stored that should be added to the signal and noise sims
-        when running in sim_index mode.
-    template_type : str
-        Tag for directory (templates_<template_type>) containing templates
-        (e.g. a foreground model) to be scaled by a scalar value per
-        map tag and subtracted from the data. The directory is assumed
-        to contain reference1 and reference2 subdirectories, each
-        containing one template per map tag.
-    template_noise_type : string
-        Tag for directory containing template noise sims to be averaged and
-        scaled similarly to the templates themselves.  These averaged sims are
-        used to debias template cross spectra due to correlations in the way the
-        noise ensembles are constructed.  Typically, this would be a noise model
-        based on the Planck FFP10 ensemble for each half-mission foreground
-        template.
-    template_type_sim : string
-        Tag for directory containing foreground templates, to be scaled by a
-        scalar value per map tag and added to the simulated data.  The directory
-        contains one template per map tag.
-    reference_type : string
-        Tag for directory containing reobserved reference signals, to be
-        subtracted from each data map.  The reference signal maps should be two
-        datasets with uncorrelated noise, such as Planck half-mission maps.
-        This option is used for removing expected signal residuals from null
-        tests.
     lmin : int
        Minimum ell at which to start the lowest bin of the output spectra.
     lmax : int
@@ -295,62 +236,10 @@ def xfaster_run(
     lmax_fg : int
         Maximum ell to use for defining foreground bins.  If not set, defaults
         to ``lmax``.
-    template_alpha_tags : list of strings
-        List of map tags from which foreground template maps should be
-        subtracted.  These should be the original map tags, not
-        those generated for chunk sets.
-    template_alpha : list of floats
-        Scalar to be applied to template map for subtraction from each of the
-        data with tags in the list ``template_alpha_tags``.
-    template_alpha_tags_sim : list of str
-        List of map tags to which foreground template maps should be added, if
-        the template component is included in ``sim_data_components``.  These
-        should be the original map tags, not those generated for chunk sets.
-        If None, use the same values as `template_alpha_tags`.
-    template_alpha_sim : list of floats
-        Scalar to be applied to template map for addition to each of the
-        simulated data maps with tags in the list ``template_alpha_tags``.
-        If None, use the same values as `template_alpha`.
-    ensemble_mean : bool
-        If True, substitute S+N ensemble means for Cls to test for bias
-        in the estimator.
-    ensemble_median : bool
-        If True, substitute S+N ensemble median for Cls to test for bias
-        in the estimator.
-    sim_data : bool
-        If True, construct simulated data spectra using the options below.
-    sim_data_components : list of strings
-        List of components to include in simulated data.  May include signal,
-        noise, foreground or template components.
-    sim_data_r : float
-        If not None, construct the signal component of the simulated data by
-        selecting the appropriate index from an ensemble of scalar and tensor
-        maps, such that the signal component is ``scalar + r * tensor``.  This
-        assumes that the tensor simulations are constructed with ``nt=0``, so
-        that the linear relationship holds.
-    qb_file_data : str
-        If not None, pointer to a bandpowers.npz file in the output directory,
-        to correct the noise component of the simulated data by an appropriate
-        set of residual ``qb`` values.
-    sim_index_signal : int
-        Sim index to use for the signal component that is included in
-        ``sim_data_components``.  If None or < 0, takes the value of
-        ``sim_index_default``.
-    sim_index_noise : int
-        Sim index to use for the noise component that is included in
-        ``sim_data_components``.  If None or < 0, takes the value of
-        ``sim_index_default``.
-    sim_index_foreground : int
-        Sim index to use for the foreground component that is included in
-        ``sim_data_components``.  If None or < 0, takes the value of
-        ``sim_index_default``.
-    sim_index_default : int
-        Default sim index to use for any component with index < 0 or None
-        in ``sim_index_<comp>``.
-    save_sim_data : bool
-        If True, save data_xcorr file to disk for simulated data.
     pixwin : bool
         If True, apply pixel window functions to beam windows.
+    mask_type : str
+        The variant of mask to use
     window_lmax : int
         The size of the window used in computing the mask kernels
     apply_gcorr : bool
@@ -364,34 +253,31 @@ def xfaster_run(
         If not None, path to gcorr file. Otherwise, use file labeled
         mask_map_<tag>_gcorr.npy in mask directory for signal, or
         mask_map_<tag>_gcorr_null.npy for nulls.
-    multi_map : bool
-        If True, compute all cross-spectra between maps
-    bandpower_tag : str
-        Tag to append to bandpowers output file
-    converge_criteria : float
-        The maximum fractional change in qb to signal convergence and
-        end iteration
-    cond_noise : float
-        The level of regularizing noise to add to EE and BB diagonals.
-    cond_criteria : float
-        Threshold on covariance condition number. Above this, regularizing noise
-        will be added to covariance to condition it.
-    iter_max : int
-        The maximum number of iterations
-    save_iters : bool
-        If True, store the output of each Fisher iteration, in addition to
-        the end result.
-    return_cls : bool
-        If True, return C_l spectrum rather than the D_l spectrum
-    fix_bb_transfer : bool
-        If True, after transfer functions have been calculated, impose that the
-        BB transfer function is exactly equal to the EE transfer function.
-    fix_fg_transfer : bool
-        If True, the transfer function for the foreground component is fixed to
-        an interpolation of the CMB transfer function onto the foreground
-        binning.
-    null_first_cmb : bool
-        If True, keep first CMB bandpowers fixed to input shape (qb=1).
+    signal_type : str
+        The variant of signal sims to use for the signal component of the
+        covariance model.
+    signal_subset : str
+        The subset of the signal sims to include.  Must be a glob-parseable
+        string.
+    signal_transfer_type : str
+        The variant of signal sims to use for computing the transfer function.
+        If not set, defaults to ``signal_type``.
+    noise_type : str
+        The variant of noise sims to use for the noise component of the
+        covariance model.
+    noise_subset : str
+        The subset of the noise sims to include.  Must be a glob-parseable
+        string.
+    foreground_type : str
+        The variant of foreground sims to use for the foreground component of
+        the covariance model.  If not supplied, and ``foreground_fit`` is False,
+        no foreground component is included.
+    foreground_subset : str
+        The subset of the foreground sims to include.  Must be a glob-parseable
+        string.
+    foreground_transfer_type : string
+        The variant of foreground sims to use for the transfer function for a
+        foreground component.  If not set, defaults to ``foreground_type``.
     qb_file_sim : str
         If not None, pointer to a bandpowers.npz file in the output directory,
         to correct the noise ensemble by an appropriate set of residual ``qb``
@@ -432,6 +318,125 @@ def xfaster_run(
     beta_ref_transfer : float
         Reference spectral index for the dust model used for computing the
         foreground transfer function.  Defaults to ``beta_ref`` if not given.
+    data_type : str
+        The data type to use
+    template_type : str
+        Tag for directory (templates_<template_type>) containing templates
+        (e.g. a foreground model) to be scaled by a scalar value per
+        map tag and subtracted from the data. The directory is assumed
+        to contain reference1 and reference2 subdirectories, each
+        containing one template per map tag.
+    template_noise_type : string
+        Tag for directory containing template noise sims to be averaged and
+        scaled similarly to the templates themselves.  These averaged sims are
+        used to debias template cross spectra due to correlations in the way the
+        noise ensembles are constructed.  Typically, this would be a noise model
+        based on the Planck FFP10 ensemble for each half-mission foreground
+        template.
+    template_alpha_tags : list of strings
+        List of map tags from which foreground template maps should be
+        subtracted.  These should be the original map tags, not
+        those generated for chunk sets.
+    template_alpha : list of floats
+        Scalar to be applied to template map for subtraction from each of the
+        data with tags in the list ``template_alpha_tags``.
+    reference_type : string
+        Tag for directory containing reobserved reference signals, to be
+        subtracted from each data map.  The reference signal maps should be two
+        datasets with uncorrelated noise, such as Planck half-mission maps.
+        This option is used for removing expected signal residuals from null
+        tests.
+    ensemble_mean : bool
+        If True, substitute S+N ensemble means for Cls to test for bias
+        in the estimator.
+    ensemble_median : bool
+        If True, substitute S+N ensemble median for Cls to test for bias
+        in the estimator.
+    sim_data : bool
+        If True, construct simulated data spectra using the options below.
+    sim_data_components : list of strings
+        List of components to include in simulated data.  May include signal,
+        noise, foreground or template components.
+    sim_index_signal : int
+        Sim index to use for the signal component that is included in
+        ``sim_data_components``.  If None or < 0, takes the value of
+        ``sim_index_default``.
+    sim_index_noise : int
+        Sim index to use for the noise component that is included in
+        ``sim_data_components``.  If None or < 0, takes the value of
+        ``sim_index_default``.
+    sim_index_foreground : int
+        Sim index to use for the foreground component that is included in
+        ``sim_data_components``.  If None or < 0, takes the value of
+        ``sim_index_default``.
+    sim_index_default : int
+        Default sim index to use for any component with index < 0 or None
+        in ``sim_index_<comp>``.
+    signal_type_sim : str
+        The variant of signal sims to use for sim_index data maps.
+        This enables having a different noise sim ensemble to use for
+        sim_index run than the ensemble from which the signal is computed.
+    sim_data_r : float
+        If not None, construct the signal component of the simulated data by
+        selecting the appropriate index from an ensemble of scalar and tensor
+        maps, such that the signal component is ``scalar + r * tensor``.  This
+        assumes that the tensor simulations are constructed with ``nt=0``, so
+        that the linear relationship holds.
+    noise_type_sim : str
+        The variant of noise sims to use for sim_index fake data map.
+        This enables having a different noise sim ensemble to use for
+        sim_index run than the ensemble from which the noise is computed.
+    qb_file_data : str
+        If not None, pointer to a bandpowers.npz file in the output directory,
+        to correct the noise component of the simulated data by an appropriate
+        set of residual ``qb`` values.
+    foreground_type_sim : str
+        Tag for directory (foreground_<foreground_type_sim>) where foreground
+        sims are stored that should be added to the signal and noise sims
+        when running in sim_index mode.
+    template_type_sim : string
+        Tag for directory containing foreground templates, to be scaled by a
+        scalar value per map tag and added to the simulated data.  The directory
+        contains one template per map tag.
+    template_alpha_tags_sim : list of str
+        List of map tags to which foreground template maps should be added, if
+        the template component is included in ``sim_data_components``.  These
+        should be the original map tags, not those generated for chunk sets.
+        If None, use the same values as `template_alpha_tags`.
+    template_alpha_sim : list of floats
+        Scalar to be applied to template map for addition to each of the
+        simulated data maps with tags in the list ``template_alpha_tags``.
+        If None, use the same values as `template_alpha`.
+    save_sim_data : bool
+        If True, save data_xcorr file to disk for simulated data.
+    multi_map : bool
+        If True, compute all cross-spectra between maps
+    bandpower_tag : str
+        Tag to append to bandpowers output file
+    converge_criteria : float
+        The maximum fractional change in qb to signal convergence and
+        end iteration
+    cond_noise : float
+        The level of regularizing noise to add to EE and BB diagonals.
+    cond_criteria : float
+        Threshold on covariance condition number. Above this, regularizing noise
+        will be added to covariance to condition it.
+    iter_max : int
+        The maximum number of iterations
+    save_iters : bool
+        If True, store the output of each Fisher iteration, in addition to
+        the end result.
+    return_cls : bool
+        If True, return C_l spectrum rather than the D_l spectrum
+    fix_bb_transfer : bool
+        If True, after transfer functions have been calculated, impose that the
+        BB transfer function is exactly equal to the EE transfer function.
+    fix_fg_transfer : bool
+        If True, the transfer function for the foreground component is fixed to
+        an interpolation of the CMB transfer function onto the foreground
+        binning.
+    null_first_cmb : bool
+        If True, keep first CMB bandpowers fixed to input shape (qb=1).
     delta_beta_prior : float
         The width of the prior on the additive change from beta_ref. If you
         don't want the code to fit for a spectral index different
@@ -494,6 +499,22 @@ def xfaster_run(
     cpu_time = getattr(time, "process_time", getattr(time, "clock", time.time))
     cpu_start = cpu_time()
     time_start = time.time()
+
+    if signal_transfer_type is None:
+        signal_transfer_type = signal_type
+        all_opts["signal_transfer_type"] = signal_transfer_type
+
+    if foreground_transfer_type is None:
+        foreground_transfer_type = foreground_type
+        all_opts["foreground_transfer_type"] = foreground_transfer_type
+
+    # make sure sims get rerun correctly
+    if signal_transfer_type == signal_type and foreground_transfer_type == foreground_type:
+        # if signal types match, then sims are run before computing the
+        # transfer function, so need to set the correct checkpoint to rerun
+        if checkpoint == "sims":
+            checkpoint = "sims_transfer"
+            all_opts["checkpoint"] = checkpoint
 
     if template_alpha_tags is None:
         template_alpha_tags = []
@@ -562,25 +583,8 @@ def xfaster_run(
     file_opts = dict(
         data_root=data_root,
         data_subset=data_subset,
-        signal_subset=signal_subset,
-        noise_subset=noise_subset,
-        foreground_subset=foreground_subset,
-        data_type=data_type,
-        noise_type=noise_type,
-        noise_type_sim=noise_type_sim,
-        mask_type=mask_type,
-        signal_type=signal_type,
-        signal_type_sim=signal_type_sim if sim_data_r is None else "r",
-        signal_transfer_type=signal_transfer_type,
-        foreground_type=foreground_type,
-        foreground_transfer_type=foreground_transfer_type,
-        foreground_type_sim=foreground_type_sim,
         data_root2=data_root2,
         data_subset2=data_subset2,
-        template_type=template_type,
-        template_noise_type=template_noise_type,
-        template_type_sim=template_type_sim,
-        reference_type=reference_type,
     )
     config_vars.update(file_opts, "File Options")
 
@@ -618,14 +622,22 @@ def xfaster_run(
     config_vars.update(bin_opts, "Binning Options")
 
     data_opts = dict(
+        data_type=data_type,
+        template_type=template_type,
+        template_noise_type=template_noise_type,
         template_alpha=template_alpha,
+        reference_type=reference_type,
         ensemble_mean=ensemble_mean,
         ensemble_median=ensemble_median,
         sim=sim_data,
         components=None if not sim_data else sim_data_components,
         index=None if not sim_data else sim_index,
+        signal_type_sim=signal_type_sim if sim_data_r is None else "r",
         r=sim_data_r,
+        noise_type_sim=noise_type_sim,
         qb_file=qb_file_data,
+        foreground_type_sim=foreground_type_sim,
+        template_type_sim=template_type_sim,
         template_alpha_sim=template_alpha_sim,
         save_sim=save_sim_data,
     )
@@ -639,6 +651,7 @@ def xfaster_run(
 
     kernel_opts = dict(
         pixwin=pixwin,
+        mask_type=mask_type,
         window_lmax=window_lmax,
         apply_gcorr=apply_gcorr,
         reload_gcorr=reload_gcorr,
@@ -646,10 +659,63 @@ def xfaster_run(
     )
     config_vars.update(kernel_opts, "Beam and Kernel Options")
 
+    sim_opts = dict(
+        signal_type=signal_type,
+        signal_transfer_type=signal_transfer_type,
+        signal_subset=signal_subset,
+        noise_type=noise_type,
+        noise_subset=noise_subset,
+        foreground_type=foreground_type,
+        foreground_transfer_type=foreground_transfer_type,
+        qb_file=qb_file_sim,
+    )
+    config_vars.update(sim_opts, "Simulation Ensemble Options")
+    config_vars.remove_option("XFaster General", "qb_file_sim")
+    sim_opts.pop("signal_transfer_type")
+    sim_opts.pop("foreground_transfer_type")
+    sim_transfer_opts = sim_opts.copy()
+    if signal_transfer_type != signal_type:
+        sim_transfer_opts["signal_type"] = signal_transfer_type
+        sim_transfer_opts.pop("noise_type")
+        sim_transfer_opts.pop("noise_subset")
+        sim_transfer_opts.pop("qb_file")
+    if foreground_transfer_type != foreground_type:
+        sim_transfer_opts["foreground_type"] = foreground_transfer_type
+        sim_transfer_opts.pop("noise_type", None)
+        sim_transfer_opts.pop("noise_subset", None)
+        sim_transfer_opts.pop("qb_file", None)
+
     if freq_ref_transfer is None:
         freq_ref_transfer = freq_ref
     if beta_ref_transfer is None:
         beta_ref_transfer = beta_ref
+
+    shape_opts = dict(
+        filename=signal_spec,
+        filename_transfer=signal_transfer_spec,
+        filename_fg=foreground_spec,
+        filename_transfer_fg=foreground_transfer_spec,
+        r=model_r,
+        freq_ref=freq_ref,
+        beta_ref=beta_ref,
+        freq_ref_transfer=freq_ref_transfer,
+        beta_ref_transfer=beta_ref_transfer,
+    )
+    config_vars.update(shape_opts, "Shape Spectrum Options")
+    config_vars.remove_option("XFaster General", "signal_spec")
+    config_vars.remove_option("XFaster General", "signal_transfer_spec")
+    config_vars.remove_option("XFaster General", "foreground_spec")
+    config_vars.remove_option("XFaster General", "foreground_transfer_spec")
+    config_vars.remove_option("XFaster General", "model_r")
+    shape_opts.pop("filename_transfer")
+    shape_opts.pop("filename_transfer_fg")
+    shape_opts.pop("freq_ref_transfer")
+    shape_opts.pop("beta_ref_transfer")
+    shape_transfer_opts = shape_opts.copy()
+    shape_transfer_opts["filename"] = filename_transfer
+    shape_transfer_opts["filename_fg"] = filename_transfer_fg
+    shape_transfer_opts["freq_ref"] = freq_ref_transfer
+    shape_transfer_opts["beta_ref"] = beta_ref_transfer
 
     spec_opts = dict(
         multi_map=multi_map,
@@ -658,21 +724,11 @@ def xfaster_run(
         save_iters=save_iters,
         fix_bb_transfer=fix_bb_transfer,
         fix_fg_transfer=fix_fg_transfer,
-        signal_spec=signal_spec,
-        signal_transfer_spec=signal_transfer_spec,
-        foreground_spec=foreground_spec,
-        foreground_transfer_spec=foreground_transfer_spec,
-        model_r=model_r,
-        freq_ref=freq_ref,
-        beta_ref=beta_ref,
-        freq_ref_transfer=freq_ref_transfer,
-        beta_ref_transfer=beta_ref_transfer,
         delta_beta_prior=delta_beta_prior,
         cond_noise=cond_noise,
         cond_criteria=cond_criteria,
         null_first_cmb=null_first_cmb,
         return_cls=return_cls,
-        qb_file=qb_file_sim,
         like_profiles=like_profiles,
         like_profile_sigma=like_profile_sigma,
         like_profile_points=like_profile_points,
@@ -680,18 +736,7 @@ def xfaster_run(
     )
     config_vars.update(spec_opts, "Spectrum Estimation Options")
     config_vars.remove_option("XFaster General", "bandpower_tag")
-    config_vars.remove_option("XFaster General", "qb_file_sim")
     spec_opts.pop("multi_map")
-    spec_opts.pop("signal_spec")
-    spec_opts.pop("signal_transfer_spec")
-    spec_opts.pop("foreground_spec")
-    spec_opts.pop("foreground_transfer_spec")
-    spec_opts.pop("model_r")
-    spec_opts.pop("freq_ref")
-    spec_opts.pop("beta_ref")
-    spec_opts.pop("freq_ref_transfer")
-    spec_opts.pop("beta_ref_transfer")
-    spec_opts.pop("qb_file")
     bandpwr_opts = spec_opts.copy()
     bandpwr_opts.pop("fix_bb_transfer")
     bandpwr_opts.pop("fix_fg_transfer")
@@ -745,35 +790,36 @@ def xfaster_run(
 
     X.log("Computing mask cross-spectra and weights...", "notice")
     X.get_mask_weights(
-        apply_gcorr=apply_gcorr, reload_gcorr=reload_gcorr, gcorr_file=gcorr_file
+        mask_type=mask_type,
+        apply_gcorr=apply_gcorr,
+        reload_gcorr=reload_gcorr,
+        gcorr_file=gcorr_file,
     )
 
     X.log("Computing kernels...", "notice")
     X.get_kernels(window_lmax=window_lmax)
 
-    X.log("Computing sim ensemble averages for transfer function...", "notice")
-    # Do all the sims at once to also get the S+N sim ensemble average
-    do_noise = signal_transfer_type in [signal_type, None]
-    X.get_masked_sims(transfer=True, do_noise=do_noise, qb_file=qb_file_sim)
-
     X.log("Computing beam window functions...", "notice")
     X.get_beams(pixwin=pixwin)
 
+    X.log("Computing sim ensemble averages for transfer function...", "notice")
+    X.get_masked_sims(transfer=True, **sim_transfer_opts)
+
     X.log("Loading spectrum shape for transfer function...", "notice")
-    # load signal shapes for dust and cmb
-    X.get_signal_shape(
-        filename=signal_transfer_spec,
-        filename_fg=foreground_transfer_spec,
-        freq_ref=freq_ref_transfer,
-        beta_ref=beta_ref_transfer,
-        transfer=True,
-    )
+    X.get_signal_shape(transfer=True, **shape_transfer_opts)
 
     X.log("Computing transfer functions...", "notice")
     X.get_transfer(**transfer_opts)
 
     X.log("Computing sim ensemble averages...", "notice")
-    X.get_masked_sims(qb_file=qb_file_sim)
+    X.get_masked_sims(**sim_opts)
+
+    if X.null_run:
+        X.log("Loading flat spectrum for null test...", "notice")
+        X.get_signal_shape(flat=True)
+    else:
+        X.log("Loading spectrum shape for bandpowers...", "notice")
+        X.get_signal_shape(**shape_opts)
 
     X.log(
         "Computing masked {} cross-spectra...".format(
@@ -782,21 +828,6 @@ def xfaster_run(
         "notice",
     )
     X.get_masked_data(**data_opts)
-
-    X.log("Computing spectra...", "notice")
-
-    if X.null_run:
-        X.log("Loading flat spectrum for null test...", "notice")
-        X.get_signal_shape(flat=True)
-    else:
-        X.log("Loading spectrum shape for bandpowers...", "notice")
-        X.get_signal_shape(
-            filename=signal_spec,
-            r=model_r,
-            filename_fg=foreground_spec,
-            freq_ref=freq_ref,
-            beta_ref=beta_ref,
-        )
 
     if multi_map:
         X.log("Computing multi-map bandpowers...", "notice")
@@ -1000,7 +1031,7 @@ def xfaster_parse(args=None, test=False):
         altname = kwargs.pop("altname", None)
 
         if default is None:
-            default = defaults[name]
+            default = defaults.get(name, None)
         if name in rem_args:
             rem_args.remove(name)
 
@@ -1016,10 +1047,11 @@ def xfaster_parse(args=None, test=False):
         elif default is False:
             opts["action"] = "store_true"
         else:
-            if argtype is None:
-                if isinstance(default, (int, float)):
-                    argtype = type(default)
-            opts["type"] = argtype
+            if opts["action"] not in ["store_true", "store_false"]:
+                if argtype is None:
+                    if isinstance(default, (int, float)):
+                        argtype = type(default)
+                opts["type"] = argtype
 
         argnames = (argname,)
         if short is not None:
@@ -1041,9 +1073,43 @@ def xfaster_parse(args=None, test=False):
     parser_opts.pop("description")
 
     # populate subparsers
-    for mode, helptext in [("run", "run xfaster"), ("submit", "submit xfaster job")]:
+    for mode, helptext in [
+        ("run", "run xfaster"),
+        ("submit", "submit xfaster job"),
+        ("dump", "dump archive from xfaster job to stdout"),
+    ]:
 
         PP = S.add_parser(mode, help=helptext, **parser_opts)
+
+        if mode == "dump":
+            E = PP.add_mutually_exclusive_group(required=True)
+            add_arg(E, "output_file", short="-f", help="Archive filename to print")
+            add_arg(E, "output_root", short="-r")
+            add_arg(PP, "output_tag", short="-t")
+            add_arg(
+                PP,
+                "checkpoint",
+                short="-c",
+                choices=xfc.XFaster.checkpoints,
+                metavar="CHECKPOINT",
+                help="Print all files for this checkpoint",
+            )
+            add_arg(
+                PP,
+                "keys",
+                short="-k",
+                nargs="+",
+                help="Select keys to print from each file",
+            )
+            add_arg(
+                PP,
+                "verbose",
+                short="-v",
+                default=False,
+                action="store_true",
+                help="Print complete entries",
+            )
+            continue
 
         # common options
         G = PP.add_argument_group("common options")
@@ -1075,23 +1141,6 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "data_subset")
         add_arg(G, "data_root2")
         add_arg(G, "data_subset2")
-        add_arg(G, "data_type")
-        add_arg(G, "mask_type")
-        add_arg(G, "signal_type")
-        add_arg(G, "signal_subset")
-        add_arg(G, "signal_transfer_type")
-        add_arg(G, "signal_type_sim")
-        add_arg(G, "noise_type")
-        add_arg(G, "noise_subset")
-        add_arg(G, "noise_type_sim")
-        add_arg(G, "foreground_type")
-        add_arg(G, "foreground_subset")
-        add_arg(G, "foreground_transfer_type")
-        add_arg(G, "foreground_type_sim")
-        add_arg(G, "template_type")
-        add_arg(G, "template_noise_type")
-        add_arg(G, "template_type_sim")
-        add_arg(G, "reference_type")
 
         # binning options
         G = PP.add_argument_group("binning options")
@@ -1117,13 +1166,48 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "lmin_fg", argtype=int)
         add_arg(G, "lmax_fg", argtype=int)
 
+        # beam and kernel options
+        G = PP.add_argument_group("beam and kernel options")
+        add_arg(G, "pixwin")
+        add_arg(G, "mask_type")
+        add_arg(G, "window_lmax")
+        add_arg(G, "apply_gcorr")
+        add_arg(G, "reload_gcorr")
+        add_arg(G, "gcorr_file")
+
+        # sim ensemble options
+        G = PP.add_argument_group("sim ensemble options")
+        add_arg(G, "signal_type")
+        add_arg(G, "signal_subset")
+        add_arg(G, "signal_transfer_type")
+        add_arg(G, "noise_type")
+        add_arg(G, "noise_subset")
+        add_arg(G, "foreground_type")
+        add_arg(G, "foreground_subset")
+        add_arg(G, "foreground_transfer_type")
+        add_arg(G, "qb_file_sim")
+
+        # shape spectrum options
+        G = PP.add_argument_group("shape spectrum options")
+        E = G.add_mutually_exclusive_group()
+        add_arg(E, "signal_spec")
+        add_arg(E, "model_r")
+        add_arg(G, "signal_transfer_spec")
+        add_arg(G, "foreground_spec")
+        add_arg(G, "foreground_transfer_spec")
+        add_arg(G, "freq_ref", argtype=float)
+        add_arg(G, "beta_ref", argtype=float)
+        add_arg(G, "freq_ref_transfer", argtype=float)
+        add_arg(G, "beta_ref_transfer", argtype=float)
+
         # data options
         G = PP.add_argument_group("data options")
+        add_arg(G, "data_type")
+        add_arg(G, "template_type")
+        add_arg(G, "template_noise_type")
         add_arg(G, "template_alpha_tags", nargs="+", metavar="TAG")
         add_arg(G, "template_alpha", nargs="+", argtype=float)
-        add_arg(G, "template_alpha_tags_sim", nargs="+", metavar="TAG")
-        add_arg(G, "template_alpha_sim", nargs="+", argtype=float)
-        add_arg(G, "qb_file_data")
+        add_arg(G, "reference_type")
         E = G.add_mutually_exclusive_group()
         add_arg(E, "ensemble_mean")
         add_arg(E, "ensemble_median")
@@ -1135,20 +1219,19 @@ def xfaster_parse(args=None, test=False):
             choices=["signal", "noise", "foreground", "template"],
             metavar="COMP",
         )
-        add_arg(G, "sim_data_r", argtype=float)
         add_arg(G, "sim_index_default", argtype=int)
         add_arg(G, "sim_index_signal", argtype=int)
         add_arg(G, "sim_index_noise", argtype=int)
         add_arg(G, "sim_index_foreground", argtype=int)
+        add_arg(G, "signal_type_sim")
+        add_arg(G, "sim_data_r", argtype=float)
+        add_arg(G, "noise_type_sim")
+        add_arg(G, "qb_file_data")
+        add_arg(G, "foreground_type_sim")
+        add_arg(G, "template_type_sim")
+        add_arg(G, "template_alpha_tags_sim", nargs="+", metavar="TAG")
+        add_arg(G, "template_alpha_sim", nargs="+", argtype=float)
         add_arg(G, "save_sim_data")
-
-        # beam and kernel options
-        G = PP.add_argument_group("beam and kernel options")
-        add_arg(G, "pixwin")
-        add_arg(G, "window_lmax")
-        add_arg(G, "apply_gcorr")
-        add_arg(G, "reload_gcorr")
-        add_arg(G, "gcorr_file")
 
         # spectrum estimation options
         G = PP.add_argument_group("spectrum estimation options")
@@ -1163,17 +1246,6 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "fix_bb_transfer")
         add_arg(G, "fix_fg_transfer")
         add_arg(G, "null_first_cmb")
-        add_arg(G, "qb_file_sim")
-        E = G.add_mutually_exclusive_group()
-        add_arg(E, "signal_spec")
-        add_arg(E, "model_r")
-        add_arg(G, "signal_transfer_spec")
-        add_arg(G, "foreground_spec")
-        add_arg(G, "foreground_transfer_spec")
-        add_arg(G, "freq_ref", argtype=float)
-        add_arg(G, "beta_ref", argtype=float)
-        add_arg(G, "freq_ref_transfer", argtype=float)
-        add_arg(G, "beta_ref_transfer", argtype=float)
         add_arg(G, "delta_beta_prior", argtype=float)
         add_arg(G, "like_profiles")
         add_arg(G, "like_profile_sigma", argtype=float)
@@ -1316,7 +1388,7 @@ def xfaster_parse(args=None, test=False):
             v = v[0]
 
     # test mode
-    if args.mode != "submit":
+    if args.mode not in ["submit", "dump"]:
         if args.test:
             msg = ",\n".join(
                 "{}={!r}".format(k, v) for k, v in sorted(vars(args).items())
@@ -1630,6 +1702,104 @@ def xfaster_submit(**kwargs):
     return xg.submit(group_by=1, verbose=True)
 
 
+def xfaster_dump(
+    output_file=None,
+    output_root=None,
+    output_tag=None,
+    checkpoint=None,
+    keys=None,
+    verbose=False,
+):
+    """
+    Print the contents of a set of output archive files.
+
+    Arguments
+    ---------
+    output_file : str
+        Path to an output npz archive file.
+    output_root : str
+        Path to an xfaster output directory containing npz archive files.
+        Ignored if ``output_file`` is set.
+    output_tag : str
+        Optional file tag.  Ignored if ``output_file`` is set.
+    checkpoint : str
+        Checkpoint for which to print all matching archive files.  Ignored if
+        ``output_file`` is set.
+    keys : list of str
+        List of keys to print for each matching archive file.
+    verbose : bool
+        If True, print the entire contents of the dictionary.  Otherwise,
+        truncate each entry to a single line.
+    """
+
+    assert output_file is not None or output_root is not None
+
+    if output_file is not None:
+        files = [output_file]
+
+    else:
+        if output_tag is not None:
+            output_root = os.path.join(output_root, output_tag)
+            output_tag = "_{}".format(output_tag)
+        else:
+            output_tag = ""
+
+        patterns = {
+            "all": "*{}.npz".format(output_tag),
+            "files": "files*{}.npz".format(output_tag),
+            "masks": "masks_xcorr*{}.npz".format(output_tag),
+            "kernels": "kernels*{}.npz".format(output_tag),
+            "sims_transfer": "simx_xcorr*{}.npz".format(output_tag),
+            "shape_transfer": "shape_transfer*{}.npz".format(output_tag),
+            "transfer": "transfer_all*{}.npz".format(output_tag),
+            "sims": "sims_xcorr*{}.npz".format(output_tag),
+            "beams": "beams{}.npz".format(output_tag),
+            "data": "data*xcorr*{}.npz".format(output_tag),
+            "sim_data": "sim_data*xcorr*{}.npz".format(output_tag),
+            "template_noise": "template_noise*{}.npz".format(output_tag),
+            "shape": "shape*{}.npz".format(output_tag),
+            "bandpowers": "bandpowers*{}.npz".format(output_tag),
+            "beam_errors": "beam_errors*{}.npz".format(output_tag),
+            "likelihood": "like_mcmc*{}.npz".format(output_tag),
+        }
+
+        if checkpoint is None:
+            checkpoint = "all"
+
+        files = sorted(glob.glob(os.path.join(output_root, patterns[checkpoint])))
+        if not len(files):
+            raise IOError(
+                "No files found for checkpoint {} in directory {}".format(
+                    checkpoint, output_root
+                )
+            )
+
+    for f in files:
+        data = pt.load_and_parse(f)
+        if keys is not None:
+            data = {k: data[k] for k in keys}
+        print("***** {} *****".format(f))
+        print("{")
+        for k, v in data.items():
+            txt = repr(v)
+            if not verbose:
+                txt = txt.split("\n")
+                if len(txt) == 1:
+                    txt = txt[0]
+                else:
+                    if isinstance(v, dict):
+                        txt = repr(v.keys())
+                    elif isinstance(v, np.ndarray):
+                        if v.ndim == 1 and v.dtype.char == "U":
+                            txt = str(list(v))
+                        else:
+                            txt = "shape {} array of {}".format(v.shape, repr(v.dtype))
+                    else:
+                        txt = txt[0] + " ..."
+            print("    '{}': {},".format(k, txt))
+        print("}")
+
+
 def xfaster_main():
     """
     Main entry point for command-line interface.
@@ -1645,3 +1815,7 @@ def xfaster_main():
     elif mode == "run":
         # run the analysis
         xfaster_run(**args)
+
+    elif mode == "dump":
+        # dump archive files to stdout
+        xfaster_dump(**args)
