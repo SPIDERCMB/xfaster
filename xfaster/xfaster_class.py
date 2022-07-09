@@ -5500,7 +5500,7 @@ class XFaster(object):
 
         if transfer_comp:
             null_first_cmb = False
-            save_name = "transfer_{}wbins" if self.weighted_bins else "transfer_{}"
+            save_name = "transfer_{}_wbins" if self.weighted_bins else "transfer_{}"
             save_name = save_name.format(transfer_comp)
         else:
             save_name = "bandpowers"
