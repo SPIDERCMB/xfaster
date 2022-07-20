@@ -2459,6 +2459,8 @@ class XFaster(object):
                     return ret
                 if np.all(template_alpha == self.template_alpha):
                     return ret
+                if subtract_template_noise:
+                    self.get_masked_template_noise(template_noise_type)
                 apply_template()
                 return ret
 
