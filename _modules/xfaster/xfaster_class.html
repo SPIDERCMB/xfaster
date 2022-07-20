@@ -2528,6 +2528,8 @@
                     <span class="k">return</span> <span class="n">ret</span>
                 <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">template_alpha</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">template_alpha</span><span class="p">):</span>
                     <span class="k">return</span> <span class="n">ret</span>
+                <span class="k">if</span> <span class="n">subtract_template_noise</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">get_masked_template_noise</span><span class="p">(</span><span class="n">template_noise_type</span><span class="p">)</span>
                 <span class="n">apply_template</span><span class="p">()</span>
                 <span class="k">return</span> <span class="n">ret</span>
 
