@@ -443,17 +443,6 @@ def load_and_parse(filename, check_version=True):
         if "ref_freq" in data:
             data["freq_ref"] = data.pop("ref_freq")
 
-        if "foreground_type_sim" in data and "foreground_type" not in data:
-            for k in ["type", "root", "files", "root2", "files2"]:
-                data["foreground_" + k] = None
-                data["foreground_transfer_" + k] = None
-            data["num_foreground"] = 0
-            data["num_foreground_transfer"] = 0
-            data["foreground_subset"] = "*"
-
-        if "cls_sim" in data and "cls_fg" not in data:
-            data["cls_fg"] = None
-
         if "map_files" in data:
             data["map_names"] = np.asarray(
                 [os.path.relpath(f, data["map_root"]) for f in data["map_files"]]
