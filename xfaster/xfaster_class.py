@@ -3674,7 +3674,7 @@ class XFaster(object):
                     tbeb_flat = np.ones_like(cls_shape["fg_ee"]) * tbeb_flat
                     cls_shape["fg_eb"] = np.copy(tbeb_flat)
                     cls_shape["fg_tb"] = np.copy(tbeb_flat)
-                else:
+                elif not tbeb and not transfer:
                     cls_shape["fg_eb"] = np.zeros_like(ell, dtype=float)
                     cls_shape["fg_tb"] = np.zeros_like(ell, dtype=float)
 
