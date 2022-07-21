@@ -22,6 +22,7 @@ jobs:
       run: |
         python -m pip install -e .
     - name: Run tutorial to test
+      working-directory: docs/notebooks
       run: |
-        jupyter nbconvert --to script docs/notebooks/XFaster_Tutorial.ipynb
-        python docs/notebooks/XFaster_Tutorial.py
+        jupyter nbconvert --to script XFaster_Tutorial.ipynb
+        python XFaster_Tutorial.py
