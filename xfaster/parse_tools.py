@@ -567,9 +567,9 @@ def fix_data_roots(data, mode="save", root=None, root2=None, inplace=False):
             data[k] = np.array(varr).reshape(v.shape)
         elif isinstance(v, dict):
             v1 = list(v.values())[0]
-            if not (isinstance(v1, np.ndarray) and isinstance(v1.ravel()[0], str)):
+            if isinstance(v1, np.ndarray) and not isinstance(v1.ravel()[0], str):
                 continue
-            if not (isinstance(v1, list) and isinstance(v1[0], str)):
+            if isinstance(v1, list) and not isinstance(v1[0], str):
                 continue
             if not inplace:
                 v = v.copy()
