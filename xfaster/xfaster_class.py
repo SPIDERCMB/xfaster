@@ -1638,14 +1638,14 @@ class XFaster(object):
 
         if len(file_attrs):
             data = data.copy()
-            file_data = {k: data[k] for k in file_attrs}
+            file_data = {k: copy.deepcopy(data[k]) for k in file_attrs}
             # strip data roots for storing to disk
             pt.fix_data_roots(
                 file_data,
                 mode="save",
                 root=self.data_root,
                 root2=getattr(self, "data_root2", None),
-                inplace=False,
+                inplace=True,
             )
             data.update(file_data)
 
@@ -2049,7 +2049,7 @@ class XFaster(object):
         self.log("Mask moments 4: {}".format(self.w4), "debug")
         self.log("G matrix: {}".format(self.gmat), "debug")
 
-        return self.save_data(save_name, from_attrs=save_attrs)
+        return self.save_data(save_name, from_attrs=save_attrs, file_attrs=file_attrs)
 
     def get_noise_residuals(self, filename):
         """
