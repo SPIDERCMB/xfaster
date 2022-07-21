@@ -2890,7 +2890,7 @@ class XFaster(object):
                 file_attrs += ["noise_root2", "noise_files2"]
                 save_attrs += ["cls_noise_null", "cls_res_null"]
 
-        do_fg = foreground_type is not None
+        do_fg = not null_run and foreground_type is not None
         if do_fg:
             opts.update(
                 foreground_type=foreground_type, foreground_subset=foreground_subset
@@ -2959,8 +2959,8 @@ class XFaster(object):
             num_noise = self.num_noise
 
         if do_fg:
-            foreground_files = self.foreground_files
-            num_foreground = self.num_foreground
+            fg_files = self.foreground_files
+            num_fg = self.num_foreground
 
         # process signal, foreground, noise, and S+N
         cls_sig = OrderedDict()
@@ -2986,7 +2986,7 @@ class XFaster(object):
             nsim_min = min([num_signal, num_noise])
         else:
             nsim_min = num_signal
-        nsim_max = max([num_signal, num_foreground, num_noise])
+        nsim_max = max([num_signal, num_fg, num_noise])
         cls_all = np.zeros(
             [nsim_max, len(map_pairs.items()), len(self.specs), self.lmax + 1]
         )
@@ -3085,13 +3085,9 @@ class XFaster(object):
                         if null_run:
                             cls_null1t = np.copy(cls_null1_sig)
 
-                if do_fg and isim < num_foreground:
-                    fimap_alms, _ = process_index(
-                        foreground_files, None, idx, isim, fg_cache
-                    )
-                    fjmap_alms, _ = process_index(
-                        foreground_files, None, jdx, isim, fg_cache
-                    )
+                if do_fg and isim < num_fg:
+                    fimap_alms, _ = process_index(fg_files, None, idx, isim, fg_cache)
+                    fjmap_alms, _ = process_index(fg_files, None, jdx, isim, fg_cache)
                     cls1_fg = self.alm2cl(fimap_alms, fjmap_alms)
 
                 if do_noise and isim < num_noise:
@@ -3149,7 +3145,7 @@ class XFaster(object):
                     quants += [[cls_sig, cls1_sig]]
                     if null_run:
                         quants += [[cls_null_sig, cls_null1_sig]]
-                if do_fg and isim < num_foreground:
+                if do_fg and isim < num_fg:
                     quants += [[cls_fg, cls1_fg]]
 
                 if do_noise and isim < num_noise:
@@ -3195,7 +3191,8 @@ class XFaster(object):
                     cls_null_med[spec][xname] = cls_null_med_arr[xind][s]
 
         self.cls_signal = cls_sig
-        self.cls_fg = cls_fg
+        if do_fg:
+            self.cls_fg = cls_fg
         self.cls_signal_null = cls_null_sig
         self.cls_noise = cls_noise
         self.cls_noise_null = cls_null_noise
@@ -4109,7 +4106,7 @@ class XFaster(object):
             if transfer not in self.signal_components:
                 raise ValueError(
                     "Invalid transfer component {}, must be one of {}".format(
-                        component, ", ".join(self.signal_components)
+                        transfer, ", ".join(self.signal_components)
                     )
                 )
             comps = [transfer]
@@ -4225,7 +4222,7 @@ class XFaster(object):
             if transfer not in self.signal_components:
                 raise ValueError(
                     "Invalid transfer component {}, must be one of {}".format(
-                        component, ", ".join(self.signal_components)
+                        transfer, ", ".join(self.signal_components)
                     )
                 )
             if "eb" in specs:
@@ -4622,8 +4619,8 @@ class XFaster(object):
         nell : OrderedDict
             Dictionary of noise cross spectra, or None if ``transfer`` is set.
         debias : OrderedDict
-            Dictionary of debiased data cross spectra, or None if
-            ``transfer`` is set.
+            Dictionary of debiased data cross spectra, or None if ``transfer``
+            is set.
         """
         # select map pairs
         if map_tag is not None:
