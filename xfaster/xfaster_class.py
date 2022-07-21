@@ -2953,6 +2953,10 @@ class XFaster(object):
             noise_files2 = self.noise_files2 if null_run else None
             num_noise = self.num_noise
 
+        if do_fg:
+            foreground_files = self.foreground_files
+            num_foreground = self.num_foreground
+
         # process signal, foreground, noise, and S+N
         cls_sig = OrderedDict()
         cls_fg = OrderedDict() if do_fg else None
