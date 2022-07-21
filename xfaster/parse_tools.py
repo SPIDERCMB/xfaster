@@ -560,18 +560,21 @@ def fix_data_roots(data, mode="save", root=None, root2=None, inplace=False):
         v = data[k]
         if isinstance(v, str):
             data[k] = replace_root(k, v)
+        elif isinstance(v, list) and isinstance(v[0], str):
+            data[k] = [replace_root(k, vv) for vv in v]
         elif isinstance(v, np.ndarray) and isinstance(v.ravel()[0], str):
             varr = [replace_root(k, vv) for vv in v.ravel()]
             data[k] = np.array(varr).reshape(v.shape)
         elif isinstance(v, dict):
             v1 = list(v.values())[0]
-            if not isinstance(v1, np.ndarray):
+            if not (isinstance(v1, np.ndarray) and isinstance(v1.ravel()[0], str)):
                 continue
-            if not isinstance(v1.ravel()[0], str):
+            if not (isinstance(v1, list) and isinstance(v1[0], str)):
                 continue
             if not inplace:
                 v = v.copy()
             for kk, vv in v.items():
+                vv = np.asarray(vv)
                 varr = [replace_root(k, vvv) for vvv in vv.ravel()]
                 v[kk] = np.array(varr).reshape(vv.shape)
             if not inplace:

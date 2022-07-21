@@ -715,8 +715,8 @@ def xfaster_run(
     shape_opts.pop("freq_ref_transfer")
     shape_opts.pop("beta_ref_transfer")
     shape_transfer_opts = shape_opts.copy()
-    shape_transfer_opts["filename"] = filename_transfer
-    shape_transfer_opts["filename_fg"] = filename_transfer_fg
+    shape_transfer_opts["filename"] = signal_transfer_spec
+    shape_transfer_opts["filename_fg"] = foreground_transfer_spec
     shape_transfer_opts["freq_ref"] = freq_ref_transfer
     shape_transfer_opts["beta_ref"] = beta_ref_transfer
 
