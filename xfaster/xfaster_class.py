@@ -2892,7 +2892,9 @@ class XFaster(object):
 
         do_fg = foreground_type is not None
         if do_fg:
-            opts.update(foreground_type=foreground_type, foreground_subset=foreground_subset)
+            opts.update(
+                foreground_type=foreground_type, foreground_subset=foreground_subset
+            )
             file_attrs += [
                 "foreground_type",
                 "foreground_subset",
@@ -2916,7 +2918,10 @@ class XFaster(object):
         # don't force rerun the signal sims if previously loaded sims are of the
         # same type
         if hasattr(self, "signal_type") and self.signal_type == signal_type:
-            if not hasattr(self, "foreground_type") or self.foreground_type == foreground_type:
+            if (
+                not hasattr(self, "foreground_type")
+                or self.foreground_type == foreground_type
+            ):
                 self.force_rerun[cp] = False
 
         ret = self.load_data(
@@ -4056,7 +4061,7 @@ class XFaster(object):
 
         return self.bin_def
 
-    def kernel_precalc(self, map_tag=None, component=None, transfer=False):
+    def kernel_precalc(self, map_tag=None, transfer=False):
         """
         Compute the mixing kernels M_ll' = K_ll' * F_l' * B_l'^2.  Called by
         ``bin_cl_template`` to pre-compute kernel terms.
@@ -4067,12 +4072,11 @@ class XFaster(object):
             If supplied, the kernels are computed only for the given map tag
             (or cross if map_tag is map_tag1:map_tag2).
             Otherwise, it is computed for all maps and crosses.
-        component : str or list
-            If supplied, the matrix is computed only for the given component(s).
-            Required if ``transfer=True``.
-        transfer : bool
-            If True, assumes a unity transfer function for all bins for the
-            given component(s).
+        transfer : bool or str
+            If supplied as a signal component name, assumes a unity transfer
+            function for all bins for the given component.  If True, the
+            ``"cmb"`` component is assumed.  If False, the pre-computed
+            transfer function is applied.
 
         Returns
         -------
@@ -4098,23 +4102,23 @@ class XFaster(object):
         lk = slice(0, lmax + 1)
         mll = OrderedDict()
 
-        if component is None:
-            component = list(self.signal_components)
-        if not isinstance(component, list):
-            if component not in self.signal_components:
+        comps = []
+        if transfer:
+            if transfer is True:
+                transfer = "cmb"
+            if transfer not in self.signal_components:
                 raise ValueError(
-                    "Invalid component {}, must be one of {}".format(
+                    "Invalid transfer component {}, must be one of {}".format(
                         component, ", ".join(self.signal_components)
                     )
                 )
-            component = [component]
+            comps = [transfer]
+        else:
+            comps = list(self.signal_components)
 
         for stag in self.bin_def:
             comp, spec = stag.split("_", 1)
-            if comp not in self.signal_components:
-                continue
-
-            if transfer and comp not in component:
+            if comp not in comps:
                 continue
 
             mll[stag] = OrderedDict()
@@ -4156,7 +4160,6 @@ class XFaster(object):
         self,
         cls_shape=None,
         map_tag=None,
-        component=None,
         transfer=False,
         beam_error=False,
         use_precalc=True,
@@ -4176,14 +4179,12 @@ class XFaster(object):
             If supplied, the Cbl is computed only for the given map tag
             (or cross if map_tag is map_tag1:map_tag2).
             Otherwise, it is computed for all maps and crosses.
-        component : str or list
-            If supplied, the Cbl is computed only for the given component(s).
-            Required if ``transfer=True``.
-        transfer : bool
-            If True, assumes a unity transfer function for all bins for the
-            given component, and the output Cbl is used to compute the transfer
-            functions for that component, which are then loaded when this method
-            is called with ``transfer=False``.
+        transfer : bool or str
+            If supplied, assumes a unity transfer function for all bins for the
+            given signal component, and the output Cbl is used to compute the
+            transfer functions for that component, which are then loaded when
+            this method is called with ``transfer=False``.  If True, the
+            ``"cmb"`` component is assumed.
         beam_error : bool
             If True, use beam error envelope instead of beam to get cbls that
             are 1 sigma beam error envelope offset of signal terms.
@@ -4219,23 +4220,26 @@ class XFaster(object):
 
         specs = list(self.specs)
         if transfer:
-            assert (
-                component in self.signal_components
-            ), "Argument `component` required if `transfer=True`"
+            if transfer is True:
+                transfer = "cmb"
+            if transfer not in self.signal_components:
+                raise ValueError(
+                    "Invalid transfer component {}, must be one of {}".format(
+                        component, ", ".join(self.signal_components)
+                    )
+                )
             if "eb" in specs:
                 specs.remove("eb")
             if "tb" in specs:
                 specs.remove("tb")
-            if component == "fg" and "te" in specs:
+            if transfer == "fg" and "te" in specs:
                 specs.remove("te")
 
         lmax = self.lmax
         lmax_kern = lmax  # 2 * self.lmax
 
         if getattr(self, "mll", None) is None or not use_precalc:
-            mll = self.kernel_precalc(
-                map_tag=map_tag, component=component, transfer=transfer
-            )
+            mll = self.kernel_precalc(map_tag=map_tag, transfer=transfer)
             if use_precalc:
                 self.mll = mll
         else:
@@ -4250,13 +4254,13 @@ class XFaster(object):
         cbl = OrderedDict()
 
         comps = []
-        if component:
-            comps = component if isinstance(component, list) else [component]
+        if transfer:
+            comps = [transfer]
         else:
             for comp in self.signal_components:
                 if any([k.startswith(comp + "_") for k in cls_shape]):
                     comps += [comp]
-            if "res" in self.components and not transfer:
+            if "res" in self.components:
                 comps += ["res"]
                 cls_noise = self.cls_noise_null if self.null_run else self.cls_noise
                 cls_res = self.cls_res_null if self.null_run else self.cls_res
@@ -4591,7 +4595,7 @@ class XFaster(object):
 
         return cls
 
-    def get_data_spectra(self, map_tag=None, transfer_comp=False, do_noise=True):
+    def get_data_spectra(self, map_tag=None, transfer=False, do_noise=True):
         """
         Return data and noise spectra for the given map tag(s).  Data spectra
         and signal/noise sim spectra must have been precomputed or loaded from
@@ -4602,7 +4606,7 @@ class XFaster(object):
         map_tag : str
             If None, all map-map cross-spectra are included in the outputs.
             Otherwise, only the autospectra of the given map are included.
-        transfer_comp : str
+        transfer : bool or str
             If supplied, the data cls are the average of the simulations for the
             given component, and noise cls are ignored.  If False, the data cls
             are either ``cls_data_null`` (for null tests) or ``cls_data``.  See
@@ -4616,10 +4620,10 @@ class XFaster(object):
         obs : OrderedDict
             Dictionary of data cross spectra
         nell : OrderedDict
-            Dictionary of noise cross spectra, or None if ``transfer_comp`` is set.
+            Dictionary of noise cross spectra, or None if ``transfer`` is set.
         debias : OrderedDict
             Dictionary of debiased data cross spectra, or None if
-            ``transfer_comp`` is set.
+            ``transfer`` is set.
         """
         # select map pairs
         if map_tag is not None:
@@ -4631,23 +4635,23 @@ class XFaster(object):
         # select spectra
         tbeb = "tb" in self.specs
         specs = list(self.specs)
-        if transfer_comp or not tbeb:
+        if transfer or not tbeb:
             if "eb" in specs:
                 specs.remove("eb")
             if "tb" in specs:
                 specs.remove("tb")
-            if transfer_comp == "fg" and "te" in specs:
+            if transfer == "fg" and "te" in specs:
                 specs.remove("te")
 
         # obs depends on what you're computing
-        if transfer_comp:
-            if transfer_comp == "cmb":
+        if transfer:
+            if transfer is True or transfer == "cmb":
                 obs_quant = self.cls_signal
-            elif transfer_comp == "fg":
+            elif transfer == "fg":
                 obs_quant = self.cls_fg
             else:
                 raise ValueError(
-                    "Unknown transfer function component {}".format(transfer_comp)
+                    "Unknown transfer function component {}".format(transfer)
                 )
         elif self.null_run:
             if self.reference_type is not None:
@@ -4669,7 +4673,7 @@ class XFaster(object):
         if not do_noise:
             return obs
 
-        elif transfer_comp:
+        elif transfer:
             return obs, None, None
 
         nell = OrderedDict()
@@ -5396,7 +5400,7 @@ class XFaster(object):
         iter_max=200,
         converge_criteria=0.005,
         qb_start=None,
-        transfer_comp=None,
+        transfer=False,
         save_iters=False,
         null_first_cmb=False,
         delta_beta_prior=None,
@@ -5430,7 +5434,7 @@ class XFaster(object):
         qb_start : OrderedDict
             Initial guess at ``qb`` bandpower amplitudes.  If None, unity is
             assumed for all bins.
-        transfer_comp : str
+        transfer : bool or str
             If set, the input Cls passed to ``fisher_calc`` are the average
             of the component simulations, and noise cls are ignored.
             If False, the input Cls are either ``cls_data_null``
@@ -5485,7 +5489,7 @@ class XFaster(object):
                 cls_shape : shape spectrum
                 iters : number of iterations completed
 
-            If ``transfer_comp`` is not set, this dictionary also contains::
+            If ``transfer`` is not set, this dictionary also contains::
 
                 qb_transfer : transfer function amplitudes
                 transfer : ell-by-ell transfer function
@@ -5495,16 +5499,19 @@ class XFaster(object):
         Notes
         -----
         This method stores outputs to files with name 'transfer' for transfer
-        function runs (if ``transfer_comp`` is set), otherwise with name
+        function runs (if ``transfer`` is set), otherwise with name
         'bandpowers'.  Outputs from each individual iteration, containing
         only the quantities that change with each step, are stored in
         separate files with the same name (and different index).
         """
 
-        if transfer_comp:
+        if transfer:
             null_first_cmb = False
             save_name = "transfer_{}_wbins" if self.weighted_bins else "transfer_{}"
-            save_name = save_name.format(transfer_comp)
+            if transfer is True:
+                transfer = "cmb"
+            assert transfer in self.signal_components
+            save_name = save_name.format(transfer)
         else:
             save_name = "bandpowers"
 
@@ -5516,12 +5523,12 @@ class XFaster(object):
             qb = OrderedDict()
             for k, v in self.bin_def.items():
                 # transfer function for signal component
-                if transfer_comp:
+                if transfer:
                     if "eb" in k or "tb" in k:
                         continue
-                    if transfer_comp == "fg" and "te" in k:
+                    if transfer == "fg" and "te" in k:
                         continue
-                    if not k.startswith(transfer_comp):
+                    if not k.startswith(transfer):
                         continue
                     qb[k] = np.ones(len(v))
                     continue
@@ -5539,9 +5546,7 @@ class XFaster(object):
         else:
             qb = qb_start
 
-        obs, nell, debias = self.get_data_spectra(
-            map_tag=map_tag, transfer_comp=transfer_comp
-        )
+        obs, nell, debias = self.get_data_spectra(map_tag=map_tag, transfer=transfer)
 
         bin_index = pt.dict_to_index(self.bin_def)
 
@@ -5635,7 +5640,7 @@ class XFaster(object):
                             beta_err=beta_err,
                         )
 
-                self.save_data(save_name, bp_opts=not transfer_comp, **out)
+                self.save_data(save_name, bp_opts=not transfer, **out)
 
             (nans,) = np.where(np.isnan(qb_new_arr))
             if len(nans):
@@ -5658,7 +5663,7 @@ class XFaster(object):
                 )
 
             if np.nanmax(np.abs(fqb)) < converge_criteria:
-                if not transfer_comp:
+                if not transfer:
                     # Calculate final fisher matrix without conditioning
                     self.log("Calculating final Fisher matrix.", "info")
                     _, inv_fish = self.fisher_calc(
@@ -5687,15 +5692,13 @@ class XFaster(object):
             else:
                 msg = "{} {} did not converge in {} iterations".format(
                     "Multi-map" if map_tag is None else "Map {}".format(map_tag),
-                    "{} transfer function".format(transfer_comp)
-                    if transfer_comp
-                    else "spectrum",
+                    "{} transfer function".format(transfer) if transfer else "spectrum",
                     iter_max,
                 )
                 # Check the slope of the last ten fqb_maxpoints.
                 # If there's not a downward trend, adjust conditioning
                 # criteria to help convergence.
-                if len(prev_fqb) <= 10 or transfer_comp:
+                if len(prev_fqb) <= 10 or transfer:
                     continue
                 m, b = np.polyfit(np.arange(10), prev_fqb[-10:], 1)
                 if m > 0:  # Not converging
@@ -5770,7 +5773,7 @@ class XFaster(object):
                 Dmat_obs=self.Dmat_obs,
             )
 
-        if not transfer_comp:
+        if not transfer:
             out.update(
                 qb_transfer=self.qb_transfer,
                 transfer=self.transfer,
@@ -5778,7 +5781,7 @@ class XFaster(object):
             if self.template_type is not None:
                 out.update(template_alpha=self.template_alpha)
 
-        if success and not transfer_comp:
+        if success and not transfer:
             # do one more fisher calc that doesn't include sample variance
             # set qb=very close to 0. 0 causes singular matrix problems.
             # don't do this for noise residual bins
@@ -5918,11 +5921,7 @@ class XFaster(object):
             self.warn(msg)
 
         return self.save_data(
-            save_name,
-            map_tag=map_tag,
-            bp_opts=not transfer_comp,
-            extra_tag=file_tag,
-            **out
+            save_name, map_tag=map_tag, bp_opts=not transfer, extra_tag=file_tag, **out
         )
 
     def get_transfer(
@@ -6103,11 +6102,11 @@ class XFaster(object):
                     "info",
                 )
                 self.clear_precalc()
-                cbl = self.bin_cl_template(map_tag=m0, component=comp, transfer=True)
+                cbl = self.bin_cl_template(map_tag=m0, transfer=comp)
                 ret = self.fisher_iterate(
                     cbl,
                     m0,
-                    transfer_comp=comp,
+                    transfer=comp,
                     iter_max=iter_max,
                     converge_criteria=converge_criteria,
                     save_iters=save_iters,

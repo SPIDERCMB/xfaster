@@ -509,7 +509,10 @@ def xfaster_run(
         all_opts["foreground_transfer_type"] = foreground_transfer_type
 
     # make sure sims get rerun correctly
-    if signal_transfer_type == signal_type and foreground_transfer_type == foreground_type:
+    if (
+        signal_transfer_type == signal_type
+        and foreground_transfer_type == foreground_type
+    ):
         # if signal types match, then sims are run before computing the
         # transfer function, so need to set the correct checkpoint to rerun
         if checkpoint == "sims":
