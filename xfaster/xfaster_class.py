@@ -2901,9 +2901,6 @@ class XFaster(object):
                 "num_foreground",
             ]
             save_attrs += ["cls_fg"]
-            if null_run:
-                file_attrs += ["foreground_root2", "foreground_files2"]
-                save_attrs += ["cls_fg_null"]
 
         save_attrs += file_attrs
 
