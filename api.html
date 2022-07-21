@@ -666,9 +666,9 @@ updates to the latest version.</p></li>
 
 <dl class="function">
 <dt id="xfaster.parse_tools.fix_data_roots">
-<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">fix_data_roots</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">mode='save'</em>, <em class="sig-param">root=None</em>, <em class="sig-param">root2=None</em>, <em class="sig-param">inplace=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#fix_data_roots"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.fix_data_roots" title="Permalink to this definition"></a></dt>
+<code class="sig-prename descclassname">xfaster.parse_tools.</code><code class="sig-name descname">fix_data_roots</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">mode='save'</em>, <em class="sig-param">root=None</em>, <em class="sig-param">root2=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/parse_tools.html#fix_data_roots"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#xfaster.parse_tools.fix_data_roots" title="Permalink to this definition"></a></dt>
 <dd><p>Remove or apply the data root to a set of file paths in an output checkpoint
-file.</p>
+file.  Operations are performed in-place on the input dictionary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -680,12 +680,10 @@ appropriate data root to any file paths, so that all paths point to
 existing files within the given data roots.</p></li>
 <li><p><strong>root2</strong> (<em>root</em><em>,</em>) – The data root (and second data root, for null tests) to be removed or
 applied to the file path items in <code class="docutils literal notranslate"><span class="pre">data</span></code>.</p></li>
-<li><p><strong>inplace</strong> (<em>bool</em>) – If True, updates the input data dictionary.  Otherwise, creates a copy
-before making any changes.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>data</strong> – Updated data dictionary</p>
+<dd class="field-even"><p><strong>data</strong> – Updated data dictionary.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>dict</p>
