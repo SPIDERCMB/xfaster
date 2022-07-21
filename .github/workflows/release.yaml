@@ -22,9 +22,10 @@ jobs:
         python -m build
         python -m pip install dist/xfaster*.whl
     - name: Run tutorial to test
+      working-directory: docs/notebooks
       run: |
-        jupyter nbconvert --to script docs/notebooks/XFaster_Tutorial.ipynb
-        python docs/notebooks/XFaster_Tutorial.py
+        jupyter nbconvert --to script XFaster_Tutorial.ipynb
+        python XFaster_Tutorial.py
     - name: Upload to PyPI
       env:
         TWINE_USERNAME: __token__
