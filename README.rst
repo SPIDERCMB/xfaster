@@ -21,10 +21,6 @@ example:
     an example configuration for running xfaster
 
 
-To get started, install xfaster:
+To get started, install xfaster::
 
-    python setup.py install
-
-Or, if running on a shared machine:
-
-    python setup.py install --user
+    pip install xfaster

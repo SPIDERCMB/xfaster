@@ -1507,7 +1507,6 @@ class XFaster(object):
                 mode="load",
                 root=self.data_root,
                 root2=getattr(self, "data_root2", None),
-                inplace=True,
             )
 
         if shape_ref is not None and shape_ref not in fields:
@@ -1650,7 +1649,6 @@ class XFaster(object):
                 mode="save",
                 root=self.data_root,
                 root2=getattr(self, "data_root2", None),
-                inplace=True,
             )
             data.update(file_data)
 

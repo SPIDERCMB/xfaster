@@ -461,7 +461,7 @@ def load_and_parse(filename, check_version=True):
     if version in [1, 2, 3]:
 
         if "data_root" in data:
-            fix_data_roots(data, mode="save", inplace=True)
+            fix_data_roots(data, mode="save")
 
         data["data_version"] = dv
 
@@ -488,10 +488,10 @@ def save(output_file, **data):
     np.savez_compressed(output_file, **data)
 
 
-def fix_data_roots(data, mode="save", root=None, root2=None, inplace=False):
+def fix_data_roots(data, mode="save", root=None, root2=None):
     """
     Remove or apply the data root to a set of file paths in an output checkpoint
-    file.
+    file.  Operations are performed in-place on the input dictionary.
 
     Arguments
     ---------
@@ -506,14 +506,11 @@ def fix_data_roots(data, mode="save", root=None, root2=None, inplace=False):
     root, root2 : str
         The data root (and second data root, for null tests) to be removed or
         applied to the file path items in ``data``.
-    inplace : bool
-        If True, updates the input data dictionary.  Otherwise, creates a copy
-        before making any changes.
 
     Returns
     -------
     data : dict
-        Updated data dictionary
+        Updated data dictionary.
     """
 
     assert mode in ["load", "save"]
@@ -522,9 +519,6 @@ def fix_data_roots(data, mode="save", root=None, root2=None, inplace=False):
         root = data["data_root"]
     if root2 is None and "data_root2" in data:
         root2 = data["data_root2"]
-
-    if not inplace:
-        data = data.copy()
 
     def replace_root(k, v):
         if not isinstance(v, str):
@@ -568,14 +562,10 @@ def fix_data_roots(data, mode="save", root=None, root2=None, inplace=False):
                 continue
             if isinstance(v1, list) and not isinstance(v1[0], str):
                 continue
-            if not inplace:
-                v = v.copy()
             for kk, vv in v.items():
                 vv = np.asarray(vv)
                 varr = [replace_root(k, vvv) for vvv in vv.ravel()]
                 v[kk] = np.array(varr).reshape(vv.shape)
-            if not inplace:
-                data[k] = v
 
     return data
 
