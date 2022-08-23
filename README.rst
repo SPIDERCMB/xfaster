@@ -1,5 +1,21 @@
+=======
 XFaster
--------
+=======
+
+.. image:: https://badge.fury.io/py/xfaster.svg
+    :target: https://badge.fury.io/py/xfaster
+
+.. image:: https://github.com/SPIDER-CMB/xfaster/actions/workflows/release.yaml/badge.svg
+   :target: https://github.com/SPIDER-CMB/xfaster/actions/workflows/release.yaml
+
+.. image:: https://github.com/SPIDER-CMB/xfaster/actions/workflows/documentation.yaml/badge.svg
+   :target: https://github.com/SPIDER-CMB/xfaster/actions/workflows/documentation.yaml
+
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5248317.svg
+   :target: https://doi.org/10.5281/zenodo.5248317
+   
+Description
+-----------
 
 Implementation by A. Gambrel, A. Rahlin, C. Contaldi.
 
