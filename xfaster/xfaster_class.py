@@ -2959,6 +2959,8 @@ class XFaster(object):
             noise_files = self.noise_files
             noise_files2 = self.noise_files2 if null_run else None
             num_noise = self.num_noise
+        else:
+            num_noise = 0
 
         if do_fg:
             fg_files = self.foreground_files
