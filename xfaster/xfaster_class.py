@@ -2965,6 +2965,8 @@ class XFaster(object):
         if do_fg:
             fg_files = self.foreground_files
             num_fg = self.num_foreground
+        else:
+            num_fg = 0
 
         # process signal, foreground, noise, and S+N
         cls_sig = OrderedDict()
@@ -2986,10 +2988,7 @@ class XFaster(object):
                 if null_run:
                     cls_null_res[k] = OrderedDict()
 
-        if num_noise != 0:
-            nsim_min = min([num_signal, num_noise])
-        else:
-            nsim_min = num_signal
+        nsim_min = min([x for x in [num_signal, num_noise, num_fg] if x != 0])
         nsim_max = max([num_signal, num_fg, num_noise])
         cls_all = np.zeros(
             [nsim_max, len(map_pairs.items()), len(self.specs), self.lmax + 1]
