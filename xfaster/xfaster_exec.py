@@ -874,6 +874,7 @@ def xfaster_parse(args=None, test=False):
 
     import argparse as ap
     from textwrap import dedent
+    from . import __version__ as version
 
     parser_opts = dict(
         description="Run the XFaster algorithm",
@@ -900,6 +901,9 @@ def xfaster_parse(args=None, test=False):
         P = TestParser(**parser_opts)
     else:
         P = ap.ArgumentParser(**parser_opts)
+
+    # add --version option
+    P.add_argument("--version", action="version", version="%(prog)s " + version)
 
     # get default argument values from xfaster_run
     defaults = get_func_defaults(xfaster_run)
