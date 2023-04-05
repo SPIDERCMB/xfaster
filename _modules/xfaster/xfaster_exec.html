@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>xfaster.xfaster_exec &mdash; xfaster 1.1.0 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/nbsphinx-code-cells.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -26,14 +27,18 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../../index.html" class="icon icon-home"> xfaster
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            xfaster
           </a>
               <div class="version">
                 1.1.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -60,9 +65,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="../index.html">Module code</a> &raquo;</li>
-      <li>xfaster.xfaster_exec</li>
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">xfaster.xfaster_exec</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -948,6 +953,7 @@
 
     <span class="kn">import</span> <span class="nn">argparse</span> <span class="k">as</span> <span class="nn">ap</span>
     <span class="kn">from</span> <span class="nn">textwrap</span> <span class="kn">import</span> <span class="n">dedent</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">__version__</span> <span class="k">as</span> <span class="n">version</span>
 
     <span class="n">parser_opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Run the XFaster algorithm&quot;</span><span class="p">,</span>
@@ -974,6 +980,9 @@
         <span class="n">P</span> <span class="o">=</span> <span class="n">TestParser</span><span class="p">(</span><span class="o">**</span><span class="n">parser_opts</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">P</span> <span class="o">=</span> <span class="n">ap</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="o">**</span><span class="n">parser_opts</span><span class="p">)</span>
+
+    <span class="c1"># add --version option</span>
+    <span class="n">P</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--version&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;version&quot;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(prog)s</span><span class="s2"> &quot;</span> <span class="o">+</span> <span class="n">version</span><span class="p">)</span>
 
     <span class="c1"># get default argument values from xfaster_run</span>
     <span class="n">defaults</span> <span class="o">=</span> <span class="n">get_func_defaults</span><span class="p">(</span><span class="n">xfaster_run</span><span class="p">)</span>

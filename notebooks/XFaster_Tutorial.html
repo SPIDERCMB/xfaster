@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tutorial &mdash; xfaster 1.1.0 documentation</title><link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/nbsphinx-code-cells.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
@@ -28,14 +29,18 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../index.html" class="icon icon-home"> xfaster
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            xfaster
           </a>
               <div class="version">
                 1.1.0
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -92,8 +97,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Tutorial</li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Tutorial</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/notebooks/XFaster_Tutorial.ipynb.txt" rel="nofollow"> View page source</a>
       </li>
@@ -103,285 +108,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
-<style>
-/* CSS for nbsphinx extension */
-
-/* remove conflicting styling from Sphinx themes */
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt *,
-div.nbinput.container div.input_area pre,
-div.nboutput.container div.output_area pre,
-div.nbinput.container div.input_area .highlight,
-div.nboutput.container div.output_area .highlight {
-    border: none;
-    padding: 0;
-    margin: 0;
-    box-shadow: none;
-}
-
-div.nbinput.container > div[class*=highlight],
-div.nboutput.container > div[class*=highlight] {
-    margin: 0;
-}
-
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt * {
-    background: none;
-}
-
-div.nboutput.container div.output_area .highlight,
-div.nboutput.container div.output_area pre {
-    background: unset;
-}
-
-div.nboutput.container div.output_area div.highlight {
-    color: unset;  /* override Pygments text color */
-}
-
-/* avoid gaps between output lines */
-div.nboutput.container div[class*=highlight] pre {
-    line-height: normal;
-}
-
-/* input/output containers */
-div.nbinput.container,
-div.nboutput.container {
-    display: -webkit-flex;
-    display: flex;
-    align-items: flex-start;
-    margin: 0;
-    width: 100%;
-}
-@media (max-width: 540px) {
-    div.nbinput.container,
-    div.nboutput.container {
-        flex-direction: column;
-    }
-}
-
-/* input container */
-div.nbinput.container {
-    padding-top: 5px;
-}
-
-/* last container */
-div.nblast.container {
-    padding-bottom: 5px;
-}
-
-/* input prompt */
-div.nbinput.container div.prompt pre {
-    color: #307FC1;
-}
-
-/* output prompt */
-div.nboutput.container div.prompt pre {
-    color: #BF5B3D;
-}
-
-/* all prompts */
-div.nbinput.container div.prompt,
-div.nboutput.container div.prompt {
-    width: 4.5ex;
-    padding-top: 5px;
-    position: relative;
-    user-select: none;
-}
-
-div.nbinput.container div.prompt > div,
-div.nboutput.container div.prompt > div {
-    position: absolute;
-    right: 0;
-    margin-right: 0.3ex;
-}
-
-@media (max-width: 540px) {
-    div.nbinput.container div.prompt,
-    div.nboutput.container div.prompt {
-        width: unset;
-        text-align: left;
-        padding: 0.4em;
-    }
-    div.nboutput.container div.prompt.empty {
-        padding: 0;
-    }
-
-    div.nbinput.container div.prompt > div,
-    div.nboutput.container div.prompt > div {
-        position: unset;
-    }
-}
-
-/* disable scrollbars on prompts */
-div.nbinput.container div.prompt pre,
-div.nboutput.container div.prompt pre {
-    overflow: hidden;
-}
-
-/* input/output area */
-div.nbinput.container div.input_area,
-div.nboutput.container div.output_area {
-    -webkit-flex: 1;
-    flex: 1;
-    overflow: auto;
-}
-@media (max-width: 540px) {
-    div.nbinput.container div.input_area,
-    div.nboutput.container div.output_area {
-        width: 100%;
-    }
-}
-
-/* input area */
-div.nbinput.container div.input_area {
-    border: 1px solid #e0e0e0;
-    border-radius: 2px;
-    /*background: #f5f5f5;*/
-}
-
-/* override MathJax center alignment in output cells */
-div.nboutput.container div[class*=MathJax] {
-    text-align: left !important;
-}
-
-/* override sphinx.ext.imgmath center alignment in output cells */
-div.nboutput.container div.math p {
-    text-align: left;
-}
-
-/* standard error */
-div.nboutput.container div.output_area.stderr {
-    background: #fdd;
-}
-
-/* ANSI colors */
-.ansi-black-fg { color: #3E424D; }
-.ansi-black-bg { background-color: #3E424D; }
-.ansi-black-intense-fg { color: #282C36; }
-.ansi-black-intense-bg { background-color: #282C36; }
-.ansi-red-fg { color: #E75C58; }
-.ansi-red-bg { background-color: #E75C58; }
-.ansi-red-intense-fg { color: #B22B31; }
-.ansi-red-intense-bg { background-color: #B22B31; }
-.ansi-green-fg { color: #00A250; }
-.ansi-green-bg { background-color: #00A250; }
-.ansi-green-intense-fg { color: #007427; }
-.ansi-green-intense-bg { background-color: #007427; }
-.ansi-yellow-fg { color: #DDB62B; }
-.ansi-yellow-bg { background-color: #DDB62B; }
-.ansi-yellow-intense-fg { color: #B27D12; }
-.ansi-yellow-intense-bg { background-color: #B27D12; }
-.ansi-blue-fg { color: #208FFB; }
-.ansi-blue-bg { background-color: #208FFB; }
-.ansi-blue-intense-fg { color: #0065CA; }
-.ansi-blue-intense-bg { background-color: #0065CA; }
-.ansi-magenta-fg { color: #D160C4; }
-.ansi-magenta-bg { background-color: #D160C4; }
-.ansi-magenta-intense-fg { color: #A03196; }
-.ansi-magenta-intense-bg { background-color: #A03196; }
-.ansi-cyan-fg { color: #60C6C8; }
-.ansi-cyan-bg { background-color: #60C6C8; }
-.ansi-cyan-intense-fg { color: #258F8F; }
-.ansi-cyan-intense-bg { background-color: #258F8F; }
-.ansi-white-fg { color: #C5C1B4; }
-.ansi-white-bg { background-color: #C5C1B4; }
-.ansi-white-intense-fg { color: #A1A6B2; }
-.ansi-white-intense-bg { background-color: #A1A6B2; }
-
-.ansi-default-inverse-fg { color: #FFFFFF; }
-.ansi-default-inverse-bg { background-color: #000000; }
-
-.ansi-bold { font-weight: bold; }
-.ansi-underline { text-decoration: underline; }
-
-
-div.nbinput.container div.input_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight].math,
-div.nboutput.container div.output_area.rendered_html,
-div.nboutput.container div.output_area > div.output_javascript,
-div.nboutput.container div.output_area:not(.rendered_html) > img{
-    padding: 5px;
-    margin: 0;
-}
-
-/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
-div.nbinput.container div.input_area > div[class^='highlight'],
-div.nboutput.container div.output_area > div[class^='highlight']{
-    overflow-y: hidden;
-}
-
-/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
-.prompt .copybtn {
-    display: none;
-}
-
-/* Some additional styling taken form the Jupyter notebook CSS */
-.jp-RenderedHTMLCommon table,
-div.rendered_html table {
-  border: none;
-  border-collapse: collapse;
-  border-spacing: 0;
-  color: black;
-  font-size: 12px;
-  table-layout: fixed;
-}
-.jp-RenderedHTMLCommon thead,
-div.rendered_html thead {
-  border-bottom: 1px solid black;
-  vertical-align: bottom;
-}
-.jp-RenderedHTMLCommon tr,
-.jp-RenderedHTMLCommon th,
-.jp-RenderedHTMLCommon td,
-div.rendered_html tr,
-div.rendered_html th,
-div.rendered_html td {
-  text-align: right;
-  vertical-align: middle;
-  padding: 0.5em 0.5em;
-  line-height: normal;
-  white-space: normal;
-  max-width: none;
-  border: none;
-}
-.jp-RenderedHTMLCommon th,
-div.rendered_html th {
-  font-weight: bold;
-}
-.jp-RenderedHTMLCommon tbody tr:nth-child(odd),
-div.rendered_html tbody tr:nth-child(odd) {
-  background: #f5f5f5;
-}
-.jp-RenderedHTMLCommon tbody tr:hover,
-div.rendered_html tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
-}
-
-/* CSS overrides for sphinx_rtd_theme */
-
-/* 24px margin */
-.nbinput.nblast.container,
-.nboutput.nblast.container {
-    margin-bottom: 19px;  /* padding has already 5px */
-}
-
-/* ... except between code cells! */
-.nblast.container + .nbinput.container {
-    margin-top: -19px;
-}
-
-.admonition > p:before {
-    margin-right: 4px;  /* make room for the exclamation icon */
-}
-
-/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
-.math {
-    text-align: unset;
-}
-</style>
-<div class="section" id="Tutorial">
+  <div class="section" id="Tutorial">
 <h1>Tutorial<a class="headerlink" href="#Tutorial" title="Permalink to this headline"></a></h1>
 <p>This tutorial is also a Jupyter notebook, which can be found in <a class="reference external" href="https://github.com/SPIDER-CMB/xfaster/tree/main/example/notebooks">the example notebooks directory</a>. If you’re running the notebook, rather than looking at the documentation produced from it, the links will not work. <a class="reference external" href="https://spider-cmb.github.io/xfaster/notebooks/XFaster_Tutorial.html">Look at the docs for working links</a>.</p>
 <p>The notebook reads intermediate output npz files from disk. To instead run the pieces starting from maps, first generate the example maps by running the script <code class="docutils literal notranslate"><span class="pre">xfaster/example/make_example_maps.py</span></code>, and set the checkpoint to something other than <code class="docutils literal notranslate"><span class="pre">None</span></code>. This script generates sample signal (CMB), noise and foreground ensembles for the two SPIDER frequency bands, as well as two sets of simulated data maps (one with signal, noise and foreground components; and one with just signal and noise
@@ -956,8 +683,8 @@ Text(0.5, 0.98, &#39;cls_noise&#39;)
 </div>
 <div class="section" id="get_beams">
 <h3>get_beams<a class="headerlink" href="#get_beams" title="Permalink to this headline"></a></h3>
-<p>The next component we need for our equations is the beam window function, <span class="math notranslate nohighlight">\(B_\ell\)</span>, done with <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_beams"><span class="std std-ref">get_beams()</span></a>. XFaster does not solve for this– you have to tell it what it is. You do this in your config.ini file. You can either specify Gaussian FWHM values (in arcmin) for each map tag, or specify a <code class="docutils literal notranslate"><span class="pre">.npz</span></code> file that contains a dictionary of <span class="math notranslate nohighlight">\(B_\ell\)</span> vectors per map tag. You can mix and match these as well– the code will first look
-for the tags in the dictionary file, and if it doesn’t find the tag there, it will look for a FWHM field for that tag.</p>
+<p>The next component we need for our equations is the beam window function, <span class="math notranslate nohighlight">\(B_\ell\)</span>, done with <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_beams"><span class="std std-ref">get_beams()</span></a>. XFaster does not solve for this– you have to tell it what it is. You do this in your config.ini file. You can either specify Gaussian FWHM values (in arcmin) for each map tag, or specify a <code class="docutils literal notranslate"><span class="pre">.npz</span></code> file that contains a dictionary of <span class="math notranslate nohighlight">\(B_\ell\)</span> vectors per map tag. You can mix and match these as well– the code will first
+look for the tags in the dictionary file, and if it doesn’t find the tag there, it will look for a FWHM field for that tag.</p>
 <p>The only additional option available is <code class="docutils literal notranslate"><span class="pre">pixwin</span></code>, which is default True. This applies an additional pixel window function to your beam window function, corresponding to the <span class="math notranslate nohighlight">\(N_{side}\)</span> of the input maps.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
@@ -1237,7 +964,7 @@ determined in <code class="docutils literal notranslate"><span class="pre">get_m
 <code class="docutils literal notranslate"><span class="pre">sim_index_signal</span></code>, <code class="docutils literal notranslate"><span class="pre">sim_index_noise</span></code> and <code class="docutils literal notranslate"><span class="pre">sim_index_foreground</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">r</span></code>: If this is not <code class="docutils literal notranslate"><span class="pre">None</span></code>, then the <code class="docutils literal notranslate"><span class="pre">signal</span></code> component of the simulated data is constructed from a linear combination of a scalar CMB term and a tensor CMB term, with the latter scaled by the value of <code class="docutils literal notranslate"><span class="pre">r</span></code>. This option was used for SPIDER to run the ensemble of simulations needed for the Feldman-Cousins analysis, and was written to allow for constructing many different <span class="math notranslate nohighlight">\(r\)</span>-input maps in memory. For this option to work, the <code class="docutils literal notranslate"><span class="pre">signal_type_sim</span></code> argument must be set to <code class="docutils literal notranslate"><span class="pre">&quot;r&quot;</span></code>, in
 which case the <code class="docutils literal notranslate"><span class="pre">get_files()</span></code> function searches for an ensemble of scalar sims in the subdirectory <code class="docutils literal notranslate"><span class="pre">signal_r0</span></code> and tensor sims in the subdirectory <code class="docutils literal notranslate"><span class="pre">signal_r1tens</span></code>. In <code class="docutils literal notranslate"><span class="pre">xfaster_run</span></code>, this option is called <code class="docutils literal notranslate"><span class="pre">sim_data_r</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">qb_file</span></code>: If this option is not <code class="docutils literal notranslate"><span class="pre">None</span></code>, then it points to a <code class="docutils literal notranslate"><span class="pre">bandpowers.npz</span></code> file on disk, which contains noise residual bandpowers that can be used to scale the noise component of the simulated data. In <code class="docutils literal notranslate"><span class="pre">xfaster_run</span></code>, this option is called <code class="docutils literal notranslate"><span class="pre">qb_file_data</span></code>. NB: a similar option, <code class="docutils literal notranslate"><span class="pre">qb_file_sim</span></code>, can be passed to <code class="docutils literal notranslate"><span class="pre">get_masked_sims()</span></code> to instead apply the residual correction to the noise ensemble that goes into the covariance model (e.g. to test for bias or in single-map mode where
+<li><p><code class="docutils literal notranslate"><span class="pre">qb_file</span></code>: If this option is not <code class="docutils literal notranslate"><span class="pre">None</span></code>, then it points to a <code class="docutils literal notranslate"><span class="pre">bandpowers.npz</span></code> file on disk, which contains noise residual bandpowers that can be used to scale the noise component of the simulated data. In <code class="docutils literal notranslate"><span class="pre">xfaster_run</span></code>, this option is called <code class="docutils literal notranslate"><span class="pre">qb_file_data</span></code>. NB: a similar option, <code class="docutils literal notranslate"><span class="pre">qb_file_sim</span></code>, can be passed to <code class="docutils literal notranslate"><span class="pre">get_masked_sims()</span></code> to instead apply the residual correction to the noise ensemble that goes into the covariance model (e.g. to test for bias or in single-map mode where
 fitting for noise residuals doesn’t work).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">template_alpha_sim</span></code>: A dictionary similar to <code class="docutils literal notranslate"><span class="pre">template_alpha</span></code> above that handles the <em>addition</em> of foreground templates to the simulated dataset. In <code class="docutils literal notranslate"><span class="pre">xfaster_run</span></code>, this dictionary is constructed using the arguments <code class="docutils literal notranslate"><span class="pre">template_alpha_sim</span></code> (a list of floats) and <code class="docutils literal notranslate"><span class="pre">template_alpha_tags_sim</span></code> (a list of map tags for each float).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">save_sim</span></code>: If True, the constructed simulation is stored to disk to avoid rebuilding it later. The filename is constructed as <code class="docutils literal notranslate"><span class="pre">data_&lt;...&gt;_xcorr.npz</span></code> where a set of tags is built from the components that are included in the simulation. The output <code class="docutils literal notranslate"><span class="pre">bandpowers.npz</span></code> file corresponding to each such simulation includes the same set of tags in the filename. This file naming scheme allows running multiple simulations in parallel without rerunning intermediate steps or creating IO conflicts on
@@ -1559,6 +1286,17 @@ W_{b\ell}^{XY(\mathcal{D})} = \sum_B W_{B\ell}^{XY(q)} \frac{\partial\langle \ma
 </div>
 </div>
 <div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/tmp/ipykernel_1049/4244553273.py:3: MatplotlibDeprecationWarning: The get_cmap function was deprecated in Matplotlib 3.7 and will be removed two minor releases later. Use ``matplotlib.colormaps[name]`` or ``matplotlib.colormaps.get_cmap(obj)`` instead.
+  tmpplot = plt.imshow(np.zeros((2,2)), cmap=plt.cm.get_cmap(&#39;viridis&#39;),vmin=0, vmax=len(iters))
+/tmp/ipykernel_1049/4244553273.py:8: MatplotlibDeprecationWarning: The get_cmap function was deprecated in Matplotlib 3.7 and will be removed two minor releases later. Use ``matplotlib.colormaps[name]`` or ``matplotlib.colormaps.get_cmap(obj)`` instead.
+  colors = plt.cm.get_cmap(&#39;viridis&#39;, len(iters)).colors
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
 </pre></div>
 </div>
@@ -1571,7 +1309,7 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_94_1.png" src="../_images/notebooks_XFaster_Tutorial_94_1.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_94_2.png" src="../_images/notebooks_XFaster_Tutorial_94_2.png" />
 </div>
 </div>
 <p>Now let’s look at just the <span class="math notranslate nohighlight">\(q_b\)</span> values for each of the different component and see how they converge as a function of iteration and bin. The lowest bins tend to have the biggest moves, but for all components, everything gets close to its final value within a handful of iterations.</p>
@@ -1609,11 +1347,22 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 <br/></pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/tmp/ipykernel_1049/3236141982.py:3: MatplotlibDeprecationWarning: The get_cmap function was deprecated in Matplotlib 3.7 and will be removed two minor releases later. Use ``matplotlib.colormaps[name]`` or ``matplotlib.colormaps.get_cmap(obj)`` instead.
+  tmpplot = plt.imshow(np.zeros((2,2)), cmap=plt.cm.get_cmap(&#39;viridis&#39;),vmin=0, vmax=len(iters))
+/tmp/ipykernel_1049/3236141982.py:6: MatplotlibDeprecationWarning: The get_cmap function was deprecated in Matplotlib 3.7 and will be removed two minor releases later. Use ``matplotlib.colormaps[name]`` or ``matplotlib.colormaps.get_cmap(obj)`` instead.
+  colors = plt.cm.get_cmap(&#39;viridis&#39;, len(iters)).colors
+</pre></div></div>
+</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_XFaster_Tutorial_96_0.png" src="../_images/notebooks_XFaster_Tutorial_96_0.png" />
+<img alt="../_images/notebooks_XFaster_Tutorial_96_1.png" src="../_images/notebooks_XFaster_Tutorial_96_1.png" />
 </div>
 </div>
 <p>Now we’ll look at the noise residuals that were fit. In the script where we make the example maps, we made the “data” maps have 15% less noise in them than the those used for the noise model. So, we should expect the total noise, <span class="math notranslate nohighlight">\((1+n_b)\left&lt;N\right&gt;\)</span>, to be <span class="math notranslate nohighlight">\(0.85^2\left&lt;N\right&gt;\)</span>, where the square comes because we’re fitting in the power spectrum. So, <span class="math notranslate nohighlight">\(n_b\)</span>s should converge to about -0.28.</p>
@@ -1652,7 +1401,7 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7f24a83bc400&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7f6e3fd9bfa0&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1747,7 +1496,7 @@ just vary <span class="math notranslate nohighlight">\(r\)</span>. For this exam
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[ 2022-10-06 20:12:07UTC ] INFO: Computing brute-force r profile likelihood
+[ 2023-04-05 21:45:38UTC ] INFO: Computing brute-force r profile likelihood
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
