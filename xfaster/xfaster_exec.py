@@ -1788,8 +1788,8 @@ def xfaster_diff(file1, file2, keys=None, verbose=False):
     data1, data2 = [load1(f) for f in [file1, file2]]
 
     def compare(d1, d2, prefix=""):
-        if isinstance(d1, (str, int, float)):
-            if d1 != d2:
+        if isinstance(d1, (str, int, float)) or d1 is None:
+            if (d1 is None and d2 is not None) or (d1 is not None and d1 != d2):
                 print("{}{} != {}".format(prefix, d1, d2))
             elif verbose:
                 print("{} SAME: {}".format(prefix, d1))
