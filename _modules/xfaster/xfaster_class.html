@@ -6832,6 +6832,9 @@
 
             <span class="c1"># compute autocorrelation time</span>
             <span class="n">tau</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">get_autocorr_time</span><span class="p">(</span><span class="n">tol</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">tau</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s1">&#39;Found nan autocorr time! Stopping.&#39;</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">)</span>
+                <span class="k">break</span>
 
             <span class="c1"># check convergence</span>
             <span class="n">converged</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">tau</span> <span class="o">/</span> <span class="n">converge_criteria</span> <span class="o">&lt;</span> <span class="n">sampler</span><span class="o">.</span><span class="n">iteration</span><span class="p">)</span>
