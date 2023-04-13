@@ -6753,6 +6753,9 @@ class XFaster(object):
 
             # compute autocorrelation time
             tau = sampler.get_autocorr_time(tol=0)
+            if np.isnan(tau).any():
+                self.log('Found nan autocorr time! Stopping.', "error")
+                break
 
             # check convergence
             converged = np.all(tau / converge_criteria < sampler.iteration)
