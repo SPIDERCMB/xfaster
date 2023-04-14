@@ -110,7 +110,7 @@ def xfaster_run(
     return_cls=False,
     fix_bb_transfer=False,
     null_first_cmb=False,
-    delta_beta_prior=0.5,
+    delta_beta_prior=None,
     like_profiles=False,
     like_profile_sigma=3.0,
     like_profile_points=100,
@@ -401,7 +401,7 @@ def xfaster_run(
     delta_beta_prior : float
         The width of the prior on the additive change from beta_ref. If you
         don't want the code to fit for a spectral index different
-        from beta_ref, set this to be a very small value (O(1e-10)).
+        from beta_ref, set this to be None.
     like_profiles : bool
         If True, compute profile likelihoods for each qb, leaving all
         others fixed at their maximum likelihood values.  Profiles are
