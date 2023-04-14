@@ -4433,7 +4433,7 @@
             <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">comp</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">qb</span><span class="p">]):</span>
                 <span class="n">comps</span> <span class="o">+=</span> <span class="p">[</span><span class="n">comp</span><span class="p">]</span>
 
-        <span class="n">delta_beta</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">delta_beta</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="s2">&quot;delta_beta&quot;</span> <span class="ow">in</span> <span class="n">qb</span><span class="p">:</span>
             <span class="c1"># Evaluate fg at spectral index pivot for derivative</span>
             <span class="c1"># in Fisher matrix, unless delta is True</span>
@@ -4481,12 +4481,12 @@
                     <span class="n">tag1</span><span class="p">,</span> <span class="n">tag2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_pairs</span><span class="p">[</span><span class="n">xname</span><span class="p">]</span>
 
                     <span class="c1"># extract qb&#39;s for the component spectrum</span>
-                    <span class="k">if</span> <span class="n">comp</span> <span class="o">==</span> <span class="s2">&quot;cmb&quot;</span> <span class="ow">or</span> <span class="p">(</span><span class="n">comp</span> <span class="o">==</span> <span class="s2">&quot;fg&quot;</span> <span class="ow">and</span> <span class="n">delta_beta</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">comp</span> <span class="o">==</span> <span class="s2">&quot;cmb&quot;</span> <span class="ow">or</span> <span class="p">(</span><span class="n">comp</span> <span class="o">==</span> <span class="s2">&quot;fg&quot;</span> <span class="ow">and</span> <span class="n">delta_beta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
                         <span class="n">qbs</span> <span class="o">=</span> <span class="n">qb</span><span class="p">[</span><span class="n">stag</span><span class="p">]</span>
                         <span class="k">if</span> <span class="n">spec</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ee&quot;</span><span class="p">,</span> <span class="s2">&quot;bb&quot;</span><span class="p">]:</span>
                             <span class="n">qbm</span> <span class="o">=</span> <span class="n">qb</span><span class="p">[</span><span class="n">mstag</span><span class="p">]</span>
 
-                    <span class="k">elif</span> <span class="n">comp</span> <span class="o">==</span> <span class="s2">&quot;fg&quot;</span> <span class="ow">and</span> <span class="n">delta_beta</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
+                    <span class="k">elif</span> <span class="n">comp</span> <span class="o">==</span> <span class="s2">&quot;fg&quot;</span> <span class="ow">and</span> <span class="n">delta_beta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="c1"># beta scaling for foreground model</span>
                         <span class="c1"># beta_scale = self.fg_scales[xname][1] ** delta_beta</span>
                         <span class="n">beta_scale</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fg_scales</span><span class="p">[</span><span class="n">xname</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">delta_beta</span>
@@ -5002,7 +5002,7 @@
 <span class="sd">        delta_beta_prior : float</span>
 <span class="sd">            The width of the prior on the additive change from beta_ref. If you</span>
 <span class="sd">            don&#39;t want the code to fit for a spectral index different</span>
-<span class="sd">            from beta_ref, set this to be a very small value (O(1e-10)).</span>
+<span class="sd">            from beta_ref, set this to be None.</span>
 <span class="sd">        null_first_cmb : bool</span>
 <span class="sd">            Keep first CMB bandpowers fixed to input shape (qb=1).</span>
 <span class="sd">        use_precalc : bool</span>
@@ -5064,7 +5064,7 @@
         <span class="k">if</span> <span class="n">windows</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">clear_precalc</span><span class="p">()</span>
 
-        <span class="n">delta_beta</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">delta_beta</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="s2">&quot;delta_beta&quot;</span> <span class="ow">in</span> <span class="n">qb</span><span class="p">:</span>
             <span class="n">delta_beta</span> <span class="o">=</span> <span class="n">qb</span><span class="p">[</span><span class="s2">&quot;delta_beta&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
@@ -6170,7 +6170,7 @@
 <span class="sd">        delta_beta_prior : float</span>
 <span class="sd">            The width of the prior on the additive change from beta_ref. If you</span>
 <span class="sd">            don&#39;t want the code to fit for a spectral index different</span>
-<span class="sd">            from beta_ref, set this to be a very small value (O(1e-10)).</span>
+<span class="sd">            from beta_ref, set this to be None.</span>
 <span class="sd">        cond_noise : float</span>
 <span class="sd">            The level of regularizing noise to add to EE and BB diagonals.</span>
 <span class="sd">        cond_criteria : float</span>
