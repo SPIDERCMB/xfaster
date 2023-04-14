@@ -4407,12 +4407,12 @@ class XFaster(object):
                     tag1, tag2 = self.map_pairs[xname]
 
                     # extract qb's for the component spectrum
-                    if comp == "cmb" or (comp == "fg" and delta_beta == 0.0):
+                    if comp == "cmb" or (comp == "fg" and delta_beta is None):
                         qbs = qb[stag]
                         if spec in ["ee", "bb"]:
                             qbm = qb[mstag]
 
-                    elif comp == "fg" and delta_beta != 0.0:
+                    elif comp == "fg" and delta_beta is not None:
                         # beta scaling for foreground model
                         # beta_scale = self.fg_scales[xname][1] ** delta_beta
                         beta_scale = 1 + self.fg_scales[xname][2] * delta_beta
