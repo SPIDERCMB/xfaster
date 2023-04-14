@@ -4376,7 +4376,7 @@ class XFaster(object):
             if any([k.startswith(comp + "_") for k in qb]):
                 comps += [comp]
 
-        delta_beta = 0.0
+        delta_beta = None
         if "delta_beta" in qb:
             # Evaluate fg at spectral index pivot for derivative
             # in Fisher matrix, unless delta is True
@@ -4424,12 +4424,12 @@ class XFaster(object):
                     tag1, tag2 = self.map_pairs[xname]
 
                     # extract qb's for the component spectrum
-                    if comp == "cmb" or (comp == "fg" and delta_beta == 0.0):
+                    if comp == "cmb" or (comp == "fg" and delta_beta is None):
                         qbs = qb[stag]
                         if spec in ["ee", "bb"]:
                             qbm = qb[mstag]
 
-                    elif comp == "fg" and delta_beta != 0.0:
+                    elif comp == "fg" and delta_beta is not None:
                         # beta scaling for foreground model
                         # beta_scale = self.fg_scales[xname][1] ** delta_beta
                         beta_scale = 1 + self.fg_scales[xname][2] * delta_beta
@@ -4945,7 +4945,7 @@ class XFaster(object):
         delta_beta_prior : float
             The width of the prior on the additive change from beta_ref. If you
             don't want the code to fit for a spectral index different
-            from beta_ref, set this to be a very small value (O(1e-10)).
+            from beta_ref, set this to be None.
         null_first_cmb : bool
             Keep first CMB bandpowers fixed to input shape (qb=1).
         use_precalc : bool
@@ -5007,7 +5007,7 @@ class XFaster(object):
         if windows:
             self.clear_precalc()
 
-        delta_beta = 0.0
+        delta_beta = None
         if "delta_beta" in qb:
             delta_beta = qb["delta_beta"][0]
 
@@ -6207,7 +6207,7 @@ class XFaster(object):
         delta_beta_prior : float
             The width of the prior on the additive change from beta_ref. If you
             don't want the code to fit for a spectral index different
-            from beta_ref, set this to be a very small value (O(1e-10)).
+            from beta_ref, set this to be None.
         cond_noise : float
             The level of regularizing noise to add to EE and BB diagonals.
         cond_criteria : float
