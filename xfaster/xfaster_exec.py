@@ -891,6 +891,7 @@ def xfaster_parse(args=None, test=False):
 
     import argparse as ap
     from textwrap import dedent
+    from . import __version__ as version
 
     parser_opts = dict(
         description="Run the XFaster algorithm",
@@ -917,6 +918,9 @@ def xfaster_parse(args=None, test=False):
         P = TestParser(**parser_opts)
     else:
         P = ap.ArgumentParser(**parser_opts)
+
+    # add --version option
+    P.add_argument("--version", action="version", version="%(prog)s " + version)
 
     # get default argument values from xfaster_run
     defaults = get_func_defaults(xfaster_run)
@@ -950,7 +954,16 @@ def xfaster_parse(args=None, test=False):
             arg = line.split(":")[0].strip()
             argdoc = ""
 
-    def add_arg(P, name, argtype=None, default=None, short=None, help=None, **kwargs):
+    def add_arg(
+        P,
+        name,
+        argtype=None,
+        default=None,
+        short=None,
+        help=None,
+        positional=False,
+        **kwargs
+    ):
         """
         Helper function for populating command line arguments. Wrapper
         for ArgumentParser.add_argument.
@@ -974,7 +987,10 @@ def xfaster_parse(args=None, test=False):
             help = arg_docs.get(name, None)
 
         name = name.replace("-", "_")
-        argname = "--{}".format(name.replace("_", "-"))
+        if positional:
+            argname = name
+        else:
+            argname = "--{}".format(name.replace("_", "-"))
         altname = kwargs.pop("altname", None)
 
         if default is None:
@@ -985,7 +1001,9 @@ def xfaster_parse(args=None, test=False):
         if help is None:
             raise ValueError("Missing help text for argument {}".format(name))
 
-        opts = dict(default=default, help=help, dest=name, action="store")
+        opts = dict(default=default, help=help, action="store")
+        if not positional:
+            opts["dest"] = name
         opts.update(**kwargs)
 
         if default is True:
@@ -1024,6 +1042,7 @@ def xfaster_parse(args=None, test=False):
         ("run", "run xfaster"),
         ("submit", "submit xfaster job"),
         ("dump", "dump archive from xfaster job to stdout"),
+        ("diff", "compare two archive files"),
     ]:
 
         PP = S.add_parser(mode, help=helptext, **parser_opts)
@@ -1055,6 +1074,26 @@ def xfaster_parse(args=None, test=False):
                 default=False,
                 action="store_true",
                 help="Print complete entries",
+            )
+            continue
+
+        if mode == "diff":
+            add_arg(PP, "file1", positional=True, help="File to compare")
+            add_arg(PP, "file2", positional=True, help="File to compare")
+            add_arg(
+                PP,
+                "keys",
+                short="-k",
+                nargs="+",
+                help="Select keys to print from each file",
+            )
+            add_arg(
+                PP,
+                "verbose",
+                short="-v",
+                default=False,
+                action="store_true",
+                help="Print status of all entries",
             )
             continue
 
@@ -1331,7 +1370,7 @@ def xfaster_parse(args=None, test=False):
             v = v[0]
 
     # test mode
-    if args.mode not in ["submit", "dump"]:
+    if args.mode not in ["submit", "dump", "diff"]:
         if args.test:
             msg = ",\n".join(
                 "{}={!r}".format(k, v) for k, v in sorted(vars(args).items())
@@ -1746,6 +1785,74 @@ def xfaster_dump(
         print("}")
 
 
+def xfaster_diff(file1, file2, keys=None, verbose=False):
+    """
+    Compare two output archive files to each other.  Uses setdiff or numpy.diff
+    as appropriate.
+
+    Arguments
+    ---------
+    file1 : str
+    file2 : str
+        Filenames to compare to each other
+    keys : list of str
+        List of keys to compare between files
+    verbose : bool
+        If True, print the status of all keys, even if identical.  Otherwise,
+        only print the status for keys that do not match between files.
+    """
+
+    def load1(f):
+        d = pt.load_and_parse(f)
+        if keys is not None:
+            d = {k: d[k] for k in keys if k in d}
+        return d
+
+    data1, data2 = [load1(f) for f in [file1, file2]]
+
+    def compare(d1, d2, prefix=""):
+        if isinstance(d1, (str, int, float)) or d1 is None:
+            if (d1 is None and d2 is not None) or (d1 is not None and d1 != d2):
+                print("{}{} != {}".format(prefix, d1, d2))
+            elif verbose:
+                print("{} SAME: {}".format(prefix, d1))
+
+        elif isinstance(d1, (list, np.ndarray)):
+            d1, d2 = [np.asarray(x) for x in [d1, d2]]
+            if d1.dtype.kind in ['U', 'S']:
+                s1 = set(d1.ravel())
+                s2 = set(d2.ravel())
+                sd = s1 - s2
+                if sd:
+                    print("{}only in {}: {}".format(prefix, file1, sd))
+                sd = s2 - s1
+                if sd:
+                    print("{}only in {}: {}".format(prefix, file2, sd))
+                if verbose and not s1 ^ s2:
+                    print("{}SAME".format(prefix))
+
+            elif not np.allclose(d1, d2):
+                print("{}{}".format(prefix, d1 - d2))
+
+            elif verbose:
+                print("{}ALL CLOSE".format(prefix))
+
+        elif isinstance(d1, dict):
+            all_keys = sorted(set(d1) | set(d2))
+            for k in all_keys:
+                if k not in d1:
+                    print("{}{}: only in {}".format(prefix, k, file2))
+                elif k not in d2:
+                    print("{}{}: only in {}".format(prefix, k, file1))
+                else:
+                    compare(d1[k], d2[k], "{}{}: ".format(prefix, k))
+
+        else:
+            raise ValueError("{}: parser error: {} {}".format(prefix, type(d1), d1))
+
+    compare(data1, data2)
+
+
 def xfaster_main():
     """
     Main entry point for command-line interface.
@@ -1765,3 +1872,7 @@ def xfaster_main():
     elif mode == "dump":
         # dump archive files to stdout
         xfaster_dump(**args)
+
+    elif mode == "diff":
+        # diff archive files
+        xfaster_diff(**args)

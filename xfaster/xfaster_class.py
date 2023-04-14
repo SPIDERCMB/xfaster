@@ -2261,7 +2261,12 @@ class XFaster(object):
             template_specs = self.specs
 
         # ensure dictionary
-        if template_alpha is None or null_run or template_type is None:
+        if (
+            template_alpha is None
+            or null_run
+            or (update_template and self.template_type is None)
+            or (not update_template and template_type is None)
+        ):
             template_alpha = OrderedDict()
         else:
             # ensure tagged by original tags
@@ -6895,6 +6900,9 @@ class XFaster(object):
 
             # compute autocorrelation time
             tau = sampler.get_autocorr_time(tol=0)
+            if np.isnan(tau).any():
+                self.log('Found nan autocorr time! Stopping.', "error")
+                break
 
             # check convergence
             converged = np.all(tau / converge_criteria < sampler.iteration)
