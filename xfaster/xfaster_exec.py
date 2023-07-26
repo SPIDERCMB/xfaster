@@ -670,6 +670,7 @@ def xfaster_run(
         noise_subset=noise_subset,
         foreground_type=foreground_type,
         foreground_transfer_type=foreground_transfer_type,
+        foreground_subset=foreground_subset,
         qb_file=qb_file_sim,
     )
     config_vars.update(sim_opts, "Simulation Ensemble Options")
@@ -1551,6 +1552,7 @@ class XFasterJobGroup(object):
                 elif a in [
                     "noise_subset",
                     "signal_subset",
+                    "foreground_subset",
                     "data_subset",
                     "data_subset2",
                 ]:
