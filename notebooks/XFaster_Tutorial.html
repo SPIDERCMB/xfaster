@@ -951,7 +951,7 @@ between template halves. This option accounts for that correlation.</p></li>
 <p>There are several options to <a class="reference internal" href="../api.html#xfaster.xfaster_class.XFaster.get_masked_data"><span class="std std-ref">get_masked_data()</span></a> that dictate how to build a simulated data set from an ensemble of components on disk. Note that these options may be passed to this function differently from <a class="reference internal" href="../api.html#xfaster.xfaster_exec.xfaster_run"><span class="std std-ref">xfaster_run()</span></a>. We’ll go through all of them here.</p>
 <p>First, there are three options that determine whether any simulated dataset is to be used at all in place of data. If these are all <code class="docutils literal notranslate"><span class="pre">False</span></code>, then the data maps are loaded from disk as usual.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ensemble_mean</span></code>: use <code class="docutils literal notranslate"><span class="pre">cls_sim</span></code> in place of the data spectra. This quantity, computed in <a class="reference external" href="#get_masked_sims">the previous sims step</a> is the average of the signal+noise sims.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ensemble_mean</span></code>: use <code class="docutils literal notranslate"><span class="pre">cls_sim</span></code> in place of the data spectra. This quantity, computed in <a class="reference internal" href="#get_masked_sims"><span class="std std-ref">the previous sims step</span></a> is the average of the signal+noise sims.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ensemble_median</span></code>: use <code class="docutils literal notranslate"><span class="pre">cls_med</span></code>, the median of the signal+noise sims, in place of the data.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">sim</span></code>: if this option is <code class="docutils literal notranslate"><span class="pre">True</span></code>, the remaining options below are used to determine how the simulated dataset is constructed. In <code class="docutils literal notranslate"><span class="pre">xfaster_run</span></code>, this option is called <code class="docutils literal notranslate"><span class="pre">sim_data</span></code>.</p></li>
 </ul>
@@ -1401,7 +1401,7 @@ Text(0.5, 0.98, &#39;95$\\times$150 GHz total power fit&#39;)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.colorbar.Colorbar at 0x7f9aa02edbb0&gt;
+&lt;matplotlib.colorbar.Colorbar at 0x7f5af31daa30&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1496,7 +1496,7 @@ just vary <span class="math notranslate nohighlight">\(r\)</span>. For this exam
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[ 2023-04-14 18:49:04UTC ] INFO: Computing brute-force r profile likelihood
+[ 2023-09-07 18:13:59UTC ] INFO: Computing brute-force r profile likelihood
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
