@@ -5,11 +5,11 @@ XFaster
 .. image:: https://badge.fury.io/py/xfaster.svg
     :target: https://badge.fury.io/py/xfaster
 
-.. image:: https://github.com/SPIDER-CMB/xfaster/actions/workflows/release.yaml/badge.svg
-   :target: https://github.com/SPIDER-CMB/xfaster/actions/workflows/release.yaml
+.. image:: https://github.com/SPIDERCMB/xfaster/actions/workflows/release.yaml/badge.svg
+   :target: https://github.com/SPIDERCMB/xfaster/actions/workflows/release.yaml
 
-.. image:: https://github.com/SPIDER-CMB/xfaster/actions/workflows/documentation.yaml/badge.svg
-   :target: https://github.com/SPIDER-CMB/xfaster/actions/workflows/documentation.yaml
+.. image:: https://github.com/SPIDERCMB/xfaster/actions/workflows/documentation.yaml/badge.svg
+   :target: https://github.com/SPIDERCMB/xfaster/actions/workflows/documentation.yaml
 
 .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5248317.svg
    :target: https://doi.org/10.5281/zenodo.5248317
@@ -25,7 +25,7 @@ intended to be generically useful for modern CMB observatories.
 
 An accompanying paper describing the algorithm can be found here: https://arxiv.org/abs/2104.01172
 
-Documentation can be found here: https://SPIDER-CMB.github.io/xfaster/
+Documentation can be found here: https://spidercmb.github.io/xfaster/
 
 xfaster:
     python package
