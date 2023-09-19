@@ -36,6 +36,7 @@ specs = ["tt", "ee", "bb", "te", "eb", "tb"]
 
 nsim = g_cfg.getint("gcorr_opts", "nsim")
 
+
 # use gauss model for null bandpowers
 def gauss(qb, amp, width, offset):
     # width = 0.5*1/sig**2
@@ -98,7 +99,7 @@ nbins = len(out["bin_def"]["cmb_tt"])
 out["gcorr"] = {}
 
 for spec in specs:
-    stag = 'cmb_{}'.format(spec)
+    stag = "cmb_{}".format(spec)
     out["gcorr"][spec] = np.ones(nbins)
     for b0 in np.arange(nbins):
         hist, bins = np.histogram(
@@ -119,7 +120,7 @@ for spec in specs:
             mu0 = np.log(mu0)
 
         # Initial parameter guesses
-        p0 = [A0, 1. / sig0**2 / 2., mu0]
+        p0 = [A0, 1.0 / sig0**2 / 2.0, mu0]
 
         try:
             popth, pcovh = opt.curve_fit(func, bc, hist, p0=p0, maxfev=int(1e9))
