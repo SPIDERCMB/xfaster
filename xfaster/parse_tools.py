@@ -431,7 +431,6 @@ def load_and_parse(filename, check_version=True):
         data["data_version"] = dv
 
     if version == 2:
-
         if "reference_root" in data and "reference_type" not in data:
             data["reference_type"] = None if data["reference_root"] is None else "sub"
 
@@ -439,7 +438,6 @@ def load_and_parse(filename, check_version=True):
         data["data_version"] = dv
 
     if version in [1, 2]:
-
         if "ref_freq" in data:
             data["freq_ref"] = data.pop("ref_freq")
 
@@ -462,7 +460,6 @@ def load_and_parse(filename, check_version=True):
         data["data_version"] = dv
 
     if version in [1, 2, 3]:
-
         if "data_root" in data:
             fix_data_roots(data, mode="save")
 

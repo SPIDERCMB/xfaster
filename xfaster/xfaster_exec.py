@@ -1101,7 +1101,6 @@ def xfaster_parse(args=None, test=False):
         ("dump", "dump archive from xfaster job to stdout"),
         ("diff", "compare two archive files"),
     ]:
-
         PP = S.add_parser(mode, help=helptext, **parser_opts)
 
         if mode == "dump":
@@ -1878,7 +1877,7 @@ def xfaster_diff(file1, file2, keys=None, verbose=False):
 
         elif isinstance(d1, (list, np.ndarray)):
             d1, d2 = [np.asarray(x) for x in [d1, d2]]
-            if d1.dtype.kind in ['U', 'S']:
+            if d1.dtype.kind in ["U", "S"]:
                 s1 = set(d1.ravel())
                 s2 = set(d2.ravel())
                 sd = s1 - s2
