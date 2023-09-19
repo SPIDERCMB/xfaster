@@ -11,6 +11,9 @@ XFaster
 .. image:: https://github.com/SPIDERCMB/xfaster/actions/workflows/documentation.yaml/badge.svg
    :target: https://github.com/SPIDERCMB/xfaster/actions/workflows/documentation.yaml
 
+.. image:: https://github.com/SPIDERCMB/xfaster/actions/workflows/black.yaml/badge.svg
+   :target: https://github.com/SPIDERCMB/xfaster/actions/workflows/black.yaml
+
 .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5248317.svg
    :target: https://doi.org/10.5281/zenodo.5248317
    
