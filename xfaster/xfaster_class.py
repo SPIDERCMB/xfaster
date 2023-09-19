@@ -6138,11 +6138,8 @@ class XFaster(object):
                                 "insufficient number of signal sims"
                             )
                         except Exception as e:
-                            msg = (
-                                "Unable to adjust negative bins for map {}: {}".format(
-                                    m0, str(e)
-                                )
-                            )
+                            msg = "Unable to adjust negative bins for map {}: {}"
+                            msg = msg.format(m0, str(e))
                             success = False
 
                 # Set TE/EB/TB qb transfers to geometric means of components, if necessary
