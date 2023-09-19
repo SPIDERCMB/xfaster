@@ -11,13 +11,18 @@ Fl_in = np.loadtxt("maps_example/transfer_example.txt")
 
 # load up bandpowers file, where most of the useful stuff is stored
 bp = xf.load_and_parse("outputs_example/95x150/bandpowers_95x150.npz")
-ee_bin_centers = bp["ellb"]["cmb_ee"]  # weighted bin centers
-ee_specs = bp["cb"]["cmb_ee"]  # estimated CMB spectra with ell*(ell+1)/(2pi) factors
-ee_errs = bp["dcb"]["cmb_ee"]  # estimated CMB error bars
-spec_cov = bp["cov"]  # Nspec * Nbin square covariance matrix
-ee_transfer_150 = bp["qb_transfer"]["cmb_ee"]["150"]  # transfer function using the same bins
+# weighted bin centers
+ee_bin_centers = bp["ellb"]["cmb_ee"]
+# estimated CMB spectra with ell*(ell+1)/(2pi) factors
+ee_specs = bp["cb"]["cmb_ee"]
+# estimated CMB error bars
+ee_errs = bp["dcb"]["cmb_ee"]
+# Nspec * Nbin square covariance matrix
+spec_cov = bp["cov"]
+# transfer function using the same bins
+ee_transfer_150 = bp["qb_transfer"]["cmb_ee"]["150"]
 
-fig, axs = plt.subplots(3, 1, figsize=(4,6))
+fig, axs = plt.subplots(3, 1, figsize=(4, 6))
 axs[0].plot(Fl_in[:500], color="k", label="Input Transfer Function")
 axs[0].plot(ee_bin_centers, ee_transfer_150, label="Estimated Transfer Function")
 axs[0].set_ylabel(r"$F_\ell^{EE}$")

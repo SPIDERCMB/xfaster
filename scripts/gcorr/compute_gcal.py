@@ -36,6 +36,7 @@ specs = ["tt", "ee", "bb", "te", "eb", "tb"]
 
 nsim = g_cfg.getint("gcorr_opts", "nsim")
 
+
 # use gauss model for null bandpowers
 def gauss(qb, amp, width, offset):
     # width = 0.5*1/sig**2
@@ -89,7 +90,7 @@ for filename in files:
         else:
             qbs[spec] = np.vstack([qbs[spec], bp["qb"]["cmb_{}".format(spec)]])
 
-xf_var_mean = np.mean(inv_fishes, axis = 0)
+xf_var_mean = np.mean(inv_fishes, axis=0)
 xf_var = pt.arr_to_dict(xf_var_mean, bp["qb"])
 
 out["bin_def"] = bp["bin_def"]
@@ -97,10 +98,10 @@ nbins = len(out["bin_def"]["cmb_tt"])
 out["gcorr"] = {}
 
 for spec in specs:
-    stag = 'cmb_{}'.format(spec)
+    stag = "cmb_{}".format(spec)
     out["gcorr"][spec] = np.ones(nbins)
-    fit_variance = np.var(qbs[spec], axis = 0)
-    out['gcorr'][spec] = xf_var[stag]/fit_variance
+    fit_variance = np.var(qbs[spec], axis=0)
+    out["gcorr"][spec] = xf_var[stag] / fit_variance
 
 outfile = os.path.join(output_root, "gcorr_corr{}.npz".format(output_tag))
 np.savez_compressed(outfile, **out)
