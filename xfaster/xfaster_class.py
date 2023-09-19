@@ -3663,7 +3663,9 @@ class XFaster(object):
                 )
             else:
                 if not os.path.exists(filename_fg):
-                    raise OSError("Missing foreground model file {}".format(filename_fg))
+                    raise OSError(
+                        "Missing foreground model file {}".format(filename_fg)
+                    )
 
                 cls_fg = st.load_camb_cl(filename_fg, lmax=lmax_kern, pol=None)
                 cls_shape.update({"fg_" + s: cls for s, cls in zip(specs, cls_fg)})
