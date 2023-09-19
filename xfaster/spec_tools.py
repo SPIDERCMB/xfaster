@@ -41,7 +41,7 @@ def blackbody(nu, nu0=None, T=T_cmb):
     """
     x = hk * nu / T
     if nu0 is None:
-        return x ** 3 / (np.exp(x) - 1)
+        return x**3 / (np.exp(x) - 1)
     x0 = hk * nu0 / T
     return (x / x0) ** 3 * (np.exp(x0) - 1) / (np.exp(x) - 1)
 

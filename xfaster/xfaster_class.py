@@ -108,7 +108,6 @@ class XFasterConfig(RawConfigParser):
 
 
 class XFaster(object):
-
     checkpoints = [
         "files",
         "masks",
@@ -790,7 +789,6 @@ class XFaster(object):
             root = "{}_{}".format(name.split("_")[0], ctype)
 
         for suff in ["", "2"] if self.null_run else [""]:
-
             if root is None:
                 out.update(
                     {
@@ -1180,7 +1178,6 @@ class XFaster(object):
         m[np.isnan(m)] = 0
 
         if check_nside:
-
             if not hasattr(self, "nside"):
                 self.nside = None
 
@@ -2006,8 +2003,8 @@ class XFaster(object):
             # of weight
             fsky[xname] = counts / self.npix
             w1[xname] = np.sum(mask, axis=-1) / counts
-            w2[xname] = np.sum(mask ** 2, axis=-1) / counts
-            w4[xname] = np.sum(mask ** 4, axis=-1) / counts
+            w2[xname] = np.sum(mask**2, axis=-1) / counts
+            w4[xname] = np.sum(mask**4, axis=-1) / counts
             # effective fsky takes into account weights between 0 and 1
             fsky_eff[xname] = (
                 fsky[xname]
@@ -2661,7 +2658,6 @@ class XFaster(object):
         map_pairs = pt.tag_pairs(self.map_tags, index=True)
 
         for xname, (idx, jdx) in map_pairs.items():
-
             if self.ensemble_mean or self.ensemble_median:
                 for spec in self.specs:
                     cls_dict = cls.setdefault(spec, OrderedDict())
@@ -5188,7 +5184,7 @@ class XFaster(object):
             # include priors in likelihood
             if "delta_beta" in qb and delta_beta_prior is not None:
                 chi = (delta_beta - self.delta_beta_fix) / delta_beta_prior
-                like -= chi ** 2 / 2.0
+                like -= chi**2 / 2.0
 
             if null_first_cmb:
                 for spec in self.specs:
@@ -5196,7 +5192,7 @@ class XFaster(object):
                     if stag not in qb:
                         continue
                     chi = (qb[stag][0] - 1) / np.sqrt(1e-10)
-                    like -= chi ** 2 / 2.0
+                    like -= chi**2 / 2.0
 
             return like
 
@@ -5210,7 +5206,6 @@ class XFaster(object):
             del gmat, mat, Dmat_obs
 
         if windows:
-
             if inv_fish is None:
                 inv_fish = np.linalg.solve(fisher, np.eye(len(fisher)))
 
@@ -5280,7 +5275,7 @@ class XFaster(object):
             # XXX need documentation for what happens here
             # for imposing the delta_beta prior
             sl = slice(*(bin_index["delta_beta"]))
-            d = 1.0 / delta_beta_prior ** 2
+            d = 1.0 / delta_beta_prior**2
             qb_vec[sl] += d * self.delta_beta_fix
             fisher[sl, sl] += d
 
@@ -6546,7 +6541,7 @@ class XFaster(object):
                     pval = np.atleast_1d(pval)
                     norm = np.log(1.0 / (prior[1] * np.sqrt(2 * np.pi)))
                     chi = (pval - prior[0]) / prior[1]
-                    log_prob += np.sum(norm - chi ** 2 / 2.0)
+                    log_prob += np.sum(norm - chi**2 / 2.0)
 
             return log_prob
 
@@ -6759,7 +6754,7 @@ class XFaster(object):
             # compute autocorrelation time
             tau = sampler.get_autocorr_time(tol=0)
             if np.isnan(tau).any():
-                self.log('Found nan autocorr time! Stopping.', "error")
+                self.log("Found nan autocorr time! Stopping.", "error")
                 break
 
             # check convergence

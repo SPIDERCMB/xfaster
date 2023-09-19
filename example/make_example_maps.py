@@ -37,7 +37,17 @@ fg_path = "maps_example/foreground_gaussian/full"
 temp_path = "maps_example/templates_gaussian/template1/full"
 temp_path2 = "maps_example/templates_gaussian/template2/full"
 
-for p0 in [mask_path, data_path, data_nores_path, data_fg_path, data_fg_nores_path, sig_path, noise_path, fg_path, temp_path]:
+for p0 in [
+    mask_path,
+    data_path,
+    data_nores_path,
+    data_fg_path,
+    data_fg_nores_path,
+    sig_path,
+    noise_path,
+    fg_path,
+    temp_path,
+]:
     if not os.path.exists(p0):
         os.makedirs(p0)
 os.symlink("template1", os.path.dirname(temp_path2))
