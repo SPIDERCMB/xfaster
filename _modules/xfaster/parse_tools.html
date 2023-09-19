@@ -507,7 +507,6 @@
         <span class="n">data</span><span class="p">[</span><span class="s2">&quot;data_version&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dv</span>
 
     <span class="k">if</span> <span class="n">version</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-
         <span class="k">if</span> <span class="s2">&quot;reference_root&quot;</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">and</span> <span class="s2">&quot;reference_type&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="s2">&quot;reference_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;reference_root&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;sub&quot;</span>
 
@@ -515,7 +514,6 @@
         <span class="n">data</span><span class="p">[</span><span class="s2">&quot;data_version&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dv</span>
 
     <span class="k">if</span> <span class="n">version</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]:</span>
-
         <span class="k">if</span> <span class="s2">&quot;ref_freq&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
             <span class="n">data</span><span class="p">[</span><span class="s2">&quot;freq_ref&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;ref_freq&quot;</span><span class="p">)</span>
 
@@ -538,7 +536,6 @@
         <span class="n">data</span><span class="p">[</span><span class="s2">&quot;data_version&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dv</span>
 
     <span class="k">if</span> <span class="n">version</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
-
         <span class="k">if</span> <span class="s2">&quot;data_root&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
             <span class="n">fix_data_roots</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;save&quot;</span><span class="p">)</span>
 
