@@ -164,7 +164,7 @@ texinfo_documents = [
         "xfaster Documentation",
         author,
         "xfaster",
-        "One line description of project.",
+        "A fast power spectrum and likelihood estimator for CMB datasets",
         "Miscellaneous",
     ),
 ]
