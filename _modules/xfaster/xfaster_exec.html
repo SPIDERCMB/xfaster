@@ -884,10 +884,12 @@
 <span class="sd">    -------</span>
 <span class="sd">    dict of kwargs and their default values</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">spec</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargspec</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+    <span class="n">pars</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
     <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
 
-    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">defaults</span><span class="p">)</span> <span class="p">:],</span> <span class="n">spec</span><span class="o">.</span><span class="n">defaults</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span>
+        <span class="p">[(</span><span class="n">k</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">default</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pars</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">default</span> <span class="o">!=</span> <span class="n">p</span><span class="o">.</span><span class="n">empty</span><span class="p">]</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">extract_func_kwargs</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">pop</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">others_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">warn</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -915,11 +917,11 @@
 <span class="sd">    kwargs : dict</span>
 <span class="sd">        Dict of items from kwargs for which func has matching keyword arguments</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">spec</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getargspec</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-    <span class="n">func_args</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">defaults</span><span class="p">)</span> <span class="p">:])</span>
+    <span class="n">pars</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
+    <span class="n">pars</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pars</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">default</span> <span class="o">!=</span> <span class="n">p</span><span class="o">.</span><span class="n">empty</span><span class="p">]</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-        <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">func_args</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">pars</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">pop</span><span class="p">:</span>
                 <span class="n">ret</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
