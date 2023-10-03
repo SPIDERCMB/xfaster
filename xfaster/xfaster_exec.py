@@ -817,10 +817,12 @@ def get_func_defaults(func):
     -------
     dict of kwargs and their default values
     """
-    spec = inspect.getargspec(func)
+    pars = inspect.signature(func).parameters
     from collections import OrderedDict
 
-    return OrderedDict(zip(spec.args[-len(spec.defaults) :], spec.defaults))
+    return OrderedDict(
+        [(k, p.default) for k, p in pars.items() if p.default != p.empty]
+    )
 
 
 def extract_func_kwargs(func, kwargs, pop=False, others_ok=True, warn=False):
@@ -848,11 +850,11 @@ def extract_func_kwargs(func, kwargs, pop=False, others_ok=True, warn=False):
     kwargs : dict
         Dict of items from kwargs for which func has matching keyword arguments
     """
-    spec = inspect.getargspec(func)
-    func_args = set(spec.args[-len(spec.defaults) :])
+    pars = inspect.signature(func).parameters
+    pars = [k for k, p in pars.items() if p.default != p.empty]
     ret = {}
     for k in list(kwargs.keys()):
-        if k in func_args:
+        if k in pars:
             if pop:
                 ret[k] = kwargs.pop(k)
             else:

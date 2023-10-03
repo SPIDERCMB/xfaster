@@ -28,7 +28,7 @@ setup(
     description="A fast power spectrum and likelihood estimator for CMB datasets",
     long_description=read("README.rst"),
     license="MIT",
-    url="https://github.com/SPIDER-CMB/xfaster",
+    url="https://github.com/SPIDERCMB/xfaster",
     packages=["xfaster"],
     package_dir={"xfaster": "xfaster"},
     entry_points={"console_scripts": ["xfaster=xfaster:xfaster_main"]},
