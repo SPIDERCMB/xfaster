@@ -97,7 +97,7 @@ def batch_sub(
     echo=True,
     delete=True,
     submit=True,
-    scheduler="pbs",
+    scheduler="slurm",
     debug=False,
     exclude=None,
     verbose=False,
@@ -532,11 +532,11 @@ class JobArgumentParser(object):
                     ),
                 ),
                 (
-                    "slurm",
+                    "pbs",
                     dict(
                         action="store_true",
                         default=False,
-                        help="Create SLURM (rather than PBS) job scripts",
+                        help="Create PBS (rather than SLURM) job scripts",
                     ),
                 ),
                 (
@@ -719,7 +719,9 @@ class JobArgumentParser(object):
             group_by=args["group"],
             serial=args["serial"],
         )
-        if args["slurm"]:
+        if args["pbs"]:
+            self.job_opts["scheduler"] = "pbs"
+        else:
             self.job_opts["scheduler"] = "slurm"
 
         time = self.time / args["cpu_speed"] / scale
