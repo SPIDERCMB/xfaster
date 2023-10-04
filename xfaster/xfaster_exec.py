@@ -1584,9 +1584,7 @@ class XFasterJobGroup(object):
 
         """
 
-        # XFaster runs faster with OMP and does not use MPI
-        mpi = False
-        mpi_procs = None
+        # XFaster runs faster with OMP
         if omp_threads is None:
             omp_threads = ppn
 
@@ -1611,15 +1609,7 @@ class XFasterJobGroup(object):
         if mem is not None:
             mem *= ppn
 
-        if not mpi:
-            mpi_procs = None
-        elif mpi_procs is None and ppn is not None:
-            mpi_procs = ppn
-
-        if pbs:
-            scheduler = "pbs"
-        else:
-            scheduler = "slurm"
+        scheduler = "slurm"
 
         self.batch_args = dict(
             workdir=workdir,
@@ -1631,7 +1621,6 @@ class XFasterJobGroup(object):
             queue=queue,
             env_script=env_script,
             omp_threads=omp_threads,
-            mpi_procs=mpi_procs,
             nice=nice,
             delete=False,
             submit=not test,
