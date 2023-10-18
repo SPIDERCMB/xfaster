@@ -590,7 +590,9 @@ class XFaster(object):
             for f in np.atleast_1d(dset.split(",")):
                 files = glob.glob(os.path.join(map_root, "{}.fits".format(f)))
                 if not len(files):
-                    raise OSError("Missing files in data subset {}".format(f))
+                    raise OSError(
+                        "Missing files for data subset {} in {}".format(f, droot)
+                    )
                 map_files.extend(files)
             map_files = sorted(map_files)
             map_files = [f for f in map_files if os.path.basename(f).startswith("map_")]
@@ -814,7 +816,7 @@ class XFaster(object):
                 )
                 nfiles = len(files)
                 if not nfiles:
-                    raise OSError("Missing {} sims for {}".format(name, f))
+                    raise OSError("Missing {} sims for {} in {}".format(name, f, root1))
                 if num_files is None:
                     num_files = out.get("num_{}{}".format(name, suffix), nfiles)
                 if num_files != nfiles:
@@ -911,7 +913,9 @@ class XFaster(object):
                 nfiles1 = len(tf)
                 if not nfiles1:
                     raise OSError(
-                        "Missing temp{} {} files for {}".format(group, name, f)
+                        "Missing temp{} {} files for {} in {}".format(
+                            group, name, f, root1
+                        )
                     )
                 if nfiles is None:
                     nfiles = out.get("num_{}{}".format(name, suffix), nfiles1)
@@ -987,7 +991,9 @@ class XFaster(object):
                 files1 = np.asarray([os.path.join(root1, f) for f in map_names])
                 for f in files1:
                     if not os.path.exists(f):
-                        raise OSError("Missing ref{} map {}".format(group, f))
+                        raise OSError(
+                            "Missing ref{} map {} in {}".format(group, f, root1)
+                        )
 
                 ref_root[group1] = root1
                 ref_files[group1] = files1
