@@ -588,10 +588,11 @@ class XFaster(object):
             map_root = os.path.join(droot, "data_{}".format(data_type))
             map_files = []
             for f in np.atleast_1d(dset.split(",")):
-                files = glob.glob(os.path.join(map_root, "{}.fits".format(f)))
+                pattern = os.path.join(map_root, "{}.fits".format(f))
+                files = glob.glob(pattern)
                 if not len(files):
                     raise OSError(
-                        "Missing files for data subset {} in {}".format(f, droot)
+                        "Missing files for data subset {} in {}".format(f, pattern)
                     )
                 map_files.extend(files)
             map_files = sorted(map_files)
@@ -807,16 +808,15 @@ class XFaster(object):
             root1 = os.path.join(data_root, root)
             all_files = []
             for f in map_files:
-                files = sorted(
-                    glob.glob(
-                        os.path.join(
-                            root1, f.replace(".fits", "_{}.fits".format(subset))
-                        )
-                    )
+                pattern = os.path.join(
+                    root1, f.replace(".fits", "_{}.fits".format(subset))
                 )
+                files = sorted(glob.glob(pattern))
                 nfiles = len(files)
                 if not nfiles:
-                    raise OSError("Missing {} sims for {} in {}".format(name, f, root1))
+                    raise OSError(
+                        "Missing {} sims for {} in {}".format(name, f, pattern)
+                    )
                 if num_files is None:
                     num_files = out.get("num_{}{}".format(name, suffix), nfiles)
                 if num_files != nfiles:
@@ -909,12 +909,13 @@ class XFaster(object):
                     continue
 
                 # ensemble of templates per map
-                tf = sorted(glob.glob(tf.replace(".fits", "_*.fits")))
+                pattern = tf.replace(".fits", "_*.fits")
+                tf = sorted(glob.glob(pattern))
                 nfiles1 = len(tf)
                 if not nfiles1:
                     raise OSError(
                         "Missing temp{} {} files for {} in {}".format(
-                            group, name, f, root1
+                            group, name, f, pattern
                         )
                     )
                 if nfiles is None:
@@ -991,9 +992,7 @@ class XFaster(object):
                 files1 = np.asarray([os.path.join(root1, f) for f in map_names])
                 for f in files1:
                     if not os.path.exists(f):
-                        raise OSError(
-                            "Missing ref{} map {} in {}".format(group, f, root1)
-                        )
+                        raise OSError("Missing ref{} map {}".format(group, f))
 
                 ref_root[group1] = root1
                 ref_files[group1] = files1
