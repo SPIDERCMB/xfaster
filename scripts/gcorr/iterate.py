@@ -197,7 +197,7 @@ while not np.all(list(transfer_exists.values())):
 # Once transfer function is done, all other seeds can run
 print("Submitting jobs for all seeds")
 cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers -o {o} -f 1 -n {n} > /dev/null".format(
-    g=args.gcorr_config, o=run_name_iter, n=g_cfg["gcorr_opts"]["nsim"]
+    g=args.gcorr_config, o=run_name_iter, n=g_cfg["gcorr_opts"]["nsim"] - 1
 )
 print(cmd)
 os.system(cmd)

@@ -27,7 +27,7 @@ if null:
     # no sample variance used for null tests
     fish_name = "invfish_nosampvar"
 else:
-    fish_name = "invfish"
+    fish_name = "inv_fish"
 
 output_tag = args.output_tag
 output_root = os.path.join(g_cfg["gcorr_opts"]["output_root"], args.root)
