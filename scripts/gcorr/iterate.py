@@ -47,7 +47,7 @@ ref_dir = os.path.join(g_cfg["gcorr_opts"]["output_root"], run_name)
 # run dir will be where all the iteration happens to update the reference
 rundir = ref_dir + "_iter"
 
-# if rundir doesn't exist or force_restsart, we start from scratch
+# if rundir doesn't exist or force_restart, we start from scratch
 if not os.path.exists(rundir) or args.force_restart:
     iternum = 0
 
@@ -197,7 +197,7 @@ while not np.all(list(transfer_exists.values())):
 # Once transfer function is done, all other seeds can run
 print("Submitting jobs for all seeds")
 cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers -o {o} -f 1 -n {n} > /dev/null".format(
-    g=args.gcorr_config, o=run_name_iter, n=g_cfg["gcorr_opts"]["nsim"] - 1
+    g=args.gcorr_config, o=run_name_iter, n=int(g_cfg["gcorr_opts"]["nsim"]) - 1
 )
 print(cmd)
 os.system(cmd)
