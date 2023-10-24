@@ -1,6 +1,6 @@
 """
-Copied from github on Oct 17 2023
-A iteration script used to update g_corr factors.
+Based on Oct 17 2023 iterate.py
+A iteration script used to update g_corr factors, but done without spawing jobs for della
 """
 import os
 import numpy as np
