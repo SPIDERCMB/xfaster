@@ -184,9 +184,7 @@ os.system(cmd)
 transfer_exists = {}
 for tag in tags:
     rundirf = os.path.join(rundir, tag)
-    transfer_files = glob.glob(
-        os.path.join(rundirf, "transfer_all*{}.npz".format(tag))
-    )
+    transfer_files = glob.glob(os.path.join(rundirf, "transfer_all*{}.npz".format(tag)))
     transfer_exists[tag] = bool(len(transfer_files))
 
 if np.all(list(transfer_exists.values())):
