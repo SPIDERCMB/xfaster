@@ -10,6 +10,7 @@ import time
 import copy
 import glob
 import shutil
+import subprocess as sp
 from matplotlib import use
 
 use("agg")
@@ -94,10 +95,10 @@ for tag in tags:
     rundirf = os.path.join(rundir, tag)
 
     # Remove transfer functions and bandpowers
-    os.system("rm -rf {}/bandpowers*".format(rundirf))
-    os.system("rm -rf {}/transfer*".format(rundirf))
-    os.system("rm -rf {}/ERROR*".format(rundirf))
-    os.system("rm -rf {}/logs".format(rundirf))
+    sp.call("rm -rf {}/bandpowers*".format(rundirf).split())
+    sp.call("rm -rf {}/transfer*".format(rundirf).split())
+    sp.call("rm -rf {}/ERROR*".format(rundirf).split())
+    sp.call("rm -rf {}/logs".format(rundirf).split())
 
     first = False
 
@@ -179,12 +180,13 @@ for tag in tags:
 
 # Submit a first job that reloads gcorr and computes the transfer function
 # that will be used by all the other seeds
-print("Sumitting first job")
-cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point transfer --reload-gcorr {s} -o {o} > /dev/null".format(
+base_cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 -o {o} {s}".format(
     g=args.gcorr_config, o=run_name_iter, s="--no-submit" if not args.submit else ""
 )
+print("Sumitting first job")
+cmd = "{cmd} --check-point transfer --reload-gcorr".format(cmd=base_cmd)
 print(cmd)
-os.system(cmd)
+sp.check_call(cmd.split(), stdout=sp.DEVNULL)
 
 transfer_exists = {}
 for tag in tags:
@@ -210,24 +212,20 @@ while not np.all(list(transfer_exists.values())):
 
 # Once transfer function is done, all other seeds can run
 print("Submitting jobs for all seeds")
-cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers -o {o} -f 1 -n {n} {s} > /dev/null".format(
-    g=args.gcorr_config,
-    o=run_name_iter,
+cmd = "{cmd} --check-point bandpowers -f 1 -n {n}".format(
+    cmd=base_cmd,
     n=int(g_cfg["gcorr_opts"]["nsim"]) - 1,
-    s="--no-submit" if not args.submit else "",
 )
 print(cmd)
-os.system(cmd)
+sp.check_call(cmd.split(), stdout=sp.DEVNULL)
 
 # If running jobs, wait for them to complete before computing gcorr factors
 if args.submit:
     print("Waiting for jobs to complete...")
-    while (
-        os.system("squeue -u {} | grep xfast > /dev/null".format(os.getenv("USER")))
-        == 0
-    ):
-        print("Number of jobs left +1:")
-        os.system("squeue -u {} | wc -l".format(os.getenv("USER")))
+    check_cmd = "squeue -u $USER | grep xfast"
+    while sp.call(check_cmd, shell=True, stdout=sp.DEVNULL) == 0:
+        jobs = int(sp.check_output("{} | wc -l".format(check_cmd), shell=True))
+        print("Number of jobs left:", jobs)
         time.sleep(10)
 
 print("Computing new gcorr factors")
@@ -236,7 +234,7 @@ for tag in tags:
         g=args.gcorr_config, r=run_name_iter, t=tag
     )
     print(cmd)
-    os.system(cmd)
+    sp.check_call(cmd.split())
 
 for tag in tags:
     bp_files = glob.glob("{}/{}/bandpowers*".format(rundir, tag))
