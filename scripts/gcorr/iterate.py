@@ -1,5 +1,6 @@
 """
-A iteration script used to update g_corr factors.
+A iteration script used to update g_corr factors. Can either be run in series
+or submit jobs to run in parallel.
 """
 import os
 import numpy as np
@@ -22,6 +23,12 @@ allow_extreme = False
 
 P = ap.ArgumentParser()
 P.add_argument("--gcorr-config", help="The config file for gcorr computation")
+P.add_argument(
+    "--no-submit",
+    action="store_true",
+    default=False,
+    help="Don't submit jobs; run serially on current session",
+)
 P.add_argument(
     "--force-restart",
     action="store_true",
@@ -173,17 +180,23 @@ for tag in tags:
 # Submit a first job that reloads gcorr and computes the transfer function
 # that will be used by all the other seeds
 print("Sumitting first job")
-cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point transfer --reload-gcorr -o {o} > /dev/null".format(
-    g=args.gcorr_config, o=run_name_iter
-)
+if args.no_submit:
+    cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point transfer --reload-gcorr --no-submit -o {o} > /dev/null".format(
+        g=args.gcorr_config, o=run_name_iter
+    )
+else:
+    cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point transfer --reload-gcorr -o {o} > /dev/null".format(
+        g=args.gcorr_config, o=run_name_iter
+    )
 print(cmd)
 os.system(cmd)
 
 transfer_exists = {}
 for tag in tags:
     transfer_exists[tag] = False
-while not np.all(list(transfer_exists.values())):
-    # wait until transfer functions are done to submit rest of jobs
+
+# If running in series, check that transfer function exists. Ff not, error and exit
+if args.no_submit:
     for tag in tags:
         rundirf = os.path.join(rundir, tag)
         transfer_files = glob.glob(
@@ -191,22 +204,49 @@ while not np.all(list(transfer_exists.values())):
         )
         transfer_exists[tag] = bool(len(transfer_files))
 
-    print("transfer exists: ", transfer_exists)
-    time.sleep(15)
+    if np.all(list(transfer_exists.values())):
+        print("transfer exists: ", transfer_exists)
+    else:
+        raise RuntimeError("Some/all transfer functions not made.", transfer_exists)
+        sys.exit(1)
+
+# If running with jobs, wait until transfer functions are done to submit rest of jobs
+else:
+    while not np.all(list(transfer_exists.values())):
+        for tag in tags:
+            rundirf = os.path.join(rundir, tag)
+            transfer_files = glob.glob(
+                os.path.join(rundirf, "transfer_all*{}.npz".format(tag))
+            )
+            transfer_exists[tag] = bool(len(transfer_files))
+
+        print("transfer exists: ", transfer_exists)
+        time.sleep(15)
+
 
 # Once transfer function is done, all other seeds can run
 print("Submitting jobs for all seeds")
-cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers -o {o} -f 1 -n {n} > /dev/null".format(
-    g=args.gcorr_config, o=run_name_iter, n=int(g_cfg["gcorr_opts"]["nsim"]) - 1
-)
+if args.no_submit:
+    cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers -o {o} -f 1 -n {n} --no-submit > /dev/null".format(
+        g=args.gcorr_config, o=run_name_iter, n=int(g_cfg["gcorr_opts"]["nsim"]) - 1
+    )
+else:
+    cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers -o {o} -f 1 -n {n} > /dev/null".format(
+        g=args.gcorr_config, o=run_name_iter, n=int(g_cfg["gcorr_opts"]["nsim"]) - 1
+    )
 print(cmd)
 os.system(cmd)
 
-print("Waiting for jobs to complete...")
-while os.system("squeue -u {} | grep xfast > /dev/null".format(os.getenv("USER"))) == 0:
-    print("Number of jobs left +1:")
-    os.system("squeue -u {} | wc -l".format(os.getenv("USER")))
-    time.sleep(10)
+# If running jobs, wait for them to complete before computing gcorr factors
+if not args.no_submit:
+    print("Waiting for jobs to complete...")
+    while (
+        os.system("squeue -u {} | grep xfast > /dev/null".format(os.getenv("USER")))
+        == 0
+    ):
+        print("Number of jobs left +1:")
+        os.system("squeue -u {} | wc -l".format(os.getenv("USER")))
+        time.sleep(10)
 
 print("Computing new gcorr factors")
 for tag in tags:
