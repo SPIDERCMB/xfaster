@@ -438,6 +438,10 @@ class XFaster(object):
 
         # configure logger
         self.logger = logging.getLogger("xfaster")
+        # replace any existing handlers before adding one
+        if logger.hasHandlers():
+            for h in list(logger.handlers):
+                logger.removeHandler(h)
         self.logger.addHandler(handler)
 
         # set logging level
