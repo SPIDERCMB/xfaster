@@ -25,8 +25,8 @@ P = ap.ArgumentParser()
 P.add_argument("--gcorr-config", help="The config file for gcorr computation")
 P.add_argument(
     "--no-submit",
-    action="store_true",
-    default=False,
+    dest="submit",
+    action="store_false",
     help="Don't submit jobs; run serially on current session",
 )
 P.add_argument(
@@ -181,7 +181,7 @@ for tag in tags:
 # that will be used by all the other seeds
 print("Sumitting first job")
 cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point transfer --reload-gcorr {s} -o {o} > /dev/null".format(
-    g=args.gcorr_config, o=run_name_iter, s="--no-submit" if args.no_submit else ""
+    g=args.gcorr_config, o=run_name_iter, s="--no-submit" if not args.submit else ""
 )
 print(cmd)
 os.system(cmd)
@@ -199,7 +199,7 @@ while not np.all(list(transfer_exists.values())):
         transfer_exists[tag] = bool(len(transfer_files))
 
     print("transfer exists: ", transfer_exists)
-    if args.no_submit:
+    if not args.submit:
         if np.all(list(transfer_exists.values())):
             break
         raise RuntimeError(
@@ -214,13 +214,13 @@ cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers
     g=args.gcorr_config,
     o=run_name_iter,
     n=int(g_cfg["gcorr_opts"]["nsim"]) - 1,
-    s="--no-submit" if args.no_submit else "",
+    s="--no-submit" if not args.submit else "",
 )
 print(cmd)
 os.system(cmd)
 
 # If running jobs, wait for them to complete before computing gcorr factors
-if not args.no_submit:
+if args.submit:
     print("Waiting for jobs to complete...")
     while (
         os.system("squeue -u {} | grep xfast > /dev/null".format(os.getenv("USER")))
