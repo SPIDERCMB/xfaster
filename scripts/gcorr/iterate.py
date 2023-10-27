@@ -180,23 +180,17 @@ for tag in tags:
 # Submit a first job that reloads gcorr and computes the transfer function
 # that will be used by all the other seeds
 print("Sumitting first job")
-if args.no_submit:
-    cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point transfer --reload-gcorr --no-submit -o {o} > /dev/null".format(
-        g=args.gcorr_config, o=run_name_iter
-    )
-else:
-    cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point transfer --reload-gcorr -o {o} > /dev/null".format(
-        g=args.gcorr_config, o=run_name_iter
-    )
+cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point transfer --reload-gcorr {s} -o {o} > /dev/null".format(
+    g=args.gcorr_config, o=run_name_iter, s="--no-submit" if args.no_submit else ""
+)
 print(cmd)
 os.system(cmd)
 
 transfer_exists = {}
 for tag in tags:
     transfer_exists[tag] = False
-
-# If running in series, check that transfer function exists. Ff not, error and exit
-if args.no_submit:
+while not np.all(list(transfer_exists.values())):
+    # wait until transfer functions are done to submit rest of jobs
     for tag in tags:
         rundirf = os.path.join(rundir, tag)
         transfer_files = glob.glob(
@@ -204,36 +198,19 @@ if args.no_submit:
         )
         transfer_exists[tag] = bool(len(transfer_files))
 
-    if np.all(list(transfer_exists.values())):
-        print("transfer exists: ", transfer_exists)
+    print("transfer exists: ", transfer_exists)
+    if args.no_submit:
+        if np.all(list(transfer_exists.values())):
+            break
+        raise RuntimeError("Some/all transfer functions not made: {}".format(transfer_exists))
     else:
-        raise RuntimeError("Some/all transfer functions not made.", transfer_exists)
-        sys.exit(1)
-
-# If running with jobs, wait until transfer functions are done to submit rest of jobs
-else:
-    while not np.all(list(transfer_exists.values())):
-        for tag in tags:
-            rundirf = os.path.join(rundir, tag)
-            transfer_files = glob.glob(
-                os.path.join(rundirf, "transfer_all*{}.npz".format(tag))
-            )
-            transfer_exists[tag] = bool(len(transfer_files))
-
-        print("transfer exists: ", transfer_exists)
         time.sleep(15)
-
 
 # Once transfer function is done, all other seeds can run
 print("Submitting jobs for all seeds")
-if args.no_submit:
-    cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers -o {o} -f 1 -n {n} --no-submit > /dev/null".format(
-        g=args.gcorr_config, o=run_name_iter, n=int(g_cfg["gcorr_opts"]["nsim"]) - 1
-    )
-else:
-    cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers -o {o} -f 1 -n {n} > /dev/null".format(
-        g=args.gcorr_config, o=run_name_iter, n=int(g_cfg["gcorr_opts"]["nsim"]) - 1
-    )
+cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers -o {o} -f 1 -n {n} {s} > /dev/null".format(
+    g=args.gcorr_config, o=run_name_iter, n=int(g_cfg["gcorr_opts"]["nsim"]) - 1, s="--no-submit" if args.no_submit else ""
+)
 print(cmd)
 os.system(cmd)
 
