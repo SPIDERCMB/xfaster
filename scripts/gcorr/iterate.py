@@ -202,14 +202,19 @@ while not np.all(list(transfer_exists.values())):
     if args.no_submit:
         if np.all(list(transfer_exists.values())):
             break
-        raise RuntimeError("Some/all transfer functions not made: {}".format(transfer_exists))
+        raise RuntimeError(
+            "Some/all transfer functions not made: {}".format(transfer_exists)
+        )
     else:
         time.sleep(15)
 
 # Once transfer function is done, all other seeds can run
 print("Submitting jobs for all seeds")
 cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 --check-point bandpowers -o {o} -f 1 -n {n} {s} > /dev/null".format(
-    g=args.gcorr_config, o=run_name_iter, n=int(g_cfg["gcorr_opts"]["nsim"]) - 1, s="--no-submit" if args.no_submit else ""
+    g=args.gcorr_config,
+    o=run_name_iter,
+    n=int(g_cfg["gcorr_opts"]["nsim"]) - 1,
+    s="--no-submit" if args.no_submit else "",
 )
 print(cmd)
 os.system(cmd)
