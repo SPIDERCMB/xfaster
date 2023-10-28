@@ -14,6 +14,11 @@ P = ap.ArgumentParser()
 P.add_argument("--gcorr-config", help="The config file for gcorr computation")
 P.add_argument("--output-tag", help="Which map tag")
 P.add_argument("-r", "--root", default="xfaster_gcal", help="XFaster outputs directory")
+P.add_argument(
+    "--fit-hist",
+    action="store_true",
+    help="Fit histogram for gcorr, rather than using the distribution variance",
+)
 args = P.parse_args()
 
 
@@ -90,6 +95,7 @@ for filename in files:
         else:
             qbs[spec] = np.vstack([qbs[spec], bp["qb"]["cmb_{}".format(spec)]])
 
+# Get average XF-estimated variance
 xf_var_mean = np.mean(inv_fishes, axis=0)
 xf_var = pt.arr_to_dict(xf_var_mean, bp["qb"])
 
@@ -100,8 +106,39 @@ out["gcorr"] = {}
 for spec in specs:
     stag = "cmb_{}".format(spec)
     out["gcorr"][spec] = np.ones(nbins)
-    fit_variance = np.var(qbs[spec], axis=0)
-    out["gcorr"][spec] = xf_var[stag] / fit_variance
+
+    if not args.fit_hist:
+        fit_variance = np.var(qbs[spec], axis=0)
+        out["gcorr"][spec] = xf_var[stag] / fit_variance
+        continue
+
+    for b0 in np.arange(nbins):
+        hist, bins = np.histogram(
+            np.asarray(qbs[spec])[:, b0], density=True, bins=int(nsim / 10.0)
+        )
+        bc = (bins[:-1] + bins[1:]) / 2.0
+
+        # Gauss Fisher-based params
+        A0 = np.max(hist)
+        sig0 = np.sqrt(xf_var[stag][b0])
+        mu0 = np.mean(qbs[spec][b0])
+
+        if spec in ["eb", "tb"] or null:
+            func = gauss
+        else:
+            func = lognorm
+            sig0 /= mu0
+            mu0 = np.log(mu0)
+
+        # Initial parameter guesses
+        p0 = [A0, 1.0 / sig0**2 / 2.0, mu0]
+
+        try:
+            popth, pcovh = opt.curve_fit(func, bc, hist, p0=p0, maxfev=int(1e9))
+            # gcorr is XF Fisher variance over fit variance
+            out["gcorr"][spec][b0] = popth[1] / p0[1]
+        except RuntimeError:
+            print("No hist fits found")
 
 outfile = os.path.join(output_root, "gcorr_corr{}.npz".format(output_tag))
 np.savez_compressed(outfile, **out)
