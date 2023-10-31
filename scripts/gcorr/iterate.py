@@ -122,12 +122,6 @@ for tag in tags:
     ref_file = os.path.join(ref_dir, "{0}/gcorr_{0}_total.npz".format(tag))
     rundirf = os.path.join(rundir, tag)
 
-    # Remove transfer functions and bandpowers
-    sp.call("rm -rf {}/bandpowers*".format(rundirf).split())
-    sp.call("rm -rf {}/transfer*".format(rundirf).split())
-    sp.call("rm -rf {}/ERROR*".format(rundirf).split())
-    sp.call("rm -rf {}/logs".format(rundirf).split())
-
     first = False
 
     # Get gcorr from reference folder, if it's there
@@ -206,15 +200,22 @@ for tag in tags:
 
     np.savez_compressed(ref_file, **gcorr)
 
-    if args.keep_iters:
-        rundirf_iter = os.path.join(rundir, tag, "{:03d}".format(iternum))
-        os.mkdir(rundirf_iter)
-        sp.call("rsync -a {} {}".format(rundirf, rundirf_iter).split())
-        sp.call("rsync -a {}/transfer* {}".format(rundirf, rundirf_iter).split())
-        sp.call("rsync -a {}/ERROR* {}".format(rundirf, rundirf_iter).split())
-        sp.call("rsync -a {}/logs* {}".format(rundirf, rundirf_iter).split())
-        if os.path.exists(fp):
-            sp.call("rsync -a {} {}".format(fp, rundirf_iter))
+    if iternum > 0:
+        if args.keep_iters:
+            # keep outputs from previous iteration
+            rundirf_iter = os.path.join(rundir, tag, "iter{:03d}".format(iternum - 1))
+            os.mkdir(rundirf_iter)
+            sp.call("rsync -a {}/bandpowers* {}".format(rundirf, rundirf_iter).split())
+            sp.call("rsync -a {}/transfer* {}".format(rundirf, rundirf_iter).split())
+            sp.call("rsync -a {}/ERROR* {}".format(rundirf, rundirf_iter).split())
+            sp.call("rsync -a {}/logs* {}".format(rundirf, rundirf_iter).split())
+            sp.call("rsync -a {}/gcorr* {}".format(rundirf, rundirf_iter))
+
+        # Remove transfer functions and bandpowers from run directory
+        sp.call("rm -rf {}/bandpowers*".format(rundirf).split())
+        sp.call("rm -rf {}/transfer*".format(rundirf).split())
+        sp.call("rm -rf {}/ERROR*".format(rundirf).split())
+        sp.call("rm -rf {}/logs".format(rundirf).split())
 
 # Submit a first job that reloads gcorr and computes the transfer function
 # that will be used by all the other seeds
