@@ -5,8 +5,6 @@ this code on a cluster-- it is extremely slow to do otherwise.
 There are three scripts used:
 
 1. run_xfaster.py ---- This calls XFaster either to run or submit jobs.
-The only part that you'll need to touch is at the beginning-- opts and
-submit_opts, to match the options you use for data/for your cluster.
 2. compute_gcorr.py  ---- A script that computes gcorr.npz file from all the
 bandpower.npz files. You'll never need to touch or run this script.
 3. iterate.py ---- A iteration script, that calls script 1 and 2 to get a
@@ -26,22 +24,19 @@ Required fields are:
  * output_root -- the parent directory where your gcorr XFaster runs will
      be written
  * nsim -- the number of simulations to use to compute gcorr
- * [xfaster_opts] -- this is where you'll put any string-type options
+ * [xfaster_opts] -- this is where you'll put any options
      that will be directly input to xfaster_run
+ * [submit_opts] -- this is where you'll put any options
+     that will be directly input to xfaster_submit
 
-2. Edit the beginning of iterate.py for non-string input options
-  to xfaster_run (xfaster_opts dictionary) or xfaster_submit (submit_opts).
-  Here you might change things like lmin, lmax, bin size, etc. and
-  omp_threads.
-
-3. Run iterate.py once to get the full set of XFaster output files in the
+2. Run iterate.py once to get the full set of XFaster output files in the
   reference directory.  Since we haven't computed gcorr yet, this will set
   apply_gcorr=False. Make sure to use as many OMP threads as possible since this
   is the step where the sims_xcorr file, which benefits the most from extra
   threads, is computed.  Your command should look like this:
   python iterate.py --gcorr-config path-to-my-gcorr-config.ini --reference
 
-4. Run iterate.py until convergence is reached. In practice, you will do:
+3. Run iterate.py until convergence is reached. In practice, you will do:
   iterate.py --gcorr-config path-to-my-gcorr-config.ini
   then wait for it to finish. Then look at the correction-to-the-correction
   that it both prints and plots (it should converge to 1s for TT, EE, BB),

@@ -5,7 +5,6 @@ or submit jobs to run in parallel.
 import os
 import numpy as np
 import argparse as ap
-from configparser import ConfigParser
 import time
 import copy
 import glob
@@ -53,12 +52,8 @@ P.add_argument(
 
 args = P.parse_args()
 
-assert os.path.exists(args.gcorr_config), "Missing config file {}".format(
-    args.gcorr_config
-)
-g_cfg = ConfigParser()
-g_cfg.read(args.gcorr_config)
-tags = g_cfg["gcorr_opts"]["map_tags"].split(",")
+g_cfg = gt.get_gcorr_config(args.gcorr_config)
+tags = g_cfg["gcorr_opts"]["map_tags"]
 
 specs = ["tt", "ee", "bb", "te", "eb", "tb"]
 
@@ -69,33 +64,10 @@ ref_dir = os.path.join(g_cfg["gcorr_opts"]["output_root"], run_name)
 # run dir will be where all the iteration happens to update the reference
 rundir = ref_dir + "_iter"
 
-# Change XFaster options here to suit your purposes
-xfaster_opts = dict(
-    likelihood=False,
-    residual_fit=False,
-    foreground_fit=False,
-    # change options below for your purposes
-    tbeb=True,
-    bin_width=25,
-    lmin=2,
-    lmax=500,
-)
-
-# Options for submitting to clusters
-submit_opts = dict(
-    nodes=1,
-    ppn=1,
-    mem=6,
-    omp_threads=10,
-    wallt=4,
-)
-
 run_opts = dict(
     cfg=g_cfg,
     output=run_name_iter,
     submit=args.submit,
-    xfaster_opts=xfaster_opts,
-    submit_opts=submit_opts,
 )
 
 # Submit an initial job that computes the all of the signal and noise spectra

@@ -18,7 +18,7 @@ def get_gcorr_config(filename):
     -------
     cfg : ConfigParser
     """
-    if isinstance(filename, ConfigParser):
+    if isinstance(filename, dict):
         return filename
 
     assert os.path.exists(filename), "Missing config file {}".format(filename)
@@ -26,7 +26,27 @@ def get_gcorr_config(filename):
     cfg = ConfigParser()
     cfg.read(filename)
 
-    return cfg
+    from ast import literal_eval
+
+    out = {}
+    for sec, sec_items in cfg.items():
+        if not len(sec_items):
+            continue
+        out[sec] = {}
+        for k, v in sec_items.items():
+            if k in ["map_tags"]:
+                v = [x.strip() for x in v.split(",")]
+            else:
+                try:
+                    v = literal_eval(v)
+                except:
+                    pass
+            if isinstance(v, str) and v.lower() in cfg.BOOLEAN_STATES:
+                v = cfg.getboolean(sec, k)
+
+            out[sec][k] = v
+
+    return out
 
 
 def run_xfaster_gcorr(
@@ -38,8 +58,6 @@ def run_xfaster_gcorr(
     sim_index=0,
     num_sims=1,
     submit=False,
-    xfaster_opts={},
-    submit_opts={},
 ):
     """
     Run XFaster for the gcorr calculation.
@@ -63,24 +81,17 @@ def run_xfaster_gcorr(
     submit : bool
         If True, submit jobs to a cluster.
         Requires submit_opts section to be present in the config
-    xfaster_opts : dict
-        Dictionary of options to pass to xfaster_run
-    submit_opts : dict
-        Dictionary of options for submitting to clusters
     """
     cfg = get_gcorr_config(cfg)
 
     gopts = cfg["gcorr_opts"]
+    opts = cfg["xfaster_opts"].copy()
 
-    opts = xfaster_opts.copy()
-    for k, v in cfg["xfaster_opts"].items():
-        opts[k] = v
-
-    null = cfg.getboolean("gcorr_opts", "null")
-    tags = gopts["map_tags"].split(",")
+    null = gopts["null"]
+    tags = gopts["map_tags"]
 
     if null:
-        opts["noise_type"] = xopts["noise_type"]
+        assert opts["noise_type"] is not None, "Missing noise_type"
         opts["sim_data_components"] = ["signal", "noise"]
     else:
         opts["noise_type"] = None
@@ -93,7 +104,7 @@ def run_xfaster_gcorr(
     opts["sim_data"] = True
 
     if submit:
-        opts.update(**submit_opts)
+        opts.update(**cfg["submit_opts"])
 
     seeds = list(range(sim_index, sim_index + num_sims))
 
@@ -133,7 +144,7 @@ def compute_gcal(cfg, output="xfaster_gcal", output_tag=None, fit_hist=False):
     """
     cfg = get_gcorr_config(cfg)
 
-    null = cfg.getboolean("gcorr_opts", "null")
+    null = cfg["gcorr_opts"]["null"]
     if null:
         # no sample variance used for null tests
         fish_name = "invfish_nosampvar"
@@ -143,7 +154,7 @@ def compute_gcal(cfg, output="xfaster_gcal", output_tag=None, fit_hist=False):
     output_root = os.path.join(cfg["gcorr_opts"]["output_root"], output)
 
     specs = ["tt", "ee", "bb", "te", "eb", "tb"]
-    nsim = cfg.getint("gcorr_opts", "nsim")
+    nsim = cfg["gcorr_opts"]["nsim"]
 
     # use gauss model for null bandpowers
     def gauss(qb, amp, width, offset):
