@@ -91,8 +91,6 @@ def run_xfaster_gcorr(
 
     if submit:
         opts.update(**submit_opts)
-        if omp_threads is not None:
-            opts["omp_threads"] = omp_threads
 
     seeds = list(range(sim_index, sim_index + num_sims))
 

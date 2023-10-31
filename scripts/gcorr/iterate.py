@@ -102,9 +102,11 @@ run_opts = dict(
 # that you will need to run the subsequent gcorr iterations.  This job should
 # use as many omp_threads as possible.
 if args.reference or not os.path.exists(ref_dir):
+    ref_opts = run_opts.copy()
+    ref_opts["output"] = run_name
     print("Generating reference run {}".format(ref_dir))
     args.force_restart = True
-    gt.run_xfaster_gcorr(apply_gcorr=False, **run_opts)
+    gt.run_xfaster_gcorr(apply_gcorr=False, **ref_opts)
 
 # if rundir doesn't exist or force_restart, we start from scratch
 if not os.path.exists(rundir) or args.force_restart:
