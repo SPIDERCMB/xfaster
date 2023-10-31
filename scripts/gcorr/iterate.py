@@ -17,10 +17,7 @@ use("agg")
 import matplotlib.pyplot as plt
 import xfaster as xf
 from xfaster import parse_tools as pt
-
-# Set this option to False to keep corrections to gcorr from being
-# too large on each iteration. Try if things aren't converging.
-allow_extreme = False
+from xfaster import gcorr_tools as gt
 
 P = ap.ArgumentParser()
 P.add_argument("--gcorr-config", help="The config file for gcorr computation")
@@ -35,6 +32,17 @@ P.add_argument(
     action="store_true",
     default=False,
     help="Force restarting from iteration 0-- remakes iteration dir",
+)
+P.add_argument(
+    "--allow-extreme",
+    action="store_true",
+    help="Do not clip gcorr corrections that are too large at each "
+    "iteration.  Try this if iterations are not converging.",
+)
+P.add_argument(
+    "--keep-iters",
+    action="store_true",
+    help="Store outputs from each iteration in a separate directory",
 )
 
 args = P.parse_args()
@@ -139,7 +147,7 @@ for tag in tags:
         if k in ["te", "eb", "tb"]:
             # We don't compute gcorr for off-diagonals
             v[:] = 1
-        if not allow_extreme:
+        if not args.allow_extreme:
             # Don't update gcorr if correction is extreme
             v[v < 0.05] /= gcorr_corr["gcorr"][k][v < 0.05]
             v[v > 5] /= gcorr_corr["gcorr"][k][v > 5]
@@ -178,15 +186,27 @@ for tag in tags:
 
     np.savez_compressed(ref_file, **gcorr)
 
+    if args.keep_iters:
+        rundirf_iter = os.path.join(rundir, tag, "{:03d}".format(iternum))
+        os.mkdir(rundirf_iter)
+        sp.call("rsync -a {} {}".format(rundirf, rundirf_iter).split())
+        sp.call("rsync -a {}/transfer* {}".format(rundirf, rundirf_iter).split())
+        sp.call("rsync -a {}/ERROR* {}".format(rundirf, rundirf_iter).split())
+        sp.call("rsync -a {}/logs* {}".format(rundirf, rundirf_iter).split())
+        if os.path.exists(fp):
+            sp.call("rsync -a {} {}".format(fp, rundirf_iter))
+
 # Submit a first job that reloads gcorr and computes the transfer function
 # that will be used by all the other seeds
-base_cmd = "python run_xfaster.py --gcorr-config {g} --omp 1 -o {o} {s}".format(
-    g=args.gcorr_config, o=run_name_iter, s="--no-submit" if not args.submit else ""
+run_opts = dict(
+    cfg=g_cfg,
+    output=run_name_iter,
+    submit=args.submit,
+    omp_threads=1,
 )
-print("Sumitting first job")
-cmd = "{cmd} --check-point transfer --reload-gcorr".format(cmd=base_cmd)
-print(cmd)
-sp.check_call(cmd.split(), stdout=sp.DEVNULL)
+
+print("Submitting first job")
+gt.run_xfaster_gcorr(checkpoint="transfer", reload_gcorr=True, **run_opts)
 
 transfer_exists = {}
 for tag in tags:
@@ -212,12 +232,12 @@ while not np.all(list(transfer_exists.values())):
 
 # Once transfer function is done, all other seeds can run
 print("Submitting jobs for all seeds")
-cmd = "{cmd} --check-point bandpowers -f 1 -n {n}".format(
-    cmd=base_cmd,
-    n=int(g_cfg["gcorr_opts"]["nsim"]) - 1,
+gt.run_xfaster_gcorr(
+    checkpoint="bandpowers",
+    sim_index=1,
+    num_sims=int(g_cfg["gcorr_opts"]["nsim"]) - 1,
+    **run_opts,
 )
-print(cmd)
-sp.check_call(cmd.split(), stdout=sp.DEVNULL)
 
 # If running jobs, wait for them to complete before computing gcorr factors
 if args.submit:
@@ -230,11 +250,8 @@ if args.submit:
 
 print("Computing new gcorr factors")
 for tag in tags:
-    cmd = "python compute_gcal.py --gcorr-config {g} -r {r} --output-tag {t}".format(
-        g=args.gcorr_config, r=run_name_iter, t=tag
-    )
-    print(cmd)
-    sp.check_call(cmd.split())
+    out = gt.compute_gcal(g_cfg, output=run_name_iter, output_tag=tag)
+    print("New gcorr correction computed (should converge to 1): ", out["gcorr"])
 
 for tag in tags:
     bp_files = glob.glob("{}/{}/bandpowers*".format(rundir, tag))
