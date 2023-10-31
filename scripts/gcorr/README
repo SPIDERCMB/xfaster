@@ -29,17 +29,17 @@ Required fields are:
  * [xfaster_opts] -- this is where you'll put any string-type options
      that will be directly input to xfaster_run
 
-2. Edit the beginning of run_xfaster.py for non-string input options
-  to xfaster_run (opts dictionary) or xfaster_submit (submit_opts).
+2. Edit the beginning of iterate.py for non-string input options
+  to xfaster_run (xfaster_opts dictionary) or xfaster_submit (submit_opts).
   Here you might change things like lmin, lmax, bin size, etc. and
   omp_threads.
 
-3. Run run_xfaster.py once to get the full set of XFaster output files.
-  Since we haven't computed gcorr yet, you must use --no-gcorr. Make sure
-  to use as many OMP threads as possible since this is the step where the
-  sims_xcorr file, which benefits the most from extra threads, is computed.
-  Your command should look like this:
-  python run_xfaster.py --gcorr-config path-to-my-gcorr-config.ini --no-gcorr
+3. Run iterate.py once to get the full set of XFaster output files in the
+  reference directory.  Since we haven't computed gcorr yet, this will set
+  apply_gcorr=False. Make sure to use as many OMP threads as possible since this
+  is the step where the sims_xcorr file, which benefits the most from extra
+  threads, is computed.  Your command should look like this:
+  python iterate.py --gcorr-config path-to-my-gcorr-config.ini --reference
 
 4. Run iterate.py until convergence is reached. In practice, you will do:
   iterate.py --gcorr-config path-to-my-gcorr-config.ini

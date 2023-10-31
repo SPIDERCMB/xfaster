@@ -44,6 +44,12 @@ P.add_argument(
     action="store_true",
     help="Store outputs from each iteration in a separate directory",
 )
+P.add_argument(
+    "--reference",
+    action="store_true",
+    help="Run xfaster to build or rebuild the reference directory. "
+    "Implies --force-restart as well.",
+)
 
 args = P.parse_args()
 
@@ -62,6 +68,43 @@ run_name_iter = run_name + "_iter"
 ref_dir = os.path.join(g_cfg["gcorr_opts"]["output_root"], run_name)
 # run dir will be where all the iteration happens to update the reference
 rundir = ref_dir + "_iter"
+
+# Change XFaster options here to suit your purposes
+xfaster_opts = dict(
+    likelihood=False,
+    residual_fit=False,
+    foreground_fit=False,
+    # change options below for your purposes
+    tbeb=True,
+    bin_width=25,
+    lmin=2,
+    lmax=500,
+)
+
+# Options for submitting to clusters
+submit_opts = dict(
+    nodes=1,
+    ppn=1,
+    mem=6,
+    omp_threads=10,
+    wallt=4,
+)
+
+run_opts = dict(
+    cfg=g_cfg,
+    output=run_name_iter,
+    submit=args.submit,
+    xfaster_opts=xfaster_opts,
+    submit_opts=submit_opts,
+)
+
+# Submit an initial job that computes the all of the signal and noise spectra
+# that you will need to run the subsequent gcorr iterations.  This job should
+# use as many omp_threads as possible.
+if args.reference or not os.path.exists(ref_dir):
+    print("Generating reference run {}".format(ref_dir))
+    args.force_restart = True
+    gt.run_xfaster_gcorr(apply_gcorr=False, **run_opts)
 
 # if rundir doesn't exist or force_restart, we start from scratch
 if not os.path.exists(rundir) or args.force_restart:
@@ -198,13 +241,6 @@ for tag in tags:
 
 # Submit a first job that reloads gcorr and computes the transfer function
 # that will be used by all the other seeds
-run_opts = dict(
-    cfg=g_cfg,
-    output=run_name_iter,
-    submit=args.submit,
-    omp_threads=1,
-)
-
 print("Submitting first job")
 gt.run_xfaster_gcorr(checkpoint="transfer", reload_gcorr=True, **run_opts)
 

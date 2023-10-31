@@ -38,7 +38,8 @@ def run_xfaster_gcorr(
     sim_index=0,
     num_sims=1,
     submit=False,
-    omp_threads=None,
+    xfaster_opts={},
+    submit_opts={},
 ):
     """
     Run XFaster for the gcorr calculation.
@@ -62,28 +63,15 @@ def run_xfaster_gcorr(
     submit : bool
         If True, submit jobs to a cluster.
         Requires submit_opts section to be present in the config
-    omp_threads : int
-        Override omp_threads option from config file.
+    xfaster_opts : dict
+        Dictionary of options to pass to xfaster_run
+    submit_opts : dict
+        Dictionary of options for submitting to clusters
     """
     cfg = get_gcorr_config(cfg)
 
-    # Change XFaster options here to suit your purposes
-    opts = dict(
-        likelihood=False,
-        residual_fit=False,
-        foregorund_fit=False,
-        # change options below for your purposes
-        tbeb=True,
-        bin_width=25,
-        lmin=2,
-        lmax=500,
-    )
-
-    xopts = cfg["xfaster_opts"]
     gopts = cfg["gcorr_opts"]
-    sopts = cfg["submit_opts"]
-
-    opts.update(**cfg["xfaster_opts"])
+    opts = xfaster_opts.copy()
 
     null = cfg.getboolean("gcorr_opts", "null")
     tags = gopts["map_tags"].split(",")
@@ -102,7 +90,7 @@ def run_xfaster_gcorr(
     opts["sim_data"] = True
 
     if submit:
-        opts.update(**sopts)
+        opts.update(**submit_opts)
         if omp_threads is not None:
             opts["omp_threads"] = omp_threads
 
