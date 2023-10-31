@@ -71,7 +71,10 @@ def run_xfaster_gcorr(
     cfg = get_gcorr_config(cfg)
 
     gopts = cfg["gcorr_opts"]
+
     opts = xfaster_opts.copy()
+    for k, v in cfg["xfaster_opts"].items():
+        opts[k] = v
 
     null = cfg.getboolean("gcorr_opts", "null")
     tags = gopts["map_tags"].split(",")
