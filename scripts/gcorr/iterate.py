@@ -205,11 +205,13 @@ for tag in tags:
             # keep outputs from previous iteration
             rundirf_iter = os.path.join(rundir, tag, "iter{:03d}".format(iternum - 1))
             os.mkdir(rundirf_iter)
-            sp.call("rsync -a {}/bandpowers* {}".format(rundirf, rundirf_iter).split())
-            sp.call("rsync -a {}/transfer* {}".format(rundirf, rundirf_iter).split())
-            sp.call("rsync -a {}/ERROR* {}".format(rundirf, rundirf_iter).split())
-            sp.call("rsync -a {}/logs* {}".format(rundirf, rundirf_iter).split())
-            sp.call("rsync -a {}/gcorr* {}".format(rundirf, rundirf_iter))
+            sp.call(
+                "rsync -a {}/bandpowers* {}/.".format(rundirf, rundirf_iter).split()
+            )
+            sp.call("rsync -a {}/transfer* {}/.".format(rundirf, rundirf_iter).split())
+            sp.call("rsync -a {}/ERROR* {}/.".format(rundirf, rundirf_iter).split())
+            sp.call("rsync -a {}/logs* {}/.".format(rundirf, rundirf_iter).split())
+            sp.call("rsync -a {}/gcorr* {}/.".format(rundirf, rundirf_iter))
 
         # Remove transfer functions and bandpowers from run directory
         sp.call("rm -rf {}/bandpowers*".format(rundirf).split())
