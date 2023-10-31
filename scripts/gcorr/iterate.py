@@ -107,6 +107,9 @@ if args.reference or not os.path.exists(ref_dir):
     print("Generating reference run {}".format(ref_dir))
     args.force_restart = True
     gt.run_xfaster_gcorr(apply_gcorr=False, **ref_opts)
+    if args.submit:
+        print("Wait until reference run completes, then run this script again")
+        raise SystemExit
 
 # if rundir doesn't exist or force_restart, we start from scratch
 if not os.path.exists(rundir) or args.force_restart:
