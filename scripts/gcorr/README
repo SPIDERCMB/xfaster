@@ -2,12 +2,13 @@ Code package for calculating correction factors to g_ell using pre-generated
 simulation maps for each single mask. This procedure assumes you are running
 this code on a cluster-- it is extremely slow to do otherwise.
 
-There are three scripts used:
+There is one main script that calls two functions:
 
-1. run_xfaster.py ---- This calls XFaster either to run or submit jobs.
-2. compute_gcorr.py  ---- A script that computes gcorr.npz file from all the
+1. run_xfaster_gcorr ---- This function calls XFaster either to run or submit
+jobs for gcorr runs.
+2. compute_gcorr  ---- A function that computes gcorr.npz file from all the
 bandpower.npz files. You'll never need to touch or run this script.
-3. iterate.py ---- A iteration script, that calls script 1 and 2 to get a
+3. iterate.py ---- A iteration script, that calls function 1 and 2 to get a
 new gcorr.npz file each time. This is the main script you'll run.
 
 There is also a config file with options specific to computing gcorr.
@@ -27,7 +28,8 @@ Required fields are:
  * [xfaster_opts] -- this is where you'll put any options
      that will be directly input to xfaster_run
  * [submit_opts] -- this is where you'll put any options
-     that will be directly input to xfaster_submit
+     that will be directly input to xfaster_submit,
+     in addition to those in [xfaster_opts]
 
 2. Run iterate.py once to get the full set of XFaster output files in the
   reference directory.  Since we haven't computed gcorr yet, this will set
@@ -57,7 +59,7 @@ Required fields are:
      iteration's total gcorr as gcorr_<tag>_prev.npz.
   5. Plot gcorr total and the correction to gcorr total. Save in rundir/plots.
   6. Clear out rundir bandpowers/transfer functions/logs.
-  7. Call run_xfaster.py for the 0th sim seed while also reloading gcorr.
+  7. Call run_xfaster_gcorr for the 0th sim seed while also reloading gcorr.
      This does a couple things-- saves the new gcorr in the masks_xcorr file,
      so later seeds will use the right thing. And recompute the transfer
      function, which doesn't depend on the sim_index, so is only necessary to
@@ -65,7 +67,7 @@ Required fields are:
   8. After the transfer functions are all on disk, submit individual jobs for
      all the other seeds, just doing the bandpowers step for those.
   9. Monitor the queue, checking every 10 seconds for jobs still running.
-  10. Once they're all done, run compute_gcal.py, which saves a
+  10. Once they're all done, run compute_gcal, which saves a
      correction-to-gcorr as gcorr_corr_<tag>.npz in the rundir.
   11. Print out the values of the correction-to-gcorr.
   12. Exit.
