@@ -1,32 +1,32 @@
 import os
 import glob
-from configparser import ConfigParser
-from . import parse_tools as pt
 import numpy as np
+from . import parse_tools as pt
 
 
 def get_gcorr_config(filename):
     """
-    Return a ConfigParser for running the gcorr iteration scripts.
+    Return a dictionary of options for running the gcorr iteration scripts.
 
     Arguments
     ---------
-    filename : str or ConfigParser
+    filename : str or dict
         Filename to load.
 
     Returns
     -------
-    cfg : ConfigParser
+    cfg : dict
     """
     if isinstance(filename, dict):
         return filename
 
     assert os.path.exists(filename), "Missing config file {}".format(filename)
 
+    from configparser import ConfigParser
+    from ast import literal_eval
+
     cfg = ConfigParser()
     cfg.read(filename)
-
-    from ast import literal_eval
 
     out = {}
     for sec, sec_items in cfg.items():
@@ -64,7 +64,7 @@ def run_xfaster_gcorr(
 
     Arguments
     ---------
-    cfg : str or ConfigParser
+    cfg : str or dict
         Configuration to use
     output : str
         Output root where the data product will be stored.
@@ -131,7 +131,7 @@ def compute_gcal(cfg, output="xfaster_gcal", output_tag=None, fit_hist=False):
 
     Arguments
     ---------
-    cfg : str or ConfigParser
+    cfg : str or dict
         Configuration to use
     output : str
         Output root where the data product will be stored.
