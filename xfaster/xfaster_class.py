@@ -1888,25 +1888,28 @@ class XFaster(object):
                     gcorr_file = gcorr_file_in
 
                 if not os.path.exists(gcorr_file):
-                    self.warn("G correction file {} not found".format(gcorr_file))
-                    continue
+                    raise IOError("G correction file {} not found".format(gcorr_file))
 
                 gdata = pt.load_and_parse(gcorr_file)
                 gcorr = gdata["gcorr"]
                 for k, g in gcorr.items():
+                    stag = "cmb_{}".format(k)
+                    # skip spectra that aren't in bin_def
+                    # e.g. if running with tbeb=False
+                    if stag not in self.bin_def:
+                        continue
                     # check bins match g
-                    bd0 = self.bin_def["cmb_{}".format(k)]
-                    bd = gdata["bin_def"]["cmb_{}".format(k)]
+                    bd0 = self.bin_def[stag]
+                    bd = gdata["bin_def"][stag]
                     if len(bd0) < len(bd):
                         bd = bd[: len(bd0)]
                         gcorr[k] = g[: len(bd)]
                     if not np.all(bd0 == bd):
-                        self.warn(
+                        raise ValueError(
                             "G correction for map {} has incompatible bin def".format(
                                 tag
                             )
                         )
-                        break
                 else:
                     self.log(
                         "Found g correction for map {}: {}".format(tag, gcorr), "debug"
