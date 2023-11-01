@@ -104,6 +104,8 @@ if not os.path.exists(rundir) or args.force_restart:
         gcorr_data = {"bin_def": bp["bin_def"], "gcorr": {}, "data_version": 1}
         for spec in specs:
             stag = "cmb_{}".format(spec)
+            if stag not in bp["qb"]:
+                continue
             gcorr_data["gcorr"][spec] = np.ones_like(bp["qb"][stag])
         ref_file = os.path.join(ref_dir, tag, "gcorr_{}_total.npz".format(tag))
         np.savez_compressed(ref_file, **gcorr_data)

@@ -185,9 +185,6 @@ def compute_gcal(cfg, output="xfaster_gcal", output_tag=None, fit_hist=False):
     inv_fishes = None
     qbs = {}
 
-    for spec in specs:
-        qbs[spec] = None
-
     for filename in files:
         bp = pt.load_and_parse(filename)
         inv_fish = bp[fish_name]
@@ -203,23 +200,27 @@ def compute_gcal(cfg, output="xfaster_gcal", output_tag=None, fit_hist=False):
             inv_fishes = np.vstack([inv_fishes, np.diag(inv_fish)])
 
         for spec in specs:
-            if qbs[spec] is None:
-                qbs[spec] = bp["qb"]["cmb_{}".format(spec)]
+            stag = "cmb_{}".format(spec)
+            if stag not in bp["qb"]:
+                continue
+            qb1 = bp["qb"][stag]
+            if spec not in qbs:
+                qbs[spec] = qb1
             else:
-                qbs[spec] = np.vstack([qbs[spec], bp["qb"]["cmb_{}".format(spec)]])
+                qbs[spec] = np.vstack([qbs[spec], qb1])
 
     # Get average XF-estimated variance
     xf_var_mean = np.mean(inv_fishes, axis=0)
     xf_var = pt.arr_to_dict(xf_var_mean, bp["qb"])
 
     out["bin_def"] = bp["bin_def"]
-    nbins = len(out["bin_def"]["cmb_tt"])
     out["gcorr"] = {}
 
     import scipy.optimize as opt
 
-    for spec in specs:
+    for spec in qbs:
         stag = "cmb_{}".format(spec)
+        nbins = len(out["bin_def"][stag])
         out["gcorr"][spec] = np.ones(nbins)
 
         if not fit_hist:
