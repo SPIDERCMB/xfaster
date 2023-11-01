@@ -253,7 +253,10 @@ def compute_gcal(cfg, output="xfaster_gcal", output_tag=None, fit_hist=False):
                 popth, pcovh = opt.curve_fit(func, bc, hist, p0=p0, maxfev=int(1e9))
                 # gcorr is XF Fisher variance over fit variance
                 out["gcorr"][spec][b0] = popth[1] / p0[1]
-            except RuntimeError:
+            except RuntimeError as e:
+                print(
+                    "Error computing gcorr for {} bin {}: {}".format(spec, b0, str(e))
+                )
                 out["gcorr"][spec][b0] = np.nan
 
     outfile = os.path.join(output_root, "gcorr_corr{}.npz".format(output_tag))
