@@ -203,7 +203,7 @@ for tag in tags:
     if iternum > 0:
         if args.keep_iters:
             # keep outputs from previous iteration
-            rundirf_iter = os.path.join(rundir, tag, "iter{:03d}".format(iternum - 1))
+            rundirf_iter = os.path.join(rundirf, "iter{:03d}".format(iternum - 1))
             os.mkdir(rundirf_iter)
             sp.call(
                 "rsync -a {}/bandpowers* {}/.".format(rundirf, rundirf_iter).split()
