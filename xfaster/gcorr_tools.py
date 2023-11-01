@@ -141,9 +141,9 @@ def compute_gcal(cfg, output="xfaster_gcal", output_tag=None, fit_hist=False):
     output_tag : str
         Map tag to analyze
     fit_hist : bool
-        If True, fit the bandpower distribution to a histogram to compute the
-        calibration factor.  Otherwise, uses the simple variance of the
-        distribution.
+        If True, fit the bandpower histogram to a lognorm distribution to
+        compute the calibration factor.  Otherwise, uses the simple variance of
+        the distribution.
     """
     cfg = get_gcorr_config(cfg)
 

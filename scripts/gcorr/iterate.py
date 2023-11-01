@@ -39,6 +39,11 @@ P.add_argument(
     "iteration.  Try this if iterations are not converging.",
 )
 P.add_argument(
+    "--gcorr-fit-hist",
+    action="store_true",
+    help="Fit bandpower histogram to a lognorm distribution to compute gcorr",
+)
+P.add_argument(
     "--keep-iters",
     action="store_true",
     help="Store outputs from each iteration in a separate directory",
@@ -268,7 +273,9 @@ if args.submit:
 
 print("Computing new gcorr factors")
 for tag in tags:
-    out = gt.compute_gcal(g_cfg, output=run_name_iter, output_tag=tag)
+    out = gt.compute_gcal(
+        g_cfg, output=run_name_iter, output_tag=tag, fit_hist=args.gcorr_fit_hist
+    )
     print("New gcorr correction computed (should converge to 1): ", out["gcorr"])
 
 for tag in tags:
