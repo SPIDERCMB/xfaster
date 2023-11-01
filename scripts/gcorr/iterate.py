@@ -105,9 +105,9 @@ if not os.path.exists(rundir) or args.force_restart:
         for spec in specs:
             stag = "cmb_{}".format(spec)
             gcorr_data["gcorr"][spec] = np.ones_like(bp["qb"][stag])
-        np.savez_compressed(
-            os.path.join(ref_dir, tag, "gcorr_{}_total.npz".format(tag)), **gcorr_data
-        )
+        ref_file = os.path.join(ref_dir, tag, "gcorr_{}_total.npz".format(tag))
+        np.savez_compressed(ref_file, **gcorr_data)
+        os.symlink(ref_file, ref_file.replace(ref_dir, rundir))
 
 else:
     # check plots directory to find what iteration we're at
@@ -211,7 +211,7 @@ for tag in tags:
             sp.call("rsync -a {}/transfer* {}/.".format(rundirf, rundirf_iter).split())
             sp.call("rsync -a {}/ERROR* {}/.".format(rundirf, rundirf_iter).split())
             sp.call("rsync -a {}/logs* {}/.".format(rundirf, rundirf_iter).split())
-            sp.call("rsync -a {}/gcorr* {}/.".format(rundirf, rundirf_iter))
+            sp.call("rsync -aL {}/gcorr* {}/.".format(rundirf, rundirf_iter))
 
         # Remove transfer functions and bandpowers from run directory
         sp.call("rm -rf {}/bandpowers*".format(rundirf).split())

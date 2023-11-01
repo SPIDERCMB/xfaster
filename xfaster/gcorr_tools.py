@@ -113,9 +113,12 @@ def run_xfaster_gcorr(
     for tag in tags:
         opts["output_tag"] = tag
         opts["data_subset"] = os.path.join(gopts["data_subset"], "*{}".format(tag))
-        opts["gcorr_file"] = os.path.abspath(
+        gfile = os.path.realpath(
             os.path.join(opts["output_root"], tag, "gcorr_{}_total.npz".format(tag))
         )
+        opts["gcorr_file"] = gfile
+        if reload_gcorr:
+            assert os.path.exists(gfile), "Missing gcorr file {}".format(gfile)
 
         for s in seeds:
             opts["sim_index_default"] = s
