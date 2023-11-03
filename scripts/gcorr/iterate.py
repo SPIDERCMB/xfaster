@@ -208,18 +208,21 @@ for tag in tags:
     np.savez_compressed(ref_file, **gcorr)
 
     if iternum > 0:
+        flist = ["bandpowers", "transfer", "logs"]
+        if len(glob.glob("{}/ERROR*".format(rundirf))) > 0:
+            flist += ["ERROR"]
         if args.keep_iters:
             # keep outputs from previous iteration
             rundirf_iter = os.path.join(rundirf, "iter{:03d}".format(iternum - 1))
             os.mkdir(rundirf_iter)
-            for f in ["bandpowers", "transfer", "ERROR", "logs", "gcorr"]:
-                sp.call(
+            for f in flist + ["gcorr"]:
+                sp.check_call(
                     "rsync -aL {}/{}* {}/".format(rundirf, f, rundirf_iter), shell=True
                 )
 
         # Remove transfer functions and bandpowers from run directory
-        for f in ["bandpowers", "transfer", "ERROR", "logs"]:
-            sp.call("rm -rf {}/{}*".format(rundirf, f), shell=True)
+        for f in flist:
+            sp.check_call("rm -rf {}/{}*".format(rundirf, f), shell=True)
 
 # Submit a first job that reloads gcorr and computes the transfer function
 # that will be used by all the other seeds
