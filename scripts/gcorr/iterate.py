@@ -212,19 +212,14 @@ for tag in tags:
             # keep outputs from previous iteration
             rundirf_iter = os.path.join(rundirf, "iter{:03d}".format(iternum - 1))
             os.mkdir(rundirf_iter)
-            sp.call(
-                "rsync -a {}/bandpowers* {}/.".format(rundirf, rundirf_iter).split()
-            )
-            sp.call("rsync -a {}/transfer* {}/.".format(rundirf, rundirf_iter).split())
-            sp.call("rsync -a {}/ERROR* {}/.".format(rundirf, rundirf_iter).split())
-            sp.call("rsync -a {}/logs* {}/.".format(rundirf, rundirf_iter).split())
-            sp.call("rsync -aL {}/gcorr* {}/.".format(rundirf, rundirf_iter))
+            for f in ["bandpowers", "transfer", "ERROR", "logs", "gcorr"]:
+                sp.call(
+                    "rsync -aL {}/{}* {}/".format(rundirf, f, rundirf_iter), shell=True
+                )
 
         # Remove transfer functions and bandpowers from run directory
-        sp.call("rm -rf {}/bandpowers*".format(rundirf).split())
-        sp.call("rm -rf {}/transfer*".format(rundirf).split())
-        sp.call("rm -rf {}/ERROR*".format(rundirf).split())
-        sp.call("rm -rf {}/logs".format(rundirf).split())
+        for f in ["bandpowers", "transfer", "ERROR", "logs"]:
+            sp.call("rm -rf {}/{}*".format(rundirf, f), shell=True)
 
 # Submit a first job that reloads gcorr and computes the transfer function
 # that will be used by all the other seeds
