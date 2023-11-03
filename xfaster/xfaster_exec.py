@@ -90,6 +90,7 @@ def xfaster_run(
     sim_index_noise=None,
     sim_index_foreground=None,
     sim_index_default=0,
+    num_sims=1,
     signal_type_sim=None,
     sim_data_r=None,
     noise_type_sim=None,
@@ -337,6 +338,11 @@ def xfaster_run(
     sim_index_default : int
         Default sim index to use for any component with index < 0 or None
         in ``sim_index_<comp>``.
+    num_sims : int
+        If > 1, repeat the data, bandpowers and likelihood checkpoints this many
+        times, incrementing the value of ``sim_index_default`` by 1 each time,
+        starting from the input value.  Only used if ``sim_data`` is True.
+        All other options remain the same for each iteration.
     signal_type_sim : str
         The variant of signal sims to use for sim_index data maps.
         This enables having a different noise sim ensemble to use for
@@ -589,6 +595,7 @@ def xfaster_run(
         sim=sim_data,
         components=None if not sim_data else sim_data_components,
         index=None if not sim_data else sim_index,
+        num_sims=None if not sim_data else num_sims,
         signal_type_sim=signal_type_sim if sim_data_r is None else "r",
         r=sim_data_r,
         noise_type_sim=noise_type_sim,
@@ -605,6 +612,7 @@ def xfaster_run(
     config_vars.remove_option("XFaster General", "sim_index")
     config_vars.remove_option("XFaster General", "qb_file_data")
     config_vars.remove_option("XFaster General", "save_sim_data")
+    data_opts.pop("num_sims")
 
     kernel_opts = dict(
         pixwin=pixwin,
@@ -751,34 +759,43 @@ def xfaster_run(
         X.log("Loading spectrum shape for bandpowers...", "notice")
         X.get_signal_shape(**shape_opts)
 
-    X.log(
-        "Computing masked {} cross-spectra...".format(
-            "simulated data" if sim_data else "data"
-        ),
-        "notice",
-    )
-    X.get_masked_data(**data_opts)
-
-    if multi_map:
-        X.log("Computing multi-map bandpowers...", "notice")
-        qb, inv_fish = X.get_bandpowers(return_qb=True, **bandpwr_opts)
-
-        if likelihood:
-            X.log("Computing multi-map likelihood...", "notice")
-            X.get_likelihood(qb, inv_fish, **like_opts)
-
+    if sim_data:
+        idx0 = data_opts["index"]["default"]
     else:
-        for map_tag, map_file in zip(X.map_tags, X.map_files):
-            X.log("Processing map {}: {}".format(map_tag, map_file), "notice")
+        num_sims = 1
+        idx0 = 0
 
-            X.log("Computing bandpowers for map {}".format(map_tag), "info")
-            qb, inv_fish = X.get_bandpowers(
-                map_tag=map_tag, return_qb=True, **bandpwr_opts
-            )
+    for idx in range(idx0, idx0 + num_sims):
+        if sim_data:
+            data_opts["index"]["default"] = idx
+        X.log(
+            "Computing masked {} cross-spectra...".format(
+                "simulated data index {}".format(idx) if sim_data else "data"
+            ),
+            "notice",
+        )
+        X.get_masked_data(**data_opts)
+
+        if multi_map:
+            X.log("Computing multi-map bandpowers...", "notice")
+            qb, inv_fish = X.get_bandpowers(return_qb=True, **bandpwr_opts)
 
             if likelihood:
-                X.log("Computing likelihoods for map {}".format(map_tag), "info")
-                X.get_likelihood(qb, inv_fish, map_tag=map_tag, **like_opts)
+                X.log("Computing multi-map likelihood...", "notice")
+                X.get_likelihood(qb, inv_fish, **like_opts)
+
+        else:
+            for map_tag, map_file in zip(X.map_tags, X.map_files):
+                X.log("Processing map {}: {}".format(map_tag, map_file), "notice")
+
+                X.log("Computing bandpowers for map {}".format(map_tag), "info")
+                qb, inv_fish = X.get_bandpowers(
+                    map_tag=map_tag, return_qb=True, **bandpwr_opts
+                )
+
+                if likelihood:
+                    X.log("Computing likelihoods for map {}".format(map_tag), "info")
+                    X.get_likelihood(qb, inv_fish, map_tag=map_tag, **like_opts)
 
     cpu_elapsed = cpu_time() - cpu_start
     time_elapsed = time.time() - time_start
@@ -1184,6 +1201,7 @@ def xfaster_parse(args=None, test=False):
             metavar="COMP",
         )
         add_arg(G, "sim_index_default", argtype=int)
+        add_arg(G, "num_sims", argtype=int)
         add_arg(G, "sim_index_signal", argtype=int)
         add_arg(G, "sim_index_noise", argtype=int)
         add_arg(G, "sim_index_foreground", argtype=int)
