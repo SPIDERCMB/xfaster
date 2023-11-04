@@ -50,24 +50,33 @@ def get_gcorr_config(filename):
 
 
 def run_xfaster_gcorr(
-    cfg,
-    output="xfaster_gcal",
+    map_tags,
+    data_subset="full",
+    output_root="xfaster_gcal",
+    null=False,
     apply_gcorr=True,
     reload_gcorr=False,
     checkpoint=None,
     sim_index=0,
     num_sims=1,
     submit=False,
+    **opts,
 ):
     """
     Run XFaster for the gcorr calculation.
 
     Arguments
     ---------
-    cfg : str or dict
-        Configuration to use
-    output : str
+    map_tags : list of str
+        List of map tags for which to run XFaster
+    data_subset : str
+        Data subset directory from which to load data maps.  The glob pattern
+        for the `data_subset` XFaster option is built from this string for each
+        map tag as `<data_subset>/*_<tag>`.
+    output_root : str
         Output root where the data product will be stored.
+    null : bool
+        If True, this is a null test run.
     apply_gcorr : bool
         Apply a g-correction in the XFaster computation
     reload_gcorr : bool
@@ -81,15 +90,10 @@ def run_xfaster_gcorr(
     submit : bool
         If True, submit jobs to a cluster.
         Requires submit_opts section to be present in the config
+    opts :
+        Remaining options are passed directly to `xfaster_run` or
+        `xfaster_submit`.
     """
-    cfg = get_gcorr_config(cfg)
-
-    gopts = cfg["gcorr_opts"]
-    opts = cfg["xfaster_opts"].copy()
-
-    null = gopts["null"]
-    tags = gopts["map_tags"]
-
     if null:
         assert opts["noise_type"] is not None, "Missing noise_type"
         opts["sim_data_components"] = ["signal", "noise"]
@@ -97,24 +101,21 @@ def run_xfaster_gcorr(
         opts["noise_type"] = None
         opts["sim_data_components"] = ["signal"]
 
-    opts["output_root"] = os.path.join(gopts["output_root"], output)
+    opts["output_root"] = output_root
     opts["apply_gcorr"] = apply_gcorr
     opts["reload_gcorr"] = reload_gcorr
     opts["checkpoint"] = checkpoint
     opts["sim_data"] = True
 
-    if submit:
-        opts.update(**cfg["submit_opts"])
-
     seeds = list(range(sim_index, sim_index + num_sims))
 
     from .xfaster_exec import xfaster_submit, xfaster_run
 
-    for tag in tags:
+    for tag in map_tags:
         opts["output_tag"] = tag
-        opts["data_subset"] = os.path.join(gopts["data_subset"], "*{}".format(tag))
+        opts["data_subset"] = os.path.join(data_subset, "*_{}".format(tag))
         gfile = os.path.realpath(
-            os.path.join(opts["output_root"], tag, "gcorr_{}_total.npz".format(tag))
+            os.path.join(output_root, tag, "gcorr_{}_total.npz".format(tag))
         )
         opts["gcorr_file"] = gfile
         if reload_gcorr:
@@ -128,36 +129,30 @@ def run_xfaster_gcorr(
                 xfaster_run(**opts)
 
 
-def compute_gcal(cfg, output="xfaster_gcal", output_tag=None, fit_hist=False):
+def compute_gcal(
+    output_root="xfaster_gcal", output_tag=None, null=False, fit_hist=False
+):
     """
     Compute gcorr calibration
 
     Arguments
     ---------
-    cfg : str or dict
-        Configuration to use
-    output : str
+    output_root : str
         Output root where the data product will be stored.
     output_tag : str
         Map tag to analyze
+    null : bool
+        If True, this is a null test dataset.
     fit_hist : bool
         If True, fit the bandpower histogram to a lognorm distribution to
         compute the calibration factor.  Otherwise, uses the simple variance of
         the distribution.
     """
-    cfg = get_gcorr_config(cfg)
-
-    null = cfg["gcorr_opts"]["null"]
     if null:
         # no sample variance used for null tests
         fish_name = "invfish_nosampvar"
     else:
         fish_name = "inv_fish"
-
-    output_root = os.path.join(cfg["gcorr_opts"]["output_root"], output)
-
-    specs = ["tt", "ee", "bb", "te", "eb", "tb"]
-    nsim = cfg["gcorr_opts"]["nsim"]
 
     # use gauss model for null bandpowers
     def gauss(qb, amp, width, offset):
@@ -178,6 +173,10 @@ def compute_gcal(cfg, output="xfaster_gcal", output_tag=None, fit_hist=False):
 
     file_glob = os.path.join(output_root, "bandpowers_sim*{}.npz".format(output_tag))
     files = sorted(glob.glob(file_glob))
+    efiles = glob.glob(
+        os.path.join(output_root, "ERROR_" + os.path.basename(file_glob))
+    )
+    nsim = len(files) + len(efiles)
     if not len(files):
         raise OSError("No bandpowers files found in {}".format(output_root))
 
@@ -199,11 +198,10 @@ def compute_gcal(cfg, output="xfaster_gcal", output_tag=None, fit_hist=False):
         else:
             inv_fishes = np.vstack([inv_fishes, np.diag(inv_fish)])
 
-        for spec in specs:
-            stag = "cmb_{}".format(spec)
-            if stag not in bp["qb"]:
+        for stag, qb1 in bp["qb"].items():
+            if not stag.startswith("cmb_"):
                 continue
-            qb1 = bp["qb"][stag]
+            spec = stag.split("_")[1]
             if spec not in qbs:
                 qbs[spec] = qb1
             else:

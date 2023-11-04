@@ -59,8 +59,7 @@ args = P.parse_args()
 
 g_cfg = gt.get_gcorr_config(args.gcorr_config)
 tags = g_cfg["gcorr_opts"]["map_tags"]
-
-specs = ["tt", "ee", "bb", "te", "eb", "tb"]
+null = g_cfg["gcorr_opts"]["null"]
 
 run_name = "xfaster_gcal"
 run_name_iter = run_name + "_iter"
@@ -71,9 +70,16 @@ rundir = ref_dir + "_iter"
 
 run_opts = dict(
     cfg=g_cfg,
-    output=run_name_iter,
+    map_tags=tags,
+    data_subset=g_cfg["gcorr_opts"]["data_subset"],
+    output_root=rundir,
+    null=null,
     submit=args.submit,
+    **g_cfg["xfaster_opts"],
 )
+
+if args.submit:
+    run_opts.update(g_cfg["submit_opts"])
 
 # Submit an initial job that computes the all of the signal and noise spectra
 # that you will need to run the subsequent gcorr iterations.  This job should
@@ -107,11 +113,11 @@ if not os.path.exists(rundir) or args.force_restart:
         bp_file = glob.glob(os.path.join(ref_dir, tag, "bandpowers*.npz"))[0]
         bp = xf.load_and_parse(bp_file)
         gcorr_data = {"bin_def": bp["bin_def"], "gcorr": {}, "data_version": 1}
-        for spec in specs:
-            stag = "cmb_{}".format(spec)
-            if stag not in bp["qb"]:
+        for stag, qb1 in bp["qb"].items():
+            if not stag.startswith("cmb_"):
                 continue
-            gcorr_data["gcorr"][spec] = np.ones_like(bp["qb"][stag])
+            spec = stag.split("_")[1]
+            gcorr_data["gcorr"][spec] = np.ones_like(qb1)
         ref_file = os.path.join(ref_dir, tag, "gcorr_{}_total.npz".format(tag))
         np.savez_compressed(ref_file, **gcorr_data)
         os.symlink(ref_file, ref_file.replace(ref_dir, rundir))
@@ -272,7 +278,10 @@ if args.submit:
 print("Computing new gcorr factors")
 for tag in tags:
     out = gt.compute_gcal(
-        g_cfg, output=run_name_iter, output_tag=tag, fit_hist=args.gcorr_fit_hist
+        output_root=rundir,
+        output_tag=tag,
+        null=null,
+        fit_hist=args.gcorr_fit_hist,
     )
     print("New gcorr correction computed (should converge to 1): ", out["gcorr"])
 
