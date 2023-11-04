@@ -69,7 +69,6 @@ ref_dir = os.path.join(g_cfg["gcorr_opts"]["output_root"], run_name)
 rundir = ref_dir + "_iter"
 
 run_opts = dict(
-    cfg=g_cfg,
     map_tags=tags,
     data_subset=g_cfg["gcorr_opts"]["data_subset"],
     output_root=rundir,
