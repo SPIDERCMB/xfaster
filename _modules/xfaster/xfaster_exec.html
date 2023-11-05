@@ -187,6 +187,7 @@
     <span class="n">iter_max</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
     <span class="n">save_iters</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">return_cls</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">qb_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">fix_bb_transfer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">null_first_cmb</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">delta_beta_prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -472,6 +473,8 @@
 <span class="sd">        the end result.</span>
 <span class="sd">    return_cls : bool</span>
 <span class="sd">        If True, return C_l spectrum rather than the D_l spectrum</span>
+<span class="sd">    qb_only : bool</span>
+<span class="sd">        If True, do not compute signal window functions or C_l or D_l bandpowers</span>
 <span class="sd">    fix_bb_transfer : bool</span>
 <span class="sd">        If True, after transfer functions have been calculated, impose that the</span>
 <span class="sd">        BB transfer function is exactly equal to the EE transfer function.</span>
@@ -739,6 +742,7 @@
         <span class="n">cond_criteria</span><span class="o">=</span><span class="n">cond_criteria</span><span class="p">,</span>
         <span class="n">null_first_cmb</span><span class="o">=</span><span class="n">null_first_cmb</span><span class="p">,</span>
         <span class="n">return_cls</span><span class="o">=</span><span class="n">return_cls</span><span class="p">,</span>
+        <span class="n">qb_only</span><span class="o">=</span><span class="n">qb_only</span><span class="p">,</span>
         <span class="n">like_profiles</span><span class="o">=</span><span class="n">like_profiles</span><span class="p">,</span>
         <span class="n">like_profile_sigma</span><span class="o">=</span><span class="n">like_profile_sigma</span><span class="p">,</span>
         <span class="n">like_profile_points</span><span class="o">=</span><span class="n">like_profile_points</span><span class="p">,</span>
@@ -757,6 +761,7 @@
     <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;delta_beta_prior&quot;</span><span class="p">)</span>
     <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;null_first_cmb&quot;</span><span class="p">)</span>
     <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;return_cls&quot;</span><span class="p">)</span>
+    <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;qb_only&quot;</span><span class="p">)</span>
     <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;like_profiles&quot;</span><span class="p">)</span>
     <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;like_profile_sigma&quot;</span><span class="p">)</span>
     <span class="n">transfer_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;like_profile_points&quot;</span><span class="p">)</span>
@@ -1286,6 +1291,7 @@
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;iter_max&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;save_iters&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;return_cls&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;qb_only&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;fix_bb_transfer&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;null_first_cmb&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;delta_beta_prior&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
