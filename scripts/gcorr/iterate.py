@@ -3,20 +3,14 @@ A iteration script used to update g_corr factors. Can either be run in series
 or submit jobs to run in parallel.
 """
 import os
-import numpy as np
 import argparse as ap
-import time
-import copy
 import glob
 import shutil
 import subprocess as sp
+from xfaster import gcorr_tools as gt
 from matplotlib import use
 
 use("agg")
-import matplotlib.pyplot as plt
-import xfaster as xf
-from xfaster import parse_tools as pt
-from xfaster import gcorr_tools as gt
 
 P = ap.ArgumentParser()
 P.add_argument("--gcorr-config", help="The config file for gcorr computation")
@@ -73,27 +67,23 @@ run_opts = dict(
     data_subset=g_cfg["gcorr_opts"]["data_subset"],
     output_root=rundir,
     null=null,
-    submit=args.submit,
     **g_cfg["xfaster_opts"],
 )
 
 if args.submit:
-    run_opts.update(g_cfg["submit_opts"])
+    run_opts.update(submit=True, wait=True, **g_cfg["submit_opts"])
 
-# Submit an initial job that computes the all of the signal and noise spectra
-# that you will need to run the subsequent gcorr iterations.  This job should
-# use as many omp_threads as possible.
+# Submit an initial job that computes all of the signal and noise spectra that
+# you will need to run the subsequent gcorr iterations.  This job should use as
+# many omp_threads as possible.
 if args.reference or not os.path.exists(ref_dir):
     ref_opts = run_opts.copy()
     ref_opts["output_root"] = ref_dir
     print("Generating reference run {}".format(ref_dir))
     args.force_restart = True
     gt.run_xfaster_gcorr(apply_gcorr=False, **ref_opts)
-    if args.submit:
-        print("Wait until reference run completes, then run this script again")
-        raise SystemExit
 
-# if rundir doesn't exist or force_restart, we start from scratch
+# If rundir doesn't exist or force_restart, we start from scratch
 if not os.path.exists(rundir) or args.force_restart:
     iternum = 0
 
@@ -103,179 +93,41 @@ if not os.path.exists(rundir) or args.force_restart:
         os.remove(gfile)
     shutil.copytree(ref_dir, rundir)
 
-    # make plots directory
-    os.mkdir(os.path.join(rundir, "plots"))
-
-    # Since this is the first iteration, we also make a gcorr file of
-    # all ones.
-    for tag in tags:
-        bp_file = glob.glob(os.path.join(ref_dir, tag, "bandpowers*.npz"))[0]
-        bp = xf.load_and_parse(bp_file)
-        gcorr_data = {"bin_def": bp["bin_def"], "gcorr": {}, "data_version": 1}
-        for stag, qb1 in bp["qb"].items():
-            if not stag.startswith("cmb_"):
-                continue
-            spec = stag.split("_")[1]
-            gcorr_data["gcorr"][spec] = np.ones_like(qb1)
-        ref_file = os.path.join(ref_dir, tag, "gcorr_{}_total.npz".format(tag))
-        np.savez_compressed(ref_file, **gcorr_data)
-        os.symlink(ref_file, ref_file.replace(ref_dir, rundir))
-
 else:
-    # check plots directory to find what iteration we're at
-    plots = glob.glob(os.path.join(rundir, "plots", "*.png"))
-    plot_inds = sorted([int(x.split("iter")[-1].split(".")[0]) for x in plots])
-    last_iter = plot_inds[-1]
-    iternum = int(last_iter) + 1
+    gfiles = glob.glob(os.path.join(ref_dir, "*", "gcorr*_iter*.npz"))
+    if not len(gfiles):
+        iternum = 0
+    else:
+        gfiles = [os.path.basename(f).split(".")[0] for f in gfiles]
+        iternum = max([int(f.split("iter")[-1]) for f in gfiles]) + 1
 print("Starting iteration {}".format(iternum))
 
-
-for tag in tags:
-    ref_file = os.path.join(ref_dir, "{0}/gcorr_{0}_total.npz".format(tag))
-    rundirf = os.path.join(rundir, tag)
-
-    first = False
-
-    # Get gcorr from reference folder, if it's there
-    assert os.path.exists(ref_file), "Missing total gcorr file {}".format(ref_file)
-    gcorr = xf.load_and_parse(ref_file)
-    print("loaded {}".format(ref_file))
-
-    # Get gcorr_correction from iter folder -- this is the multiplicative
-    # change to gcorr-- should converge to 1s
-    try:
-        fp = os.path.join(rundirf, "gcorr_corr_{}.npz".format(tag))
-        gcorr_corr = xf.load_and_parse(fp)
-        print("got correction to gcorr {}".format(fp))
-    except IOError:
-        gcorr_corr = copy.deepcopy(gcorr)
-        gcorr_corr["gcorr"] = pt.arr_to_dict(
-            np.ones_like(pt.dict_to_arr(gcorr["gcorr"], flatten=True)),
-            gcorr["gcorr"],
-        )
-        first = True
-        print("Didn't get gcorr correction file in iter folder. Starting from ones.")
-
-    np.savez_compressed(ref_file.replace("_total.npz", "_prev.npz"), **gcorr)
-
-    gcorr["gcorr"] = pt.arr_to_dict(
-        pt.dict_to_arr(gcorr["gcorr"], flatten=True)
-        * pt.dict_to_arr(gcorr_corr["gcorr"], flatten=True),
-        gcorr["gcorr"],
-    )
-
-    fig_tot, ax_tot = plt.subplots(2, 3)
-    fig_corr, ax_corr = plt.subplots(2, 3)
-    ax_tot = ax_tot.flatten()
-    ax_corr = ax_corr.flatten()
-    for i, (k, v) in enumerate(gcorr["gcorr"].items()):
-        v[0] = 0.5
-        if k in ["te", "eb", "tb"]:
-            # We don't compute gcorr for off-diagonals
-            v[:] = 1
-        if not args.allow_extreme:
-            # Don't update gcorr if correction is extreme
-            v[v < 0.05] /= gcorr_corr["gcorr"][k][v < 0.05]
-            v[v > 5] /= gcorr_corr["gcorr"][k][v > 5]
-            for v0, val in enumerate(v):
-                if val > 1.2:
-                    if v0 != 0:
-                        v[v0] = v[v0 - 1]
-                    else:
-                        v[v0] = 1.2
-                if val < 0.2:
-                    if v0 != 0:
-                        v[v0] = v[v0 - 1]
-                    else:
-                        v[v0] = 0.2
-
-        ax_tot[i].plot(v)
-        ax_tot[i].set_title("{} total gcorr".format(k))
-        ax_corr[i].plot(gcorr_corr["gcorr"][k])
-        ax_corr[i].set_title("{} gcorr corr".format(k))
-
-    print(gcorr["gcorr"])
-    fig_tot.savefig(
-        os.path.join(
-            rundir,
-            "plots",
-            "gcorr_tot_{}_iter{}.png".format(tag, iternum),
-        )
-    )
-    fig_corr.savefig(
-        os.path.join(
-            rundir,
-            "plots",
-            "gcorr_corr_{}_iter{}.png".format(tag, iternum),
-        )
-    )
-
-    np.savez_compressed(ref_file, **gcorr)
-
-    if iternum > 0:
-        flist = ["bandpowers", "transfer", "logs"]
-        if len(glob.glob("{}/ERROR*".format(rundirf))) > 0:
-            flist += ["ERROR"]
-        if args.keep_iters:
-            # keep outputs from previous iteration
-            rundirf_iter = os.path.join(rundirf, "iter{:03d}".format(iternum - 1))
-            os.mkdir(rundirf_iter)
-            for f in flist + ["gcorr"]:
-                sp.check_call(
-                    "rsync -aL {}/{}* {}/".format(rundirf, f, rundirf_iter), shell=True
-                )
-
-        # Remove transfer functions and bandpowers from run directory
-        for f in flist:
-            sp.check_call("rm -rf {}/{}*".format(rundirf, f), shell=True)
-
-# Submit a first job that reloads gcorr and computes the transfer function
-# that will be used by all the other seeds
+# Submit a first job that reloads gcorr and computes the transfer function that
+# will be used by all the other seeds
 print("Submitting first job")
-gt.run_xfaster_gcorr(checkpoint="transfer", reload_gcorr=True, **run_opts)
+gt.run_xfaster_gcorr(
+    checkpoint="transfer", apply_gcorr=(iternum > 0), reload_gcorr=True, **run_opts
+)
 
-transfer_exists = {}
+# Make sure all transfer functions have been computed
 for tag in tags:
-    transfer_exists[tag] = False
-while not np.all(list(transfer_exists.values())):
-    # wait until transfer functions are done to submit rest of jobs
-    for tag in tags:
-        rundirf = os.path.join(rundir, tag)
-        transfer_files = glob.glob(
-            os.path.join(rundirf, "transfer_all*{}.npz".format(tag))
-        )
-        transfer_exists[tag] = bool(len(transfer_files))
-
-    print("transfer exists: ", transfer_exists)
-    if not args.submit:
-        if np.all(list(transfer_exists.values())):
-            break
-        raise RuntimeError(
-            "Some/all transfer functions not made: {}".format(transfer_exists)
-        )
-    else:
-        time.sleep(15)
+    tf = os.path.join(rundir, tag, "transfer_all*{}.npz".format(tag))
+    if not len(glob.glob(tf)):
+        raise RuntimeError("Missing transfer functions for tag {}".format(tag))
 
 # Once transfer function is done, all other seeds can run
 print("Submitting jobs for all seeds")
 gt.run_xfaster_gcorr(
     checkpoint="bandpowers",
+    apply_gcorr=(iternum > 0),
     sim_index=1,
     num_sims=int(g_cfg["gcorr_opts"]["nsim"]) - 1,
     **run_opts,
 )
 
-# If running jobs, wait for them to complete before computing gcorr factors
-if args.submit:
-    print("Waiting for jobs to complete...")
-    check_cmd = "squeue -u $USER | grep xfast"
-    while sp.call(check_cmd, shell=True, stdout=sp.DEVNULL) == 0:
-        jobs = int(sp.check_output("{} | wc -l".format(check_cmd), shell=True))
-        print("Number of jobs left:", jobs)
-        time.sleep(10)
-
 print("Computing new gcorr factors")
 for tag in tags:
+    # Compute gcorr correction from bandpower distribution
     out = gt.compute_gcal(
         output_root=rundir,
         output_tag=tag,
@@ -284,8 +136,42 @@ for tag in tags:
     )
     print("New gcorr correction computed (should converge to 1): ", out["gcorr"])
 
+    # Apply correction to cumulative gcorr
+    gcorr = gt.apply_gcal(
+        output_root=rundir,
+        output_tag=tag,
+        iternum=iternum,
+        allow_extreme=args.allow_extreme,
+    )
+    print("Total gcorr {}: {}".format(tag, gcorr["gcorr"]))
+
+# Cleanup output directories
 for tag in tags:
-    bp_files = glob.glob("{}/{}/bandpowers*".format(rundir, tag))
-    error_files = glob.glob("{}/{}/ERROR*".format(rundir, tag))
+    rundirf = os.path.join(rundir, tag)
+    bp_files = glob.glob(os.path.join(rundirf, "bandpowers*"))
+    error_files = glob.glob(os.path.join(rundirf, "ERROR*"))
     print("{} completed: {}".format(tag, len(bp_files)))
     print("{} error: {}".format(tag, len(error_files)))
+
+    flist = ["bandpowers", "transfer", "logs"]
+    if len(error_files) > 0:
+        flist += ["ERROR"]
+
+    if args.keep_iters:
+        # Keep iteration output files
+        rundirf_iter = os.path.join(rundirf, "iter{:03d}".format(iternum))
+        os.mkdir(rundirf_iter)
+        for f in flist + ["gcorr"]:
+            sp.check_call(
+                "rsync -a {}/{}* {}/".format(rundirf, f, rundirf_iter), shell=True
+            )
+
+    # Keep gcorr iteration files
+    for f in glob.glob("{}/gcorr*.npz".format(rundirf)):
+        rf = f.replace(".npz", "_iter{:03d}.npz".format(iternum))
+        rf = rf.replace(rundirf, "{}/{}".format(ref_dir, tag))
+        sp.check_call("rsync -a {} {}".format(f, rf), shell=True)
+
+    # Remove transfer functions and bandpowers from run directory
+    for f in flist:
+        sp.check_call("rm -rf {}/{}*".format(rundirf, f), shell=True)

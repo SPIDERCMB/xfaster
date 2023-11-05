@@ -1,5 +1,7 @@
 import os
 import glob
+import copy
+import time
 import numpy as np
 from . import parse_tools as pt
 
@@ -60,6 +62,7 @@ def run_xfaster_gcorr(
     sim_index=0,
     num_sims=1,
     submit=False,
+    wait=False,
     **opts,
 ):
     """
@@ -89,7 +92,9 @@ def run_xfaster_gcorr(
         Number of sims to run
     submit : bool
         If True, submit jobs to a cluster.
-        Requires submit_opts section to be present in the config
+        Requires submit_opts section to be present in the config.
+    wait : bool
+        If True and submitting jobs, wait for jobs to complete before returning.
     opts :
         Remaining options are passed directly to `xfaster_run` or
         `xfaster_submit`.
@@ -108,25 +113,37 @@ def run_xfaster_gcorr(
     opts["sim_data"] = True
 
     seeds = list(range(sim_index, sim_index + num_sims))
+    jobs = []
 
     from .xfaster_exec import xfaster_submit, xfaster_run
 
     for tag in map_tags:
         opts["output_tag"] = tag
         opts["data_subset"] = os.path.join(data_subset, "*_{}".format(tag))
-        gfile = os.path.realpath(
-            os.path.join(output_root, tag, "gcorr_{}_total.npz".format(tag))
-        )
+        gfile = os.path.join(output_root, tag, "gcorr_{}_total.npz".format(tag))
         opts["gcorr_file"] = gfile
-        if reload_gcorr:
+        if apply_gcorr:
             assert os.path.exists(gfile), "Missing gcorr file {}".format(gfile)
 
         for s in seeds:
             opts["sim_index_default"] = s
             if submit:
-                xfaster_submit(**opts)
+                jobs.extend(xfaster_submit(**opts))
             else:
                 xfaster_run(**opts)
+
+    if not submit or not wait:
+        return
+
+    # assumes job ID is the first column in the squeue output
+    jobs = set(jobs)
+    while jobs:
+        print("Waiting for {} jobs: {}".format(len(jobs), jobs))
+        time.sleep(10)
+        out = sp.check_output("squeue -u $USER", shell=True).decode()
+        running = set([job.split()[0] for job in out.split("\n")[1:]]) & jobs
+        print("Found {} running jobs: {}".format(len(running), running))
+        jobs -= running
 
 
 def compute_gcal(
@@ -258,5 +275,91 @@ def compute_gcal(
                 out["gcorr"][spec][b0] = np.nan
 
     outfile = os.path.join(output_root, "gcorr_corr{}.npz".format(output_tag))
-    np.savez_compressed(outfile, **out)
+    pt.save(outfile, **out)
     return out
+
+
+def apply_gcal(
+    output_root="xfaster_gcal", output_tag=None, iternum=0, allow_extreme=False
+):
+    """
+    Apply gcorr correction to the previous iteration's gcorr file.
+
+    Arguments
+    ---------
+    output_root : str
+        Output root where the data product will be stored.
+    output_tag : str
+        Map tag to analyze
+    iternum : int
+        Iteration number
+    allow_extreme : bool
+        Do not clip gcorr corrections that are too large at each iteration.  Try
+        this if iterations are not converging.
+    """
+    plotdir = os.path.join(output_root, "plots")
+    if not os.path.exists(plotdir):
+        os.mkdir(plotdir)
+
+    if output_tag is not None:
+        output_root = os.path.join(output_root, output_tag)
+        output_tag = "_{}".format(output_tag)
+    else:
+        output_tag = ""
+
+    gfile = os.path.join(output_root, "gcorr{}_total.npz".format(output_tag))
+    cfile = os.path.join(output_root, "gcorr_corr{}.npz".format(output_tag))
+    gcorr_corr = pt.load_and_parse(cfile)
+
+    if iternum > 0:
+        gcorr = pt.load_and_parse(gfile)
+        gcorr["gcorr"] = pt.arr_to_dict(
+            pt.dict_to_arr(gcorr["gcorr"], flatten=True)
+            * pt.dict_to_arr(gcorr_corr["gcorr"], flatten=True),
+            gcorr["gcorr"],
+        )
+    else:
+        gcorr = copy.deepcopy(gcorr_corr)
+
+    pt.save(gfile, **gcorr)
+
+    import matplotlib.pyplot as plt
+
+    fig_tot, ax_tot = plt.subplots(2, 3)
+    fig_corr, ax_corr = plt.subplots(2, 3)
+    ax_tot = ax_tot.flatten()
+    ax_corr = ax_corr.flatten()
+    for i, (k, v) in enumerate(gcorr["gcorr"].items()):
+        v[0] = 0.5
+        if k in ["te", "eb", "tb"]:
+            # We don't compute gcorr for off-diagonals
+            v[:] = 1
+        if not allow_extreme:
+            # Don't update gcorr if correction is extreme
+            v[v < 0.05] /= gcorr_corr["gcorr"][k][v < 0.05]
+            v[v > 5] /= gcorr_corr["gcorr"][k][v > 5]
+            for v0, val in enumerate(v):
+                if val > 1.2:
+                    if v0 != 0:
+                        v[v0] = v[v0 - 1]
+                    else:
+                        v[v0] = 1.2
+                if val < 0.2:
+                    if v0 != 0:
+                        v[v0] = v[v0 - 1]
+                    else:
+                        v[v0] = 0.2
+
+        ax_tot[i].plot(v)
+        ax_tot[i].set_title("{} total gcorr".format(k))
+        ax_corr[i].plot(gcorr_corr["gcorr"][k])
+        ax_corr[i].set_title("{} gcorr corr".format(k))
+
+    fig_tot.savefig(
+        os.path.join(plotdir, "gcorr_tot{}_iter{:03d}.png".format(output_tag, iternum))
+    )
+    fig_corr.savefig(
+        os.path.join(plotdir, "gcorr_corr{}_iter{:03d}.png".format(output_tag, iternum))
+    )
+
+    return gcorr
