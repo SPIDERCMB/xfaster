@@ -111,6 +111,7 @@ def run_xfaster_gcorr(
     opts["reload_gcorr"] = reload_gcorr
     opts["checkpoint"] = checkpoint
     opts["sim_data"] = True
+    opts["qb_only"] = True
 
     seeds = list(range(sim_index, sim_index + num_sims))
     jobs = []
@@ -341,8 +342,8 @@ def apply_gcal(
 
     import matplotlib.pyplot as plt
 
-    fig_tot, ax_tot = plt.subplots(2, 3, sharex=True, sharey=True)
-    fig_corr, ax_corr = plt.subplots(2, 3, sharex=True, sharey=True)
+    fig_tot, ax_tot = plt.subplots(2, 3, sharex=True, sharey="row")
+    fig_corr, ax_corr = plt.subplots(2, 3, sharex=True, sharey="row")
     ax_tot = ax_tot.flatten()
     ax_corr = ax_corr.flatten()
     for i, (k, v) in enumerate(gcorr["gcorr"].items()):
