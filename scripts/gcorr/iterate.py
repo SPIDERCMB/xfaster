@@ -42,16 +42,25 @@ P.add_argument(
     action="store_true",
     help="Store outputs from each iteration in a separate directory",
 )
+P.add_argument(
+    "-t",
+    "--map-tags",
+    nargs="+",
+    help="Subset of map tags to iterate over",
+)
 
 args = P.parse_args()
 
 g_cfg = gt.get_gcorr_config(args.gcorr_config)
+
 tags = g_cfg["gcorr_opts"]["map_tags"]
+if args.map_tags:
+    tags = [t for t in args.map_tags if t in tags]
+
 null = g_cfg["gcorr_opts"]["null"]
 rundir = g_cfg["gcorr_opts"]["output_root"]
 
 run_opts = dict(
-    map_tags=tags,
     data_subset=g_cfg["gcorr_opts"]["data_subset"],
     output_root=rundir,
     null=null,
@@ -59,32 +68,40 @@ run_opts = dict(
 )
 
 if args.submit:
-    run_opts.update(submit=True, wait=True, **g_cfg["submit_opts"])
+    run_opts.update(submit=True, **g_cfg["submit_opts"])
+
+iternum = {tag: 0 for tag in tags}
 
 # If rundir doesn't exist or force_restart, we start from scratch
 if not os.path.exists(rundir) or args.force_restart:
-    iternum = 0
-
     for gfile in glob.glob(os.path.join(rundir, "*", "gcorr*.npz")):
         os.remove(gfile)
-
 else:
-    gfiles = glob.glob(os.path.join(rundir, "*", "gcorr*_iter*.npz"))
-    if not len(gfiles):
-        iternum = 0
-    else:
-        gfiles = [os.path.basename(f).split(".")[0] for f in gfiles]
-        iternum = max([int(f.split("iter")[-1]) for f in gfiles]) + 1
+    for tag in tags:
+        gfiles = glob.glob(
+            os.path.join(rundir, "*", "gcorr_total_{}_iter*.npz".format(tag))
+        )
+        iternum[tag] = len(gfiles)
 print("Starting iteration {}".format(iternum))
 
 # Submit a first job that reloads gcorr and computes the transfer function that
 # will be used by all the other seeds
-print("Submitting first job")
-gt.run_xfaster_gcorr(
-    checkpoint="transfer", apply_gcorr=(iternum > 0), reload_gcorr=True, **run_opts
-)
+print("Submitting first jobs")
+transfer_jobs = []
+for tag in tags:
+    jobs = gt.run_xfaster_gcorr(
+        output_tag=tag,
+        checkpoint="transfer",
+        apply_gcorr=(iternum[tag] > 0),
+        reload_gcorr=True,
+        **run_opts,
+    )
+    transfer_jobs.extend(jobs)
 
 # Make sure all transfer functions have been computed
+if args.submit:
+    print("Waiting for transfer function jobs to complete")
+    gt.wait_for_jobs(transfer_jobs)
 for tag in tags:
     tf = os.path.join(rundir, tag, "transfer_all*{}.npz".format(tag))
     if not len(glob.glob(tf)):
@@ -92,13 +109,20 @@ for tag in tags:
 
 # Once transfer function is done, all other seeds can run
 print("Submitting jobs for all seeds")
-gt.run_xfaster_gcorr(
-    checkpoint="bandpowers",
-    apply_gcorr=(iternum > 0),
-    sim_index=1,
-    num_sims=int(g_cfg["gcorr_opts"]["nsim"]) - 1,
-    **run_opts,
-)
+sim_jobs = []
+for tag in tags:
+    jobs = gt.run_xfaster_gcorr(
+        output_tag=tag,
+        checkpoint="bandpowers",
+        apply_gcorr=(iternum[tag] > 0),
+        sim_index=1,
+        num_sims=int(g_cfg["gcorr_opts"]["nsim"]) - 1,
+        **run_opts,
+    )
+    sim_jobs.extend(jobs)
+if args.submit:
+    print("Waiting for sim ensemble jobs to complete")
+    gt.wait_for_jobs(sim_jobs)
 
 print("Computing new gcorr factors")
 for tag in tags:
@@ -115,7 +139,7 @@ for tag in tags:
     gcorr = gt.apply_gcal(
         output_root=rundir,
         output_tag=tag,
-        iternum=iternum,
+        iternum=iternum[tag],
         allow_extreme=args.allow_extreme,
     )
     print("Total gcorr {}: {}".format(tag, gcorr["gcorr"]))
@@ -135,7 +159,7 @@ for tag in tags:
 
     if args.keep_iters:
         # Keep iteration output files
-        iterdir = os.path.join(rundirf, "iter{:03d}".format(iternum))
+        iterdir = os.path.join(rundirf, "iter{:03d}".format(iternum[tag]))
         os.mkdir(iterdir)
         for f in flist:
             sp.check_call("rsync -a {} {}/".format(f, iterdir), shell=True)

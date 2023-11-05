@@ -52,9 +52,9 @@ def get_gcorr_config(filename):
 
 
 def run_xfaster_gcorr(
-    map_tags,
-    data_subset="full",
     output_root="xfaster_gcal",
+    output_tag=None,
+    data_subset="full",
     null=False,
     apply_gcorr=True,
     reload_gcorr=False,
@@ -62,7 +62,6 @@ def run_xfaster_gcorr(
     sim_index=0,
     num_sims=1,
     submit=False,
-    wait=False,
     **opts,
 ):
     """
@@ -70,14 +69,14 @@ def run_xfaster_gcorr(
 
     Arguments
     ---------
-    map_tags : list of str
-        List of map tags for which to run XFaster
+    output_root : str
+        Output root where the data product will be stored.
+    output_tag : str
+        Map tag to analyze
     data_subset : str
         Data subset directory from which to load data maps.  The glob pattern
         for the `data_subset` XFaster option is built from this string for each
         map tag as `<data_subset>/*_<tag>`.
-    output_root : str
-        Output root where the data product will be stored.
     null : bool
         If True, this is a null test run.
     apply_gcorr : bool
@@ -93,8 +92,6 @@ def run_xfaster_gcorr(
     submit : bool
         If True, submit jobs to a cluster.
         Requires submit_opts section to be present in the config.
-    wait : bool
-        If True and submitting jobs, wait for jobs to complete before returning.
     opts :
         Remaining options are passed directly to `xfaster_run` or
         `xfaster_submit`.
@@ -107,38 +104,53 @@ def run_xfaster_gcorr(
         opts["sim_data_components"] = ["signal"]
 
     opts["output_root"] = output_root
+    opts["output_tag"] = output_tag
     opts["apply_gcorr"] = apply_gcorr
     opts["reload_gcorr"] = reload_gcorr
     opts["checkpoint"] = checkpoint
     opts["sim_data"] = True
     opts["qb_only"] = True
 
+    if output_tag is None:
+        tag = ""
+        groot = output_root
+    else:
+        tag = "_{}".format(output_tag)
+        groot = os.path.join(output_root, output_tag)
+
+    opts["data_subset"] = os.path.join(data_subset, "*{}".format(tag))
+    gfile = os.path.join(groot, "gcorr_total{}.npz".format(tag))
+    opts["gcorr_file"] = gfile
+    if apply_gcorr:
+        assert os.path.exists(gfile), "Missing gcorr file {}".format(gfile)
+
     seeds = list(range(sim_index, sim_index + num_sims))
     jobs = []
 
     from .xfaster_exec import xfaster_submit, xfaster_run
 
-    for tag in map_tags:
-        opts["output_tag"] = tag
-        opts["data_subset"] = os.path.join(data_subset, "*_{}".format(tag))
-        gfile = os.path.join(output_root, tag, "gcorr_total_{}.npz".format(tag))
-        opts["gcorr_file"] = gfile
-        if apply_gcorr:
-            assert os.path.exists(gfile), "Missing gcorr file {}".format(gfile)
+    for s in seeds:
+        opts["sim_index_default"] = s
+        if submit:
+            jobs.extend(xfaster_submit(**opts))
+        else:
+            try:
+                xfaster_run(**opts)
+            except RuntimeError:
+                pass
 
-        for s in seeds:
-            opts["sim_index_default"] = s
-            if submit:
-                jobs.extend(xfaster_submit(**opts))
-            else:
-                try:
-                    xfaster_run(**opts)
-                except RuntimeError:
-                    pass
+    return jobs
 
-    if not submit or not wait:
-        return
 
+def wait_for_jobs(jobs):
+    """
+    Check slurm queue for running jobs and wait until all are complete.
+
+    Arguments
+    ---------
+    jobs : list of str
+        List of job IDs to monitor, as returned by ``xfaster_submit``.
+    """
     # assumes job ID is the first column in the squeue output
     jobs = set(jobs)
     while jobs:
@@ -318,6 +330,10 @@ def apply_gcal(
     if not os.path.exists(plotdir):
         os.mkdir(plotdir)
 
+    gdir = os.path.join(output_root, "gcorr")
+    if not os.path.exists(gdir):
+        os.mkdir(gdir)
+
     if output_tag is not None:
         output_root = os.path.join(output_root, output_tag)
         output_tag = "_{}".format(output_tag)
@@ -382,7 +398,7 @@ def apply_gcal(
     fig_corr.savefig(fcorr, bbox_inches="tight")
 
     # Save a copy of the gcorr iteration files
-    pt.save(ftot.replace(".png", ".npz"), **gcorr)
-    pt.save(fcorr.replace(".png", ".npz"), **gcorr_corr)
+    pt.save(ftot.replace(".png", ".npz").replace(plotdir, gdir), **gcorr)
+    pt.save(fcorr.replace(".png", ".npz").replace(plotdir, gdir), **gcorr_corr)
 
     return gcorr
