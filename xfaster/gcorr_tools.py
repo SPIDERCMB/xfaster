@@ -61,6 +61,7 @@ def run_xfaster_gcorr(
     checkpoint=None,
     sim_index=0,
     num_sims=1,
+    num_jobs=1,
     submit=False,
     **opts,
 ):
@@ -89,6 +90,8 @@ def run_xfaster_gcorr(
         First sim index to run
     num_sims : int
         Number of sims to run
+    num_jobs : int
+        Number of jobs to split each sim ensemble into
     submit : bool
         If True, submit jobs to a cluster.
         Requires submit_opts section to be present in the config.
@@ -130,7 +133,26 @@ def run_xfaster_gcorr(
     from .xfaster_exec import xfaster_submit, xfaster_run
 
     if submit:
-        return xfaster_submit(**opts)
+        jobs = []
+
+        # submit first job to compute transfer function
+        opts["sim_index_default"] = sim_index
+        opts["num_sims"] = 1 if num_jobs > 1 else num_sims
+        jobs.extend(xfaster_submit(**opts))
+
+        # submit remaining jobs to compute bandpowers for the rest of the
+        # ensemble
+        if num_sims > 1 and num_jobs > 1:
+            opts["checkpoint"] = "bandpowers"
+            opts["dep_afterok"] = [jobs[0]]
+
+            idxs = np.array_split(np.arange(num_sims), num_jobs)
+            for idx in idxs:
+                opts["sim_index_default"] = idx[0]
+                opts["num_sims"] = len(idx)
+                jobs.extend(xfaster_submit(**opts))
+
+        return jobs
     else:
         try:
             xfaster_run(**opts)
