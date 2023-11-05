@@ -6,8 +6,8 @@ There is one main script that calls two functions:
 
 1. run_xfaster_gcorr ---- This function calls XFaster either to run or submit
 jobs for gcorr runs.
-2. compute_gcorr  ---- A function that computes gcorr.npz file from all the
-bandpower.npz files. You'll never need to touch or run this script.
+2. compute_gcal  ---- A function that computes gcorr.npz file from all the
+bandpower.npz files.
 3. iterate.py ---- A iteration script, that calls function 1 and 2 to get a
 new gcorr.npz file each time. This is the main script you'll run.
 
@@ -32,11 +32,11 @@ Required fields are:
      in addition to those in [xfaster_opts]
 
 2. Run iterate.py once to get the full set of XFaster output files in the
-  reference directory.  Since we haven't computed gcorr yet, this will set
+  output directory.  Since we haven't computed gcorr yet, this will set
   apply_gcorr=False. Make sure to use as many OMP threads as possible since this
   is the step where the sims_xcorr file, which benefits the most from extra
   threads, is computed.  Your command should look like this:
-  python iterate.py --gcorr-config path-to-my-gcorr-config.ini --reference
+  python iterate.py --gcorr-config path-to-my-gcorr-config.ini
 
 3. Run iterate.py until convergence is reached. In practice, you will do:
   iterate.py --gcorr-config path-to-my-gcorr-config.ini
@@ -44,34 +44,27 @@ Required fields are:
   that it both prints and plots (it should converge to 1s for TT, EE, BB),
   and if it hasn't converged, up+enter (redo) the same command you just did.
   In much more detail, here's what the code does:
-  1. If this is the first iteration, copy the whole output directory into
-     one next to it with tag _iter. This is the directory that will now be
-     updated with new transfer functions and bandpowers on each iteration.
-     In the code, it's called rundir.
-  2. Make a plot directory in that _iter directory-- look here for new plots
-     of the total gcorr and the correction-to-gcorr each iteration.
-  3. For the first iteration, initialize a starting guess for gcorr as all
-     ones. This total gcorr is saved as gcorr_<tag>_total.npz in the original
-     (reference) output directory.
-  4. If not the first iteration, load up the correction-to-gcorr computed
-     in the previous iteration. Multiply it by the total gcorr, and save that
-     to the reference directory as gcorr_total. Also save the previous
-     iteration's total gcorr as gcorr_<tag>_prev.npz.
-  5. Plot gcorr total and the correction to gcorr total. Save in rundir/plots.
-  6. Clear out rundir bandpowers/transfer functions/logs.
-  7. Call run_xfaster_gcorr for the 0th sim seed while also reloading gcorr.
-     This does a couple things-- saves the new gcorr in the masks_xcorr file,
-     so later seeds will use the right thing. And recompute the transfer
-     function, which doesn't depend on the sim_index, so is only necessary to
-     do once.
-  8. After the transfer functions are all on disk, submit individual jobs for
+  1. Call run_xfaster_gcorr for the 0th sim seed while also reloading gcorr (if
+     this is not the first iteration).  This does a couple things-- saves the
+     new gcorr in the masks_xcorr file, so later seeds will use the right
+     thing. And recompute the transfer function, which doesn't depend on the
+     sim_index, so is only necessary to do once.
+  2. After the transfer functions are all on disk, submit individual jobs for
      all the other seeds, just doing the bandpowers step for those.
-  9. Monitor the queue, checking every 10 seconds for jobs still running.
-  10. Once they're all done, run compute_gcal, which saves a
+  3. Monitor the queue, checking every 10 seconds for jobs still running.
+  4. Once they're all done, run compute_gcal, which saves a
      correction-to-gcorr as gcorr_corr_<tag>.npz in the rundir.
-  11. Print out the values of the correction-to-gcorr.
-  12. Exit.
+  5. Print out the values of the correction-to-gcorr.
+  6. Make a plot directory in the output directory-- look here for new plots
+     of the total gcorr and the correction-to-gcorr each iteration.
+  7. If not the first iteration, load up the correction-to-gcorr computed
+     for this iteration. Multiply it by the total gcorr, and save that
+     to the output directory as gcorr_total.
+  8. Plot gcorr total and the correction to gcorr total. Save in rundir/plots,
+     along with copies of the gcorr_corr and gcorr_total data.
+  9. Clear out rundir bandpowers/transfer functions/logs.
+  10. Exit.
 
-5. After convergence is reached, copy the gcorr_total file from the refdir
+5. After convergence is reached, copy the gcorr_total file from the rundir
   to the mask directory, labeling it mask_map_<tag>_gcorr.npz for signal or
   mask_map_<tag>_gcorr_null.npz for null.

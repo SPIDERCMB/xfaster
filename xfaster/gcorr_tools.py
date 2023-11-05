@@ -206,17 +206,30 @@ def compute_gcal(
 
     for filename in files:
         bp = pt.load_and_parse(filename)
-        inv_fish = bp[fish_name]
-        bad = np.where(np.diag(inv_fish) < 0)[0]
-        if len(bad):
+        inv_fish = np.diag(bp[fish_name])
+        check = pt.arr_to_dict(inv_fish < 0, bp["qb"])
+        bad = False
+        for k, v in check.items():
+            if not k.startswith("cmb_"):
+                continue
+            spec = k.split("_")[1]
+            # ignore negative fisher values in off-diagonals
+            if spec in ["te", "eb", "tb"]:
+                continue
+            # ignore negative fisher values in first bin
+            if np.any(v[1:]):
+                bad = True
+                break
+        if bad:
             # this happens rarely and we won't use those sims
-            print("Found negative fisher values in {}: {}".format(filename, bad))
+            check = np.where(pt.dict_to_arr(check))[0]
+            print("Found negative fisher values in {}: {}".format(filename, check))
             continue
 
         if inv_fishes is None:
-            inv_fishes = np.diag(inv_fish)
+            inv_fishes = inv_fish
         else:
-            inv_fishes = np.vstack([inv_fishes, np.diag(inv_fish)])
+            inv_fishes = np.vstack([inv_fishes, inv_fish])
 
         for stag, qb1 in bp["qb"].items():
             if not stag.startswith("cmb_"):
@@ -358,10 +371,17 @@ def apply_gcal(
         ax_corr[i].plot(gcorr_corr["gcorr"][k])
         ax_corr[i].set_title("{} gcorr corr".format(k))
 
-    fname = os.path.join(
+    ftot = os.path.join(
         plotdir, "gcorr_total{}_iter{:03d}.png".format(output_tag, iternum)
     )
-    fig_tot.savefig(fname, bbox_inches="tight")
-    fig_corr.savefig(fname.replace("gcorr_total", "gcorr_corr"), bbox_inches="tight")
+    fig_tot.tight_layout()
+    fig_tot.savefig(ftot, bbox_inches="tight")
+    fcorr = ftot.replace("gcorr_total", "gcorr_corr")
+    fig_corr.tight_layout()
+    fig_corr.savefig(fcorr, bbox_inches="tight")
+
+    # Save a copy of the gcorr iteration files
+    pt.save(ftot.replace(".png", ".npz"), **gcorr)
+    pt.save(fcorr.replace(".png", ".npz"), **gcorr_corr)
 
     return gcorr
