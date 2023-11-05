@@ -109,6 +109,7 @@ def xfaster_run(
     iter_max=200,
     save_iters=False,
     return_cls=False,
+    qb_only=False,
     fix_bb_transfer=False,
     null_first_cmb=False,
     delta_beta_prior=None,
@@ -399,6 +400,8 @@ def xfaster_run(
         the end result.
     return_cls : bool
         If True, return C_l spectrum rather than the D_l spectrum
+    qb_only : bool
+        If True, do not compute signal window functions or C_l or D_l bandpowers
     fix_bb_transfer : bool
         If True, after transfer functions have been calculated, impose that the
         BB transfer function is exactly equal to the EE transfer function.
@@ -668,6 +671,7 @@ def xfaster_run(
         cond_criteria=cond_criteria,
         null_first_cmb=null_first_cmb,
         return_cls=return_cls,
+        qb_only=qb_only,
         like_profiles=like_profiles,
         like_profile_sigma=like_profile_sigma,
         like_profile_points=like_profile_points,
@@ -686,6 +690,7 @@ def xfaster_run(
     transfer_opts.pop("delta_beta_prior")
     transfer_opts.pop("null_first_cmb")
     transfer_opts.pop("return_cls")
+    transfer_opts.pop("qb_only")
     transfer_opts.pop("like_profiles")
     transfer_opts.pop("like_profile_sigma")
     transfer_opts.pop("like_profile_points")
@@ -1225,6 +1230,7 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "iter_max", argtype=int)
         add_arg(G, "save_iters")
         add_arg(G, "return_cls")
+        add_arg(G, "qb_only")
         add_arg(G, "fix_bb_transfer")
         add_arg(G, "null_first_cmb")
         add_arg(G, "delta_beta_prior", argtype=float)

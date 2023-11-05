@@ -5321,6 +5321,7 @@ class XFaster(object):
         delta_beta_prior=None,
         cond_noise=None,
         cond_criteria=None,
+        qb_only=False,
         like_profiles=False,
         like_profile_sigma=3.0,
         like_profile_points=100,
@@ -5370,6 +5371,9 @@ class XFaster(object):
         cond_criteria : float
             The maximum condition number allowed for Dmat1 to be acceptable
             for taking its inverse.
+        qb_only : bool
+            If True, compute just maximum likelihood qb's, and skip
+            calculation of window functions and Cb bandpowers.
         like_profiles : bool
             If True, compute profile likelihoods for each qb, leaving all
             others fixed at their maximum likelihood values.  Profiles are
@@ -5718,36 +5722,37 @@ class XFaster(object):
                 invfish_nosampvar=inv_fish_ns,
             )
 
-            # compute window functions for signal bins
-            self.log("Calculating signal window functions", "info")
-            wbl_qb = self.fisher_calc(
-                qb,
-                cbl,
-                obs,
-                cls_noise=nell,
-                cls_debias=None,
-                cond_noise=None,
-                delta_beta_prior=delta_beta_prior,
-                null_first_cmb=null_first_cmb,
-                windows=True,
-                inv_fish=inv_fish,
-            )
-            out.update(wbl_qb=wbl_qb)
+            if like_profiles or not qb_only:
+                # compute window functions for signal bins
+                self.log("Calculating signal window functions", "info")
+                wbl_qb = self.fisher_calc(
+                    qb,
+                    cbl,
+                    obs,
+                    cls_noise=nell,
+                    cls_debias=None,
+                    cond_noise=None,
+                    delta_beta_prior=delta_beta_prior,
+                    null_first_cmb=null_first_cmb,
+                    windows=True,
+                    inv_fish=inv_fish,
+                )
+                out.update(wbl_qb=wbl_qb)
 
-            # compute bandpowers and covariances
-            cb, dcb, ellb, cov, qb2cb, wbl_cb = self.do_qb2cb(qb, inv_fish, wbl_qb)
-            _, dcb_ns, _, cov_ns, _, _ = self.do_qb2cb(qb, inv_fish_ns, wbl_qb)
+                # compute bandpowers and covariances
+                cb, dcb, ellb, cov, qb2cb, wbl_cb = self.do_qb2cb(qb, inv_fish, wbl_qb)
+                _, dcb_ns, _, cov_ns, _, _ = self.do_qb2cb(qb, inv_fish_ns, wbl_qb)
 
-            out.update(
-                cb=cb,
-                dcb=dcb,
-                ellb=ellb,
-                cov=cov,
-                qb2cb=qb2cb,
-                wbl_cb=wbl_cb,
-                dcb_nosampvar=dcb_ns,
-                cov_nosampvar=cov_ns,
-            )
+                out.update(
+                    cb=cb,
+                    dcb=dcb,
+                    ellb=ellb,
+                    cov=cov,
+                    qb2cb=qb2cb,
+                    wbl_cb=wbl_cb,
+                    dcb_nosampvar=dcb_ns,
+                    cov_nosampvar=cov_ns,
+                )
 
             if like_profiles:
                 # compute bandpower likelihoods
@@ -6065,6 +6070,7 @@ class XFaster(object):
         cond_criteria=None,
         null_first_cmb=False,
         return_cls=False,
+        qb_only=False,
         like_profiles=False,
         like_profile_sigma=3.0,
         like_profile_points=100,
@@ -6108,6 +6114,9 @@ class XFaster(object):
             Keep first CMB bandpowers fixed to input shape (qb=1).
         return_cls : bool
             If True, return C_ls rather than D_ls
+        qb_only : bool
+            If True, compute just maximum likelihood qb's, and skip
+            calculation of window functions and Cb bandpowers.
         like_profiles : bool
             If True, compute profile likelihoods for each qb, leaving all
             others fixed at their maximum likelihood values.  Profiles are
@@ -6163,7 +6172,7 @@ class XFaster(object):
 
         if self.template_type is not None:
             opts.update(template_alpha=self.template_alpha)
-        self.return_cls = return_cls
+        self.return_cls = False if qb_only else return_cls
 
         ret = self.load_data(
             save_name,
@@ -6195,6 +6204,7 @@ class XFaster(object):
             cond_criteria=cond_criteria,
             null_first_cmb=null_first_cmb,
             delta_beta_prior=delta_beta_prior,
+            qb_only=qb_only,
             like_profiles=like_profiles,
             like_profile_sigma=like_profile_sigma,
             like_profile_points=like_profile_points,
