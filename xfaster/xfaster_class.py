@@ -1747,7 +1747,7 @@ class XFaster(object):
         opts = dict(pol=self.pol if pol is None else pol)
         if self.alm_pixel_weights:
             if self.lmax > 1.5 * self.nside:
-                raise RuntimeError(
+                raise ValueError(
                     "Cannot use pixel weights for map2alm, lmax {} is > "
                     "1.5 * nside for nside={}".format(self.lmax, self.nside)
                 )
@@ -6378,7 +6378,7 @@ class XFaster(object):
 
         # check parameter space
         if all([x is None for x in priors.values()]):
-            raise RuntimeError("Empty parameter space")
+            raise ValueError("Empty parameter space")
 
         out = dict(
             r_prior=r_prior,

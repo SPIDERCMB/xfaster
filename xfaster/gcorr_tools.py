@@ -120,7 +120,7 @@ def run_xfaster_gcorr(
     for tag in map_tags:
         opts["output_tag"] = tag
         opts["data_subset"] = os.path.join(data_subset, "*_{}".format(tag))
-        gfile = os.path.join(output_root, tag, "gcorr_{}_total.npz".format(tag))
+        gfile = os.path.join(output_root, tag, "gcorr_total_{}.npz".format(tag))
         opts["gcorr_file"] = gfile
         if apply_gcorr:
             assert os.path.exists(gfile), "Missing gcorr file {}".format(gfile)
@@ -130,7 +130,10 @@ def run_xfaster_gcorr(
             if submit:
                 jobs.extend(xfaster_submit(**opts))
             else:
-                xfaster_run(**opts)
+                try:
+                    xfaster_run(**opts)
+                except RuntimeError:
+                    pass
 
     if not submit or not wait:
         return
@@ -307,7 +310,7 @@ def apply_gcal(
     else:
         output_tag = ""
 
-    gfile = os.path.join(output_root, "gcorr{}_total.npz".format(output_tag))
+    gfile = os.path.join(output_root, "gcorr_total{}.npz".format(output_tag))
     cfile = os.path.join(output_root, "gcorr_corr{}.npz".format(output_tag))
     gcorr_corr = pt.load_and_parse(cfile)
 
@@ -325,8 +328,8 @@ def apply_gcal(
 
     import matplotlib.pyplot as plt
 
-    fig_tot, ax_tot = plt.subplots(2, 3)
-    fig_corr, ax_corr = plt.subplots(2, 3)
+    fig_tot, ax_tot = plt.subplots(2, 3, sharex=True, sharey=True)
+    fig_corr, ax_corr = plt.subplots(2, 3, sharex=True, sharey=True)
     ax_tot = ax_tot.flatten()
     ax_corr = ax_corr.flatten()
     for i, (k, v) in enumerate(gcorr["gcorr"].items()):
@@ -355,11 +358,10 @@ def apply_gcal(
         ax_corr[i].plot(gcorr_corr["gcorr"][k])
         ax_corr[i].set_title("{} gcorr corr".format(k))
 
-    fig_tot.savefig(
-        os.path.join(plotdir, "gcorr_tot{}_iter{:03d}.png".format(output_tag, iternum))
+    fname = os.path.join(
+        plotdir, "gcorr_total{}_iter{:03d}.png".format(output_tag, iternum)
     )
-    fig_corr.savefig(
-        os.path.join(plotdir, "gcorr_corr{}_iter{:03d}.png".format(output_tag, iternum))
-    )
+    fig_tot.savefig(fname, bbox_inches="tight")
+    fig_corr.savefig(fname.replace("gcorr_total", "gcorr_corr"), bbox_inches="tight")
 
     return gcorr
