@@ -58,6 +58,7 @@ if args.map_tags:
     tags = [t for t in args.map_tags if t in tags]
 
 null = g_cfg["gcorr_opts"]["null"]
+nsim = g_cfg["gcorr_opts"]["nsim"]
 rundir = g_cfg["gcorr_opts"]["output_root"]
 
 run_opts = dict(
@@ -103,7 +104,7 @@ if args.submit:
     print("Waiting for transfer function jobs to complete")
     gt.wait_for_jobs(transfer_jobs)
 for tag in tags:
-    tf = os.path.join(rundir, tag, "transfer_all*{}.npz".format(tag))
+    tf = os.path.join(rundir, tag, "transfer_all*_{}.npz".format(tag))
     if not len(glob.glob(tf)):
         raise RuntimeError("Missing transfer functions for tag {}".format(tag))
 
@@ -116,13 +117,17 @@ for tag in tags:
         checkpoint="bandpowers",
         apply_gcorr=(iternum[tag] > 0),
         sim_index=1,
-        num_sims=int(g_cfg["gcorr_opts"]["nsim"]) - 1,
+        num_sims=nsim - 1,
         **run_opts,
     )
     sim_jobs.extend(jobs)
 if args.submit:
     print("Waiting for sim ensemble jobs to complete")
     gt.wait_for_jobs(sim_jobs)
+for tag in tags:
+    bf = os.path.join(rundir, tag, "*bandpowers_sim*_{}.npz".format(tag))
+    if len(glob.glob(bf)) != nsim:
+        raise RuntimeError("Missing sims for tag {}".format(tag))
 
 print("Computing new gcorr factors")
 for tag in tags:
