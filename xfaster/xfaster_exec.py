@@ -770,6 +770,8 @@ def xfaster_run(
         num_sims = 1
         idx0 = 0
 
+    bperr = False
+
     for idx in range(idx0, idx0 + num_sims):
         if sim_data:
             data_opts["index"]["default"] = idx
@@ -783,7 +785,11 @@ def xfaster_run(
 
         if multi_map:
             X.log("Computing multi-map bandpowers...", "notice")
-            qb, inv_fish = X.get_bandpowers(return_qb=True, **bandpwr_opts)
+            try:
+                qb, inv_fish = X.get_bandpowers(return_qb=True, **bandpwr_opts)
+            except RuntimeError:
+                bperr = True
+                continue
 
             if likelihood:
                 X.log("Computing multi-map likelihood...", "notice")
@@ -794,9 +800,13 @@ def xfaster_run(
                 X.log("Processing map {}: {}".format(map_tag, map_file), "notice")
 
                 X.log("Computing bandpowers for map {}".format(map_tag), "info")
-                qb, inv_fish = X.get_bandpowers(
-                    map_tag=map_tag, return_qb=True, **bandpwr_opts
-                )
+                try:
+                    qb, inv_fish = X.get_bandpowers(
+                        map_tag=map_tag, return_qb=True, **bandpwr_opts
+                    )
+                except RuntimeError:
+                    bperr = True
+                    continue
 
                 if likelihood:
                     X.log("Computing likelihoods for map {}".format(map_tag), "info")
@@ -808,6 +818,9 @@ def xfaster_run(
         "Wall time: {:.2f} s, CPU time: {:.2f} s".format(time_elapsed, cpu_elapsed),
         "notice",
     )
+
+    if bperr:
+        raise RuntimeError("Caught error(s) computing bandpowers, check logs.")
 
 
 xfaster_run.__doc__ = xfaster_run.__doc__.format(checkpoints=xfc.XFaster.checkpoints)
