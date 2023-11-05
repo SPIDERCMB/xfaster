@@ -65,15 +65,14 @@ run_opts = dict(
     data_subset=g_cfg["gcorr_opts"]["data_subset"],
     output_root=rundir,
     null=null,
+    num_sims=nsim,
     **g_cfg["xfaster_opts"],
 )
-
 if args.submit:
     run_opts.update(submit=True, **g_cfg["submit_opts"])
 
-iternum = {tag: 0 for tag in tags}
-
 # If rundir doesn't exist or force_restart, we start from scratch
+iternum = {tag: 0 for tag in tags}
 if not os.path.exists(rundir) or args.force_restart:
     for gfile in glob.glob(os.path.join(rundir, "*", "gcorr*.npz")):
         os.remove(gfile)
@@ -85,10 +84,10 @@ else:
         iternum[tag] = len(gfiles)
 print("Starting iteration {}".format(iternum))
 
-# Submit a first job that reloads gcorr and computes the transfer function that
-# will be used by all the other seeds
-print("Submitting first jobs")
-transfer_jobs = []
+# Submit jobs for each tag for computing the transfer function and the
+# ensemble of sim bandpowers
+print("Submitting jobs")
+all_jobs = []
 for tag in tags:
     jobs = gt.run_xfaster_gcorr(
         output_tag=tag,
@@ -97,34 +96,18 @@ for tag in tags:
         reload_gcorr=True,
         **run_opts,
     )
-    transfer_jobs.extend(jobs)
+    if args.submit:
+        all_jobs.extend(jobs)
 
-# Make sure all transfer functions have been computed
+# Make sure all transfer functions and bandpowers have been computed
 if args.submit:
-    print("Waiting for transfer function jobs to complete")
-    gt.wait_for_jobs(transfer_jobs)
+    print("Waiting for jobs to complete")
+    gt.wait_for_jobs(all_jobs)
+
 for tag in tags:
     tf = os.path.join(rundir, tag, "transfer_all*_{}.npz".format(tag))
     if not len(glob.glob(tf)):
         raise RuntimeError("Missing transfer functions for tag {}".format(tag))
-
-# Once transfer function is done, all other seeds can run
-print("Submitting jobs for all seeds")
-sim_jobs = []
-for tag in tags:
-    jobs = gt.run_xfaster_gcorr(
-        output_tag=tag,
-        checkpoint="bandpowers",
-        apply_gcorr=(iternum[tag] > 0),
-        sim_index=1,
-        num_sims=nsim - 1,
-        **run_opts,
-    )
-    sim_jobs.extend(jobs)
-if args.submit:
-    print("Waiting for sim ensemble jobs to complete")
-    gt.wait_for_jobs(sim_jobs)
-for tag in tags:
     bf = os.path.join(rundir, tag, "*bandpowers_sim*_{}.npz".format(tag))
     if len(glob.glob(bf)) != nsim:
         raise RuntimeError("Missing sims for tag {}".format(tag))

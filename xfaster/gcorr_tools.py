@@ -109,7 +109,10 @@ def run_xfaster_gcorr(
     opts["reload_gcorr"] = reload_gcorr
     opts["checkpoint"] = checkpoint
     opts["sim_data"] = True
+    opts["save_sim_data"] = True
     opts["qb_only"] = True
+    opts["sim_index_default"] = sim_index
+    opts["num_sims"] = num_sims
 
     if output_tag is None:
         tag = ""
@@ -124,22 +127,15 @@ def run_xfaster_gcorr(
     if apply_gcorr:
         assert os.path.exists(gfile), "Missing gcorr file {}".format(gfile)
 
-    seeds = list(range(sim_index, sim_index + num_sims))
-    jobs = []
-
     from .xfaster_exec import xfaster_submit, xfaster_run
 
-    for s in seeds:
-        opts["sim_index_default"] = s
-        if submit:
-            jobs.extend(xfaster_submit(**opts))
-        else:
-            try:
-                xfaster_run(**opts)
-            except RuntimeError:
-                pass
-
-    return jobs
+    if submit:
+        return xfaster_submit(**opts)
+    else:
+        try:
+            xfaster_run(**opts)
+        except RuntimeError:
+            pass
 
 
 def wait_for_jobs(jobs):
