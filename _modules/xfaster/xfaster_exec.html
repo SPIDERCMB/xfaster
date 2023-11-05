@@ -169,6 +169,7 @@
     <span class="n">sim_index_noise</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">sim_index_foreground</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">sim_index_default</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">num_sims</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
     <span class="n">signal_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">sim_data_r</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">noise_type_sim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -417,6 +418,11 @@
 <span class="sd">    sim_index_default : int</span>
 <span class="sd">        Default sim index to use for any component with index &lt; 0 or None</span>
 <span class="sd">        in ``sim_index_&lt;comp&gt;``.</span>
+<span class="sd">    num_sims : int</span>
+<span class="sd">        If &gt; 1, repeat the data, bandpowers and likelihood checkpoints this many</span>
+<span class="sd">        times, incrementing the value of ``sim_index_default`` by 1 each time,</span>
+<span class="sd">        starting from the input value.  Only used if ``sim_data`` is True.</span>
+<span class="sd">        All other options remain the same for each iteration.</span>
 <span class="sd">    signal_type_sim : str</span>
 <span class="sd">        The variant of signal sims to use for sim_index data maps.</span>
 <span class="sd">        This enables having a different noise sim ensemble to use for</span>
@@ -671,6 +677,7 @@
         <span class="n">sim</span><span class="o">=</span><span class="n">sim_data</span><span class="p">,</span>
         <span class="n">components</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">sim_data</span> <span class="k">else</span> <span class="n">sim_data_components</span><span class="p">,</span>
         <span class="n">index</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">sim_data</span> <span class="k">else</span> <span class="n">sim_index</span><span class="p">,</span>
+        <span class="n">num_sims</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">sim_data</span> <span class="k">else</span> <span class="n">num_sims</span><span class="p">,</span>
         <span class="n">signal_type_sim</span><span class="o">=</span><span class="n">signal_type_sim</span> <span class="k">if</span> <span class="n">sim_data_r</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span>
         <span class="n">r</span><span class="o">=</span><span class="n">sim_data_r</span><span class="p">,</span>
         <span class="n">noise_type_sim</span><span class="o">=</span><span class="n">noise_type_sim</span><span class="p">,</span>
@@ -687,6 +694,7 @@
     <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;sim_index&quot;</span><span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;qb_file_data&quot;</span><span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">remove_option</span><span class="p">(</span><span class="s2">&quot;XFaster General&quot;</span><span class="p">,</span> <span class="s2">&quot;save_sim_data&quot;</span><span class="p">)</span>
+    <span class="n">data_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;num_sims&quot;</span><span class="p">)</span>
 
     <span class="n">kernel_opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
         <span class="n">pixwin</span><span class="o">=</span><span class="n">pixwin</span><span class="p">,</span>
@@ -835,41 +843,63 @@
         <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Loading spectrum shape for bandpowers...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
         <span class="n">X</span><span class="o">.</span><span class="n">get_signal_shape</span><span class="p">(</span><span class="o">**</span><span class="n">shape_opts</span><span class="p">)</span>
 
-    <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
-        <span class="s2">&quot;Computing masked </span><span class="si">{}</span><span class="s2"> cross-spectra...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="s2">&quot;simulated data&quot;</span> <span class="k">if</span> <span class="n">sim_data</span> <span class="k">else</span> <span class="s2">&quot;data&quot;</span>
-        <span class="p">),</span>
-        <span class="s2">&quot;notice&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">X</span><span class="o">.</span><span class="n">get_masked_data</span><span class="p">(</span><span class="o">**</span><span class="n">data_opts</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">multi_map</span><span class="p">:</span>
-        <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing multi-map bandpowers...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-        <span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_bandpowers</span><span class="p">(</span><span class="n">return_qb</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">bandpwr_opts</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">likelihood</span><span class="p">:</span>
-            <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing multi-map likelihood...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
-            <span class="n">X</span><span class="o">.</span><span class="n">get_likelihood</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="o">**</span><span class="n">like_opts</span><span class="p">)</span>
-
+    <span class="k">if</span> <span class="n">sim_data</span><span class="p">:</span>
+        <span class="n">idx0</span> <span class="o">=</span> <span class="n">data_opts</span><span class="p">[</span><span class="s2">&quot;index&quot;</span><span class="p">][</span><span class="s2">&quot;default&quot;</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">map_tag</span><span class="p">,</span> <span class="n">map_file</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">map_tags</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">map_files</span><span class="p">):</span>
-            <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Processing map </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">map_tag</span><span class="p">,</span> <span class="n">map_file</span><span class="p">),</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
+        <span class="n">num_sims</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">idx0</span> <span class="o">=</span> <span class="mi">0</span>
 
-            <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing bandpowers for map </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">map_tag</span><span class="p">),</span> <span class="s2">&quot;info&quot;</span><span class="p">)</span>
-            <span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_bandpowers</span><span class="p">(</span>
-                <span class="n">map_tag</span><span class="o">=</span><span class="n">map_tag</span><span class="p">,</span> <span class="n">return_qb</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">bandpwr_opts</span>
-            <span class="p">)</span>
+    <span class="n">bperr</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">idx0</span><span class="p">,</span> <span class="n">idx0</span> <span class="o">+</span> <span class="n">num_sims</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">sim_data</span><span class="p">:</span>
+            <span class="n">data_opts</span><span class="p">[</span><span class="s2">&quot;index&quot;</span><span class="p">][</span><span class="s2">&quot;default&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span>
+        <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="s2">&quot;Computing masked </span><span class="si">{}</span><span class="s2"> cross-spectra...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="s2">&quot;simulated data index </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="k">if</span> <span class="n">sim_data</span> <span class="k">else</span> <span class="s2">&quot;data&quot;</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;notice&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">X</span><span class="o">.</span><span class="n">get_masked_data</span><span class="p">(</span><span class="o">**</span><span class="n">data_opts</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">multi_map</span><span class="p">:</span>
+            <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing multi-map bandpowers...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_bandpowers</span><span class="p">(</span><span class="n">return_qb</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">bandpwr_opts</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+                <span class="n">bperr</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">continue</span>
 
             <span class="k">if</span> <span class="n">likelihood</span><span class="p">:</span>
-                <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing likelihoods for map </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">map_tag</span><span class="p">),</span> <span class="s2">&quot;info&quot;</span><span class="p">)</span>
-                <span class="n">X</span><span class="o">.</span><span class="n">get_likelihood</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="n">map_tag</span><span class="o">=</span><span class="n">map_tag</span><span class="p">,</span> <span class="o">**</span><span class="n">like_opts</span><span class="p">)</span>
+                <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing multi-map likelihood...&quot;</span><span class="p">,</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
+                <span class="n">X</span><span class="o">.</span><span class="n">get_likelihood</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="o">**</span><span class="n">like_opts</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">map_tag</span><span class="p">,</span> <span class="n">map_file</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">map_tags</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">map_files</span><span class="p">):</span>
+                <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Processing map </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">map_tag</span><span class="p">,</span> <span class="n">map_file</span><span class="p">),</span> <span class="s2">&quot;notice&quot;</span><span class="p">)</span>
+
+                <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing bandpowers for map </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">map_tag</span><span class="p">),</span> <span class="s2">&quot;info&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">get_bandpowers</span><span class="p">(</span>
+                        <span class="n">map_tag</span><span class="o">=</span><span class="n">map_tag</span><span class="p">,</span> <span class="n">return_qb</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">bandpwr_opts</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+                    <span class="n">bperr</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">continue</span>
+
+                <span class="k">if</span> <span class="n">likelihood</span><span class="p">:</span>
+                    <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Computing likelihoods for map </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">map_tag</span><span class="p">),</span> <span class="s2">&quot;info&quot;</span><span class="p">)</span>
+                    <span class="n">X</span><span class="o">.</span><span class="n">get_likelihood</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="n">map_tag</span><span class="o">=</span><span class="n">map_tag</span><span class="p">,</span> <span class="o">**</span><span class="n">like_opts</span><span class="p">)</span>
 
     <span class="n">cpu_elapsed</span> <span class="o">=</span> <span class="n">cpu_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">cpu_start</span>
     <span class="n">time_elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">time_start</span>
     <span class="n">X</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
         <span class="s2">&quot;Wall time: </span><span class="si">{:.2f}</span><span class="s2"> s, CPU time: </span><span class="si">{:.2f}</span><span class="s2"> s&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">time_elapsed</span><span class="p">,</span> <span class="n">cpu_elapsed</span><span class="p">),</span>
         <span class="s2">&quot;notice&quot;</span><span class="p">,</span>
-    <span class="p">)</span></div>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">bperr</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Caught error(s) computing bandpowers, check logs.&quot;</span><span class="p">)</span></div>
 
 
 <span class="n">xfaster_run</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">xfaster_run</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">checkpoints</span><span class="o">=</span><span class="n">xfc</span><span class="o">.</span><span class="n">XFaster</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">)</span>
@@ -1268,6 +1298,7 @@
             <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;COMP&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;sim_index_default&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;num_sims&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;sim_index_signal&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;sim_index_noise&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;sim_index_foreground&quot;</span><span class="p">,</span> <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
