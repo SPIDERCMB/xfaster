@@ -223,7 +223,7 @@ def compute_gcal(
                 break
         if bad:
             # this happens rarely and we won't use those sims
-            check = np.where(pt.dict_to_arr(check))[0]
+            check = np.where(pt.dict_to_arr(check, flatten=True))[0]
             print("Found negative fisher values in {}: {}".format(filename, check))
             continue
 
