@@ -147,7 +147,7 @@ def run_xfaster_gcorr(
             opts["checkpoint"] = "bandpowers"
             opts["dep_afterok"] = [jobs[0]]
 
-            idxs = np.array_split(np.arange(num_sims), num_jobs)
+            idxs = np.array_split(np.arange(sim_index, sim_index + num_sims), num_jobs)
             for idx in idxs:
                 opts["sim_index_default"] = idx[0]
                 opts["num_sims"] = len(idx)
@@ -176,9 +176,10 @@ def wait_for_jobs(jobs):
         print("Waiting for {} jobs: {}".format(len(jobs), jobs))
         time.sleep(10)
         out = sp.check_output("squeue -u $USER", shell=True).decode().strip()
-        running = set([job.split()[0] for job in out.split("\n")[1:]]) & jobs
-        print("Found {} running jobs: {}".format(len(running), running))
-        jobs -= running
+        if len(out) <= 1:
+            break
+        out = [x.strip() for x in out.split("\n")[1:] if x.strip()]
+        jobs = set([job.split()[0] for job in out]) & jobs
 
 
 def compute_gcal(
