@@ -4,6 +4,7 @@ import copy
 import time
 import numpy as np
 from . import parse_tools as pt
+import subprocess as sp
 
 
 def get_gcorr_config(filename):
