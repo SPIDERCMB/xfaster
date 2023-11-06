@@ -175,7 +175,7 @@ def wait_for_jobs(jobs):
     while jobs:
         print("Waiting for {} jobs: {}".format(len(jobs), jobs))
         time.sleep(10)
-        out = sp.check_output("squeue -u $USER", shell=True).decode()
+        out = sp.check_output("squeue -u $USER", shell=True).decode().strip()
         running = set([job.split()[0] for job in out.split("\n")[1:]]) & jobs
         print("Found {} running jobs: {}".format(len(running), running))
         jobs -= running
