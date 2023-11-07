@@ -62,7 +62,7 @@ def get_next_iter(output_root="xfaster_gcal", output_tag=None):
     return len(glob.glob(pattern))
 
 
-def run_xfaster_gcorr(
+def xfaster_gcorr(
     output_root="xfaster_gcal",
     output_tag=None,
     data_subset="full",
@@ -421,7 +421,7 @@ def apply_gcal(
     return gcorr
 
 
-def analyze_gcorr(
+def process_gcorr(
     output_root="xfaster_gcal",
     output_tag=None,
     null=False,

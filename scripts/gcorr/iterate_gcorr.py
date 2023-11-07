@@ -105,9 +105,9 @@ if args.submit:
 # run
 for tag in tags:
     if not args.analyze_only:
-        jobs = gt.run_xfaster_gcorr(output_tag=tag, **run_opts)
+        jobs = gt.xfaster_gcorr(output_tag=tag, **run_opts)
 
     if args.submit:
         batch_sub(cmd + ["-a", "-t", tag], dep_afterok=jobs, **g_cfg["submit_opts"])
     else:
-        gt.analyze_gcorr(output_tag=tag, **gcorr_opts)
+        gt.process_gcorr(output_tag=tag, **gcorr_opts)
