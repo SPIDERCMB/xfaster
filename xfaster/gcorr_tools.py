@@ -489,14 +489,16 @@ def process_gcorr(
     else:
         ftag = ""
 
-    bp_files = glob.glob(os.path.join(output_root, "bandpowers_sim*{}.npz"))
-    error_files = glob.glob(os.path.join(output_root, "ERROR_bandpowers_sim*{}.npz"))
+    bp_files = glob.glob(
+        os.path.join(output_root, "bandpowers_sim*{}.npz".format(ftag))
+    )
+    error_files = glob.glob(
+        os.path.join(output_root, "ERROR_bandpowers_sim*{}.npz".format(ftag))
+    )
     print("{} iter {} completed: {}".format(output_tag, iternum, len(bp_files)))
     print("{} iter {} error: {}".format(output_tag, iternum, len(error_files)))
 
-    flist = ["bandpowers_sim", "transfer"]
-    if len(error_files) > 0:
-        flist += ["ERROR_bandpowers_sim"]
+    flist = ["*bandpowers_sim", "transfer"]
     flist = ["{}/{}*{}.npz".format(output_root, f, ftag) for f in flist]
     flist += ["{}/logs*".format(output_root)]
 
