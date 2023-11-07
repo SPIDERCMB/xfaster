@@ -1871,6 +1871,9 @@ class XFaster(object):
                 self.gcorr = None
             if apply_gcorr and self.gcorr is None:
                 self.gcorr = OrderedDict()
+            if not apply_gcorr and self.gcorr is not None:
+                self.gcorr = None
+                self.force_rerun["transfer"] = True
 
             for tag, mfile in zip(self.map_tags, self.mask_files):
                 if not apply_gcorr:
@@ -1878,6 +1881,8 @@ class XFaster(object):
 
                 if not reload_gcorr and tag in self.gcorr:
                     continue
+
+                self.force_rerun["transfer"] = True
 
                 if gcorr_file_in is None:
                     if self.null_run:
