@@ -15,6 +15,7 @@ P.add_argument(
     "--gcorr-config", required=True, help="The config file for gcorr computation"
 )
 P.add_argument(
+    "-n",
     "--no-submit",
     dest="submit",
     action="store_false",
@@ -96,7 +97,6 @@ if args.submit:
         os.path.abspath(__file__),
         "--gcorr-config",
         os.path.abspath(args.gcorr_config),
-        "--no-submit",
     ]
     for k in ["allow_extreme", "gcorr_fit_hist", "keep_iters", "force_restart"]:
         if getattr(args, k):
@@ -108,6 +108,8 @@ for tag in tags:
         jobs = gt.xfaster_gcorr(output_tag=tag, **run_opts)
 
     if args.submit:
-        batch_sub(cmd + ["-a", "-t", tag], dep_afterok=jobs, **g_cfg["submit_opts"])
+        batch_sub(
+            cmd + ["-n", "-a", "-t", tag], dep_afterok=jobs, **g_cfg["submit_opts"]
+        )
     else:
         gt.process_gcorr(output_tag=tag, **gcorr_opts)
