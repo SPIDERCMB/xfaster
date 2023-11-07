@@ -52,14 +52,22 @@ def get_gcorr_config(filename):
     return out
 
 
+def get_next_iter(output_root="xfaster_gcal", output_tag=None):
+    """ """
+    if not os.path.exists(output_root):
+        return 0
+
+    tag = "" if output_tag is None else "_{}".format(output_tag)
+    pattern = os.path.join(output_root, "*", "gcorr_total{}_iter*.npz".format(tag))
+    return len(glob.glob(pattern))
+
+
 def run_xfaster_gcorr(
     output_root="xfaster_gcal",
     output_tag=None,
     data_subset="full",
+    force_restart=False,
     null=False,
-    apply_gcorr=True,
-    reload_gcorr=False,
-    checkpoint=None,
     sim_index=0,
     num_sims=1,
     num_jobs=1,
@@ -81,12 +89,8 @@ def run_xfaster_gcorr(
         map tag as `<data_subset>/*_<tag>`.
     null : bool
         If True, this is a null test run.
-    apply_gcorr : bool
-        Apply a g-correction in the XFaster computation
-    reload_gcorr : bool
-        Reload the gcorr factor
-    checkpoint : str
-        XFaster checkpoint
+    force_restart : bool
+        If True, restart iterations from 0.
     sim_index : int
         First sim index to run
     num_sims : int
@@ -100,6 +104,15 @@ def run_xfaster_gcorr(
         Remaining options are passed directly to `xfaster_run` or
         `xfaster_submit`.
     """
+    # If output root doesn't exist or force_restart, we start from scratch
+    if force_restart:
+        tag = "" if not output_tag else "_{}".format(output_tag)
+        gfiles = glob.glob(os.path.join(output_root, "*", "gcorr*{}*.npz".format(tag)))
+        for f in gfiles:
+            os.remove(f)
+    iternum = get_next_iter(output_root, output_tag)
+    print("Starting {} iteration {}".format(output_tag, iternum))
+
     if null:
         assert opts["noise_type"] is not None, "Missing noise_type"
         opts["sim_data_components"] = ["signal", "noise"]
@@ -109,9 +122,8 @@ def run_xfaster_gcorr(
 
     opts["output_root"] = output_root
     opts["output_tag"] = output_tag
-    opts["apply_gcorr"] = apply_gcorr
-    opts["reload_gcorr"] = reload_gcorr
-    opts["checkpoint"] = checkpoint
+    opts["apply_gcorr"] = iternum > 0
+    opts["reload_gcorr"] = iternum > 0
     opts["sim_data"] = True
     opts["save_sim_data"] = True
     opts["qb_only"] = True
@@ -128,7 +140,7 @@ def run_xfaster_gcorr(
     opts["data_subset"] = os.path.join(data_subset, "*{}".format(tag))
     gfile = os.path.join(groot, "gcorr_total{}.npz".format(tag))
     opts["gcorr_file"] = gfile
-    if apply_gcorr:
+    if iternum > 0:
         assert os.path.exists(gfile), "Missing gcorr file {}".format(gfile)
 
     from .xfaster_exec import xfaster_submit, xfaster_run
@@ -161,29 +173,8 @@ def run_xfaster_gcorr(
             pass
 
 
-def wait_for_jobs(jobs):
-    """
-    Check slurm queue for running jobs and wait until all are complete.
-
-    Arguments
-    ---------
-    jobs : list of str
-        List of job IDs to monitor, as returned by ``xfaster_submit``.
-    """
-    # assumes job ID is the first column in the squeue output
-    jobs = set(jobs)
-    while jobs:
-        print("Waiting for {} jobs: {}".format(len(jobs), jobs))
-        time.sleep(10)
-        out = sp.check_output("squeue -u $USER", shell=True).decode().strip()
-        if len(out) <= 1:
-            break
-        out = [x.strip() for x in out.split("\n")[1:] if x.strip()]
-        jobs = set([job.split()[0] for job in out]) & jobs
-
-
 def compute_gcal(
-    output_root="xfaster_gcal", output_tag=None, null=False, fit_hist=False
+    output_root="xfaster_gcal", output_tag=None, null=False, num_sims=1, fit_hist=False
 ):
     """
     Compute gcorr calibration
@@ -196,6 +187,8 @@ def compute_gcal(
         Map tag to analyze
     null : bool
         If True, this is a null test dataset.
+    num_sims : int
+        Number of sim bandpowers to expect in the ensemble.
     fit_hist : bool
         If True, fit the bandpower histogram to a lognorm distribution to
         compute the calibration factor.  Otherwise, uses the simple variance of
@@ -229,9 +222,13 @@ def compute_gcal(
     efiles = glob.glob(
         os.path.join(output_root, "ERROR_" + os.path.basename(file_glob))
     )
-    nsim = len(files) + len(efiles)
-    if not len(files):
-        raise OSError("No bandpowers files found in {}".format(output_root))
+    nf = len(files) + len(efiles)
+    if nf != num_sims:
+        raise OSError(
+            "Found {} bandpowers files in {}, expected {}".format(
+                nf, output_root, num_sims
+            )
+        )
 
     out = {"data_version": 1}
     inv_fishes = None
@@ -422,3 +419,97 @@ def apply_gcal(
     pt.save(fcorr.replace(".png", ".npz").replace(plotdir, gdir), **gcorr_corr)
 
     return gcorr
+
+
+def analyze_gcorr(
+    output_root="xfaster_gcal",
+    output_tag=None,
+    null=False,
+    num_sims=1,
+    gcorr_fit_hist=False,
+    allow_extreme=False,
+    keep_iters=False,
+):
+    """
+    Run gcorr analysis on a complete ensemble of sim bandpowers. This function
+    runs ``compute_gcal`` to calculate a correction-to-gcorr, stored in the
+    running directory as ``gcorr_corr_<tag>.npz``.  It then runs ``apply_gcal``
+    to increment the running total gcorr, stored in ``gcorr_total_<tag>,npz``.
+    Copies of the correction and total files for the current iteration are
+    stored in the ``<output_root>/gcorr`` directory, and plots of these two
+    outputs are stored in the ``<output_root>/plots`` directory.  The current
+    iteration is determined by counting the number of ``gcorr_total`` files.
+
+    Arguments
+    ---------
+    Arguments
+    ---------
+    output_root : str
+        Output root where the data product will be stored.
+    output_tag : str
+        Map tag to analyze
+    null : bool
+        If True, this is a null test dataset.
+    num_sims : int
+        Number of sim bandpowers to expect in the ensemble.
+    gcorr_fit_hist : bool
+        If True, fit the bandpower histogram to a lognorm distribution to
+        compute the calibration factor.  Otherwise, uses the simple variance of
+        the distribution.
+    allow_extreme : bool
+        Do not clip gcorr corrections that are too large at each iteration.  Try
+        this if iterations are not converging.
+    keep_iters : bool
+        If True, store the transfer function and bandpowers outputs from each
+        iteration in a separate sub-directory, rather than deleting these files.
+    """
+    iternum = get_next_iter(output_root, output_tag)
+
+    # Compute gcorr correction from bandpower distribution
+    out = compute_gcal(
+        output_root=output_root,
+        output_tag=output_tag,
+        num_sims=num_sims,
+        null=null,
+        fit_hist=gcorr_fit_hist,
+    )
+
+    # Apply correction to cumulative gcorr
+    gcorr = apply_gcal(
+        output_root=output_root,
+        output_tag=output_tag,
+        iternum=iternum,
+        allow_extreme=allow_extreme,
+    )
+
+    # Cleanup output directories
+    if output_tag is not None:
+        output_root = os.path.join(output_root, output_tag)
+        ftag = "_{}".format(output_tag)
+    else:
+        ftag = ""
+
+    bp_files = glob.glob(os.path.join(output_root, "bandpowers_sim*{}.npz"))
+    error_files = glob.glob(os.path.join(output_root, "ERROR_bandpowers_sim*{}.npz"))
+    print("{} iter {} completed: {}".format(output_tag, iternum, len(bp_files)))
+    print("{} iter {} error: {}".format(output_tag, iternum, len(error_files)))
+
+    flist = ["bandpowers_sim", "transfer"]
+    if len(error_files) > 0:
+        flist += ["ERROR_bandpowers_sim"]
+    flist = ["{}/{}*{}.npz".format(output_root, f, ftag) for f in flist]
+    flist += ["{}/logs*".format(output_root)]
+
+    if keep_iters:
+        # Keep iteration output files
+        iterdir = os.path.join(output_root, "iter{:03d}".format(iternum))
+        os.mkdir(iterdir)
+        for f in flist:
+            sp.check_call("rsync -a {} {}/".format(f, iterdir), shell=True)
+
+    # Remove transfer functions and bandpowers from run directory
+    for f in flist:
+        sp.check_call("rm -rf {}".format(f), shell=True)
+
+    print("{} iter {} gcorr correction: {}".format(output_tag, iternum, out["gcorr"]))
+    print("{} iter {} total gcorr: {}".format(output_tag, iternum, gcorr["gcorr"]))
