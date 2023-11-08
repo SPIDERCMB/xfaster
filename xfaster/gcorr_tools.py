@@ -386,7 +386,8 @@ def apply_gcal(
         gcorr = copy.deepcopy(gcorr_corr)
 
     for k, v in gcorr["gcorr"].items():
-        v[0] = 0.5
+        if v[0] < 0.1:
+            v[0] = 0.1
         if k in ["te", "eb", "tb"]:
             # We don't compute gcorr for off-diagonals
             v[:] = 1
