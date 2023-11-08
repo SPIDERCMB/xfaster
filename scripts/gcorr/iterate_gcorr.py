@@ -25,7 +25,7 @@ P.add_argument(
     "--force-restart",
     action="store_true",
     default=False,
-    help="Force restarting from iteration 0-- remakes iteration dir",
+    help="Force restarting from iteration 0",
 )
 P.add_argument(
     "--allow-extreme",

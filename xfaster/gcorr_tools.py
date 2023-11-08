@@ -52,12 +52,36 @@ def get_gcorr_config(filename):
     return out
 
 
-def get_next_iter(output_root="xfaster_gcal", output_tag=None):
-    """ """
+def get_next_iter(output_root="xfaster_gcal", output_tag=None, force_restart=False):
+    """
+    Find the index for the next iteration.
+
+    Arguments
+    ---------
+    output_root : str
+        Output root where the data product will be stored.
+    output_tag : str
+        Map tag to analyze
+    force_restart : bool
+        If True, restart iterations from 0.
+
+    Returns
+    -------
+    iternum : int
+        Next iteration number
+    """
+
     if not os.path.exists(output_root):
         return 0
 
     tag = "" if output_tag is None else "_{}".format(output_tag)
+
+    if force_restart:
+        gfiles = glob.glob(os.path.join(output_root, "*", "gcorr*{}*.npz".format(tag)))
+        for f in gfiles:
+            os.remove(f)
+        return 0
+
     pattern = os.path.join(output_root, "*", "gcorr_total{}_iter*.npz".format(tag))
     return len(glob.glob(pattern))
 
@@ -104,13 +128,7 @@ def xfaster_gcorr(
         Remaining options are passed directly to `xfaster_run` or
         `xfaster_submit`.
     """
-    # If output root doesn't exist or force_restart, we start from scratch
-    if force_restart:
-        tag = "" if not output_tag else "_{}".format(output_tag)
-        gfiles = glob.glob(os.path.join(output_root, "*", "gcorr*{}*.npz".format(tag)))
-        for f in gfiles:
-            os.remove(f)
-    iternum = get_next_iter(output_root, output_tag)
+    iternum = get_next_iter(output_root, output_tag, force_restart=force_restart)
     print("Starting {} iteration {}".format(output_tag, iternum))
 
     if null:
@@ -343,10 +361,6 @@ def apply_gcal(
         Do not clip gcorr corrections that are too large at each iteration.  Try
         this if iterations are not converging.
     """
-    plotdir = os.path.join(output_root, "plots")
-    if not os.path.exists(plotdir):
-        os.mkdir(plotdir)
-
     gdir = os.path.join(output_root, "gcorr")
     if not os.path.exists(gdir):
         os.mkdir(gdir)
@@ -371,15 +385,7 @@ def apply_gcal(
     else:
         gcorr = copy.deepcopy(gcorr_corr)
 
-    pt.save(gfile, **gcorr)
-
-    import matplotlib.pyplot as plt
-
-    fig_tot, ax_tot = plt.subplots(2, 3, sharex=True, sharey="row")
-    fig_corr, ax_corr = plt.subplots(2, 3, sharex=True, sharey="row")
-    ax_tot = ax_tot.flatten()
-    ax_corr = ax_corr.flatten()
-    for i, (k, v) in enumerate(gcorr["gcorr"].items()):
+    for k, v in gcorr["gcorr"].items():
         v[0] = 0.5
         if k in ["te", "eb", "tb"]:
             # We don't compute gcorr for off-diagonals
@@ -400,25 +406,68 @@ def apply_gcal(
                     else:
                         v[v0] = 0.2
 
-        ax_tot[i].plot(v)
-        ax_tot[i].set_title("{} total gcorr".format(k))
-        ax_corr[i].plot(gcorr_corr["gcorr"][k])
-        ax_corr[i].set_title("{} gcorr corr".format(k))
-
-    ftot = os.path.join(
-        plotdir, "gcorr_total{}_iter{:03d}.png".format(output_tag, iternum)
-    )
-    fig_tot.tight_layout()
-    fig_tot.savefig(ftot, bbox_inches="tight")
-    fcorr = ftot.replace("gcorr_total", "gcorr_corr")
-    fig_corr.tight_layout()
-    fig_corr.savefig(fcorr, bbox_inches="tight")
+    pt.save(gfile, **gcorr)
 
     # Save a copy of the gcorr iteration files
-    pt.save(ftot.replace(".png", ".npz").replace(plotdir, gdir), **gcorr)
-    pt.save(fcorr.replace(".png", ".npz").replace(plotdir, gdir), **gcorr_corr)
+    igfile = os.path.join(
+        gdir, "gcorr_total{}_iter{:03d}.npz".format(output_tag, iternum)
+    )
+    icfile = igfile.replace("gcorr_total", "gcorr_corr")
+    pt.save(igfile, **gcorr)
+    pt.save(icfile, **gcorr_corr)
 
     return gcorr
+
+
+def plot_gcorr(output_root="xfaster_gcal", output_tag=None):
+    """
+    Plot the gcorr data through the current iteration.
+
+    Arguments
+    ---------
+    output_root : str
+        Output root where the data product will be stored.
+    output_tag : str
+        Map tag to analyze
+    """
+    gdir = os.path.join(output_root, "gcorr")
+    plotdir = os.path.join(output_root, "plots")
+    if not os.path.exists(plotdir):
+        os.mkdir(plotdir)
+
+    if output_tag is not None:
+        output_root = os.path.join(output_root, output_tag)
+        tag = "_{}".format(output_tag)
+    else:
+        tag = ""
+
+    pattern = os.path.join(gdir, "gcorr_total{}_iter*.npz".format(tag))
+    files = sorted(glob.glob(pattern))
+    assert len(files) > 0, "Missing gcorr files"
+
+    import matplotlib.pyplot as plt
+    from matplotlib import colormaps
+
+    fig, axs = plt.subplots(2, 3, sharex=True, sharey="row")
+    colors = colormaps["viridis"].resampled(len(files)).colors
+    axs[1, 1].set_xlabel("Bin Number")
+    axs[0, 0].set_ylabel("{} G Total".format(output_tag))
+    axs[1, 0].set_ylabel("{} G Correction".format(output_tag))
+
+    for f, c in zip(files, colors):
+        gdata = pt.load_and_parse(f)["gcorr"]
+        cdata = pt.load_and_parse(f.replace("total", "corr"))["gcorr"]
+
+        for spec, ax1 in zip(["tt", "ee", "bb"], axs.T):
+            ax1[0].plot(gdata[spec], color=c)
+            ax1[0].set_title(spec.upper())
+            ax1[1].plot(cdata[spec], color=c)
+
+    filename = os.path.join(
+        plotdir, "gcorr{}_iter{:03d}.png".format(tag, len(files) - 1)
+    )
+    fig.tight_layout()
+    fig.savefig(filename, bbox_inches="tight")
 
 
 def process_gcorr(
@@ -481,6 +530,9 @@ def process_gcorr(
         iternum=iternum,
         allow_extreme=allow_extreme,
     )
+
+    # Plot stuff
+    plot_gcorr(output_root, output_tag)
 
     # Cleanup output directories
     if output_tag is not None:
