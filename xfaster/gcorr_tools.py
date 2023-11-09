@@ -396,16 +396,16 @@ def apply_gcal(
             v[v < 0.05] /= gcorr_corr["gcorr"][k][v < 0.05]
             v[v > 5] /= gcorr_corr["gcorr"][k][v > 5]
             for v0, val in enumerate(v):
-                if val > 1.2:
+                if val > 2:
                     if v0 != 0:
                         v[v0] = v[v0 - 1]
                     else:
-                        v[v0] = 1.2
-                if val < 0.2:
+                        v[v0] = 2
+                if val < 0.1:
                     if v0 != 0:
                         v[v0] = v[v0 - 1]
                     else:
-                        v[v0] = 0.2
+                        v[v0] = 0.1
 
     pt.save(gfile, **gcorr)
 
