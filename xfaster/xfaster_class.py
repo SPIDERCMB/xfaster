@@ -1895,6 +1895,7 @@ class XFaster(object):
                 if not os.path.exists(gcorr_file):
                     raise IOError("G correction file {} not found".format(gcorr_file))
 
+                self.log("Loading G correction file {}".format(gcorr_file), "info")
                 gdata = pt.load_and_parse(gcorr_file)
                 gcorr = gdata["gcorr"]
                 for k, g in gcorr.items():
