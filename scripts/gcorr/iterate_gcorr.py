@@ -129,7 +129,6 @@ for k in [
     "allow_extreme",
     "gcorr_fit_hist",
     "keep_iters",
-    "force_restart",
     "submit_next",
 ]:
     if getattr(args, k):
