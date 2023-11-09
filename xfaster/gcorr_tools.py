@@ -449,17 +449,23 @@ def plot_gcorr(output_root="xfaster_gcal", output_tag=None):
     import matplotlib.pyplot as plt
     from matplotlib import colormaps
 
-    fig, axs = plt.subplots(2, 3, sharex=True, sharey="row")
+    fig = axs = None
     colors = colormaps["viridis"].resampled(len(files)).colors
-    axs[1, 1].set_xlabel("Bin Number")
-    axs[0, 0].set_ylabel("{} G Total".format(output_tag))
-    axs[1, 0].set_ylabel("{} G Correction".format(output_tag))
 
     for f, c in zip(files, colors):
         gdata = pt.load_and_parse(f)["gcorr"]
         cdata = pt.load_and_parse(f.replace("total", "corr"))["gcorr"]
 
+        if fig is None:
+            pol = "ee" in gdata
+            fig, axs = plt.subplots(2, 3 if pol else 1, sharex=True, sharey="row")
+            axs[1, 1].set_xlabel("Bin Number")
+            axs[0, 0].set_ylabel("{} G Total".format(output_tag))
+            axs[1, 0].set_ylabel("{} G Correction".format(output_tag))
+
         for spec, ax1 in zip(["tt", "ee", "bb"], axs.T):
+            if spec not in gdata:
+                continue
             ax1[0].plot(gdata[spec], color=c)
             ax1[0].set_title(spec.upper())
             ax1[1].plot(cdata[spec], color=c)
@@ -479,6 +485,8 @@ def process_gcorr(
     gcorr_fit_hist=False,
     allow_extreme=False,
     keep_iters=False,
+    converge_criteria=0.01,
+    max_iters=0,
 ):
     """
     Run gcorr analysis on a complete ensemble of sim bandpowers. This function
@@ -512,6 +520,16 @@ def process_gcorr(
     keep_iters : bool
         If True, store the transfer function and bandpowers outputs from each
         iteration in a separate sub-directory, rather than deleting these files.
+    converge_criteria : float
+        Maximum fractional change in gcorr that indicates convergence and stops
+        iteration.
+    max_iters : int
+        Maximum number of iterations to run.  If 0, run once and return.
+
+    Returns
+    -------
+    retval : bool
+        True if convergence or iteration index is reached, False otherwise.
     """
     iternum = get_next_iter(output_root, output_tag)
 
@@ -568,3 +586,17 @@ def process_gcorr(
 
     print("{} iter {} gcorr correction: {}".format(output_tag, iternum, out["gcorr"]))
     print("{} iter {} total gcorr: {}".format(output_tag, iternum, gcorr["gcorr"]))
+
+    gcc = out["gcorr"]
+    v = np.array([gcc[spec][1:] for spec in ["tt", "ee", "bb"] if spec in gcc])
+    gmax = np.max(np.abs(v - 1))
+    print("Maximum fractional gcorr correction (among TT/EE/BB bins 1+):", gmax)
+    if gmax <= converge_criteria:
+        print("{} gcorr converged after {} iterations".format(output_tag, iternum))
+        return True
+
+    if iternum >= max_iters:
+        print("{} gcorr not converged after {} iterations".format(output_tag, iternum))
+        return True
+
+    return False

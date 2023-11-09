@@ -42,8 +42,10 @@ Gcorr run procedure:
       python iterate_gcorr.py --gcorr-config path-to-my-gcorr-config.ini
 
 3. Run iterate_gcorr.py until convergence is reached. In practice, you will run
-   the command above and wait for it to finish. Then look at the
-   correction-to-the-correction that it both prints and plots (it should
+   the command above and wait for it to finish. If you include the `--max-iters`
+   option with a non-zero value, the code will try to determine whether
+   convergence has been reached and stop on its own.  Otherwise, you can look at
+   the correction-to-the-correction that it both prints and plots (it should
    converge to 1s for TT, EE, BB), and if it hasn't converged, up+enter (redo)
    the same command you just did.  In much more detail, here's what the code
    does:
