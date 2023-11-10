@@ -126,12 +126,7 @@ gcorr_opts = dict(
 )
 
 # build command for this script
-cmd = [
-    "python",
-    os.path.abspath(__file__),
-    "--gcorr-config",
-    os.path.abspath(args.config),
-]
+cmd = ["python", os.path.abspath(__file__), os.path.abspath(args.config)]
 for k in [
     "allow_extreme",
     "gcorr_fit_hist",
