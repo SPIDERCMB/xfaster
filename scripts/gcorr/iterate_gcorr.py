@@ -12,9 +12,7 @@ from matplotlib import use
 use("agg")
 
 P = ap.ArgumentParser()
-P.add_argument(
-    "--gcorr-config", required=True, help="The config file for gcorr computation"
-)
+P.add_argument("config", help="The config file for gcorr computation")
 P.add_argument(
     "-s",
     "--submit",
@@ -87,7 +85,7 @@ if args.submit_next is None:
     args.submit_next = args.submit
 
 # load configuration
-g_cfg = gt.get_gcorr_config(args.gcorr_config)
+g_cfg = gt.get_gcorr_config(args.config)
 
 tags = g_cfg["gcorr_opts"]["map_tags"]
 if args.map_tags:
@@ -132,7 +130,7 @@ cmd = [
     "python",
     os.path.abspath(__file__),
     "--gcorr-config",
-    os.path.abspath(args.gcorr_config),
+    os.path.abspath(args.config),
 ]
 for k in [
     "allow_extreme",

@@ -39,7 +39,7 @@ Gcorr run procedure:
    this is the step where the sims_xcorr file, which benefits the most from
    extra threads, is computed.  Your command should look like this:
 
-      python iterate_gcorr.py --gcorr-config path-to-my-gcorr-config.ini
+      python iterate_gcorr.py path-to-my-gcorr-config.ini
 
 3. Run iterate_gcorr.py until convergence is reached. In practice, you will run
    the command above and wait for it to finish. If you include the `--max-iters`
