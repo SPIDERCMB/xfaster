@@ -107,6 +107,7 @@ def xfaster_gcorr(
     output_root="xfaster_gcal",
     output_tag=None,
     data_subset="full",
+    data_subset2=None,
     null=False,
     sim_index=0,
     num_sims=1,
@@ -145,10 +146,14 @@ def xfaster_gcorr(
     iternum = get_next_iter(output_root, output_tag)
 
     if null:
-        assert opts["noise_type"] is not None, "Missing noise_type"
+        assert opts.get("noise_type") is not None, "Missing noise_type"
+        assert (
+            opts.get("data_root2") is not None or data_subset2 is not None
+        ), "Missing data_root2 or data_subset2 for null gcorr"
         opts["sim_data_components"] = ["signal", "noise"]
     else:
         opts["noise_type"] = None
+        opts["data_root2"] = None
         opts["sim_data_components"] = ["signal"]
 
     opts["output_root"] = output_root
@@ -169,6 +174,9 @@ def xfaster_gcorr(
         groot = os.path.join(output_root, output_tag)
 
     opts["data_subset"] = os.path.join(data_subset, "*{}".format(tag))
+    if null and data_subset2 is not None:
+        opts["data_subset2"] = os.path.join(data_subset2, "*{}".format(tag))
+
     if iternum > 0:
         gfile = os.path.join(
             groot, "gcorr_total{}_iter{:03d}.npz".format(tag, iternum - 1)

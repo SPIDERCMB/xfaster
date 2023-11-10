@@ -98,20 +98,22 @@ if args.iternums:
     for t, i in zip(tags, args.iternums):
         iternums[t] = i
 
-null = g_cfg["gcorr_opts"]["null"]
+null = g_cfg["gcorr_opts"].get("null", False)
 nsim = g_cfg["gcorr_opts"]["nsim"]
 rundir = g_cfg["gcorr_opts"]["output_root"]
+submit_opts = g_cfg.get("submit_opts", {})
 
 # sim ensemble options
 run_opts = dict(
     data_subset=g_cfg["gcorr_opts"]["data_subset"],
+    data_subset2=g_cfg["gcorr_opts"].get("data_subset2", None),
     output_root=rundir,
     null=null,
     num_sims=nsim,
     **g_cfg["xfaster_opts"],
 )
 if args.submit:
-    run_opts.update(submit=True, **g_cfg["submit_opts"])
+    run_opts.update(submit=True, **submit_opts)
 
 # gcorr analysis options
 gcorr_opts = dict(
@@ -152,7 +154,7 @@ for tag in tags:
 
     if args.submit:
         # submit analysis job
-        batch_sub(tag_cmd + ["-a"], dep_afterok=jobs, **g_cfg["submit_opts"])
+        batch_sub(tag_cmd + ["-a"], dep_afterok=jobs, **submit_opts)
     else:
         if not gt.process_gcorr(output_tag=tag, **gcorr_opts):
             # run again if not converged or reached max_iters
