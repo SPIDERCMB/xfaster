@@ -101,7 +101,9 @@ if args.iternums:
 null = g_cfg["gcorr_opts"].get("null", False)
 nsim = g_cfg["gcorr_opts"]["nsim"]
 rundir = g_cfg["gcorr_opts"]["output_root"]
-submit_opts = g_cfg.get("submit_opts", {})
+xf_submit_opts = g_cfg.get("submit_opts", {})
+submit_opts = xf_submit_opts.copy()
+submit_opts.pop("num_jobs")
 
 # sim ensemble options
 run_opts = dict(
@@ -113,7 +115,7 @@ run_opts = dict(
     **g_cfg["xfaster_opts"],
 )
 if args.submit:
-    run_opts.update(submit=True, **submit_opts)
+    run_opts.update(submit=True, **xf_submit_opts)
 
 # gcorr analysis options
 gcorr_opts = dict(
