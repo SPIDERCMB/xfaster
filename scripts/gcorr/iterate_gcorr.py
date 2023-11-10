@@ -50,6 +50,15 @@ P.add_argument(
     help="Subset of map tags to iterate over",
 )
 P.add_argument(
+    "-i",
+    "--iternums",
+    nargs="+",
+    help="Iteration number to start with for each tag in --map-tags.  If one "
+    "number is given, use the same index for all tags.  All files for iterations "
+    "above this number will be removed.  If not supplied, iterations will increment "
+    "to the next index.",
+)
+P.add_argument(
     "-a",
     "--analyze-only",
     action="store_true",
@@ -89,19 +98,27 @@ tags = g_cfg["gcorr_opts"]["map_tags"]
 if args.map_tags:
     tags = [t for t in args.map_tags if t in tags]
 
+iternums = {t: None for t in tags}
+if args.iternums:
+    if len(args.iternums) == 1:
+        args.iternums = args.iternums * len(tags)
+    for t, i in zip(tags, args.iternums):
+        iternums[t] = i
+
 null = g_cfg["gcorr_opts"]["null"]
 nsim = g_cfg["gcorr_opts"]["nsim"]
 rundir = g_cfg["gcorr_opts"]["output_root"]
 
 # sim ensemble options
 run_opts = dict(
-    force_restart=args.force_restart,
     data_subset=g_cfg["gcorr_opts"]["data_subset"],
     output_root=rundir,
     null=null,
     num_sims=nsim,
     **g_cfg["xfaster_opts"],
 )
+if args.submit:
+    run_opts.update(submit=True, **g_cfg["submit_opts"])
 
 # gcorr analysis options
 gcorr_opts = dict(
@@ -116,9 +133,6 @@ gcorr_opts = dict(
 )
 
 # build command for this script
-if args.submit:
-    run_opts.update(submit=True, **g_cfg["submit_opts"])
-
 cmd = [
     "python",
     os.path.abspath(__file__),
@@ -138,6 +152,11 @@ for k in ["converge_criteria", "max_iters"]:
 
 # run
 for tag in tags:
+    iternum = gt.get_next_iter(
+        output_root=rundir, output_tag=tag, iternum=iternums[tag]
+    )
+    print("Starting {} iteration {}".format(tag, iternum))
+
     if not args.analyze_only:
         jobs = gt.xfaster_gcorr(output_tag=tag, **run_opts)
 

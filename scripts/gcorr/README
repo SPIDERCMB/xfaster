@@ -44,32 +44,29 @@ Gcorr run procedure:
 3. Run iterate_gcorr.py until convergence is reached. In practice, you will run
    the command above and wait for it to finish. If you include the `--max-iters`
    option with a non-zero value, the code will try to determine whether
-   convergence has been reached and stop on its own.  Otherwise, you can look at
-   the correction-to-the-correction that it both prints and plots (it should
-   converge to 1s for TT, EE, BB), and if it hasn't converged, up+enter (redo)
-   the same command you just did.  In much more detail, here's what the code
-   does:
+   convergence or max_iters has been reached and stop on its own.  Otherwise,
+   you can look at the correction-to-the-correction that it both prints and
+   plots (it should converge to 1s for TT, EE, BB), and if it hasn't converged,
+   up+enter (redo) the same command you just did.  In much more detail, here's
+   what the code does:
 
-   1. Call run_xfaster_gcorr for the 0th sim seed while also reloading gcorr (if
+   1. Call xfaster_gcorr for the 0th sim seed while also reloading gcorr (if
       this is not the first iteration).  This does a couple things-- saves the
       new gcorr in the masks_xcorr file, so later seeds will use the right
       thing. And recompute the transfer function, which doesn't depend on the
       sim_index, so is only necessary to do once.
    2. After the transfer functions are all on disk, submit individual jobs for
       all the other seeds, just doing the bandpowers step for those.
-   3. Once they're all done, run compute_gcal, which saves a correction-to-gcorr
-      as gcorr_corr_<tag>.npz in the rundir.
-   4. Print out the values of the correction-to-gcorr.
-   5. Make a plot directory in the output directory-- look here for new plots of
-      the total gcorr and the correction-to-gcorr each iteration.
-   6. If not the first iteration, load up the correction-to-gcorr computed for
+   3. Once they're all done, run compute_gcal, and save a correction-to-gcorr
+      as gcorr_corr_<tag>_iter<iter>.npz in the rundir.
+   4. If not the first iteration, load up the correction-to-gcorr computed for
       this iteration. Multiply it by the total gcorr, and save that to the
-      output directory as gcorr_total.
-   7. Plot gcorr total and the correction to gcorr total. Save in rundir/plots,
-      along with copies of the gcorr_corr and gcorr_total data.
-   8. Clear out rundir bandpowers/transfer functions/logs.
-   9. Exit.
+      output directory as gcorr_total_<tag>_iter<iter>.npz.
+   5. Plot gcorr total and the correction to gcorr total. Save in rundir/plots.
+   6. Clear out rundir bandpowers/transfer functions/logs.
+   7. Exit.
 
-4. After convergence is reached, copy the gcorr_total file from the rundir to
-   the mask directory, labeling it mask_map_<tag>_gcorr.npz for signal or
-   mask_map_<tag>_gcorr_null.npz for null.
+4. After convergence is reached, copy the gcorr_total file for the last
+   iteration from the rundir to the mask directory, labeling it
+   mask_map_<tag>_gcorr.npz for signal or mask_map_<tag>_gcorr_null.npz for
+   null.
