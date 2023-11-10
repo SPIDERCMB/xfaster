@@ -159,7 +159,13 @@ for tag in tags:
 
     if args.submit:
         # submit analysis job
-        batch_sub(tag_cmd + ["-a"], dep_afterok=jobs, **submit_opts)
+        batch_sub(
+            tag_cmd + ["-a"],
+            dep_afterok=jobs,
+            output="process_gcorr_{}.out".format(tag),
+            error="process_gcorr_{}.err".format(tag),
+            **submit_opts,
+        )
     else:
         # compute gcorr
         if not gt.process_gcorr(output_tag=tag, **gcorr_opts):
