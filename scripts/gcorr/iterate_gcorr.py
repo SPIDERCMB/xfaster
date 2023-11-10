@@ -28,6 +28,7 @@ P.add_argument(
 P.add_argument(
     "-i",
     "--iternums",
+    type=int,
     nargs="+",
     help="Iteration number to start with for each tag in --map-tags.  If one "
     "number is given, use the same index for all tags.  All files for iterations "
