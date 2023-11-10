@@ -22,28 +22,6 @@ P.add_argument(
     help="Submit jobs, instead of running serially on current session",
 )
 P.add_argument(
-    "--force-restart",
-    action="store_true",
-    default=False,
-    help="Force restarting from iteration 0",
-)
-P.add_argument(
-    "--allow-extreme",
-    action="store_true",
-    help="Do not clip gcorr corrections that are too large at each "
-    "iteration.  Try this if iterations are not converging.",
-)
-P.add_argument(
-    "--gcorr-fit-hist",
-    action="store_true",
-    help="Fit bandpower histogram to a lognorm distribution to compute gcorr",
-)
-P.add_argument(
-    "--keep-iters",
-    action="store_true",
-    help="Store outputs from each iteration in a separate directory",
-)
-P.add_argument(
     "-t",
     "--map-tags",
     nargs="+",
@@ -59,10 +37,15 @@ P.add_argument(
     "to the next index.",
 )
 P.add_argument(
-    "-a",
-    "--analyze-only",
+    "--keep-iters",
     action="store_true",
-    help="Compute and update gcorr files for the current iteration",
+    help="Store outputs from each iteration in a separate directory",
+)
+P.add_argument(
+    "--max-iters",
+    default=0,
+    type=int,
+    help="Maximum number of iterations to run.  If 0, run once and exit.",
 )
 P.add_argument(
     "-c",
@@ -73,10 +56,22 @@ P.add_argument(
     "convergence and stops iteration",
 )
 P.add_argument(
-    "--max-iters",
-    default=0,
-    type=int,
-    help="Maximum number of iterations to run.  If 0, run once and exit.",
+    "--allow-extreme",
+    action="store_true",
+    help="Do not clip gcorr corrections that are too large at each "
+    "iteration.  Try this if iterations are not converging.",
+)
+P.add_argument(
+    "--gcorr-fit-hist",
+    action="store_true",
+    help="Fit bandpower histogram to a lognorm distribution to compute gcorr",
+)
+P.add_argument(
+    "-a",
+    "--analyze-only",
+    action="store_true",
+    help="Compute and store gcorr files for the current iteration.  Typically used "
+    "internally by the script, and should not be called by the user.",
 )
 P.add_argument(
     "--submit-next",
