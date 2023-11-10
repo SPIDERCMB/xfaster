@@ -142,11 +142,13 @@ for k in ["converge_criteria", "max_iters"]:
 
 # run
 for tag in tags:
+    # setup for next iteration
     iternum = gt.get_next_iter(
         output_root=rundir, output_tag=tag, iternum=iternums[tag]
     )
     print("Starting {} iteration {}".format(tag, iternum))
 
+    # compute ensemble bandpowers
     if not args.analyze_only:
         jobs = gt.xfaster_gcorr(output_tag=tag, **run_opts)
 
@@ -156,6 +158,7 @@ for tag in tags:
         # submit analysis job
         batch_sub(tag_cmd + ["-a"], dep_afterok=jobs, **submit_opts)
     else:
+        # compute gcorr
         if not gt.process_gcorr(output_tag=tag, **gcorr_opts):
             # run again if not converged or reached max_iters
             sp.check_call(tag_cmd + ["-s"] * args.submit_next)
