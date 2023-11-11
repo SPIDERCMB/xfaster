@@ -161,9 +161,9 @@ for tag in tags:
         # submit analysis job
         batch_sub(
             tag_cmd + ["-a"],
+            name="gcorr_{}".format(tag),
             dep_afterok=jobs,
-            output="process_gcorr_{}.out".format(tag),
-            error="process_gcorr_{}.err".format(tag),
+            workdir=os.path.abspath(os.path.join(rundir, tag, "logs")),
             **submit_opts,
         )
     else:
