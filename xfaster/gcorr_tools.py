@@ -445,10 +445,13 @@ def plot_gcorr(output_root="xfaster_gcal", output_tag=None):
             os.remove(f)
 
     import matplotlib.pyplot as plt
-    from matplotlib import colormaps
+    from matplotlib import colormaps, cm
 
     fig = axs = None
-    colors = colormaps["viridis"].resampled(len(files)).colors
+    try:
+        colors = colormaps["viridis"].resampled(len(files)).colors
+    except AttributeError:
+        colors = cm.get_cmap("viridis", len(files)).colors
 
     for f, c in zip(files, colors):
         gdata = pt.load_and_parse(f)["gcorr"]
