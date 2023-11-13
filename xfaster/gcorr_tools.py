@@ -577,7 +577,6 @@ def process_gcorr(
 
     flist = ["*bandpowers_sim", "transfer"]
     flist = ["{}/{}*{}.npz".format(froot, f, ftag) for f in flist]
-    flist += ["{}/logs*".format(froot)]
 
     if keep_iters:
         # Keep iteration output files
