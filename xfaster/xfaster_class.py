@@ -1670,7 +1670,7 @@ class XFaster(object):
             standard file options are applied to produce the output filename.
             See ``get_filename`` for details.
         """
-        data = vars(self)
+        data = vars(self).copy()
         data["data_version"] = self.data_version
         data.pop("logger")
 
