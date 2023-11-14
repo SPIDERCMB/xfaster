@@ -625,6 +625,7 @@
     <span class="p">)</span>
     <span class="n">config_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">common_opts</span><span class="p">,</span> <span class="s2">&quot;XFaster Common&quot;</span><span class="p">)</span>
     <span class="n">common_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;config&quot;</span><span class="p">)</span>
+    <span class="n">common_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;dump_state&quot;</span><span class="p">)</span>
 
     <span class="c1"># initialize class</span>
     <span class="n">X</span> <span class="o">=</span> <span class="n">xfc</span><span class="o">.</span><span class="n">XFaster</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">common_opts</span><span class="p">)</span>
