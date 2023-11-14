@@ -108,6 +108,7 @@
     <span class="n">output_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">verbose</span><span class="o">=</span><span class="s2">&quot;notice&quot;</span><span class="p">,</span>
     <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">dump_state</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">checkpoint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">alm_pixel_weights</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">alm_iter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -229,6 +230,9 @@
 <span class="sd">        &#39;notice&#39;, &#39;info&#39;, &#39;debug&#39;, all&#39;].</span>
 <span class="sd">    debug : bool</span>
 <span class="sd">        Store extra data in output files for debugging.</span>
+<span class="sd">    dump_state : bool</span>
+<span class="sd">        Store current state immediately prior to bandpowers checkpoint.</span>
+<span class="sd">        Useful for debugging.</span>
 <span class="sd">    checkpoint : str</span>
 <span class="sd">        If supplied, re-compute all steps of the algorithm from this point</span>
 <span class="sd">        forward.  Valid checkpoints are {checkpoints}.</span>
@@ -613,6 +617,7 @@
         <span class="n">output_tag</span><span class="o">=</span><span class="n">output_tag</span><span class="p">,</span>
         <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
         <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span>
+        <span class="n">dump_state</span><span class="o">=</span><span class="n">dump_state</span><span class="p">,</span>
         <span class="n">checkpoint</span><span class="o">=</span><span class="n">checkpoint</span><span class="p">,</span>
         <span class="n">alm_pixel_weights</span><span class="o">=</span><span class="n">alm_pixel_weights</span><span class="p">,</span>
         <span class="n">alm_iter</span><span class="o">=</span><span class="n">alm_iter</span><span class="p">,</span>
@@ -848,6 +853,14 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">num_sims</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="n">idx0</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">if</span> <span class="n">dump_state</span><span class="p">:</span>
+        <span class="n">state_tag</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">time_start</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SLURM_JOB_ID&quot;</span><span class="p">):</span>
+            <span class="n">state_tag</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SLURM_JOB_ID&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="n">state_tag</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="n">X</span><span class="o">.</span><span class="n">save_state</span><span class="p">(</span><span class="n">state_tag</span><span class="p">)</span>
 
     <span class="n">bperr</span> <span class="o">=</span> <span class="kc">False</span>
 
@@ -1208,6 +1221,7 @@
             <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;LEVEL&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;debug&quot;</span><span class="p">)</span>
+        <span class="n">add_arg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="s2">&quot;dump_state&quot;</span><span class="p">)</span>
         <span class="n">add_arg</span><span class="p">(</span>
             <span class="n">G</span><span class="p">,</span>
             <span class="s2">&quot;checkpoint&quot;</span><span class="p">,</span>
