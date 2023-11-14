@@ -437,7 +437,7 @@ class XFaster(object):
         handler.setFormatter(fmt)
 
         # configure logger
-        self.logger = logging.getLogger("xfaster")
+        self.logger = logging.getLogger("xfaster.{}".format(id(self)))
         # replace any existing handlers before adding one
         if self.logger.hasHandlers():
             for h in list(self.logger.handlers):
@@ -488,7 +488,7 @@ class XFaster(object):
         """
 
         # cleanup logging handlers
-        for handler in self.logger.handlers[::-1]:
+        for handler in list(self.logger.handlers[::-1]):
             try:
                 handler.acquire()
                 handler.flush()
@@ -497,6 +497,7 @@ class XFaster(object):
                 pass
             finally:
                 handler.release()
+            self.logger.removeHandler(handler)
 
     def _get_data_files(
         self,
@@ -1657,6 +1658,31 @@ class XFaster(object):
         self.log("Saved output data to {}".format(output_file), "debug")
         data["output_file"] = output_file
         return data
+
+    def save_state(self, tag):
+        """
+        Save current object state to disk.
+
+        Arguments
+        ---------
+        tag : str
+            Set the name for the output file to ``state_<tag>``.  Otherwise the
+            standard file options are applied to produce the output filename.
+            See ``get_filename`` for details.
+        """
+        data = vars(self)
+        data["data_version"] = self.data_version
+        data.pop("logger")
+
+        file_opts = {}
+        for opt in ["map_tag", "iter_index", "data_opts", "bp_opts", "extra_tag"]:
+            if opt in data:
+                file_opts[opt] = data[opt]
+
+        name = "state_{}".format(tag)
+        output_file = self.get_filename(name, ext=".npz", **file_opts)
+
+        pt.save(output_file, **data)
 
     def save_config(self, cfg):
         """
@@ -2946,17 +2972,20 @@ class XFaster(object):
 
         # process signal, noise, and S+N
         cls_sig = OrderedDict()
-        cls_null_sig = OrderedDict() if null_run else None
         cls_noise = OrderedDict() if do_noise else None
-        cls_null_noise = OrderedDict() if null_run and do_noise else None
         cls_tot = OrderedDict()
-        cls_null_tot = OrderedDict() if null_run else None
         cls_med = OrderedDict()
-        cls_null_med = OrderedDict() if null_run else None
+
+        if null_run:
+            cls_null_sig = OrderedDict()
+            cls_null_noise = OrderedDict() if do_noise else None
+            cls_null_tot = OrderedDict()
+            cls_null_med = OrderedDict()
 
         ### Noise iteration from res fit fields
         cls_res = OrderedDict() if do_noise else None
-        cls_null_res = OrderedDict() if null_run and do_noise else None
+        if null_run:
+            cls_null_res = OrderedDict() if do_noise else None
         if do_noise:
             for k in ["nxn0", "nxn1", "sxn0", "sxn1", "nxs0", "nxs1"]:
                 cls_res[k] = OrderedDict()
@@ -3163,15 +3192,17 @@ class XFaster(object):
                     cls_null_med[spec][xname] = cls_null_med_arr[xind][s]
 
         self.cls_signal = cls_sig
-        self.cls_signal_null = cls_null_sig
         self.cls_noise = cls_noise
-        self.cls_noise_null = cls_null_noise
         self.cls_sim = cls_tot
-        self.cls_sim_null = cls_null_tot
         self.cls_med = cls_med
-        self.cls_med_null = cls_null_med
         self.cls_res = cls_res
-        self.cls_res_null = cls_null_res
+
+        if null_run:
+            self.cls_signal_null = cls_null_sig
+            self.cls_noise_null = cls_null_noise
+            self.cls_sim_null = cls_null_tot
+            self.cls_med_null = cls_null_med
+            self.cls_res_null = cls_null_res
 
         # save and return
         return self.save_data(save_name, from_attrs=save_attrs, file_attrs=file_attrs)
@@ -3531,7 +3562,12 @@ class XFaster(object):
                     filename_fg=filename_fg, freq_ref=freq_ref, beta_ref=beta_ref
                 )
             ret = self.load_data(
-                save_name, save_name, shape_ref="cls_shape", shape=shape, value_ref=opts
+                save_name,
+                save_name,
+                shape_ref="cls_shape",
+                shape=shape,
+                value_ref=opts,
+                to_attrs=False,
             )
             if ret is not None:
                 if "cmb" in comps and r is not None:
