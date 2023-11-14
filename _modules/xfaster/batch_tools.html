@@ -88,7 +88,13 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">argparse</span> <span class="k">as</span> <span class="nn">ap</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;get_job_logfile&quot;</span><span class="p">,</span> <span class="s2">&quot;batch_sub&quot;</span><span class="p">,</span> <span class="s2">&quot;batch_group&quot;</span><span class="p">,</span> <span class="s2">&quot;JobArgumentParser&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;get_job_logfile&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_job_id&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;batch_sub&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;batch_group&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;JobArgumentParser&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 
 
 <div class="viewcode-block" id="get_job_logfile"><a class="viewcode-back" href="../../api.html#xfaster.batch_tools.get_job_logfile">[docs]</a><span class="k">def</span> <span class="nf">get_job_logfile</span><span class="p">():</span>
@@ -111,6 +117,23 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">logfile</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">return</span> <span class="n">logfile</span></div>
+
+
+<div class="viewcode-block" id="get_job_id"><a class="viewcode-back" href="../../api.html#xfaster.batch_tools.get_job_id">[docs]</a><span class="k">def</span> <span class="nf">get_job_id</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the current job ID, based on job environment.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    jobid: str</span>
+<span class="sd">        Job ID.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SLURM_SUBMIT_DIR&quot;</span><span class="p">):</span>
+        <span class="n">jobid</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SLURM_JOB_ID&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">jobid</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="n">jobid</span></div>
 
 
 <span class="k">def</span> <span class="nf">format_time</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>

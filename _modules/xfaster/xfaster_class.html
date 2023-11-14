@@ -1758,6 +1758,12 @@
             <span class="k">if</span> <span class="n">opt</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
                 <span class="n">file_opts</span><span class="p">[</span><span class="n">opt</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">opt</span><span class="p">]</span>
 
+        <span class="kn">from</span> <span class="nn">.batch_tools</span> <span class="kn">import</span> <span class="n">get_job_id</span>
+
+        <span class="n">jobid</span> <span class="o">=</span> <span class="n">get_job_id</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">jobid</span><span class="p">:</span>
+            <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">jobid</span><span class="p">,</span> <span class="n">tag</span><span class="p">])</span>
+
         <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;state_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
         <span class="n">output_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_filename</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ext</span><span class="o">=</span><span class="s2">&quot;.npz&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">file_opts</span><span class="p">)</span>
 
