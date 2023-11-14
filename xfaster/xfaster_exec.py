@@ -29,6 +29,7 @@ def xfaster_run(
     output_tag=None,
     verbose="notice",
     debug=False,
+    dump_state=False,
     checkpoint=None,
     alm_pixel_weights=False,
     alm_iter=None,
@@ -150,6 +151,9 @@ def xfaster_run(
         'notice', 'info', 'debug', all'].
     debug : bool
         Store extra data in output files for debugging.
+    dump_state : bool
+        Store current state immediately prior to bandpowers checkpoint.
+        Useful for debugging.
     checkpoint : str
         If supplied, re-compute all steps of the algorithm from this point
         forward.  Valid checkpoints are {checkpoints}.
@@ -534,6 +538,7 @@ def xfaster_run(
         output_tag=output_tag,
         verbose=verbose,
         debug=debug,
+        dump_state=dump_state,
         checkpoint=checkpoint,
         alm_pixel_weights=alm_pixel_weights,
         alm_iter=alm_iter,
@@ -769,6 +774,14 @@ def xfaster_run(
     else:
         num_sims = 1
         idx0 = 0
+
+    if dump_state:
+        state_tag = str(int(time_start))
+        if os.getenv("SLURM_JOB_ID"):
+            state_tag = "_".join(
+                [os.getenv("SLURM_JOB_ID").split(".", 1)[0], state_tag]
+            )
+        X.save_state(state_tag)
 
     bperr = False
 
@@ -1129,6 +1142,7 @@ def xfaster_parse(args=None, test=False):
             metavar="LEVEL",
         )
         add_arg(G, "debug")
+        add_arg(G, "dump_state")
         add_arg(
             G,
             "checkpoint",
