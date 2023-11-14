@@ -1893,6 +1893,7 @@ class XFaster(object):
         )
 
         def process_gcorr(gcorr_file_in):
+            write = False
             if not hasattr(self, "gcorr"):
                 self.gcorr = None
             if apply_gcorr and self.gcorr is None:
@@ -1900,6 +1901,7 @@ class XFaster(object):
             if not apply_gcorr and self.gcorr is not None:
                 self.gcorr = None
                 self.force_rerun["transfer"] = True
+                write = True
 
             for tag, mfile in zip(self.map_tags, self.mask_files):
                 if not apply_gcorr:
@@ -1909,6 +1911,7 @@ class XFaster(object):
                     continue
 
                 self.force_rerun["transfer"] = True
+                write = True
 
                 if gcorr_file_in is None:
                     if self.null_run:
@@ -1970,9 +1973,10 @@ class XFaster(object):
             self.apply_gcorr = apply_gcorr
             self.gmat_ell = gmat_ell
 
+            return write
+
         if ret is not None:
-            process_gcorr(gcorr_file)
-            if apply_gcorr and (reload_gcorr or ret.get("gcorr", None) is None):
+            if process_gcorr(gcorr_file):
                 return self.save_data(
                     save_name, from_attrs=save_attrs, file_attrs=file_attrs
                 )
