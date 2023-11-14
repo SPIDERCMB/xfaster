@@ -95,6 +95,8 @@ def get_next_iter(output_root="xfaster_gcal", output_tag=None, iternum=None):
     for d in iterdirs:
         if int(os.path.basename(d).replace("iter", "")) >= iternum:
             shutil.rmtree(d)
+    for f in ["*bandpowers_sim", "transfer"]:
+        sp.check_call("rm -rf {}/{}*{}.npz".format(output_root, f, tag), shell=True)
 
     # ensure that iterations are contiguous
     if len(glob.glob(pattern)) != iternum:
