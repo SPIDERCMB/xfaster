@@ -1821,7 +1821,7 @@ def xfaster_diff(file1, file2, keys=None, verbose=False):
             elif verbose:
                 print("{} SAME: {}".format(prefix, d1))
 
-        elif isinstance(d1, (list, np.ndarray)):
+        elif isinstance(d1, (list, np.ndarray, tuple)):
             d1, d2 = [np.asarray(x) for x in [d1, d2]]
             if d1.dtype.kind in ["U", "S"]:
                 s1 = set(d1.ravel())
@@ -1852,7 +1852,11 @@ def xfaster_diff(file1, file2, keys=None, verbose=False):
                     compare(d1[k], d2[k], "{}{}: ".format(prefix, k))
 
         else:
-            raise ValueError("{}: parser error: {} {}".format(prefix, type(d1), d1))
+            print(
+                "{}: parser error: A: {} {} B: {} {}".format(
+                    prefix, type(d1), d1, type(d2), d2
+                )
+            )
 
     compare(data1, data2)
 
