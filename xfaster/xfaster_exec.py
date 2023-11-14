@@ -546,6 +546,7 @@ def xfaster_run(
     )
     config_vars.update(common_opts, "XFaster Common")
     common_opts.pop("config")
+    common_opts.pop("dump_state")
 
     # initialize class
     X = xfc.XFaster(config, **common_opts)
