@@ -160,6 +160,7 @@ def xfaster_gcorr(
     opts["output_tag"] = output_tag
     opts["apply_gcorr"] = iternum > 0
     opts["reload_gcorr"] = iternum > 0
+    opts["checkpoint"] = "transfer"
     opts["sim_data"] = True
     opts["save_sim_data"] = True
     opts["qb_only"] = True
