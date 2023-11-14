@@ -2946,17 +2946,20 @@ class XFaster(object):
 
         # process signal, noise, and S+N
         cls_sig = OrderedDict()
-        cls_null_sig = OrderedDict() if null_run else None
         cls_noise = OrderedDict() if do_noise else None
-        cls_null_noise = OrderedDict() if null_run and do_noise else None
         cls_tot = OrderedDict()
-        cls_null_tot = OrderedDict() if null_run else None
         cls_med = OrderedDict()
-        cls_null_med = OrderedDict() if null_run else None
+
+        if null_run:
+            cls_null_sig = OrderedDict()
+            cls_null_noise = OrderedDict() if do_noise else None
+            cls_null_tot = OrderedDict()
+            cls_null_med = OrderedDict()
 
         ### Noise iteration from res fit fields
         cls_res = OrderedDict() if do_noise else None
-        cls_null_res = OrderedDict() if null_run and do_noise else None
+        if null_run:
+            cls_null_res = OrderedDict() if do_noise else None
         if do_noise:
             for k in ["nxn0", "nxn1", "sxn0", "sxn1", "nxs0", "nxs1"]:
                 cls_res[k] = OrderedDict()
@@ -3163,15 +3166,17 @@ class XFaster(object):
                     cls_null_med[spec][xname] = cls_null_med_arr[xind][s]
 
         self.cls_signal = cls_sig
-        self.cls_signal_null = cls_null_sig
         self.cls_noise = cls_noise
-        self.cls_noise_null = cls_null_noise
         self.cls_sim = cls_tot
-        self.cls_sim_null = cls_null_tot
         self.cls_med = cls_med
-        self.cls_med_null = cls_null_med
         self.cls_res = cls_res
-        self.cls_res_null = cls_null_res
+
+        if null_run:
+            self.cls_signal_null = cls_null_sig
+            self.cls_noise_null = cls_null_noise
+            self.cls_sim_null = cls_null_tot
+            self.cls_med_null = cls_null_med
+            self.cls_res_null = cls_null_res
 
         # save and return
         return self.save_data(save_name, from_attrs=save_attrs, file_attrs=file_attrs)
@@ -3531,7 +3536,12 @@ class XFaster(object):
                     filename_fg=filename_fg, freq_ref=freq_ref, beta_ref=beta_ref
                 )
             ret = self.load_data(
-                save_name, save_name, shape_ref="cls_shape", shape=shape, value_ref=opts
+                save_name,
+                save_name,
+                shape_ref="cls_shape",
+                shape=shape,
+                value_ref=opts,
+                to_attrs=False,
             )
             if ret is not None:
                 if "cmb" in comps and r is not None:
