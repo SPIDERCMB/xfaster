@@ -199,6 +199,7 @@ def xfaster_gcorr(
         if num_sims > 1 and num_jobs > 1:
             opts["checkpoint"] = "bandpowers"
             opts["dep_afterok"] = [jobs[0]]
+            opts["reload_gcorr"] = False
 
             idxs = np.array_split(np.arange(sim_index, sim_index + num_sims), num_jobs)
             for idx in idxs:
