@@ -1679,6 +1679,12 @@ class XFaster(object):
             if opt in data:
                 file_opts[opt] = data[opt]
 
+        from .batch_tools import get_job_id
+
+        jobid = get_job_id()
+        if jobid:
+            tag = "_".join([jobid, tag])
+
         name = "state_{}".format(tag)
         output_file = self.get_filename(name, ext=".npz", **file_opts)
 
