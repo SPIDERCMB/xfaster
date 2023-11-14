@@ -1972,6 +1972,7 @@
         <span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">process_gcorr</span><span class="p">(</span><span class="n">gcorr_file_in</span><span class="p">):</span>
+            <span class="n">write</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;gcorr&quot;</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">gcorr</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">if</span> <span class="n">apply_gcorr</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">gcorr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1979,6 +1980,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">apply_gcorr</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">gcorr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">gcorr</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">force_rerun</span><span class="p">[</span><span class="s2">&quot;transfer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">write</span> <span class="o">=</span> <span class="kc">True</span>
 
             <span class="k">for</span> <span class="n">tag</span><span class="p">,</span> <span class="n">mfile</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map_tags</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_files</span><span class="p">):</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">apply_gcorr</span><span class="p">:</span>
@@ -1988,6 +1990,7 @@
                     <span class="k">continue</span>
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">force_rerun</span><span class="p">[</span><span class="s2">&quot;transfer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">write</span> <span class="o">=</span> <span class="kc">True</span>
 
                 <span class="k">if</span> <span class="n">gcorr_file_in</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">null_run</span><span class="p">:</span>
@@ -2049,9 +2052,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">apply_gcorr</span> <span class="o">=</span> <span class="n">apply_gcorr</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">gmat_ell</span> <span class="o">=</span> <span class="n">gmat_ell</span>
 
+            <span class="k">return</span> <span class="n">write</span>
+
         <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">process_gcorr</span><span class="p">(</span><span class="n">gcorr_file</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">apply_gcorr</span> <span class="ow">and</span> <span class="p">(</span><span class="n">reload_gcorr</span> <span class="ow">or</span> <span class="n">ret</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gcorr&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">process_gcorr</span><span class="p">(</span><span class="n">gcorr_file</span><span class="p">):</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_data</span><span class="p">(</span>
                     <span class="n">save_name</span><span class="p">,</span> <span class="n">from_attrs</span><span class="o">=</span><span class="n">save_attrs</span><span class="p">,</span> <span class="n">file_attrs</span><span class="o">=</span><span class="n">file_attrs</span>
                 <span class="p">)</span>
