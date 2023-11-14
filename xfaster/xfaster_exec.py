@@ -776,12 +776,7 @@ def xfaster_run(
         idx0 = 0
 
     if dump_state:
-        state_tag = str(int(time_start))
-        if os.getenv("SLURM_JOB_ID"):
-            state_tag = "_".join(
-                [os.getenv("SLURM_JOB_ID").split(".", 1)[0], state_tag]
-            )
-        X.save_state(state_tag)
+        X.save_state(str(int(time_start)))
 
     bperr = False
 
