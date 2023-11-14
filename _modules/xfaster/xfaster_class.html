@@ -516,7 +516,7 @@
         <span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">fmt</span><span class="p">)</span>
 
         <span class="c1"># configure logger</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;xfaster&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;xfaster.</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)))</span>
         <span class="c1"># replace any existing handlers before adding one</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">hasHandlers</span><span class="p">():</span>
             <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">):</span>
@@ -567,7 +567,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># cleanup logging handlers</span>
-        <span class="k">for</span> <span class="n">handler</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">handler</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">handler</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
                 <span class="n">handler</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
@@ -576,6 +576,7 @@
                 <span class="k">pass</span>
             <span class="k">finally</span><span class="p">:</span>
                 <span class="n">handler</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_data_files</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1736,6 +1737,31 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Saved output data to </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_file</span><span class="p">),</span> <span class="s2">&quot;debug&quot;</span><span class="p">)</span>
         <span class="n">data</span><span class="p">[</span><span class="s2">&quot;output_file&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_file</span>
         <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="XFaster.save_state"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.save_state">[docs]</a>    <span class="k">def</span> <span class="nf">save_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tag</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save current object state to disk.</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        tag : str</span>
+<span class="sd">            Set the name for the output file to ``state_&lt;tag&gt;``.  Otherwise the</span>
+<span class="sd">            standard file options are applied to produce the output filename.</span>
+<span class="sd">            See ``get_filename`` for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;data_version&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_version</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;logger&quot;</span><span class="p">)</span>
+
+        <span class="n">file_opts</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">opt</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;map_tag&quot;</span><span class="p">,</span> <span class="s2">&quot;iter_index&quot;</span><span class="p">,</span> <span class="s2">&quot;data_opts&quot;</span><span class="p">,</span> <span class="s2">&quot;bp_opts&quot;</span><span class="p">,</span> <span class="s2">&quot;extra_tag&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">opt</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">file_opts</span><span class="p">[</span><span class="n">opt</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">opt</span><span class="p">]</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;state_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+        <span class="n">output_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_filename</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ext</span><span class="o">=</span><span class="s2">&quot;.npz&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">file_opts</span><span class="p">)</span>
+
+        <span class="n">pt</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="XFaster.save_config"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.save_config">[docs]</a>    <span class="k">def</span> <span class="nf">save_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -3025,17 +3051,20 @@
 
         <span class="c1"># process signal, noise, and S+N</span>
         <span class="n">cls_sig</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-        <span class="n">cls_null_sig</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span> <span class="k">if</span> <span class="n">null_run</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="n">cls_noise</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span> <span class="k">if</span> <span class="n">do_noise</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="n">cls_null_noise</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span> <span class="k">if</span> <span class="n">null_run</span> <span class="ow">and</span> <span class="n">do_noise</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="n">cls_tot</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-        <span class="n">cls_null_tot</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span> <span class="k">if</span> <span class="n">null_run</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="n">cls_med</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-        <span class="n">cls_null_med</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span> <span class="k">if</span> <span class="n">null_run</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">null_run</span><span class="p">:</span>
+            <span class="n">cls_null_sig</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+            <span class="n">cls_null_noise</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span> <span class="k">if</span> <span class="n">do_noise</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">cls_null_tot</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+            <span class="n">cls_null_med</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
 
         <span class="c1">### Noise iteration from res fit fields</span>
         <span class="n">cls_res</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span> <span class="k">if</span> <span class="n">do_noise</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="n">cls_null_res</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span> <span class="k">if</span> <span class="n">null_run</span> <span class="ow">and</span> <span class="n">do_noise</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">null_run</span><span class="p">:</span>
+            <span class="n">cls_null_res</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span> <span class="k">if</span> <span class="n">do_noise</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">do_noise</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;nxn0&quot;</span><span class="p">,</span> <span class="s2">&quot;nxn1&quot;</span><span class="p">,</span> <span class="s2">&quot;sxn0&quot;</span><span class="p">,</span> <span class="s2">&quot;sxn1&quot;</span><span class="p">,</span> <span class="s2">&quot;nxs0&quot;</span><span class="p">,</span> <span class="s2">&quot;nxs1&quot;</span><span class="p">]:</span>
                 <span class="n">cls_res</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
@@ -3242,15 +3271,17 @@
                     <span class="n">cls_null_med</span><span class="p">[</span><span class="n">spec</span><span class="p">][</span><span class="n">xname</span><span class="p">]</span> <span class="o">=</span> <span class="n">cls_null_med_arr</span><span class="p">[</span><span class="n">xind</span><span class="p">][</span><span class="n">s</span><span class="p">]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">cls_signal</span> <span class="o">=</span> <span class="n">cls_sig</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cls_signal_null</span> <span class="o">=</span> <span class="n">cls_null_sig</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cls_noise</span> <span class="o">=</span> <span class="n">cls_noise</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cls_noise_null</span> <span class="o">=</span> <span class="n">cls_null_noise</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cls_sim</span> <span class="o">=</span> <span class="n">cls_tot</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cls_sim_null</span> <span class="o">=</span> <span class="n">cls_null_tot</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cls_med</span> <span class="o">=</span> <span class="n">cls_med</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cls_med_null</span> <span class="o">=</span> <span class="n">cls_null_med</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cls_res</span> <span class="o">=</span> <span class="n">cls_res</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cls_res_null</span> <span class="o">=</span> <span class="n">cls_null_res</span>
+
+        <span class="k">if</span> <span class="n">null_run</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cls_signal_null</span> <span class="o">=</span> <span class="n">cls_null_sig</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cls_noise_null</span> <span class="o">=</span> <span class="n">cls_null_noise</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cls_sim_null</span> <span class="o">=</span> <span class="n">cls_null_tot</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cls_med_null</span> <span class="o">=</span> <span class="n">cls_null_med</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cls_res_null</span> <span class="o">=</span> <span class="n">cls_null_res</span>
 
         <span class="c1"># save and return</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_data</span><span class="p">(</span><span class="n">save_name</span><span class="p">,</span> <span class="n">from_attrs</span><span class="o">=</span><span class="n">save_attrs</span><span class="p">,</span> <span class="n">file_attrs</span><span class="o">=</span><span class="n">file_attrs</span><span class="p">)</span></div>
@@ -3610,7 +3641,12 @@
                     <span class="n">filename_fg</span><span class="o">=</span><span class="n">filename_fg</span><span class="p">,</span> <span class="n">freq_ref</span><span class="o">=</span><span class="n">freq_ref</span><span class="p">,</span> <span class="n">beta_ref</span><span class="o">=</span><span class="n">beta_ref</span>
                 <span class="p">)</span>
             <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span>
-                <span class="n">save_name</span><span class="p">,</span> <span class="n">save_name</span><span class="p">,</span> <span class="n">shape_ref</span><span class="o">=</span><span class="s2">&quot;cls_shape&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span> <span class="n">value_ref</span><span class="o">=</span><span class="n">opts</span>
+                <span class="n">save_name</span><span class="p">,</span>
+                <span class="n">save_name</span><span class="p">,</span>
+                <span class="n">shape_ref</span><span class="o">=</span><span class="s2">&quot;cls_shape&quot;</span><span class="p">,</span>
+                <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span>
+                <span class="n">value_ref</span><span class="o">=</span><span class="n">opts</span><span class="p">,</span>
+                <span class="n">to_attrs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">if</span> <span class="s2">&quot;cmb&quot;</span> <span class="ow">in</span> <span class="n">comps</span> <span class="ow">and</span> <span class="n">r</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
