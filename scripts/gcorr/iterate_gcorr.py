@@ -72,18 +72,8 @@ P.add_argument(
     help="Compute and store gcorr files for the current iteration.  Typically used "
     "internally by the script, and should not be called by the user.",
 )
-P.add_argument(
-    "--submit-next",
-    action="store_true",
-    default=None,
-    help="Submit jobs for the next iteration (rather than running them locally). "
-    "This option is used internally by the script, do not set this option manually.",
-)
 
 args = P.parse_args()
-
-if args.submit_next is None:
-    args.submit_next = args.submit
 
 # load configuration
 g_cfg = gt.get_gcorr_config(args.config)
@@ -130,44 +120,57 @@ gcorr_opts = dict(
     max_iters=args.max_iters,
 )
 
+if args.analyze_only:
+    assert len(tags) == 1, "Analyze one tag at a time"
+    if gt.process_gcorr(output_tag=tags[0], **gcorr_opts):
+        raise RuntimeError("Stopping iterations")
+    raise SystemExit
+
 # build command for this script
 cmd = ["python", os.path.abspath(__file__), os.path.abspath(args.config)]
 for k in [
     "allow_extreme",
     "gcorr_fit_hist",
     "keep_iters",
-    "submit_next",
 ]:
     if getattr(args, k):
         cmd += ["--{}".format(k.replace("_", "-"))]
 for k in ["converge_criteria", "max_iters"]:
     cmd += ["--{}".format(k.replace("_", "-")), str(getattr(args, k))]
 
+if args.max_iters == 0:
+    args.max_iters = 1
+
 # run
 for tag in tags:
     # setup for next iteration
-    iternum = gt.get_next_iter(
+    iternum0 = gt.get_next_iter(
         output_root=rundir, output_tag=tag, iternum=iternums[tag]
     )
-    print("Starting {} iteration {}".format(tag, iternum))
-
-    # compute ensemble bandpowers
-    if not args.analyze_only:
-        jobs = gt.xfaster_gcorr(output_tag=tag, **run_opts)
-
-    tag_cmd = cmd + ["-t", tag]
-
-    if args.submit:
-        # submit analysis job
-        batch_sub(
-            tag_cmd + ["-a"],
-            name="gcorr_{}".format(tag),
-            workdir=os.path.abspath(os.path.join(rundir, tag, "logs")),
-            dep_afterok=jobs if not args.analyze_only else None,
-            **submit_opts,
+    if iternum0 > args.max_iters:
+        raise ValueError(
+            "Tag {} iteration {} > max {}".format(tag, iternum0, args.max_iters)
         )
-    else:
+    gcorr_job = None
+
+    for iternum in range(iternum0, args.max_iters):
+        print("Starting {} iteration {}".format(tag, iternum))
+
+        # compute ensemble bandpowers
+        if args.submit:
+            run_opts["dep_afterok"] = gcorr_job
+        bp_jobs = gt.xfaster_gcorr(output_tag=tag, **run_opts)
+
         # compute gcorr
-        if not gt.process_gcorr(output_tag=tag, **gcorr_opts):
-            # run again if not converged or reached max_iters
-            sp.check_call(tag_cmd + ["-s"] * args.submit_next)
+        if args.submit:
+            # submit analysis job
+            gcorr_job = batch_sub(
+                cmd + ["-a", "-t", tag],
+                name="gcorr_{}".format(tag),
+                workdir=os.path.abspath(os.path.join(rundir, tag, "logs")),
+                dep_afterok=bp_jobs,
+                **submit_opts,
+            )
+        else:
+            if gt.process_gcorr(output_tag=tag, **gcorr_opts):
+                break
