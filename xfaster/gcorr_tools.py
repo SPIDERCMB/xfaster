@@ -191,7 +191,8 @@ def xfaster_gcorr(
             groot, "gcorr_total{}_iter{:03d}.npz".format(tag, iternum - 1)
         )
         opts["gcorr_file"] = gfile
-        assert os.path.exists(gfile), "Missing gcorr file {}".format(gfile)
+        if not submit:
+            assert os.path.exists(gfile), "Missing gcorr file {}".format(gfile)
 
     from .xfaster_exec import xfaster_submit, xfaster_run
 
