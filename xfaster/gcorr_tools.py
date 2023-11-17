@@ -151,7 +151,11 @@ def xfaster_gcorr(
     if iternum is None:
         iternum = get_next_iter(output_root, output_tag)
 
-    print("Running {} iteration {}".format(output_tag, iternum))
+    print(
+        "{} XFaster jobs for {} iteration {}".format(
+            "Submitting" if submit else "Running", output_tag, iternum
+        )
+    )
 
     if null:
         assert opts.get("noise_type") is not None, "Missing noise_type"
@@ -549,7 +553,7 @@ def process_gcorr(
     if iternum is None:
         iternum = get_next_iter(output_root, output_tag)
 
-    print("Processing {} iteration {}".format(output_tag, iternum))
+    print("Processing gcorr for {} iteration {}".format(output_tag, iternum))
 
     # Cleanup output directories
     if output_tag is not None:
