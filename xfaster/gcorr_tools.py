@@ -111,6 +111,7 @@ def xfaster_gcorr(
     data_subset="full",
     data_subset2=None,
     null=False,
+    iternum=None,
     sim_index=0,
     num_sims=1,
     num_jobs=1,
@@ -132,6 +133,8 @@ def xfaster_gcorr(
         map tag as `<data_subset>/*_<tag>`.
     null : bool
         If True, this is a null test run.
+    iternum : int
+        Iteration number for which to compute bandpowers.
     sim_index : int
         First sim index to run
     num_sims : int
@@ -145,7 +148,10 @@ def xfaster_gcorr(
         Remaining options are passed directly to `xfaster_run` or
         `xfaster_submit`.
     """
-    iternum = get_next_iter(output_root, output_tag)
+    if iternum is None:
+        iternum = get_next_iter(output_root, output_tag)
+
+    print("Running {} iteration {}".format(output_tag, iternum))
 
     if null:
         assert opts.get("noise_type") is not None, "Missing noise_type"
@@ -486,6 +492,7 @@ def process_gcorr(
     output_root="xfaster_gcal",
     output_tag=None,
     null=False,
+    iternum=None,
     num_sims=1,
     gcorr_fit_hist=False,
     allow_extreme=False,
@@ -513,6 +520,8 @@ def process_gcorr(
         Map tag to analyze
     null : bool
         If True, this is a null test dataset.
+    iternum : int
+        Iteration number to process.
     num_sims : int
         Number of sim bandpowers to expect in the ensemble.
     gcorr_fit_hist : bool
@@ -536,7 +545,10 @@ def process_gcorr(
     retval : bool
         True if convergence or iteration index is reached, False otherwise.
     """
-    iternum = get_next_iter(output_root, output_tag)
+    if iternum is None:
+        iternum = get_next_iter(output_root, output_tag)
+
+    print("Processing {} iteration {}".format(output_tag, iternum))
 
     # Cleanup output directories
     if output_tag is not None:

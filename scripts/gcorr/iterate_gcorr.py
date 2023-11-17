@@ -122,7 +122,7 @@ gcorr_opts = dict(
 
 if args.analyze_only:
     assert len(tags) == 1, "Analyze one tag at a time"
-    if gt.process_gcorr(output_tag=tags[0], **gcorr_opts):
+    if gt.process_gcorr(output_tag=tags[0], iternum=iternums[tags[0]], **gcorr_opts):
         raise RuntimeError("Stopping iterations")
     raise SystemExit
 
@@ -159,18 +159,18 @@ for tag in tags:
         # compute ensemble bandpowers
         if args.submit:
             run_opts["dep_afterok"] = gcorr_job
-        bp_jobs = gt.xfaster_gcorr(output_tag=tag, **run_opts)
+        bp_jobs = gt.xfaster_gcorr(output_tag=tag, iternum=iternum, **run_opts)
 
         # compute gcorr
         if args.submit:
             # submit analysis job
             gcorr_job = batch_sub(
-                cmd + ["-a", "-t", tag],
+                cmd + ["-a", "-t", tag, "-i", str(iternum)],
                 name="gcorr_{}".format(tag),
                 workdir=os.path.abspath(os.path.join(rundir, tag, "logs")),
                 dep_afterok=bp_jobs,
                 **submit_opts,
             )
         else:
-            if gt.process_gcorr(output_tag=tag, **gcorr_opts):
+            if gt.process_gcorr(output_tag=tag, iternum=iternum, **gcorr_opts):
                 break
