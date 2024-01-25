@@ -29,6 +29,7 @@ def xfaster_run(
     output_tag=None,
     verbose="notice",
     debug=False,
+    dump_state=False,
     checkpoint=None,
     alm_pixel_weights=False,
     alm_iter=None,
@@ -90,6 +91,7 @@ def xfaster_run(
     sim_index_noise=None,
     sim_index_foreground=None,
     sim_index_default=0,
+    num_sims=1,
     signal_type_sim=None,
     sim_data_r=None,
     noise_type_sim=None,
@@ -108,6 +110,7 @@ def xfaster_run(
     iter_max=200,
     save_iters=False,
     return_cls=False,
+    qb_only=False,
     fix_bb_transfer=False,
     transfer_matrix_root=None,
     null_first_cmb=False,
@@ -149,6 +152,9 @@ def xfaster_run(
         'notice', 'info', 'debug', all'].
     debug : bool
         Store extra data in output files for debugging.
+    dump_state : bool
+        Store current state immediately prior to bandpowers checkpoint.
+        Useful for debugging.
     checkpoint : str
         If supplied, re-compute all steps of the algorithm from this point
         forward.  Valid checkpoints are {checkpoints}.
@@ -338,6 +344,11 @@ def xfaster_run(
     sim_index_default : int
         Default sim index to use for any component with index < 0 or None
         in ``sim_index_<comp>``.
+    num_sims : int
+        If > 1, repeat the data, bandpowers and likelihood checkpoints this many
+        times, incrementing the value of ``sim_index_default`` by 1 each time,
+        starting from the input value.  Only used if ``sim_data`` is True.
+        All other options remain the same for each iteration.
     signal_type_sim : str
         The variant of signal sims to use for sim_index data maps.
         This enables having a different noise sim ensemble to use for
@@ -394,6 +405,8 @@ def xfaster_run(
         the end result.
     return_cls : bool
         If True, return C_l spectrum rather than the D_l spectrum
+    qb_only : bool
+        If True, do not compute signal window functions or C_l or D_l bandpowers
     fix_bb_transfer : bool
         If True, after transfer functions have been calculated, impose that the
         BB transfer function is exactly equal to the EE transfer function.
@@ -530,6 +543,7 @@ def xfaster_run(
         output_tag=output_tag,
         verbose=verbose,
         debug=debug,
+        dump_state=dump_state,
         checkpoint=checkpoint,
         alm_pixel_weights=alm_pixel_weights,
         alm_iter=alm_iter,
@@ -537,6 +551,7 @@ def xfaster_run(
     )
     config_vars.update(common_opts, "XFaster Common")
     common_opts.pop("config")
+    common_opts.pop("dump_state")
 
     # initialize class
     X = xfc.XFaster(config, **common_opts)
@@ -594,6 +609,7 @@ def xfaster_run(
         sim=sim_data,
         components=None if not sim_data else sim_data_components,
         index=None if not sim_data else sim_index,
+        num_sims=None if not sim_data else num_sims,
         signal_type_sim=signal_type_sim if sim_data_r is None else "r",
         r=sim_data_r,
         noise_type_sim=noise_type_sim,
@@ -610,6 +626,7 @@ def xfaster_run(
     config_vars.remove_option("XFaster General", "sim_index")
     config_vars.remove_option("XFaster General", "qb_file_data")
     config_vars.remove_option("XFaster General", "save_sim_data")
+    data_opts.pop("num_sims")
 
     kernel_opts = dict(
         pixwin=pixwin,
@@ -666,6 +683,7 @@ def xfaster_run(
         cond_criteria=cond_criteria,
         null_first_cmb=null_first_cmb,
         return_cls=return_cls,
+        qb_only=qb_only,
         like_profiles=like_profiles,
         like_profile_sigma=like_profile_sigma,
         like_profile_points=like_profile_points,
@@ -685,6 +703,7 @@ def xfaster_run(
     transfer_opts.pop("delta_beta_prior")
     transfer_opts.pop("null_first_cmb")
     transfer_opts.pop("return_cls")
+    transfer_opts.pop("qb_only")
     transfer_opts.pop("like_profiles")
     transfer_opts.pop("like_profile_sigma")
     transfer_opts.pop("like_profile_points")
@@ -763,34 +782,56 @@ def xfaster_run(
         X.log("Loading spectrum shape for bandpowers...", "notice")
         X.get_signal_shape(**shape_opts)
 
-    X.log(
-        "Computing masked {} cross-spectra...".format(
-            "simulated data" if sim_data else "data"
-        ),
-        "notice",
-    )
-    X.get_masked_data(**data_opts)
-
-    if multi_map:
-        X.log("Computing multi-map bandpowers...", "notice")
-        qb, inv_fish = X.get_bandpowers(return_qb=True, **bandpwr_opts)
-
-        if likelihood:
-            X.log("Computing multi-map likelihood...", "notice")
-            X.get_likelihood(qb, inv_fish, **like_opts)
-
+    if sim_data:
+        idx0 = data_opts["index"]["default"]
     else:
-        for map_tag, map_file in zip(X.map_tags, X.map_files):
-            X.log("Processing map {}: {}".format(map_tag, map_file), "notice")
+        num_sims = 1
+        idx0 = 0
 
-            X.log("Computing bandpowers for map {}".format(map_tag), "info")
-            qb, inv_fish = X.get_bandpowers(
-                map_tag=map_tag, return_qb=True, **bandpwr_opts
-            )
+    if dump_state:
+        X.save_state(str(int(time_start)))
+
+    bperr = False
+
+    for idx in range(idx0, idx0 + num_sims):
+        if sim_data:
+            data_opts["index"]["default"] = idx
+        X.log(
+            "Computing masked {} cross-spectra...".format(
+                "simulated data index {}".format(idx) if sim_data else "data"
+            ),
+            "notice",
+        )
+        X.get_masked_data(**data_opts)
+
+        if multi_map:
+            X.log("Computing multi-map bandpowers...", "notice")
+            try:
+                qb, inv_fish = X.get_bandpowers(return_qb=True, **bandpwr_opts)
+            except RuntimeError:
+                bperr = True
+                continue
 
             if likelihood:
-                X.log("Computing likelihoods for map {}".format(map_tag), "info")
-                X.get_likelihood(qb, inv_fish, map_tag=map_tag, **like_opts)
+                X.log("Computing multi-map likelihood...", "notice")
+                X.get_likelihood(qb, inv_fish, **like_opts)
+
+        else:
+            for map_tag, map_file in zip(X.map_tags, X.map_files):
+                X.log("Processing map {}: {}".format(map_tag, map_file), "notice")
+
+                X.log("Computing bandpowers for map {}".format(map_tag), "info")
+                try:
+                    qb, inv_fish = X.get_bandpowers(
+                        map_tag=map_tag, return_qb=True, **bandpwr_opts
+                    )
+                except RuntimeError:
+                    bperr = True
+                    continue
+
+                if likelihood:
+                    X.log("Computing likelihoods for map {}".format(map_tag), "info")
+                    X.get_likelihood(qb, inv_fish, map_tag=map_tag, **like_opts)
 
     cpu_elapsed = cpu_time() - cpu_start
     time_elapsed = time.time() - time_start
@@ -798,6 +839,9 @@ def xfaster_run(
         "Wall time: {:.2f} s, CPU time: {:.2f} s".format(time_elapsed, cpu_elapsed),
         "notice",
     )
+
+    if bperr:
+        raise RuntimeError("Caught error(s) computing bandpowers, check logs.")
 
 
 xfaster_run.__doc__ = xfaster_run.__doc__.format(checkpoints=xfc.XFaster.checkpoints)
@@ -1106,6 +1150,7 @@ def xfaster_parse(args=None, test=False):
             metavar="LEVEL",
         )
         add_arg(G, "debug")
+        add_arg(G, "dump_state")
         add_arg(
             G,
             "checkpoint",
@@ -1196,6 +1241,7 @@ def xfaster_parse(args=None, test=False):
             metavar="COMP",
         )
         add_arg(G, "sim_index_default", argtype=int)
+        add_arg(G, "num_sims", argtype=int)
         add_arg(G, "sim_index_signal", argtype=int)
         add_arg(G, "sim_index_noise", argtype=int)
         add_arg(G, "sim_index_foreground", argtype=int)
@@ -1219,6 +1265,7 @@ def xfaster_parse(args=None, test=False):
         add_arg(G, "iter_max", argtype=int)
         add_arg(G, "save_iters")
         add_arg(G, "return_cls")
+        add_arg(G, "qb_only")
         add_arg(G, "fix_bb_transfer")
         add_arg(G, "transfer_matrix_root")
         add_arg(G, "null_first_cmb")
@@ -1797,7 +1844,7 @@ def xfaster_diff(file1, file2, keys=None, verbose=False):
             elif verbose:
                 print("{} SAME: {}".format(prefix, d1))
 
-        elif isinstance(d1, (list, np.ndarray)):
+        elif isinstance(d1, (list, np.ndarray, tuple)):
             d1, d2 = [np.asarray(x) for x in [d1, d2]]
             if d1.dtype.kind in ["U", "S"]:
                 s1 = set(d1.ravel())
@@ -1828,7 +1875,11 @@ def xfaster_diff(file1, file2, keys=None, verbose=False):
                     compare(d1[k], d2[k], "{}{}: ".format(prefix, k))
 
         else:
-            raise ValueError("{}: parser error: {} {}".format(prefix, type(d1), d1))
+            print(
+                "{}: parser error: A: {} {} B: {} {}".format(
+                    prefix, type(d1), d1, type(d2), d2
+                )
+            )
 
     compare(data1, data2)
 
