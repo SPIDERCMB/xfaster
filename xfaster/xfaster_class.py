@@ -437,7 +437,11 @@ class XFaster(object):
         handler.setFormatter(fmt)
 
         # configure logger
-        self.logger = logging.getLogger("xfaster")
+        self.logger = logging.getLogger("xfaster.{}".format(id(self)))
+        # replace any existing handlers before adding one
+        if self.logger.hasHandlers():
+            for h in list(self.logger.handlers):
+                self.logger.removeHandler(h)
         self.logger.addHandler(handler)
 
         # set logging level
@@ -484,7 +488,7 @@ class XFaster(object):
         """
 
         # cleanup logging handlers
-        for handler in self.logger.handlers[::-1]:
+        for handler in list(self.logger.handlers[::-1]):
             try:
                 handler.acquire()
                 handler.flush()
@@ -493,6 +497,7 @@ class XFaster(object):
                 pass
             finally:
                 handler.release()
+            self.logger.removeHandler(handler)
 
     def _get_data_files(
         self,
@@ -588,9 +593,12 @@ class XFaster(object):
             map_root = os.path.join(droot, "data_{}".format(data_type))
             map_files = []
             for f in np.atleast_1d(dset.split(",")):
-                files = glob.glob(os.path.join(map_root, "{}.fits".format(f)))
+                pattern = os.path.join(map_root, "{}.fits".format(f))
+                files = glob.glob(pattern)
                 if not len(files):
-                    raise OSError("Missing files in data subset {}".format(f))
+                    raise OSError(
+                        "Missing files for data subset {} in {}".format(f, pattern)
+                    )
                 map_files.extend(files)
             map_files = sorted(map_files)
             map_files = [f for f in map_files if os.path.basename(f).startswith("map_")]
@@ -805,16 +813,15 @@ class XFaster(object):
             root1 = os.path.join(data_root, root)
             all_files = []
             for f in map_files:
-                files = sorted(
-                    glob.glob(
-                        os.path.join(
-                            root1, f.replace(".fits", "_{}.fits".format(subset))
-                        )
-                    )
+                pattern = os.path.join(
+                    root1, f.replace(".fits", "_{}.fits".format(subset))
                 )
+                files = sorted(glob.glob(pattern))
                 nfiles = len(files)
                 if not nfiles:
-                    raise OSError("Missing {} sims for {}".format(name, f))
+                    raise OSError(
+                        "Missing {} sims for {} in {}".format(name, f, pattern)
+                    )
                 if num_files is None:
                     num_files = out.get("num_{}{}".format(name, suffix), nfiles)
                 if num_files != nfiles:
@@ -907,11 +914,14 @@ class XFaster(object):
                     continue
 
                 # ensemble of templates per map
-                tf = sorted(glob.glob(tf.replace(".fits", "_*.fits")))
+                pattern = tf.replace(".fits", "_*.fits")
+                tf = sorted(glob.glob(pattern))
                 nfiles1 = len(tf)
                 if not nfiles1:
                     raise OSError(
-                        "Missing temp{} {} files for {}".format(group, name, f)
+                        "Missing temp{} {} files for {} in {}".format(
+                            group, name, f, pattern
+                        )
                     )
                 if nfiles is None:
                     nfiles = out.get("num_{}{}".format(name, suffix), nfiles1)
@@ -1649,6 +1659,37 @@ class XFaster(object):
         data["output_file"] = output_file
         return data
 
+    def save_state(self, tag):
+        """
+        Save current object state to disk.
+
+        Arguments
+        ---------
+        tag : str
+            Set the name for the output file to ``state_<tag>``.  Otherwise the
+            standard file options are applied to produce the output filename.
+            See ``get_filename`` for details.
+        """
+        data = vars(self).copy()
+        data["data_version"] = self.data_version
+        data.pop("logger")
+
+        file_opts = {}
+        for opt in ["map_tag", "iter_index", "data_opts", "bp_opts", "extra_tag"]:
+            if opt in data:
+                file_opts[opt] = data[opt]
+
+        from .batch_tools import get_job_id
+
+        jobid = get_job_id()
+        if jobid:
+            tag = "_".join([jobid, tag])
+
+        name = "state_{}".format(tag)
+        output_file = self.get_filename(name, ext=".npz", **file_opts)
+
+        pt.save(output_file, **data)
+
     def save_config(self, cfg):
         """
         Save a configuration file for the current run on disk.
@@ -1738,7 +1779,7 @@ class XFaster(object):
         opts = dict(pol=self.pol if pol is None else pol)
         if self.alm_pixel_weights:
             if self.lmax > 1.5 * self.nside:
-                raise RuntimeError(
+                raise ValueError(
                     "Cannot use pixel weights for map2alm, lmax {} is > "
                     "1.5 * nside for nside={}".format(self.lmax, self.nside)
                 )
@@ -1858,10 +1899,15 @@ class XFaster(object):
         )
 
         def process_gcorr(gcorr_file_in):
+            write = False
             if not hasattr(self, "gcorr"):
                 self.gcorr = None
             if apply_gcorr and self.gcorr is None:
                 self.gcorr = OrderedDict()
+            if not apply_gcorr and self.gcorr is not None:
+                self.gcorr = None
+                self.force_rerun["transfer"] = True
+                write = True
 
             for tag, mfile in zip(self.map_tags, self.mask_files):
                 if not apply_gcorr:
@@ -1869,6 +1915,9 @@ class XFaster(object):
 
                 if not reload_gcorr and tag in self.gcorr:
                     continue
+
+                self.force_rerun["transfer"] = True
+                write = True
 
                 if gcorr_file_in is None:
                     if self.null_run:
@@ -1879,25 +1928,29 @@ class XFaster(object):
                     gcorr_file = gcorr_file_in
 
                 if not os.path.exists(gcorr_file):
-                    self.warn("G correction file {} not found".format(gcorr_file))
-                    continue
+                    raise IOError("G correction file {} not found".format(gcorr_file))
 
+                self.log("Loading G correction file {}".format(gcorr_file), "info")
                 gdata = pt.load_and_parse(gcorr_file)
                 gcorr = gdata["gcorr"]
                 for k, g in gcorr.items():
+                    stag = "cmb_{}".format(k)
+                    # skip spectra that aren't in bin_def
+                    # e.g. if running with tbeb=False
+                    if stag not in self.bin_def:
+                        continue
                     # check bins match g
-                    bd0 = self.bin_def["cmb_{}".format(k)]
-                    bd = gdata["bin_def"]["cmb_{}".format(k)]
+                    bd0 = self.bin_def[stag]
+                    bd = gdata["bin_def"][stag]
                     if len(bd0) < len(bd):
                         bd = bd[: len(bd0)]
                         gcorr[k] = g[: len(bd)]
                     if not np.all(bd0 == bd):
-                        self.warn(
+                        raise ValueError(
                             "G correction for map {} has incompatible bin def".format(
                                 tag
                             )
                         )
-                        break
                 else:
                     self.log(
                         "Found g correction for map {}: {}".format(tag, gcorr), "debug"
@@ -1926,9 +1979,10 @@ class XFaster(object):
             self.apply_gcorr = apply_gcorr
             self.gmat_ell = gmat_ell
 
+            return write
+
         if ret is not None:
-            process_gcorr(gcorr_file)
-            if apply_gcorr and (reload_gcorr or ret.get("gcorr", None) is None):
+            if process_gcorr(gcorr_file):
                 return self.save_data(
                     save_name, from_attrs=save_attrs, file_attrs=file_attrs
                 )
@@ -2928,17 +2982,20 @@ class XFaster(object):
 
         # process signal, noise, and S+N
         cls_sig = OrderedDict()
-        cls_null_sig = OrderedDict() if null_run else None
         cls_noise = OrderedDict() if do_noise else None
-        cls_null_noise = OrderedDict() if null_run and do_noise else None
         cls_tot = OrderedDict()
-        cls_null_tot = OrderedDict() if null_run else None
         cls_med = OrderedDict()
-        cls_null_med = OrderedDict() if null_run else None
+
+        if null_run:
+            cls_null_sig = OrderedDict()
+            cls_null_noise = OrderedDict() if do_noise else None
+            cls_null_tot = OrderedDict()
+            cls_null_med = OrderedDict()
 
         ### Noise iteration from res fit fields
         cls_res = OrderedDict() if do_noise else None
-        cls_null_res = OrderedDict() if null_run and do_noise else None
+        if null_run:
+            cls_null_res = OrderedDict() if do_noise else None
         if do_noise:
             for k in ["nxn0", "nxn1", "sxn0", "sxn1", "nxs0", "nxs1"]:
                 cls_res[k] = OrderedDict()
@@ -3145,15 +3202,17 @@ class XFaster(object):
                     cls_null_med[spec][xname] = cls_null_med_arr[xind][s]
 
         self.cls_signal = cls_sig
-        self.cls_signal_null = cls_null_sig
         self.cls_noise = cls_noise
-        self.cls_noise_null = cls_null_noise
         self.cls_sim = cls_tot
-        self.cls_sim_null = cls_null_tot
         self.cls_med = cls_med
-        self.cls_med_null = cls_null_med
         self.cls_res = cls_res
-        self.cls_res_null = cls_null_res
+
+        if null_run:
+            self.cls_signal_null = cls_null_sig
+            self.cls_noise_null = cls_null_noise
+            self.cls_sim_null = cls_null_tot
+            self.cls_med_null = cls_null_med
+            self.cls_res_null = cls_null_res
 
         # save and return
         return self.save_data(save_name, from_attrs=save_attrs, file_attrs=file_attrs)
@@ -3513,7 +3572,12 @@ class XFaster(object):
                     filename_fg=filename_fg, freq_ref=freq_ref, beta_ref=beta_ref
                 )
             ret = self.load_data(
-                save_name, save_name, shape_ref="cls_shape", shape=shape, value_ref=opts
+                save_name,
+                save_name,
+                shape_ref="cls_shape",
+                shape=shape,
+                value_ref=opts,
+                to_attrs=False,
             )
             if ret is not None:
                 if "cmb" in comps and r is not None:
@@ -5314,6 +5378,7 @@ class XFaster(object):
         delta_beta_prior=None,
         cond_noise=None,
         cond_criteria=None,
+        qb_only=False,
         like_profiles=False,
         like_profile_sigma=3.0,
         like_profile_points=100,
@@ -5363,6 +5428,9 @@ class XFaster(object):
         cond_criteria : float
             The maximum condition number allowed for Dmat1 to be acceptable
             for taking its inverse.
+        qb_only : bool
+            If True, compute just maximum likelihood qb's, and skip
+            calculation of window functions and Cb bandpowers.
         like_profiles : bool
             If True, compute profile likelihoods for each qb, leaving all
             others fixed at their maximum likelihood values.  Profiles are
@@ -5711,36 +5779,37 @@ class XFaster(object):
                 invfish_nosampvar=inv_fish_ns,
             )
 
-            # compute window functions for signal bins
-            self.log("Calculating signal window functions", "info")
-            wbl_qb = self.fisher_calc(
-                qb,
-                cbl,
-                obs,
-                cls_noise=nell,
-                cls_debias=None,
-                cond_noise=None,
-                delta_beta_prior=delta_beta_prior,
-                null_first_cmb=null_first_cmb,
-                windows=True,
-                inv_fish=inv_fish,
-            )
-            out.update(wbl_qb=wbl_qb)
+            if like_profiles or not qb_only:
+                # compute window functions for signal bins
+                self.log("Calculating signal window functions", "info")
+                wbl_qb = self.fisher_calc(
+                    qb,
+                    cbl,
+                    obs,
+                    cls_noise=nell,
+                    cls_debias=None,
+                    cond_noise=None,
+                    delta_beta_prior=delta_beta_prior,
+                    null_first_cmb=null_first_cmb,
+                    windows=True,
+                    inv_fish=inv_fish,
+                )
+                out.update(wbl_qb=wbl_qb)
 
-            # compute bandpowers and covariances
-            cb, dcb, ellb, cov, qb2cb, wbl_cb = self.do_qb2cb(qb, inv_fish, wbl_qb)
-            _, dcb_ns, _, cov_ns, _, _ = self.do_qb2cb(qb, inv_fish_ns, wbl_qb)
+                # compute bandpowers and covariances
+                cb, dcb, ellb, cov, qb2cb, wbl_cb = self.do_qb2cb(qb, inv_fish, wbl_qb)
+                _, dcb_ns, _, cov_ns, _, _ = self.do_qb2cb(qb, inv_fish_ns, wbl_qb)
 
-            out.update(
-                cb=cb,
-                dcb=dcb,
-                ellb=ellb,
-                cov=cov,
-                qb2cb=qb2cb,
-                wbl_cb=wbl_cb,
-                dcb_nosampvar=dcb_ns,
-                cov_nosampvar=cov_ns,
-            )
+                out.update(
+                    cb=cb,
+                    dcb=dcb,
+                    ellb=ellb,
+                    cov=cov,
+                    qb2cb=qb2cb,
+                    wbl_cb=wbl_cb,
+                    dcb_nosampvar=dcb_ns,
+                    cov_nosampvar=cov_ns,
+                )
 
             if like_profiles:
                 # compute bandpower likelihoods
@@ -6058,6 +6127,7 @@ class XFaster(object):
         cond_criteria=None,
         null_first_cmb=False,
         return_cls=False,
+        qb_only=False,
         like_profiles=False,
         like_profile_sigma=3.0,
         like_profile_points=100,
@@ -6101,6 +6171,9 @@ class XFaster(object):
             Keep first CMB bandpowers fixed to input shape (qb=1).
         return_cls : bool
             If True, return C_ls rather than D_ls
+        qb_only : bool
+            If True, compute just maximum likelihood qb's, and skip
+            calculation of window functions and Cb bandpowers.
         like_profiles : bool
             If True, compute profile likelihoods for each qb, leaving all
             others fixed at their maximum likelihood values.  Profiles are
@@ -6156,7 +6229,7 @@ class XFaster(object):
 
         if self.template_type is not None:
             opts.update(template_alpha=self.template_alpha)
-        self.return_cls = return_cls
+        self.return_cls = False if qb_only else return_cls
 
         ret = self.load_data(
             save_name,
@@ -6188,6 +6261,7 @@ class XFaster(object):
             cond_criteria=cond_criteria,
             null_first_cmb=null_first_cmb,
             delta_beta_prior=delta_beta_prior,
+            qb_only=qb_only,
             like_profiles=like_profiles,
             like_profile_sigma=like_profile_sigma,
             like_profile_points=like_profile_points,
@@ -6404,7 +6478,7 @@ class XFaster(object):
 
         # check parameter space
         if all([x is None for x in priors.values()]):
-            raise RuntimeError("Empty parameter space")
+            raise ValueError("Empty parameter space")
 
         out = dict(
             r_prior=r_prior,
