@@ -9,7 +9,13 @@ from warnings import warn
 import numpy as np
 import argparse as ap
 
-__all__ = ["get_job_logfile", "batch_sub", "batch_group", "JobArgumentParser"]
+__all__ = [
+    "get_job_logfile",
+    "get_job_id",
+    "batch_sub",
+    "batch_group",
+    "JobArgumentParser",
+]
 
 
 def get_job_logfile():
@@ -32,6 +38,23 @@ def get_job_logfile():
     else:
         logfile = None
     return logfile
+
+
+def get_job_id():
+    """
+    Get the current job ID, based on job environment.
+
+    Returns
+    -------
+    jobid: str
+        Job ID.
+    """
+    if os.getenv("SLURM_SUBMIT_DIR"):
+        jobid = os.getenv("SLURM_JOB_ID").split(".", 1)[0]
+    else:
+        jobid = None
+
+    return jobid
 
 
 def format_time(t):
