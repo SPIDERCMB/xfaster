@@ -22,7 +22,7 @@ jobs:
       with:
           version: "23.7.0"
     - name: Install pandoc
-      uses: pandoc/actions/setup@{main}
+      uses: pandoc/actions/setup@main
     - name: Upgrade pip, install package, install requirements, build docs
       run: |
         pip install --upgrade pip
