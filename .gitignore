@@ -7,3 +7,4 @@ build/
 dist/
 *.egg
 *.egg-info
+xfaster/_version.py
