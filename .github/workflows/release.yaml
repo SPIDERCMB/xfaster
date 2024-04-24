@@ -11,9 +11,11 @@ jobs:
 
     steps:
     - name: Checkout github repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Lint
       uses: psf/black@stable
+      with:
+          version: "23.7.0"
     - name: Setup python
       uses: actions/setup-python@v4
     - name: Install dependencies
