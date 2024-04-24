@@ -21,7 +21,7 @@ jobs:
     - name: Build docs
       uses: ammaraskar/sphinx-action@master
       with:
-        pre-build-command: "apt-get --allow-releaseinfo-change update -y && apt-get install -y g++ && apt-get install -y gfortran && apt-get install -y pandoc && apt-get install -y git"
+        pre-build-command: "apt-get --allow-releaseinfo-change update -y && apt-get install -y g++ && apt-get install -y gfortran && apt-get install -y git"
         docs-folder: "docs/"
     - name: Checkout pages branch
       uses: actions/checkout@v3
