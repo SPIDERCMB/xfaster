@@ -20,3 +20,4 @@ packages = ["xfaster"]
 
 [tool.setuptools_scm]
 write_to = "xfaster/_version.py"
+version_scheme = "no-guess-dev"
