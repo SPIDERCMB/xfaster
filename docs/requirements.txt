@@ -4,4 +4,4 @@ numpy
 nbsphinx
 ipykernel
 pandoc
--e .
+.
