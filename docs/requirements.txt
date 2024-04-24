@@ -1,7 +1,6 @@
-markupsafe==2.0.1
 sphinx_rtd_theme
 numpy
 nbsphinx
 ipykernel
 pandoc
--e .
+.

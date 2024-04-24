@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xfaster"
+description = "A fast power spectrum and likelihood estimator for CMB datasets"
+readme = "README.rst"
+requires-python = ">=3.0"
+urls = {source = "https://github.com/SPIDERCMB/xfaster"}
+license = {file = "LICENSE"}
+dynamic = ["version"]
+dependencies = ["numpy>1.17.5", "healpy", "camb", "emcee", "h5py"]
+
+[project.scripts]
+xfaster = "xfaster:xfaster_main"
+
+[tool.setuptools]
+packages = ["xfaster"]
+
+[tool.setuptools_scm]
+write_to = "xfaster/_version.py"
