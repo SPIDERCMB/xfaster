@@ -1,22 +1,23 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>xfaster.xfaster_exec &mdash; xfaster 1.1.1 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../_static/nbsphinx-code-cells.css" type="text/css" />
+  <title>xfaster.xfaster_exec &mdash; xfaster 0.1.dev1+gf46c913 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/language_data.js"></script>
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=add8e287"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -34,7 +35,7 @@
             xfaster
           </a>
               <div class="version">
-                1.1.1
+                0.1.dev1+gf46c913
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -44,7 +45,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../algorithm.html">Algorithm</a></li>
@@ -101,7 +102,9 @@
 <span class="p">]</span>
 
 
-<div class="viewcode-block" id="xfaster_run"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_run">[docs]</a><span class="k">def</span> <span class="nf">xfaster_run</span><span class="p">(</span>
+<div class="viewcode-block" id="xfaster_run">
+<a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_run">[docs]</a>
+<span class="k">def</span> <span class="nf">xfaster_run</span><span class="p">(</span>
     <span class="c1"># common options</span>
     <span class="n">config</span><span class="o">=</span><span class="s2">&quot;config_example.ini&quot;</span><span class="p">,</span>
     <span class="n">output_root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -213,7 +216,7 @@
     <span class="n">like_beam_tags</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span>
     <span class="n">beam_prior</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Main function for running the XFaster algorithm.</span>
 
 <span class="sd">    Arguments</span>
@@ -911,11 +914,12 @@
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Caught error(s) computing bandpowers, check logs.&quot;</span><span class="p">)</span></div>
 
 
+
 <span class="n">xfaster_run</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">xfaster_run</span><span class="o">.</span><span class="vm">__doc__</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">checkpoints</span><span class="o">=</span><span class="n">xfc</span><span class="o">.</span><span class="n">XFaster</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">get_func_defaults</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return a dictionary containing the default values for each keyword</span>
 <span class="sd">    argument of the given function</span>
 
@@ -937,7 +941,7 @@
 
 
 <span class="k">def</span> <span class="nf">extract_func_kwargs</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">pop</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">others_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">warn</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Extract arguments for a given function from a kwargs dictionary</span>
 
 <span class="sd">    Arguments</span>
@@ -979,8 +983,10 @@
     <span class="k">return</span> <span class="n">ret</span>
 
 
-<div class="viewcode-block" id="xfaster_parse"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_parse">[docs]</a><span class="k">def</span> <span class="nf">xfaster_parse</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="xfaster_parse">
+<a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_parse">[docs]</a>
+<span class="k">def</span> <span class="nf">xfaster_parse</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return a parsed dictionary of arguments for the xfaster execution script.</span>
 
 <span class="sd">    Arguments</span>
@@ -1072,7 +1078,7 @@
         <span class="n">positional</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Helper function for populating command line arguments. Wrapper</span>
 <span class="sd">        for ArgumentParser.add_argument.</span>
 
@@ -1489,24 +1495,32 @@
     <span class="k">return</span> <span class="nb">vars</span><span class="p">(</span><span class="n">args</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="XFasterJobGroup"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.XFasterJobGroup">[docs]</a><span class="k">class</span> <span class="nc">XFasterJobGroup</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+<div class="viewcode-block" id="XFasterJobGroup">
+<a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.XFasterJobGroup">[docs]</a>
+<span class="k">class</span> <span class="nc">XFasterJobGroup</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Class for parsing xfaster options into a job script, and optionally</span>
 <span class="sd">        grouping the jobs together.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
 
-<div class="viewcode-block" id="XFasterJobGroup.reset"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.XFasterJobGroup.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="XFasterJobGroup.reset">
+<a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.XFasterJobGroup.reset">[docs]</a>
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize to a reset state.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">job_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">qsub_args</span> <span class="o">=</span> <span class="p">{}</span></div>
 
-<div class="viewcode-block" id="XFasterJobGroup.add_job"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.XFasterJobGroup.add_job">[docs]</a>    <span class="k">def</span> <span class="nf">add_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="XFasterJobGroup.add_job">
+<a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.XFasterJobGroup.add_job">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add xfaster job to script.</span>
 
 <span class="sd">        Keyword arguments</span>
@@ -1614,7 +1628,10 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">job_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="XFasterJobGroup.set_job_options"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.XFasterJobGroup.set_job_options">[docs]</a>    <span class="k">def</span> <span class="nf">set_job_options</span><span class="p">(</span>
+
+<div class="viewcode-block" id="XFasterJobGroup.set_job_options">
+<a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.XFasterJobGroup.set_job_options">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_job_options</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">output</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">workdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -1633,7 +1650,7 @@
         <span class="n">dep_afterok</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">exclude</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parse options that control the job script, rather than xfaster.</span>
 <span class="sd">        Passed to batch_tools.batch_sub.</span>
 
@@ -1734,8 +1751,11 @@
             <span class="n">exclude</span><span class="o">=</span><span class="n">exclude</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="XFasterJobGroup.submit"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.XFasterJobGroup.submit">[docs]</a>    <span class="k">def</span> <span class="nf">submit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group_by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="XFasterJobGroup.submit">
+<a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.XFasterJobGroup.submit">[docs]</a>
+    <span class="k">def</span> <span class="nf">submit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">group_by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Submit jobs that have been added.</span>
 
 <span class="sd">        Arguments</span>
@@ -1766,11 +1786,15 @@
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_args</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">job_ids</span></div></div>
+        <span class="k">return</span> <span class="n">job_ids</span></div>
+</div>
 
 
-<div class="viewcode-block" id="xfaster_submit"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_submit">[docs]</a><span class="k">def</span> <span class="nf">xfaster_submit</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="xfaster_submit">
+<a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_submit">[docs]</a>
+<span class="k">def</span> <span class="nf">xfaster_submit</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Submit a single xfaster job. The arguments here should agree exactly</span>
 <span class="sd">    with the command line flags for submit mode, with kwargs passed to</span>
 <span class="sd">    ``xfaster_run``. Run ``xfaster --help`` for help.</span>
@@ -1780,7 +1804,10 @@
     <span class="k">return</span> <span class="n">xg</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">group_by</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="xfaster_dump"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_dump">[docs]</a><span class="k">def</span> <span class="nf">xfaster_dump</span><span class="p">(</span>
+
+<div class="viewcode-block" id="xfaster_dump">
+<a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_dump">[docs]</a>
+<span class="k">def</span> <span class="nf">xfaster_dump</span><span class="p">(</span>
     <span class="n">output_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">output_root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">output_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -1788,7 +1815,7 @@
     <span class="n">keys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Print the contents of a set of output archive files.</span>
 
 <span class="sd">    Arguments</span>
@@ -1878,8 +1905,9 @@
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">)</span></div>
 
 
+
 <span class="k">def</span> <span class="nf">xfaster_diff</span><span class="p">(</span><span class="n">file1</span><span class="p">,</span> <span class="n">file2</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compare two output archive files to each other.  Uses setdiff or numpy.diff</span>
 <span class="sd">    as appropriate.</span>
 
@@ -1950,8 +1978,10 @@
     <span class="n">compare</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="xfaster_main"><a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_main">[docs]</a><span class="k">def</span> <span class="nf">xfaster_main</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="xfaster_main">
+<a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_main">[docs]</a>
+<span class="k">def</span> <span class="nf">xfaster_main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Main entry point for command-line interface.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># parse arguments</span>
@@ -1973,6 +2003,7 @@
     <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;diff&quot;</span><span class="p">:</span>
         <span class="c1"># diff archive files</span>
         <span class="n">xfaster_diff</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span></div>
+
 </pre></div>
 
            </div>

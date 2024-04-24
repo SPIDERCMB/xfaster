@@ -1,22 +1,23 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>xfaster.batch_tools &mdash; xfaster 1.1.1 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../_static/nbsphinx-code-cells.css" type="text/css" />
+  <title>xfaster.batch_tools &mdash; xfaster 0.1.dev1+gf46c913 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/language_data.js"></script>
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=add8e287"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -34,7 +35,7 @@
             xfaster
           </a>
               <div class="version">
-                1.1.1
+                0.1.dev1+gf46c913
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -44,7 +45,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../algorithm.html">Algorithm</a></li>
@@ -97,8 +98,10 @@
 <span class="p">]</span>
 
 
-<div class="viewcode-block" id="get_job_logfile"><a class="viewcode-back" href="../../api.html#xfaster.batch_tools.get_job_logfile">[docs]</a><span class="k">def</span> <span class="nf">get_job_logfile</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="get_job_logfile">
+<a class="viewcode-back" href="../../api.html#xfaster.batch_tools.get_job_logfile">[docs]</a>
+<span class="k">def</span> <span class="nf">get_job_logfile</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generate a path to use for the output log, based on job environment</span>
 
 <span class="sd">    Returns</span>
@@ -119,8 +122,11 @@
     <span class="k">return</span> <span class="n">logfile</span></div>
 
 
-<div class="viewcode-block" id="get_job_id"><a class="viewcode-back" href="../../api.html#xfaster.batch_tools.get_job_id">[docs]</a><span class="k">def</span> <span class="nf">get_job_id</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="get_job_id">
+<a class="viewcode-back" href="../../api.html#xfaster.batch_tools.get_job_id">[docs]</a>
+<span class="k">def</span> <span class="nf">get_job_id</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get the current job ID, based on job environment.</span>
 
 <span class="sd">    Returns</span>
@@ -136,8 +142,9 @@
     <span class="k">return</span> <span class="n">jobid</span></div>
 
 
+
 <span class="k">def</span> <span class="nf">format_time</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Format a time to string for use by qsub.</span>
 
 <span class="sd">    Arguments</span>
@@ -166,7 +173,9 @@
     <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{:d}</span><span class="s2">:</span><span class="si">{:02d}</span><span class="s2">:</span><span class="si">{:02d}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hours</span><span class="p">,</span> <span class="n">minutes</span><span class="p">,</span> <span class="n">seconds</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="batch_sub"><a class="viewcode-back" href="../../api.html#xfaster.batch_tools.batch_sub">[docs]</a><span class="k">def</span> <span class="nf">batch_sub</span><span class="p">(</span>
+<div class="viewcode-block" id="batch_sub">
+<a class="viewcode-back" href="../../api.html#xfaster.batch_tools.batch_sub">[docs]</a>
+<span class="k">def</span> <span class="nf">batch_sub</span><span class="p">(</span>
     <span class="n">cmd</span><span class="p">,</span>
     <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">mem</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -195,7 +204,7 @@
     <span class="n">srun</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">srun_args</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create and submit a SLURM job.</span>
 
 <span class="sd">    Arguments</span>
@@ -447,8 +456,11 @@
         <span class="k">return</span> <span class="kc">None</span></div>
 
 
-<div class="viewcode-block" id="batch_group"><a class="viewcode-back" href="../../api.html#xfaster.batch_tools.batch_group">[docs]</a><span class="k">def</span> <span class="nf">batch_group</span><span class="p">(</span><span class="n">cmds</span><span class="p">,</span> <span class="n">group_by</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">serial</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="batch_group">
+<a class="viewcode-back" href="../../api.html#xfaster.batch_tools.batch_group">[docs]</a>
+<span class="k">def</span> <span class="nf">batch_group</span><span class="p">(</span><span class="n">cmds</span><span class="p">,</span> <span class="n">group_by</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">serial</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create and submit SLURM job scripts for a group of similar commands. The</span>
 <span class="sd">    commands can be grouped together into larger single jobs that run them in</span>
 <span class="sd">    parallel on multiple processors on a node.</span>
@@ -511,11 +523,14 @@
         <span class="k">return</span> <span class="kc">None</span></div>
 
 
-<div class="viewcode-block" id="JobArgumentParser"><a class="viewcode-back" href="../../api.html#xfaster.batch_tools.JobArgumentParser">[docs]</a><span class="k">class</span> <span class="nc">JobArgumentParser</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+<div class="viewcode-block" id="JobArgumentParser">
+<a class="viewcode-back" href="../../api.html#xfaster.batch_tools.JobArgumentParser">[docs]</a>
+<span class="k">class</span> <span class="nc">JobArgumentParser</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mem</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">workdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outkey</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Standardized way to add job submission arguments to a script.</span>
 
 <span class="sd">        Keyword arguments are used to fix values for parameters not needed by a</span>
@@ -562,7 +577,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown options: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">bad_opts</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">_opt_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        All options supported by this class.</span>
 <span class="sd">        Initialize from a function to conceivably allow subclass overrides.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -660,8 +675,10 @@
             <span class="p">]</span>
         <span class="p">)</span>
 
-<div class="viewcode-block" id="JobArgumentParser.add_arguments"><a class="viewcode-back" href="../../api.html#xfaster.batch_tools.JobArgumentParser.add_arguments">[docs]</a>    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">add_group</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="JobArgumentParser.add_arguments">
+<a class="viewcode-back" href="../../api.html#xfaster.batch_tools.JobArgumentParser.add_arguments">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">add_group</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add job submission arguments to an argparse.ArgumentParser.</span>
 
 <span class="sd">        Arguments</span>
@@ -692,8 +709,11 @@
                 <span class="n">group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--&quot;</span> <span class="o">+</span> <span class="n">arg</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">),</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">parser</span></div>
 
-<div class="viewcode-block" id="JobArgumentParser.pop_job_opts"><a class="viewcode-back" href="../../api.html#xfaster.batch_tools.JobArgumentParser.pop_job_opts">[docs]</a>    <span class="k">def</span> <span class="nf">pop_job_opts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">,</span> <span class="n">pop_submit</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="JobArgumentParser.pop_job_opts">
+<a class="viewcode-back" href="../../api.html#xfaster.batch_tools.JobArgumentParser.pop_job_opts">[docs]</a>
+    <span class="k">def</span> <span class="nf">pop_job_opts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args_dict</span><span class="p">,</span> <span class="n">pop_submit</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Pop all of the job-related options from a dictionary of arguments</span>
 
 <span class="sd">        Arguments</span>
@@ -709,8 +729,11 @@
             <span class="n">args_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;submit&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">args_dict</span></div>
 
-<div class="viewcode-block" id="JobArgumentParser.set_job_opts"><a class="viewcode-back" href="../../api.html#xfaster.batch_tools.JobArgumentParser.set_job_opts">[docs]</a>    <span class="k">def</span> <span class="nf">set_job_opts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">load_defaults</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="JobArgumentParser.set_job_opts">
+<a class="viewcode-back" href="../../api.html#xfaster.batch_tools.JobArgumentParser.set_job_opts">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_job_opts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">load_defaults</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set job submission options based on parsed arguments.</span>
 
 <span class="sd">        Keyword arguments will be passed to ``update``.  Can be used to override</span>
@@ -780,8 +803,11 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="JobArgumentParser.update"><a class="viewcode-back" href="../../api.html#xfaster.batch_tools.JobArgumentParser.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="JobArgumentParser.update">
+<a class="viewcode-back" href="../../api.html#xfaster.batch_tools.JobArgumentParser.update">[docs]</a>
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Update particular job submission options.</span>
 
 <span class="sd">        Keyword arguments can be used to override particular job submission</span>
@@ -790,8 +816,11 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">job_opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="JobArgumentParser.submit"><a class="viewcode-back" href="../../api.html#xfaster.batch_tools.JobArgumentParser.submit">[docs]</a>    <span class="k">def</span> <span class="nf">submit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="JobArgumentParser.submit">
+<a class="viewcode-back" href="../../api.html#xfaster.batch_tools.JobArgumentParser.submit">[docs]</a>
+    <span class="k">def</span> <span class="nf">submit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Submit jobs based on the parsed arguments. Must be called after</span>
 <span class="sd">        set_job_opts.</span>
 
@@ -811,7 +840,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">jobs</span> <span class="o">=</span> <span class="p">[</span><span class="n">jobs</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">batch_group</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">job_opts</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">batch_group</span><span class="p">(</span><span class="n">jobs</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">job_opts</span><span class="p">)</span></div>
+</div>
+
 </pre></div>
 
            </div>

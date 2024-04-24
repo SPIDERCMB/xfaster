@@ -1,22 +1,26 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quick Start &mdash; xfaster 1.1.1 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/nbsphinx-code-cells.css" type="text/css" />
+  <title>Quick Start &mdash; xfaster 0.1.dev1+gf46c913 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=add8e287"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "tags": "ams", "useLabelIds": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -36,7 +40,7 @@
             xfaster
           </a>
               <div class="version">
-                1.1.1
+                0.1.dev1+gf46c913
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -46,7 +50,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Quick Start</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#dependencies">Dependencies</a></li>
@@ -90,11 +94,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <div class="section" id="quick-start">
-<h1>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline"></a></h1>
+  <section id="quick-start">
+<h1>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h1>
 <p>In this page we’ll go over the basics of using the code and its outputs.</p>
-<div class="section" id="dependencies">
-<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline"></a></h2>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">numpy</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">healpy</span></code></p></li>
@@ -103,9 +107,9 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">h5py</span></code> (only for likelihoods)</p></li>
 </ul>
 <p>XFaster is compatible with Python versions 3.0 and higher.</p>
-</div>
-<div class="section" id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h2>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
 <p>To use the latest release version of xfaster, install via pip:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install xfaster
 </pre></div>
@@ -120,20 +124,20 @@
 </div>
 <p><strong>Note:</strong> Every time you pull or make local changes to files in <code class="docutils literal notranslate"><span class="pre">xfaster/xfaster</span></code>, you must reinstall for them to take effect.
 XFaster is under active development as we add new features– if something is broken, try to git pull and reinstall!</p>
-</div>
-<div class="section" id="example-script">
-<h2>Example Script<a class="headerlink" href="#example-script" title="Permalink to this headline"></a></h2>
+</section>
+<section id="example-script">
+<h2>Example Script<a class="headerlink" href="#example-script" title="Link to this heading"></a></h2>
 <p>To get started with the code before running it on your data, you can run through the example, described in more detail in the <a class="reference internal" href="notebooks/XFaster_Tutorial.html#Tutorial"><span class="std std-ref">Tutorial</span></a> link.
 First, generate the small ensemble of maps by running <a class="reference external" href="https://github.com/SPIDER-CMB/xfaster/blob/main/example/make_example_maps.py">make_example_maps.py</a> in the <code class="docutils literal notranslate"><span class="pre">examples</span></code> directory.
 This should take about 15 minutes on an 8-core laptop.
 Then, run <a class="reference external" href="https://github.com/SPIDER-CMB/xfaster/blob/main/example/xfaster_example.py">xfaster_example.py</a>.
 This should take about 20 minutes with 8 cores.
 This runs XFaster on the example maps, so you can see the step-by-step process and look at the outputs, as demonstrated <a class="reference internal" href="#reading-the-outputs"><span class="std std-ref">below</span></a>.</p>
-</div>
-<div class="section" id="setting-up-your-data">
-<h2>Setting up your data<a class="headerlink" href="#setting-up-your-data" title="Permalink to this headline"></a></h2>
-<div class="section" id="map-data">
-<h3>Map Data<a class="headerlink" href="#map-data" title="Permalink to this headline"></a></h3>
+</section>
+<section id="setting-up-your-data">
+<h2>Setting up your data<a class="headerlink" href="#setting-up-your-data" title="Link to this heading"></a></h2>
+<section id="map-data">
+<h3>Map Data<a class="headerlink" href="#map-data" title="Link to this heading"></a></h3>
 <p>The code requires a certain directory structure for your input maps:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>&lt;data_root&gt;/
 ├── data_&lt;data_type&gt;
@@ -186,27 +190,27 @@ This spectrum in used in computing the transfer function.</p>
 <p>One mask is required per map tag.
 These files begin with <code class="docutils literal notranslate"><span class="pre">mask_map_</span></code> instead of <code class="docutils literal notranslate"><span class="pre">map_</span></code>.</p>
 <p>Optional inputs are described in <a class="reference internal" href="notebooks/XFaster_Tutorial.html#Tutorial"><span class="std std-ref">Tutorial</span></a>.</p>
-</div>
-<div class="section" id="non-map-data">
-<h3>Non-Map Data<a class="headerlink" href="#non-map-data" title="Permalink to this headline"></a></h3>
+</section>
+<section id="non-map-data">
+<h3>Non-Map Data<a class="headerlink" href="#non-map-data" title="Link to this heading"></a></h3>
 <p>The other data you’ll need to provide are your beam window functions and the band centers of the input maps (if fitting for foregrounds).
 These are specified in a config file, an example of which is in <a class="reference external" href="https://github.com/SPIDER-CMB/xfaster/blob/main/example/config_example.ini">config_example.ini</a>.</p>
 <p>Beams can be specified either with a simple FHWM, if using a Gaussian beam model, or with an ell-by-ell beam window function, stored in a <code class="docutils literal notranslate"><span class="pre">.npz</span></code> file.
 The <code class="docutils literal notranslate"><span class="pre">.npz</span> <span class="pre">file</span></code> should contain a dictionary with a key for each map tag.
 The beams can be an <span class="math notranslate nohighlight">\(\ell\)</span> -length vector, or a 3 <span class="math notranslate nohighlight">\(\times \ell\)</span> - shape array if different beams are desired for Stokes I/Q/U.</p>
-</div>
-</div>
-<div class="section" id="running-the-code">
-<h2>Running the code<a class="headerlink" href="#running-the-code" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+<section id="running-the-code">
+<h2>Running the code<a class="headerlink" href="#running-the-code" title="Link to this heading"></a></h2>
 <p>An example of a script to run XFaster can be found in <a class="reference external" href="https://github.com/SPIDER-CMB/xfaster/blob/main/example/xfaster_example.py">xfaster_example.py</a>.
 This script points to where the data lives, the tags used to fill in options in your file structure tree, what config file to use, and lots of other options you can give to the code.
 These aren’t all the options– the API reference for <a class="reference internal" href="api.html#xfaster.xfaster_exec.xfaster_run" title="xfaster.xfaster_exec.xfaster_run"><code class="xref py py-func docutils literal notranslate"><span class="pre">xfaster_run()</span></code></a> contains descriptions of all the arguments you might wish to use.</p>
 <p>After setting up your config file and setting the options in your submit script, you then need to decide if you’re submitting this to a cluster (<a class="reference internal" href="api.html#xfaster.xfaster_exec.xfaster_submit" title="xfaster.xfaster_exec.xfaster_submit"><code class="xref py py-func docutils literal notranslate"><span class="pre">xfaster_submit()</span></code></a>) or running it in your current environment (<a class="reference internal" href="api.html#xfaster.xfaster_exec.xfaster_run" title="xfaster.xfaster_exec.xfaster_run"><code class="xref py py-func docutils literal notranslate"><span class="pre">xfaster_run()</span></code></a>).
 The example script has both options available.
 If submitting to a grid, additional submit options are required, and these are included in the arguments passed to <a class="reference internal" href="api.html#xfaster.xfaster_exec.xfaster_submit" title="xfaster.xfaster_exec.xfaster_submit"><code class="xref py py-func docutils literal notranslate"><span class="pre">xfaster_submit()</span></code></a>.</p>
-</div>
-<div class="section" id="reading-the-outputs">
-<h2>Reading the outputs<a class="headerlink" href="#reading-the-outputs" title="Permalink to this headline"></a></h2>
+</section>
+<section id="reading-the-outputs">
+<h2>Reading the outputs<a class="headerlink" href="#reading-the-outputs" title="Link to this heading"></a></h2>
 <p>As steps of the algorithm are completed, intermediate outputs are written to disk in the form of <code class="docutils literal notranslate"><span class="pre">.npz</span></code> numpy dictionary files.
 If a run is interrupted for any reason, it can be restarted from the previously completed checkpoint.
 The files written to disk are:</p>
@@ -259,15 +263,15 @@ The files written to disk are:</p>
 </ul>
 <p>For a detailed overview of the various fields contained in each dictionary, see <a class="reference internal" href="notebooks/XFaster_Tutorial.html#Tutorial"><span class="std std-ref">Tutorial</span></a>.</p>
 <p>To get a quick look at the data, you can use the <code class="docutils literal notranslate"><span class="pre">xfaster</span> <span class="pre">dump</span></code> command-line utility.  For example, to see the contents of the <code class="docutils literal notranslate"><span class="pre">data_xcorr.npz</span></code> checkpoint file for the example dataset:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>% xfaster dump -r example/outputs_example -t 95x150 -c data
-***** example/outputs_example/95x150/data_xcorr_95x150.npz *****
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>%<span class="w"> </span>xfaster<span class="w"> </span>dump<span class="w"> </span>-r<span class="w"> </span>example/outputs_example<span class="w"> </span>-t<span class="w"> </span>95x150<span class="w"> </span>-c<span class="w"> </span>data
+*****<span class="w"> </span>example/outputs_example/95x150/data_xcorr_95x150.npz<span class="w"> </span>*****
 <span class="o">{</span>
-    <span class="s1">&#39;data_version&#39;</span>: <span class="m">4</span>,
-    <span class="s1">&#39;cls_data&#39;</span>: odict_keys<span class="o">([</span><span class="s1">&#39;tt&#39;</span>, <span class="s1">&#39;ee&#39;</span>, <span class="s1">&#39;bb&#39;</span>, <span class="s1">&#39;te&#39;</span>, <span class="s1">&#39;eb&#39;</span>, <span class="s1">&#39;tb&#39;</span><span class="o">])</span>,
-    <span class="s1">&#39;nside&#39;</span>: <span class="m">256</span>,
-    <span class="s1">&#39;data_type&#39;</span>: <span class="s1">&#39;raw&#39;</span>,
-    <span class="s1">&#39;map_root&#39;</span>: <span class="s1">&#39;data_raw&#39;</span>,
-    <span class="s1">&#39;map_files&#39;</span>: <span class="o">[</span><span class="s1">&#39;data_raw/full/map_150.fits&#39;</span>, <span class="s1">&#39;data_raw/full/map_95.fits&#39;</span><span class="o">]</span>,
+<span class="w">    </span><span class="s1">&#39;data_version&#39;</span>:<span class="w"> </span><span class="m">4</span>,
+<span class="w">    </span><span class="s1">&#39;cls_data&#39;</span>:<span class="w"> </span>odict_keys<span class="o">([</span><span class="s1">&#39;tt&#39;</span>,<span class="w"> </span><span class="s1">&#39;ee&#39;</span>,<span class="w"> </span><span class="s1">&#39;bb&#39;</span>,<span class="w"> </span><span class="s1">&#39;te&#39;</span>,<span class="w"> </span><span class="s1">&#39;eb&#39;</span>,<span class="w"> </span><span class="s1">&#39;tb&#39;</span><span class="o">])</span>,
+<span class="w">    </span><span class="s1">&#39;nside&#39;</span>:<span class="w"> </span><span class="m">256</span>,
+<span class="w">    </span><span class="s1">&#39;data_type&#39;</span>:<span class="w"> </span><span class="s1">&#39;raw&#39;</span>,
+<span class="w">    </span><span class="s1">&#39;map_root&#39;</span>:<span class="w"> </span><span class="s1">&#39;data_raw&#39;</span>,
+<span class="w">    </span><span class="s1">&#39;map_files&#39;</span>:<span class="w"> </span><span class="o">[</span><span class="s1">&#39;data_raw/full/map_150.fits&#39;</span>,<span class="w"> </span><span class="s1">&#39;data_raw/full/map_95.fits&#39;</span><span class="o">]</span>,
 <span class="o">}</span>
 </pre></div>
 </div>
@@ -329,8 +333,8 @@ We recover our inputs pretty well within expected noise and signal variance.
 Recovery is a bit worse at high ell because we aren’t accounting for leakage from even higher up bins– you’ll want to use an <span class="math notranslate nohighlight">\(\ell_{max}\)</span> a bit above what you plan to use for analysis for this reason.</p>
 <a class="reference internal image-reference" href="_images/outputs_example.png"><img alt="_images/outputs_example.png" src="_images/outputs_example.png" style="width: 400px;" /></a>
 <p>And that covers the basics!</p>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>

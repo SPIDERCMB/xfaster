@@ -1,22 +1,23 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>xfaster.spec_tools &mdash; xfaster 1.1.1 documentation</title><link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="../../_static/nbsphinx-code-cells.css" type="text/css" />
+  <title>xfaster.spec_tools &mdash; xfaster 0.1.dev1+gf46c913 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
-  <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/underscore.js"></script>
-        <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/language_data.js"></script>
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=add8e287"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "tex2jax_ignore|mathjax_ignore|document", "processClass": "tex2jax_process|mathjax_process|math|output_area"}})</script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -34,7 +35,7 @@
             xfaster
           </a>
               <div class="version">
-                1.1.1
+                0.1.dev1+gf46c913
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -44,7 +45,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../algorithm.html">Algorithm</a></li>
@@ -99,7 +100,7 @@
 
 
 <span class="k">def</span> <span class="nf">blackbody</span><span class="p">(</span><span class="n">nu</span><span class="p">,</span> <span class="n">nu0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T_cmb</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The blackbody function at temperature ``T`` and frequency ``nu``, optionally</span>
 <span class="sd">    relative to the value at reference frequency ``nu0``.</span>
 
@@ -126,7 +127,7 @@
 
 
 <span class="k">def</span> <span class="nf">rj2bb</span><span class="p">(</span><span class="n">nu</span><span class="p">,</span> <span class="n">nu0</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T_cmb</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Conversion from Rayleigh-Jeans units to Blackbody temperature units</span>
 
 <span class="sd">    Arguments</span>
@@ -152,8 +153,10 @@
     <span class="k">return</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x0</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">x0</span> <span class="o">/</span> <span class="n">x</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x0</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="scale_dust"><a class="viewcode-back" href="../../api.html#xfaster.spec_tools.scale_dust">[docs]</a><span class="k">def</span> <span class="nf">scale_dust</span><span class="p">(</span><span class="n">nu1</span><span class="p">,</span> <span class="n">nu2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nu0</span><span class="o">=</span><span class="mf">359.7</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">1.54</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="scale_dust">
+<a class="viewcode-back" href="../../api.html#xfaster.spec_tools.scale_dust">[docs]</a>
+<span class="k">def</span> <span class="nf">scale_dust</span><span class="p">(</span><span class="n">nu1</span><span class="p">,</span> <span class="n">nu2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nu0</span><span class="o">=</span><span class="mf">359.7</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">1.54</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get the factor by which you must multiply the cross spectrum from maps of</span>
 <span class="sd">    frequencies ``nu1`` and ``nu2`` to match the dust power at ``nu0`` given</span>
 <span class="sd">    spectral index ``beta``.  If ``nu2`` is not given, compute the map-domain</span>
@@ -209,8 +212,11 @@
     <span class="k">return</span> <span class="n">fs</span> <span class="o">*</span> <span class="n">scale_dust</span><span class="p">(</span><span class="n">nu2</span><span class="p">,</span> <span class="n">nu0</span><span class="o">=</span><span class="n">nu0</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="n">beta</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="dust_model"><a class="viewcode-back" href="../../api.html#xfaster.spec_tools.dust_model">[docs]</a><span class="k">def</span> <span class="nf">dust_model</span><span class="p">(</span><span class="n">ell</span><span class="p">,</span> <span class="n">pivot</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span> <span class="n">amp</span><span class="o">=</span><span class="mf">34.0</span><span class="p">,</span> <span class="n">index</span><span class="o">=-</span><span class="mf">2.28</span><span class="p">,</span> <span class="n">lfac</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="dust_model">
+<a class="viewcode-back" href="../../api.html#xfaster.spec_tools.dust_model">[docs]</a>
+<span class="k">def</span> <span class="nf">dust_model</span><span class="p">(</span><span class="n">ell</span><span class="p">,</span> <span class="n">pivot</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span> <span class="n">amp</span><span class="o">=</span><span class="mf">34.0</span><span class="p">,</span> <span class="n">index</span><span class="o">=-</span><span class="mf">2.28</span><span class="p">,</span> <span class="n">lfac</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Construct a power-law dust power spectrum.  Default parameter values are for</span>
 <span class="sd">    the Planck LIV best-fit EE dust spectrum.</span>
 
@@ -245,8 +251,11 @@
     <span class="k">return</span> <span class="n">model</span></div>
 
 
-<div class="viewcode-block" id="wigner3j"><a class="viewcode-back" href="../../api.html#xfaster.spec_tools.wigner3j">[docs]</a><span class="k">def</span> <span class="nf">wigner3j</span><span class="p">(</span><span class="n">l2</span><span class="p">,</span> <span class="n">m2</span><span class="p">,</span> <span class="n">l3</span><span class="p">,</span> <span class="n">m3</span><span class="p">):</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="wigner3j">
+<a class="viewcode-back" href="../../api.html#xfaster.spec_tools.wigner3j">[docs]</a>
+<span class="k">def</span> <span class="nf">wigner3j</span><span class="p">(</span><span class="n">l2</span><span class="p">,</span> <span class="n">m2</span><span class="p">,</span> <span class="n">l3</span><span class="p">,</span> <span class="n">m3</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Wigner 3j symbols computed for all valid values of ``L``, as in:</span>
 
 <span class="sd">    .. math::</span>
@@ -285,8 +294,11 @@
     <span class="k">return</span> <span class="n">fj</span><span class="p">,</span> <span class="n">lmin</span><span class="p">,</span> <span class="n">lmax</span></div>
 
 
-<div class="viewcode-block" id="get_camb_cl"><a class="viewcode-back" href="../../api.html#xfaster.spec_tools.get_camb_cl">[docs]</a><span class="k">def</span> <span class="nf">get_camb_cl</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">lmax</span><span class="p">,</span> <span class="n">nt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">lfac</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="get_camb_cl">
+<a class="viewcode-back" href="../../api.html#xfaster.spec_tools.get_camb_cl">[docs]</a>
+<span class="k">def</span> <span class="nf">get_camb_cl</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">lmax</span><span class="p">,</span> <span class="n">nt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">lfac</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute camb spectrum with tensors and lensing.</span>
 
 <span class="sd">    Parameter values are from arXiv:1807.06209 Table 1 Plik best fit</span>
@@ -349,8 +361,11 @@
     <span class="k">return</span> <span class="n">totCL</span></div>
 
 
-<div class="viewcode-block" id="load_camb_cl"><a class="viewcode-back" href="../../api.html#xfaster.spec_tools.load_camb_cl">[docs]</a><span class="k">def</span> <span class="nf">load_camb_cl</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">lmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lfac</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="load_camb_cl">
+<a class="viewcode-back" href="../../api.html#xfaster.spec_tools.load_camb_cl">[docs]</a>
+<span class="k">def</span> <span class="nf">load_camb_cl</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">lmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lfac</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Load a CAMB spectrum from a text file.  Expects a file with at</span>
 <span class="sd">    least two columns, where the first column contains ell values, and</span>
 <span class="sd">    the rest are spectrum components (TT, EE, BB, TE).  Old-style CAMB</span>
@@ -423,6 +438,7 @@
         <span class="n">data</span> <span class="o">/=</span> <span class="n">f</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
 
     <span class="k">return</span> <span class="n">data</span></div>
+
 </pre></div>
 
            </div>
