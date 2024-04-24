@@ -21,11 +21,11 @@ jobs:
       uses: psf/black@stable
       with:
           version: "23.7.0"
+    - name: Install pandoc
+      uses: pandoc/actions/setup@{main}
     - name: Upgrade pip, install package, install requirements, build docs
       run: |
-        apt-get --allow-releaseinfo-change update -y && apt-get install pandoc
         pip install --upgrade pip
-        pip install .
         pip install -r ./docs/requirements.txt
         pip install sphinx
         sphinx-build docs ./docs/_build/html/
