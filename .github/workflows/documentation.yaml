@@ -12,17 +12,25 @@ jobs:
 
     steps:
     - name: Checkout github repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+    - name: Set up Python 
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
     - name: Lint
       uses: psf/black@stable
-    # Standard drop-in approach that should work for most people.
-    - name: Build docs
-      uses: ammaraskar/sphinx-action@master
       with:
-        pre-build-command: "apt-get --allow-releaseinfo-change update -y && apt-get install -y g++ && apt-get install -y gfortran && apt-get install -y pandoc"
-        docs-folder: "docs/"
+          version: "23.7.0"
+    - name: Install pandoc
+      uses: pandoc/actions/setup@main
+    - name: Upgrade pip, install package, install requirements, build docs
+      run: |
+        pip install --upgrade pip
+        pip install -r ./docs/requirements.txt
+        pip install sphinx
+        sphinx-build docs ./docs/_build/html/
     - name: Checkout pages branch
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         ref: gh-pages
         path: gh-pages
