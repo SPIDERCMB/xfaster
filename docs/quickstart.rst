@@ -20,13 +20,13 @@ To use the latest release version of xfaster, install via pip::
 
     $ pip install xfaster
 
-Otherwise, for development work, clone the repo (`<https://github.com/SPIDER-CMB/xfaster>`_) and install manually::
+Otherwise, for development work, clone the repo (`<https://github.com/SPIDERCMB/xfaster>`_) and install manually::
 
-    $ python setup.py install
+    $ pip install .
 
 Or, if installing on a shared machine::
 
-    $ python setup.py install --user
+    $ pip install . --user
 
 **Note:** Every time you pull or make local changes to files in ``xfaster/xfaster``, you must reinstall for them to take effect.
 XFaster is under active development as we add new features-- if something is broken, try to git pull and reinstall!
@@ -34,9 +34,9 @@ XFaster is under active development as we add new features-- if something is bro
 Example Script
 --------------
 To get started with the code before running it on your data, you can run through the example, described in more detail in the :ref:`Tutorial<Tutorial>` link.
-First, generate the small ensemble of maps by running `make_example_maps.py <https://github.com/SPIDER-CMB/xfaster/blob/main/example/make_example_maps.py>`_ in the ``examples`` directory.
+First, generate the small ensemble of maps by running `make_example_maps.py <https://github.com/SPIDERCMB/xfaster/blob/main/example/make_example_maps.py>`_ in the ``examples`` directory.
 This should take about 15 minutes on an 8-core laptop.
-Then, run `xfaster_example.py <https://github.com/SPIDER-CMB/xfaster/blob/main/example/xfaster_example.py>`_.
+Then, run `xfaster_example.py <https://github.com/SPIDERCMB/xfaster/blob/main/example/xfaster_example.py>`_.
 This should take about 20 minutes with 8 cores.
 This runs XFaster on the example maps, so you can see the step-by-step process and look at the outputs, as demonstrated :ref:`below<Reading the outputs>`.
 
@@ -109,7 +109,7 @@ Non-Map Data
 ............
 
 The other data you'll need to provide are your beam window functions and the band centers of the input maps (if fitting for foregrounds).
-These are specified in a config file, an example of which is in `config_example.ini <https://github.com/SPIDER-CMB/xfaster/blob/main/example/config_example.ini>`_.
+These are specified in a config file, an example of which is in `config_example.ini <https://github.com/SPIDERCMB/xfaster/blob/main/example/config_example.ini>`_.
 
 Beams can be specified either with a simple FHWM, if using a Gaussian beam model, or with an ell-by-ell beam window function, stored in a ``.npz`` file.
 The ``.npz file`` should contain a dictionary with a key for each map tag.
@@ -117,7 +117,7 @@ The beams can be an :math:`\ell` -length vector, or a 3 :math:`\times \ell` - sh
 
 Running the code
 ----------------
-An example of a script to run XFaster can be found in `xfaster_example.py <https://github.com/SPIDER-CMB/xfaster/blob/main/example/xfaster_example.py>`_.
+An example of a script to run XFaster can be found in `xfaster_example.py <https://github.com/SPIDERCMB/xfaster/blob/main/example/xfaster_example.py>`_.
 This script points to where the data lives, the tags used to fill in options in your file structure tree, what config file to use, and lots of other options you can give to the code.
 These aren't all the options-- the API reference for :py:func:`~xfaster.xfaster_exec.xfaster_run` contains descriptions of all the arguments you might wish to use.
 
@@ -194,7 +194,7 @@ Here, we have the two map auto-spectra first, and then the cross between them.
 If there are multiple maps with the same tag but that use different <<data_subsets>> as described in :ref:`Maps<Maps>` above, these will be assigned an additional numerical tag, so you might have something like ``95_0:95_1`` for the cross between map 95 in data_subset1 and data_subset2.
 
 Below, we show how to load up some bandpowers, error bars, transfer function, and r-likelihood from the example script outputs.
-This script is also in the repo: `xfaster/example/plot_outputs.py <https://github.com/SPIDER-CMB/xfaster/blob/main/example/plot_outputs.py>`_
+This script is also in the repo: `xfaster/example/plot_outputs.py <https://github.com/SPIDERCMB/xfaster/blob/main/example/plot_outputs.py>`_
 
 .. code-block:: python
 
