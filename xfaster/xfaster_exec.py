@@ -17,6 +17,7 @@ __all__ = [
     "xfaster_parse",
     "xfaster_submit",
     "xfaster_dump",
+    "xfaster_diff",
     "xfaster_main",
     "XFasterJobGroup",
 ]
