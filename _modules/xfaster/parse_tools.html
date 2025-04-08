@@ -1,23 +1,21 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>xfaster.parse_tools &mdash; xfaster 1.2.0.post1.dev18+g292b93d documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+  <title>xfaster.parse_tools &mdash; xfaster 1.2.0.post1.dev20+g98385f3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
-  <!--[if lt IE 9]>
-    <script src="../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../../_static/jquery.js?v=5d32c60e"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="../../_static/documentation_options.js?v=0c6818f2"></script>
-        <script src="../../_static/doctools.js?v=9a2dae69"></script>
-        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=eb8d8f31"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -34,9 +32,6 @@
           <a href="../../index.html" class="icon icon-home">
             xfaster
           </a>
-              <div class="version">
-                1.2.0.post1.dev18+g292b93d
-              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
@@ -79,11 +74,11 @@
              
   <h1>Source code for xfaster.parse_tools</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot; Module for parsing intermediate and output XFaster files. &quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">warnings</span><span class="w"> </span><span class="kn">import</span> <span class="n">warn</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;dict_to_arr&quot;</span><span class="p">,</span>
@@ -110,7 +105,7 @@
 
 <div class="viewcode-block" id="corr_index">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.corr_index">[docs]</a>
-<span class="k">def</span> <span class="nf">corr_index</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">corr_index</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Gets the index of the auto spectrum when getting all</span>
 <span class="sd">    pairwise combinations of n maps.</span>
@@ -133,7 +128,7 @@
 
 <div class="viewcode-block" id="num_maps">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.num_maps">[docs]</a>
-<span class="k">def</span> <span class="nf">num_maps</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">num_maps</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns how many maps there are if there are n total cross spectra.</span>
 
@@ -153,7 +148,7 @@
 
 <div class="viewcode-block" id="num_corr">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.num_corr">[docs]</a>
-<span class="k">def</span> <span class="nf">num_corr</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">num_corr</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns how many cross spectra there are if there are n total maps.</span>
 
@@ -173,7 +168,7 @@
 
 <div class="viewcode-block" id="unique_tags">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.unique_tags">[docs]</a>
-<span class="k">def</span> <span class="nf">unique_tags</span><span class="p">(</span><span class="n">tags</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">unique_tags</span><span class="p">(</span><span class="n">tags</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    If map tags are repeated (eg, two 150 maps in different chunk</span>
 <span class="sd">    subdirectories), return a list modifying them with an index</span>
@@ -210,7 +205,7 @@
 
 <div class="viewcode-block" id="tag_pairs">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.tag_pairs">[docs]</a>
-<span class="k">def</span> <span class="nf">tag_pairs</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">tag_pairs</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return an OrderedDict whose keys are pairs of tags in the format &quot;tag1:tag2&quot;</span>
 <span class="sd">    and whose values are a tuple of the two tags used to construct each key, or</span>
@@ -259,7 +254,7 @@
 
 
 
-<span class="k">def</span> <span class="nf">dict_decode</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">dict_decode</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Recursively decode key or value bytestrings in a dictionary.</span>
 <span class="sd">    Useful when loading a bytes-encoded numpy archive file from disk.</span>
@@ -290,7 +285,7 @@
 
 <div class="viewcode-block" id="load_compat">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.load_compat">[docs]</a>
-<span class="k">def</span> <span class="nf">load_compat</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_compat</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Load and decode a numpy archive file from disk.</span>
 
@@ -330,7 +325,7 @@
 
 <div class="viewcode-block" id="load_pickle_compat">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.load_pickle_compat">[docs]</a>
-<span class="k">def</span> <span class="nf">load_pickle_compat</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_pickle_compat</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Load a pickle file from the given filename.</span>
 <span class="sd">    Ensure that the file is open in mode &#39;rb&#39; (required for python3), and</span>
@@ -346,7 +341,7 @@
 <span class="sd">    f : dict</span>
 <span class="sd">        Unpickled file.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">pickle</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
 
     <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;read&quot;</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">filename</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;rb&quot;</span><span class="p">:</span>
@@ -367,7 +362,7 @@
 
 <div class="viewcode-block" id="load_and_parse">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.load_and_parse">[docs]</a>
-<span class="k">def</span> <span class="nf">load_and_parse</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">check_version</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_and_parse</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">check_version</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Load a .npz data file from disk and parse all the fields it contains.</span>
 <span class="sd">    Includes handling of backward compatibility to older file versions</span>
@@ -393,7 +388,7 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">check_version</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">data</span>
 
-    <span class="kn">from</span> <span class="nn">.xfaster_class</span> <span class="kn">import</span> <span class="n">XFaster</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.xfaster_class</span><span class="w"> </span><span class="kn">import</span> <span class="n">XFaster</span>
 
     <span class="n">dv</span> <span class="o">=</span> <span class="n">XFaster</span><span class="o">.</span><span class="n">data_version</span>
     <span class="n">version</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_version&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
@@ -577,7 +572,7 @@
 
 <div class="viewcode-block" id="save">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.save">[docs]</a>
-<span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Save a numpy archive file to disk.</span>
 
@@ -594,7 +589,7 @@
 
 <div class="viewcode-block" id="fix_data_roots">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.fix_data_roots">[docs]</a>
-<span class="k">def</span> <span class="nf">fix_data_roots</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;save&quot;</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">root2</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fix_data_roots</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;save&quot;</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">root2</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Remove or apply the data root to a set of file paths in an output checkpoint</span>
 <span class="sd">    file.  Operations are performed in-place on the input dictionary.</span>
@@ -626,7 +621,7 @@
     <span class="k">if</span> <span class="n">root2</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s2">&quot;data_root2&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
         <span class="n">root2</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;data_root2&quot;</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">replace_root</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">replace_root</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">v</span>
         <span class="k">if</span> <span class="n">root2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;2&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;template&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">k</span><span class="p">:</span>
@@ -679,7 +674,7 @@
 
 <div class="viewcode-block" id="dict_to_arr">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.dict_to_arr">[docs]</a>
-<span class="k">def</span> <span class="nf">dict_to_arr</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">dict_to_arr</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Transform ordered dict into an array, if all items are same shape</span>
 
@@ -722,7 +717,7 @@
 
 <div class="viewcode-block" id="arr_to_dict">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.arr_to_dict">[docs]</a>
-<span class="k">def</span> <span class="nf">arr_to_dict</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">ref_dict</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">arr_to_dict</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">ref_dict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Transform an array of data into a dictionary keyed by the same keys in</span>
 <span class="sd">    ref_dict, with data divided into chunks of the same length as in ref_dict.</span>
@@ -755,7 +750,7 @@
 
 <div class="viewcode-block" id="dict_to_index">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.dict_to_index">[docs]</a>
-<span class="k">def</span> <span class="nf">dict_to_index</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">dict_to_index</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Construct a dictionary of (start, stop) indices that correspond to the</span>
 <span class="sd">    location of each sub-array when the dict is converted to a single array</span>
@@ -806,7 +801,7 @@
 
 <div class="viewcode-block" id="spec_index">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.spec_index">[docs]</a>
-<span class="k">def</span> <span class="nf">spec_index</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">spec_index</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return the matrix indices of the given spectrum within a 3x3 matrix.  If</span>
 <span class="sd">    ``spec`` is None, return a dictionary of such indices keyed by spectrum.</span>
@@ -840,7 +835,7 @@
 
 <div class="viewcode-block" id="spec_mask">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.spec_mask">[docs]</a>
-<span class="k">def</span> <span class="nf">spec_mask</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nmaps</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">spec_mask</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nmaps</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return a mask for extracting spectrum terms from a matrix of shape (3 *</span>
 <span class="sd">    nmaps, 3 * nmaps).  If ``spec`` is None, returns a dictionary of masks keyed</span>
@@ -876,7 +871,7 @@
 
 <div class="viewcode-block" id="dict_to_dmat">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.dict_to_dmat">[docs]</a>
-<span class="k">def</span> <span class="nf">dict_to_dmat</span><span class="p">(</span><span class="n">dmat_dict</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">dict_to_dmat</span><span class="p">(</span><span class="n">dmat_dict</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Take a dmat dictionary and return the right shaped Dmat matrix:</span>
 <span class="sd">    (Nmaps * 3, Nmaps * 3, lmax + 1) if pol else</span>
@@ -929,7 +924,7 @@
 
 <div class="viewcode-block" id="dict_to_dsdqb_mat">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.dict_to_dsdqb_mat">[docs]</a>
-<span class="k">def</span> <span class="nf">dict_to_dsdqb_mat</span><span class="p">(</span><span class="n">dsdqb_dict</span><span class="p">,</span> <span class="n">bin_def</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">dict_to_dsdqb_mat</span><span class="p">(</span><span class="n">dsdqb_dict</span><span class="p">,</span> <span class="n">bin_def</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Take a dSdqb dictionary and return the right shaped dSdqb matrix:</span>
 <span class="sd">    (Nmaps * 3, Nmaps * 3, nbins_cmb+nbins_fg+nbins_res, lmax + 1) if pol</span>
@@ -1025,7 +1020,7 @@
 
 <div class="viewcode-block" id="expand_qb">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.expand_qb">[docs]</a>
-<span class="k">def</span> <span class="nf">expand_qb</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">bin_def</span><span class="p">,</span> <span class="n">lmax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">expand_qb</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">bin_def</span><span class="p">,</span> <span class="n">lmax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Expand a qb-type array to an ell-by-ell spectrum using bin_def.</span>
 
@@ -1057,7 +1052,7 @@
 
 <div class="viewcode-block" id="bin_spec_simple">
 <a class="viewcode-back" href="../../api.html#xfaster.parse_tools.bin_spec_simple">[docs]</a>
-<span class="k">def</span> <span class="nf">bin_spec_simple</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">cls_shape</span><span class="p">,</span> <span class="n">bin_def</span><span class="p">,</span> <span class="n">inv_fish</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lfac</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">bin_spec_simple</span><span class="p">(</span><span class="n">qb</span><span class="p">,</span> <span class="n">cls_shape</span><span class="p">,</span> <span class="n">bin_def</span><span class="p">,</span> <span class="n">inv_fish</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lfac</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute binned output spectra and covariances by averaging the shape</span>
 <span class="sd">    spectrum over each bin, and applying the appropriate `qb` bandpower</span>

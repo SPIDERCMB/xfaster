@@ -1,23 +1,21 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="../../">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>xfaster.xfaster_class &mdash; xfaster 1.2.0.post1.dev18+g292b93d documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+  <title>xfaster.xfaster_class &mdash; xfaster 1.2.0.post1.dev20+g98385f3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
-  <!--[if lt IE 9]>
-    <script src="../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../../_static/jquery.js?v=5d32c60e"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="../../_static/documentation_options.js?v=0c6818f2"></script>
-        <script src="../../_static/doctools.js?v=9a2dae69"></script>
-        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=eb8d8f31"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -34,9 +32,6 @@
           <a href="../../index.html" class="icon icon-home">
             xfaster
           </a>
-              <div class="version">
-                1.2.0.post1.dev18+g292b93d
-              </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
@@ -78,24 +73,24 @@
            <div itemprop="articleBody">
              
   <h1>Source code for xfaster.xfaster_class</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">datetime</span>
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">glob</span>
-<span class="kn">import</span> <span class="nn">warnings</span>
-<span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">spec_tools</span> <span class="k">as</span> <span class="n">st</span>
-<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">parse_tools</span> <span class="k">as</span> <span class="n">pt</span>
-<span class="kn">from</span> <span class="nn">configparser</span> <span class="kn">import</span> <span class="n">RawConfigParser</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">spec_tools</span> <span class="k">as</span> <span class="n">st</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_tools</span> <span class="k">as</span> <span class="n">pt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">configparser</span><span class="w"> </span><span class="kn">import</span> <span class="n">RawConfigParser</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;XFasterConfig&quot;</span><span class="p">,</span> <span class="s2">&quot;XFaster&quot;</span><span class="p">,</span> <span class="s2">&quot;XFasterWarning&quot;</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="XFasterWarning">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFasterWarning">[docs]</a>
-<span class="k">class</span> <span class="nc">XFasterWarning</span><span class="p">(</span><span class="ne">Warning</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">XFasterWarning</span><span class="p">(</span><span class="ne">Warning</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Warning generated by the XFaster algorithm.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -106,12 +101,12 @@
 
 <div class="viewcode-block" id="XFasterConfig">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFasterConfig">[docs]</a>
-<span class="k">class</span> <span class="nc">XFasterConfig</span><span class="p">(</span><span class="n">RawConfigParser</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">XFasterConfig</span><span class="p">(</span><span class="n">RawConfigParser</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    ConfigParser subclass for storing command line options and config.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">default_sec</span><span class="o">=</span><span class="s2">&quot;Uncategorized&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">default_sec</span><span class="o">=</span><span class="s2">&quot;Uncategorized&quot;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Class that tracks command-line options for storage to disk.</span>
 
@@ -131,7 +126,7 @@
 
 <div class="viewcode-block" id="XFasterConfig.update">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFasterConfig.update">[docs]</a>
-    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">section</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">section</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Update configuration options with a dictionary. Behaves like</span>
 <span class="sd">        dict.update() for specified section but also clears options of the same</span>
@@ -159,7 +154,7 @@
 
 <div class="viewcode-block" id="XFasterConfig.sort">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFasterConfig.sort">[docs]</a>
-    <span class="k">def</span> <span class="nf">sort</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sort</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Sort the items in each section of the configuration alphabetically.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -178,7 +173,7 @@
 
 <div class="viewcode-block" id="XFasterConfig.write">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFasterConfig.write">[docs]</a>
-    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Write an .ini-format representation of the configuration state.</span>
 <span class="sd">        Keys are stored alphabetically if `sort` is True.</span>
@@ -191,7 +186,7 @@
 <span class="sd">            If True, sort items in each section alphabetically.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">fp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="kn">import</span> <span class="nn">sys</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 
             <span class="n">fp</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span>
 
@@ -204,7 +199,7 @@
 
 <div class="viewcode-block" id="XFaster">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster">[docs]</a>
-<span class="k">class</span> <span class="nc">XFaster</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">XFaster</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="n">checkpoints</span> <span class="o">=</span> <span class="p">[</span>
         <span class="s2">&quot;files&quot;</span><span class="p">,</span>
         <span class="s2">&quot;masks&quot;</span><span class="p">,</span>
@@ -250,7 +245,7 @@
 
     <span class="n">data_version</span> <span class="o">=</span> <span class="mi">4</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">config</span><span class="p">,</span>
         <span class="n">output_root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -324,7 +319,7 @@
 
         <span class="c1"># map2alm options</span>
         <span class="k">if</span> <span class="n">alm_pixel_weights</span><span class="p">:</span>
-            <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">healpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hp</span>
 
             <span class="k">if</span> <span class="n">hp</span><span class="o">.</span><span class="n">__version__</span> <span class="o">&lt;</span> <span class="s2">&quot;1.12.0&quot;</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;healpy &gt; 1.11.0 required for alm_pixel_weights, disabling&quot;</span><span class="p">)</span>
@@ -347,7 +342,7 @@
 
 <div class="viewcode-block" id="XFaster.load_map_config">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.load_map_config">[docs]</a>
-    <span class="k">def</span> <span class="nf">load_map_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_map_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Load the input map configuration file.</span>
 
@@ -475,7 +470,7 @@
 
 <div class="viewcode-block" id="XFaster.init_log">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.init_log">[docs]</a>
-    <span class="k">def</span> <span class="nf">init_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">&quot;notice&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">init_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">&quot;notice&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize the logger from the input keyword arguments.</span>
 
@@ -492,7 +487,7 @@
         <span class="n">logging</span><span class="o">.</span><span class="n">NOTICE</span> <span class="o">=</span> <span class="mi">25</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">addLevelName</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">NOTICE</span><span class="p">,</span> <span class="s2">&quot;NOTICE&quot;</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">logger_notice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">logger_notice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Log a message with severity &quot;NOTICE&quot;.</span>
 
@@ -506,7 +501,7 @@
 
         <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="o">.</span><span class="n">notice</span> <span class="o">=</span> <span class="n">logger_notice</span>
 
-        <span class="k">def</span> <span class="nf">root_notice</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">root_notice</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Log a message with severity &quot;NOTICE&quot; on the root logger.</span>
 
@@ -523,7 +518,7 @@
 
         <span class="c1"># create handler</span>
         <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">.batch_tools</span> <span class="kn">import</span> <span class="n">get_job_logfile</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">.batch_tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_job_logfile</span>
 
             <span class="n">filename</span> <span class="o">=</span> <span class="n">get_job_logfile</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -556,7 +551,7 @@
 
 <div class="viewcode-block" id="XFaster.log">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.log">[docs]</a>
-    <span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Log a message with the given logging level.</span>
 
@@ -578,7 +573,7 @@
 
 <div class="viewcode-block" id="XFaster.warn">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.warn">[docs]</a>
-    <span class="k">def</span> <span class="nf">warn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">warn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Log a warning message.</span>
 
@@ -591,7 +586,7 @@
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">XFasterWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
 
 
-    <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Make sure logger is shutdown properly when the object is destroyed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -608,7 +603,7 @@
                 <span class="n">handler</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_data_files</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_data_files</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">data_root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -788,7 +783,7 @@
 
         <span class="k">return</span> <span class="n">out</span>
 
-    <span class="k">def</span> <span class="nf">_get_mask_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask_type</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_mask_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask_type</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convenience function or finding mask file for each map.  Used internally</span>
 <span class="sd">        in ``get_files()``.</span>
@@ -840,7 +835,7 @@
 
         <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">mask_type</span><span class="o">=</span><span class="n">mask_type</span><span class="p">,</span> <span class="n">mask_root</span><span class="o">=</span><span class="n">mask_root</span><span class="p">,</span> <span class="n">mask_files</span><span class="o">=</span><span class="n">mask_files</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_sim_files</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_sim_files</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">,</span>
         <span class="n">ctype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -969,7 +964,7 @@
 
         <span class="k">return</span> <span class="n">out</span>
 
-    <span class="k">def</span> <span class="nf">_get_template_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_template_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convenience function for finding matching template maps per map,</span>
 <span class="sd">        to be used for template subtraction in ``get_masked_data()``.</span>
@@ -1064,7 +1059,7 @@
 
         <span class="k">return</span> <span class="n">out</span>
 
-    <span class="k">def</span> <span class="nf">_get_reference_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_reference_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctype</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convenience function for finding all reference files per map, to be used</span>
 <span class="sd">        for reference signal subtraction for null tests in ``get_masked_data()``.</span>
@@ -1126,7 +1121,7 @@
 
 <div class="viewcode-block" id="XFaster.get_files">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_files">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_files</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_files</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data_root</span><span class="p">,</span>
         <span class="n">data_subset</span><span class="o">=</span><span class="s2">&quot;full/*0&quot;</span><span class="p">,</span>
@@ -1253,7 +1248,7 @@
 
 <div class="viewcode-block" id="XFaster.get_map">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_map">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">check_nside</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">check_nside</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Load an input map from file or from an internal cache.  Maps are</span>
 <span class="sd">        checked to make sure they all have a consistent size, and optionally</span>
@@ -1281,7 +1276,7 @@
 <span class="sd">            returns a 2D array of T/Q/U maps from the file. Otherwise a</span>
 <span class="sd">            (1, npix) array is returned containing only the T map.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">healpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hp</span>
 
         <span class="c1"># initialize map cache</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_map_cache&quot;</span><span class="p">):</span>
@@ -1346,7 +1341,7 @@
 
 <div class="viewcode-block" id="XFaster.get_mask">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_mask">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check_lims</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">check_lims</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Load an input mask from file or from an internal cache.</span>
 <span class="sd">        See ``XFaster.get_map`` for details.</span>
@@ -1384,7 +1379,7 @@
 
 <div class="viewcode-block" id="XFaster.get_filename">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_filename">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_filename</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_filename</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">,</span>
         <span class="n">ext</span><span class="o">=</span><span class="s2">&quot;.npz&quot;</span><span class="p">,</span>
@@ -1480,7 +1475,7 @@
 
 <div class="viewcode-block" id="XFaster.force_rerun_children">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.force_rerun_children">[docs]</a>
-    <span class="k">def</span> <span class="nf">force_rerun_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkpoint</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">force_rerun_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkpoint</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Trigger rerunning steps that depend on this checkpoint.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">checkpoint_tree</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="p">[]):</span>
             <span class="k">if</span> <span class="n">step</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">:</span>
@@ -1494,7 +1489,7 @@
 
 <div class="viewcode-block" id="XFaster.load_data">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.load_data">[docs]</a>
-    <span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">,</span>
         <span class="n">checkpoint</span><span class="p">,</span>
@@ -1718,7 +1713,7 @@
 
 <div class="viewcode-block" id="XFaster.save_data">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.save_data">[docs]</a>
-    <span class="k">def</span> <span class="nf">save_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">from_attrs</span><span class="o">=</span><span class="p">[],</span> <span class="n">file_attrs</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">data</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">from_attrs</span><span class="o">=</span><span class="p">[],</span> <span class="n">file_attrs</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">data</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Save xfaster data to an output .npz file on disk.</span>
 
@@ -1791,7 +1786,7 @@
 
 <div class="viewcode-block" id="XFaster.save_state">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.save_state">[docs]</a>
-    <span class="k">def</span> <span class="nf">save_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tag</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tag</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Save current object state to disk.</span>
 
@@ -1811,7 +1806,7 @@
             <span class="k">if</span> <span class="n">opt</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
                 <span class="n">file_opts</span><span class="p">[</span><span class="n">opt</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">opt</span><span class="p">]</span>
 
-        <span class="kn">from</span> <span class="nn">.batch_tools</span> <span class="kn">import</span> <span class="n">get_job_id</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.batch_tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_job_id</span>
 
         <span class="n">jobid</span> <span class="o">=</span> <span class="n">get_job_id</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">jobid</span><span class="p">:</span>
@@ -1825,7 +1820,7 @@
 
 <div class="viewcode-block" id="XFaster.save_config">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.save_config">[docs]</a>
-    <span class="k">def</span> <span class="nf">save_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Save a configuration file for the current run on disk.</span>
 <span class="sd">        This method is used by ``xfaster_run`` to store the config</span>
@@ -1865,7 +1860,7 @@
 
 <div class="viewcode-block" id="XFaster.apply_mask">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.apply_mask">[docs]</a>
-    <span class="k">def</span> <span class="nf">apply_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Apply the input mask to the data map, in place.</span>
 
@@ -1896,7 +1891,7 @@
 
 <div class="viewcode-block" id="XFaster.map2alm">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.map2alm">[docs]</a>
-    <span class="k">def</span> <span class="nf">map2alm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">map2alm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">pol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Wrapper for healpy.map2alm.</span>
 
@@ -1915,7 +1910,7 @@
 <span class="sd">            Alms for the input map, computed using the equivalent of</span>
 <span class="sd">            ``healpy.map2alm (m, lmax, pol=self.pol, use_weights=True)``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">healpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hp</span>
 
         <span class="n">opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">pol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pol</span> <span class="k">if</span> <span class="n">pol</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">pol</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alm_pixel_weights</span><span class="p">:</span>
@@ -1935,7 +1930,7 @@
 
 <div class="viewcode-block" id="XFaster.alm2cl">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.alm2cl">[docs]</a>
-    <span class="k">def</span> <span class="nf">alm2cl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lmin</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">lmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">symmetric</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">alm2cl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lmin</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">lmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">symmetric</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Wrapper for healpy.alm2cl.</span>
 
@@ -1960,7 +1955,7 @@
 <span class="sd">        cls : array_like</span>
 <span class="sd">            Cross-spectrum of m1-x-m2.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">healpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hp</span>
 
         <span class="k">if</span> <span class="n">lmax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">lmax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lmax</span>
@@ -1975,7 +1970,7 @@
 
 <div class="viewcode-block" id="XFaster.get_mask_weights">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_mask_weights">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_mask_weights</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_mask_weights</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">mask_type</span><span class="o">=</span><span class="s2">&quot;rectangle&quot;</span><span class="p">,</span>
         <span class="n">apply_gcorr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -2045,7 +2040,7 @@
             <span class="n">value_ref</span><span class="o">=</span><span class="n">opts</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">process_gcorr</span><span class="p">(</span><span class="n">gcorr_file_in</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">process_gcorr</span><span class="p">(</span><span class="n">gcorr_file_in</span><span class="p">):</span>
             <span class="n">write</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;gcorr&quot;</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">gcorr</span> <span class="o">=</span> <span class="kc">None</span>
@@ -2156,7 +2151,7 @@
 
         <span class="n">cache</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 
-        <span class="k">def</span> <span class="nf">process_index</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">process_index</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            A internal convenience function computes/loads alms from/to cache for each mask idx.</span>
 <span class="sd">            &quot;&quot;&quot;</span>
@@ -2250,7 +2245,7 @@
 
 <div class="viewcode-block" id="XFaster.get_noise_residuals">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_noise_residuals">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_noise_residuals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_noise_residuals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a dictionary of ell-by-ell noise residual spectra from an output</span>
 <span class="sd">        bandpowers file, to be applied to noise Alm&#39;s using ``healpy.almxfl``.</span>
@@ -2284,7 +2279,7 @@
 
 <div class="viewcode-block" id="XFaster.get_masked_data">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_masked_data">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_masked_data</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_masked_data</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data_type</span><span class="o">=</span><span class="s2">&quot;raw&quot;</span><span class="p">,</span>
         <span class="n">template_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -2448,7 +2443,7 @@
 <span class="sd">            cls_ref, cls_ref_null:</span>
 <span class="sd">                reference cross spectra, if ``reference_type`` is set.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">healpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hp</span>
 
         <span class="n">num_maps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_maps</span>
         <span class="n">data_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_shape</span>
@@ -2478,7 +2473,7 @@
                 <span class="p">[(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">template_alpha</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_tags_orig</span><span class="p">]</span>
             <span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">apply_template</span><span class="p">():</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">apply_template</span><span class="p">():</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Internal data processing function to have scaled foreground template</span>
 <span class="sd">            subtracted from data map.</span>
@@ -2741,7 +2736,7 @@
             <span class="n">rls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_noise_residuals</span><span class="p">(</span><span class="n">qb_file</span><span class="p">)</span>
 
         <span class="c1"># convenience functions</span>
-        <span class="k">def</span> <span class="nf">get_map_file</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">get_map_file</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
             <span class="n">files</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{}{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">suffix</span><span class="p">))</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">files</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
                 <span class="k">return</span> <span class="n">files</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
@@ -2755,7 +2750,7 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Missing sim index </span><span class="si">{}</span><span class="s2"> in </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sidx</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span>
             <span class="k">return</span> <span class="n">files</span><span class="p">[</span><span class="n">fidx</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">sidx</span><span class="p">)]</span>
 
-        <span class="k">def</span> <span class="nf">get_map_alms</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">get_map_alms</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
             <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_mask</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_files</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">sim</span><span class="p">:</span>
                 <span class="c1"># data from disk</span>
@@ -2810,7 +2805,7 @@
 
         <span class="n">cache</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 
-        <span class="k">def</span> <span class="nf">process_index</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">process_index</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            A internal convenience function computes/loads alms from/to cache for each data map idx,</span>
 <span class="sd">            or data map pair for null tests.</span>
@@ -2974,7 +2969,7 @@
 
 <div class="viewcode-block" id="XFaster.get_masked_sims">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_masked_sims">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_masked_sims</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_masked_sims</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">transfer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">signal_type</span><span class="o">=</span><span class="s2">&quot;synfast&quot;</span><span class="p">,</span>
@@ -3046,7 +3041,7 @@
 <span class="sd">        in the normal keys.  Note that these differ from standard non-null</span>
 <span class="sd">        spectra by a factor of 2.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">healpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hp</span>
 
         <span class="n">mask_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_files</span>
         <span class="n">map_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_tags</span>
@@ -3174,7 +3169,7 @@
             <span class="n">rls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_noise_residuals</span><span class="p">(</span><span class="n">qb_file</span><span class="p">)</span>
 
         <span class="c1"># convenience functions</span>
-        <span class="k">def</span> <span class="nf">get_map_alms</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">rls</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">get_map_alms</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">rls</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
             <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_map</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">apply_mask</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
             <span class="n">m_alms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map2alm</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span><span class="p">)</span>
@@ -3186,7 +3181,7 @@
 
             <span class="k">return</span> <span class="n">m_alms</span>
 
-        <span class="k">def</span> <span class="nf">process_index</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">files2</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">idx2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rls</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">process_index</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">files2</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">idx2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rls</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Compute alms of masked input map</span>
 <span class="sd">            &quot;&quot;&quot;</span>
@@ -3376,7 +3371,7 @@
 
 <div class="viewcode-block" id="XFaster.get_masked_template_noise">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_masked_template_noise">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_masked_template_noise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">template_noise_type</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_masked_template_noise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">template_noise_type</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute all combinations of template noise cross spectra from the ensemble</span>
 <span class="sd">        of template noise sims.</span>
@@ -3446,7 +3441,7 @@
         <span class="n">cache</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 
         <span class="c1"># convenience functions</span>
-        <span class="k">def</span> <span class="nf">process_index</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">isim</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">process_index</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">isim</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Compute alms of masked temp1 and temp2 template noise sims</span>
 <span class="sd">            &quot;&quot;&quot;</span>
@@ -3505,7 +3500,7 @@
 
 <div class="viewcode-block" id="XFaster.get_kernels">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_kernels">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_kernels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window_lmax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_kernels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window_lmax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute kernels using the mask cross-spectra.  This follows</span>
 <span class="sd">        the polspice azimuthal approximation for the kernel computation.</span>
@@ -3631,7 +3626,7 @@
 
 <div class="viewcode-block" id="XFaster.get_signal_shape">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_signal_shape">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_signal_shape</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_signal_shape</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">r</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -3882,7 +3877,7 @@
 
 <div class="viewcode-block" id="XFaster.get_beams">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_beams">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_beams</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pixwin</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_beams</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pixwin</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return beam window functions for all input map tags.</span>
 
@@ -3903,7 +3898,7 @@
 <span class="sd">        This method is called at the &#39;beams&#39; checkpoint and loads or saves</span>
 <span class="sd">        a dictionary containing just the ``beam_windows`` key to disk.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">healpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">hp</span>
 
         <span class="n">lsize</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">lmax</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="n">nspec</span> <span class="o">=</span> <span class="mi">6</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pol</span> <span class="k">else</span> <span class="mi">1</span>
@@ -3964,7 +3959,7 @@
 
 <div class="viewcode-block" id="XFaster.get_beam_errors">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_beam_errors">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_beam_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_beam_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get error envelope to multiply beam by (so, to get beam + 2 sigma error,</span>
 <span class="sd">        do beam * (1 + 2 * beam_error))</span>
@@ -4031,7 +4026,7 @@
 
 <div class="viewcode-block" id="XFaster.get_bin_def">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_bin_def">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_bin_def</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_bin_def</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">lmin</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
         <span class="n">lmax</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
@@ -4241,7 +4236,7 @@
 
 <div class="viewcode-block" id="XFaster.kernel_precalc">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.kernel_precalc">[docs]</a>
-    <span class="k">def</span> <span class="nf">kernel_precalc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transfer</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kernel_precalc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transfer</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute the mixing kernels M_ll&#39; = K_ll&#39; * F_l&#39; * B_l&#39;^2.  Called by</span>
 <span class="sd">        ``bin_cl_template`` to pre-compute kernel terms.</span>
@@ -4328,7 +4323,7 @@
 
 <div class="viewcode-block" id="XFaster.bin_cl_template">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.bin_cl_template">[docs]</a>
-    <span class="k">def</span> <span class="nf">bin_cl_template</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bin_cl_template</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">cls_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">map_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -4426,10 +4421,10 @@
 
         <span class="n">ell</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">lmax_kern</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">binup</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">binup</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
             <span class="k">return</span> <span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">left</span><span class="p">:</span><span class="n">right</span><span class="p">]</span> <span class="o">*</span> <span class="n">weights</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">binup2</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">bd</span><span class="p">,</span> <span class="n">bw</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">binup2</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">bd</span><span class="p">,</span> <span class="n">bw</span><span class="p">):</span>
             <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">binup</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">),</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">bd</span><span class="p">,</span> <span class="n">bw</span><span class="p">)])</span>
             <span class="k">return</span> <span class="n">d</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 
@@ -4557,7 +4552,7 @@
 
 <div class="viewcode-block" id="XFaster.get_model_spectra">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_model_spectra">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_model_spectra</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qb</span><span class="p">,</span> <span class="n">cbl</span><span class="p">,</span> <span class="n">cls_noise</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cond_noise</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_model_spectra</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qb</span><span class="p">,</span> <span class="n">cbl</span><span class="p">,</span> <span class="n">cls_noise</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cond_noise</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute unbinned model spectra from qb amplitudes and a Cbl matrix.</span>
 <span class="sd">        Requires pre-loaded bin definitions using ``get_bin_def`` or</span>
@@ -4760,7 +4755,7 @@
 
 <div class="viewcode-block" id="XFaster.get_data_spectra">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_data_spectra">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_data_spectra</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transfer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">do_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_data_spectra</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transfer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">do_noise</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return data and noise spectra for the given map tag(s).  Data spectra</span>
 <span class="sd">        and signal/noise sim spectra must have been precomputed or loaded from</span>
@@ -4868,7 +4863,7 @@
 
 <div class="viewcode-block" id="XFaster.do_qb2cb">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.do_qb2cb">[docs]</a>
-    <span class="k">def</span> <span class="nf">do_qb2cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="n">wbl</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">do_qb2cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qb</span><span class="p">,</span> <span class="n">inv_fish</span><span class="p">,</span> <span class="n">wbl</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute binned output spectra and covariances by averaging</span>
 <span class="sd">        the shape spectrum over each bin, and applying the appropriate</span>
@@ -4967,7 +4962,7 @@
 
 <div class="viewcode-block" id="XFaster.fisher_precalc">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.fisher_precalc">[docs]</a>
-    <span class="k">def</span> <span class="nf">fisher_precalc</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fisher_precalc</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">cbl</span><span class="p">,</span>
         <span class="n">cls_input</span><span class="p">,</span>
@@ -5109,7 +5104,7 @@
 
 <div class="viewcode-block" id="XFaster.clear_precalc">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.clear_precalc">[docs]</a>
-    <span class="k">def</span> <span class="nf">clear_precalc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear_precalc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Clear variables pre-computed with ``fisher_precalc``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -5121,7 +5116,7 @@
 
 <div class="viewcode-block" id="XFaster.fisher_calc">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.fisher_calc">[docs]</a>
-    <span class="k">def</span> <span class="nf">fisher_calc</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fisher_calc</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">qb</span><span class="p">,</span>
         <span class="n">cbl</span><span class="p">,</span>
@@ -5561,7 +5556,7 @@
 
 <div class="viewcode-block" id="XFaster.fisher_iterate">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.fisher_iterate">[docs]</a>
-    <span class="k">def</span> <span class="nf">fisher_iterate</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fisher_iterate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">cbl</span><span class="p">,</span>
         <span class="n">map_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -6089,7 +6084,7 @@
 
 <div class="viewcode-block" id="XFaster.get_transfer">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_transfer">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_transfer</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_transfer</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">converge_criteria</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
         <span class="n">iter_max</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
@@ -6161,7 +6156,7 @@
         <span class="p">)</span>
 
         <span class="c1"># function for converting qb&#39;s to ell-by-ell transfer function</span>
-        <span class="k">def</span> <span class="nf">expand_transfer</span><span class="p">(</span><span class="n">qb_transfer</span><span class="p">,</span> <span class="n">bin_def</span><span class="p">,</span> <span class="n">check_only</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">expand_transfer</span><span class="p">(</span><span class="n">qb_transfer</span><span class="p">,</span> <span class="n">bin_def</span><span class="p">,</span> <span class="n">check_only</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">check_only</span><span class="p">:</span>
                 <span class="n">transfer</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">check_only</span> <span class="ow">and</span> <span class="s2">&quot;fg&quot;</span> <span class="ow">in</span> <span class="n">comps</span><span class="p">:</span>
@@ -6317,7 +6312,7 @@
 
 <div class="viewcode-block" id="XFaster.get_bandpowers">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_bandpowers">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_bandpowers</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_bandpowers</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">map_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">converge_criteria</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
@@ -6481,7 +6476,7 @@
 
 <div class="viewcode-block" id="XFaster.get_likelihood">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_class.XFaster.get_likelihood">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_likelihood</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_likelihood</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">qb</span><span class="p">,</span>
         <span class="n">inv_fish</span><span class="p">,</span>
@@ -6773,7 +6768,7 @@
         <span class="c1"># XXX TODO</span>
         <span class="c1"># how to marginalize over the garbage bin?</span>
 
-        <span class="k">def</span> <span class="nf">parse_params</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">parse_params</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Parse array of parameters into a dict</span>
 <span class="sd">            &quot;&quot;&quot;</span>
@@ -6794,7 +6789,7 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Too many parameters to parse&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">params</span>
 
-        <span class="k">def</span> <span class="nf">log_prior</span><span class="p">(</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">log_prior</span><span class="p">(</span>
             <span class="n">r</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">res</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -6829,7 +6824,7 @@
 
             <span class="k">return</span> <span class="n">log_prob</span>
 
-        <span class="k">def</span> <span class="nf">log_like</span><span class="p">(</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">log_like</span><span class="p">(</span>
             <span class="n">r</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">res</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -6933,7 +6928,7 @@
             <span class="p">)</span>
             <span class="k">return</span> <span class="n">like</span>
 
-        <span class="k">def</span> <span class="nf">log_prob</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Log posterior probability from prior and likelihood</span>
 
@@ -6996,7 +6991,7 @@
             <span class="k">return</span> <span class="p">[</span><span class="n">rs</span><span class="p">,</span> <span class="n">likes</span><span class="p">]</span>
 
         <span class="c1"># run chains!</span>
-        <span class="kn">import</span> <span class="nn">emcee</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">emcee</span>
 
         <span class="c1"># setup sampler output file</span>
         <span class="n">filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_filename</span><span class="p">(</span>
