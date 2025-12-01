@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; xfaster 1.2.0.post1.dev20+g98385f3 documentation</title>
+  <title>Index &mdash; xfaster 1.2.0.post1.dev21+g0daf1c6e9 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=eb8d8f31"></script>
+      <script src="_static/documentation_options.js?v=923f4297"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -45,6 +45,7 @@
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="algorithm.html">Algorithm</a></li>
 <li class="toctree-l1"><a class="reference internal" href="notebooks/XFaster_Tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gcorr.html">G-Correction Calculation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
 </ul>
 
@@ -104,9 +105,11 @@
 </li>
       <li><a href="api.html#xfaster.xfaster_exec.XFasterJobGroup.add_job">add_job() (xfaster.xfaster_exec.XFasterJobGroup method)</a>
 </li>
+      <li><a href="api.html#xfaster.xfaster_class.XFaster.alm2cl">alm2cl() (xfaster.xfaster_class.XFaster method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#xfaster.xfaster_class.XFaster.alm2cl">alm2cl() (xfaster.xfaster_class.XFaster method)</a>
+      <li><a href="api.html#xfaster.gcorr_tools.apply_gcal">apply_gcal() (in module xfaster.gcorr_tools)</a>
 </li>
       <li><a href="api.html#xfaster.xfaster_class.XFaster.apply_mask">apply_mask() (xfaster.xfaster_class.XFaster method)</a>
 </li>
@@ -141,6 +144,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#xfaster.xfaster_class.XFaster.clear_precalc">clear_precalc() (xfaster.xfaster_class.XFaster method)</a>
+</li>
+      <li><a href="api.html#xfaster.gcorr_tools.compute_gcal">compute_gcal() (in module xfaster.gcorr_tools)</a>
 </li>
       <li><a href="api.html#xfaster.parse_tools.corr_index">corr_index() (in module xfaster.parse_tools)</a>
 </li>
@@ -214,6 +219,8 @@
 </li>
       <li><a href="api.html#xfaster.xfaster_class.XFaster.get_files">get_files() (xfaster.xfaster_class.XFaster method)</a>
 </li>
+      <li><a href="api.html#xfaster.gcorr_tools.get_gcorr_config">get_gcorr_config() (in module xfaster.gcorr_tools)</a>
+</li>
       <li><a href="api.html#xfaster.batch_tools.get_job_id">get_job_id() (in module xfaster.batch_tools)</a>
 </li>
       <li><a href="api.html#xfaster.batch_tools.get_job_logfile">get_job_logfile() (in module xfaster.batch_tools)</a>
@@ -237,6 +244,8 @@
       <li><a href="api.html#xfaster.xfaster_class.XFaster.get_masked_template_noise">get_masked_template_noise() (xfaster.xfaster_class.XFaster method)</a>
 </li>
       <li><a href="api.html#xfaster.xfaster_class.XFaster.get_model_spectra">get_model_spectra() (xfaster.xfaster_class.XFaster method)</a>
+</li>
+      <li><a href="api.html#xfaster.gcorr_tools.get_next_iter">get_next_iter() (in module xfaster.gcorr_tools)</a>
 </li>
       <li><a href="api.html#xfaster.xfaster_class.XFaster.get_noise_residuals">get_noise_residuals() (xfaster.xfaster_class.XFaster method)</a>
 </li>
@@ -304,6 +313,8 @@
       <ul>
         <li><a href="api.html#module-xfaster.batch_tools">xfaster.batch_tools</a>
 </li>
+        <li><a href="api.html#module-xfaster.gcorr_tools">xfaster.gcorr_tools</a>
+</li>
         <li><a href="api.html#module-xfaster.parse_tools">xfaster.parse_tools</a>
 </li>
         <li><a href="api.html#module-xfaster.spec_tools">xfaster.spec_tools</a>
@@ -331,7 +342,13 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#xfaster.gcorr_tools.plot_gcorr">plot_gcorr() (in module xfaster.gcorr_tools)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api.html#xfaster.batch_tools.JobArgumentParser.pop_job_opts">pop_job_opts() (xfaster.batch_tools.JobArgumentParser method)</a>
+</li>
+      <li><a href="api.html#xfaster.gcorr_tools.process_gcorr">process_gcorr() (in module xfaster.gcorr_tools)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -429,6 +446,13 @@
 </li>
       </ul></li>
       <li>
+    xfaster.gcorr_tools
+
+      <ul>
+        <li><a href="api.html#module-xfaster.gcorr_tools">module</a>
+</li>
+      </ul></li>
+      <li>
     xfaster.parse_tools
 
       <ul>
@@ -461,6 +485,10 @@
       <li><a href="api.html#xfaster.xfaster_exec.xfaster_diff">xfaster_diff() (in module xfaster.xfaster_exec)</a>
 </li>
       <li><a href="api.html#xfaster.xfaster_exec.xfaster_dump">xfaster_dump() (in module xfaster.xfaster_exec)</a>
+</li>
+      <li><a href="api.html#xfaster.xfaster_exec.xfaster_gcorr">xfaster_gcorr() (in module xfaster.xfaster_exec)</a>
+</li>
+      <li><a href="api.html#xfaster.gcorr_tools.xfaster_gcorr_once">xfaster_gcorr_once() (in module xfaster.gcorr_tools)</a>
 </li>
       <li><a href="api.html#xfaster.xfaster_exec.xfaster_main">xfaster_main() (in module xfaster.xfaster_exec)</a>
 </li>

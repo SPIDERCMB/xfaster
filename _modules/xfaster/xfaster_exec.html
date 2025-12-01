@@ -5,14 +5,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>xfaster.xfaster_exec &mdash; xfaster 1.2.0.post1.dev20+g98385f3 documentation</title>
+  <title>xfaster.xfaster_exec &mdash; xfaster 1.2.0.post1.dev21+g0daf1c6e9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=eb8d8f31"></script>
+      <script src="../../_static/documentation_options.js?v=923f4297"></script>
       <script src="../../_static/doctools.js?v=9bcbadda"></script>
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -45,6 +45,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../algorithm.html">Algorithm</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../notebooks/XFaster_Tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../gcorr.html">G-Correction Calculation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
 </ul>
 
@@ -93,6 +94,7 @@
     <span class="s2">&quot;xfaster_submit&quot;</span><span class="p">,</span>
     <span class="s2">&quot;xfaster_dump&quot;</span><span class="p">,</span>
     <span class="s2">&quot;xfaster_diff&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;xfaster_gcorr&quot;</span><span class="p">,</span>
     <span class="s2">&quot;xfaster_main&quot;</span><span class="p">,</span>
     <span class="s2">&quot;XFasterJobGroup&quot;</span><span class="p">,</span>
 <span class="p">]</span>
@@ -1153,6 +1155,7 @@
         <span class="p">(</span><span class="s2">&quot;submit&quot;</span><span class="p">,</span> <span class="s2">&quot;submit xfaster job&quot;</span><span class="p">),</span>
         <span class="p">(</span><span class="s2">&quot;dump&quot;</span><span class="p">,</span> <span class="s2">&quot;dump archive from xfaster job to stdout&quot;</span><span class="p">),</span>
         <span class="p">(</span><span class="s2">&quot;diff&quot;</span><span class="p">,</span> <span class="s2">&quot;compare two archive files&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;gcorr&quot;</span><span class="p">,</span> <span class="s2">&quot;iterate over gcorr computation&quot;</span><span class="p">),</span>
     <span class="p">]:</span>
         <span class="n">PP</span> <span class="o">=</span> <span class="n">S</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="n">helptext</span><span class="p">,</span> <span class="o">**</span><span class="n">parser_opts</span><span class="p">)</span>
 
@@ -1203,6 +1206,79 @@
                 <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
                 <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Print status of all entries&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;gcorr&quot;</span><span class="p">:</span>
+            <span class="n">add_arg</span><span class="p">(</span>
+                <span class="n">PP</span><span class="p">,</span> <span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="n">positional</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Config file for gcorr computation&quot;</span>
+            <span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span>
+                <span class="n">PP</span><span class="p">,</span>
+                <span class="s2">&quot;map_tags&quot;</span><span class="p">,</span>
+                <span class="n">short</span><span class="o">=</span><span class="s2">&quot;-t&quot;</span><span class="p">,</span>
+                <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+                <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;TAG&quot;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Subset of map tags to iterate over&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span>
+                <span class="n">PP</span><span class="p">,</span>
+                <span class="s2">&quot;iternums&quot;</span><span class="p">,</span>
+                <span class="n">short</span><span class="o">=</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span>
+                <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+                <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;N&quot;</span><span class="p">,</span>
+                <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Iteration number to start with for each tag in --map-tags&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span>
+                <span class="n">PP</span><span class="p">,</span>
+                <span class="s2">&quot;keep_iters&quot;</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Store outputs from each iteration in a separate directory&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span>
+                <span class="n">PP</span><span class="p">,</span>
+                <span class="s2">&quot;max_iters&quot;</span><span class="p">,</span>
+                <span class="n">argtype</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum number of iterations to run (run once and exit if 0)&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span>
+                <span class="n">PP</span><span class="p">,</span>
+                <span class="s2">&quot;converge_criteria&quot;</span><span class="p">,</span>
+                <span class="n">short</span><span class="o">=</span><span class="s2">&quot;-c&quot;</span><span class="p">,</span>
+                <span class="n">argtype</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Maximum fractional change in gcorr that indicates convergence and stops iteration&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span>
+                <span class="n">PP</span><span class="p">,</span>
+                <span class="s2">&quot;allow_extreme&quot;</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Do not clip large gcorr corrections at each iteration (useful if not converging)&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span>
+                <span class="n">PP</span><span class="p">,</span>
+                <span class="s2">&quot;gcorr_fit_hist&quot;</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Fit bandpower histogram to a lognorm distribution to compute gcorr&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span>
+                <span class="n">PP</span><span class="p">,</span>
+                <span class="s2">&quot;analyze_only&quot;</span><span class="p">,</span>
+                <span class="n">short</span><span class="o">=</span><span class="s2">&quot;-a&quot;</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Compute and store gcorr files for the current iteration (internal use only)&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">add_arg</span><span class="p">(</span>
+                <span class="n">PP</span><span class="p">,</span>
+                <span class="s2">&quot;submit&quot;</span><span class="p">,</span>
+                <span class="n">short</span><span class="o">=</span><span class="s2">&quot;-s&quot;</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Submit jobs with dependencies rather than running serially&quot;</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -1479,7 +1555,7 @@
             <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
     <span class="c1"># test mode</span>
-    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;submit&quot;</span><span class="p">,</span> <span class="s2">&quot;dump&quot;</span><span class="p">,</span> <span class="s2">&quot;diff&quot;</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;submit&quot;</span><span class="p">,</span> <span class="s2">&quot;dump&quot;</span><span class="p">,</span> <span class="s2">&quot;diff&quot;</span><span class="p">,</span> <span class="s2">&quot;gcorr&quot;</span><span class="p">]:</span>
         <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">test</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;,</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
                 <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">=</span><span class="si">{!r}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">vars</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
@@ -1977,6 +2053,165 @@
 
 
 
+<div class="viewcode-block" id="xfaster_gcorr">
+<a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_gcorr">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">xfaster_gcorr</span><span class="p">(</span>
+    <span class="n">config</span><span class="p">,</span>
+    <span class="n">map_tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">iternums</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">keep_iters</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">max_iters</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">converge_criteria</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">allow_extreme</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">gcorr_fit_hist</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">analyze_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">submit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Iteration driver for computing gcorr factors.</span>
+
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    config : str</span>
+<span class="sd">        The config file for gcorr computation.</span>
+<span class="sd">    map_tags : list of str</span>
+<span class="sd">        Subset of map tags to iterate over.</span>
+<span class="sd">    iternums : list of int</span>
+<span class="sd">        Iteration number to start with for each tag in `map_tags`.  If one</span>
+<span class="sd">        number is given, use the same index for all tags.  All files for</span>
+<span class="sd">        iterations above this number will be removed.  If not supplied,</span>
+<span class="sd">        iterations will increment to the next index.</span>
+<span class="sd">    keep_iters : bool</span>
+<span class="sd">        If True, store outputs from each iteration in a separate directory.</span>
+<span class="sd">    max_iters : int</span>
+<span class="sd">        Maximum number of iterations to run.  If 0, run once and exit.</span>
+<span class="sd">    converge_criteria : float</span>
+<span class="sd">        Maximum fractional change in gcorr that indicates convergence and stops</span>
+<span class="sd">        iteration.</span>
+<span class="sd">    allow_extreme : bool</span>
+<span class="sd">        If True, do not clip gcorr corrections that are too large at each</span>
+<span class="sd">        iteration.  Try this if iterations are not converging.</span>
+<span class="sd">    gcorr_fit_hist : bool</span>
+<span class="sd">        If True, fit bandpower histogram to a lognorm distribution to compute gcorr.</span>
+<span class="sd">    analyze_only : bool</span>
+<span class="sd">        If True, compute and store gcorr files for the current iteration.</span>
+<span class="sd">        Typically used internally by the script, and should not be called by the</span>
+<span class="sd">        user.</span>
+<span class="sd">    submit : bool</span>
+<span class="sd">        If True, submit a sequence of jobs with dependencies.  Otherwise, runs</span>
+<span class="sd">        serially on the hots.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">gcorr_tools</span> <span class="k">as</span> <span class="n">gt</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">use</span>
+
+    <span class="n">use</span><span class="p">(</span><span class="s2">&quot;agg&quot;</span><span class="p">)</span>
+
+    <span class="c1"># load configuration</span>
+    <span class="n">g_cfg</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">get_gcorr_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="n">tags</span> <span class="o">=</span> <span class="n">g_cfg</span><span class="p">[</span><span class="s2">&quot;gcorr_opts&quot;</span><span class="p">][</span><span class="s2">&quot;map_tags&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">map_tags</span><span class="p">:</span>
+        <span class="n">tags</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">map_tags</span> <span class="k">if</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">iternums</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">iternums</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">iternums</span> <span class="o">=</span> <span class="n">iternums</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+        <span class="n">iternums</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">iternums</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">iternums</span> <span class="o">=</span> <span class="p">{</span><span class="n">t</span><span class="p">:</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="n">iternums</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="n">null</span> <span class="o">=</span> <span class="n">g_cfg</span><span class="p">[</span><span class="s2">&quot;gcorr_opts&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;null&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="n">nsim</span> <span class="o">=</span> <span class="n">g_cfg</span><span class="p">[</span><span class="s2">&quot;gcorr_opts&quot;</span><span class="p">][</span><span class="s2">&quot;nsim&quot;</span><span class="p">]</span>
+    <span class="n">rundir</span> <span class="o">=</span> <span class="n">g_cfg</span><span class="p">[</span><span class="s2">&quot;gcorr_opts&quot;</span><span class="p">][</span><span class="s2">&quot;output_root&quot;</span><span class="p">]</span>
+    <span class="n">xf_submit_opts</span> <span class="o">=</span> <span class="n">g_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;submit_opts&quot;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">submit_opts</span> <span class="o">=</span> <span class="n">xf_submit_opts</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">submit_opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;num_jobs&quot;</span><span class="p">)</span>
+
+    <span class="c1"># sim ensemble options</span>
+    <span class="n">run_opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">data_subset</span><span class="o">=</span><span class="n">g_cfg</span><span class="p">[</span><span class="s2">&quot;gcorr_opts&quot;</span><span class="p">][</span><span class="s2">&quot;data_subset&quot;</span><span class="p">],</span>
+        <span class="n">data_subset2</span><span class="o">=</span><span class="n">g_cfg</span><span class="p">[</span><span class="s2">&quot;gcorr_opts&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_subset2&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+        <span class="n">output_root</span><span class="o">=</span><span class="n">rundir</span><span class="p">,</span>
+        <span class="n">null</span><span class="o">=</span><span class="n">null</span><span class="p">,</span>
+        <span class="n">num_sims</span><span class="o">=</span><span class="n">nsim</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">g_cfg</span><span class="p">[</span><span class="s2">&quot;xfaster_opts&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">submit</span><span class="p">:</span>
+        <span class="n">run_opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">submit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">xf_submit_opts</span><span class="p">)</span>
+
+    <span class="c1"># gcorr analysis options</span>
+    <span class="n">gcorr_opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">output_root</span><span class="o">=</span><span class="n">rundir</span><span class="p">,</span>
+        <span class="n">null</span><span class="o">=</span><span class="n">null</span><span class="p">,</span>
+        <span class="n">num_sims</span><span class="o">=</span><span class="n">nsim</span><span class="p">,</span>
+        <span class="n">gcorr_fit_hist</span><span class="o">=</span><span class="n">gcorr_fit_hist</span><span class="p">,</span>
+        <span class="n">allow_extreme</span><span class="o">=</span><span class="n">allow_extreme</span><span class="p">,</span>
+        <span class="n">keep_iters</span><span class="o">=</span><span class="n">keep_iters</span><span class="p">,</span>
+        <span class="n">converge_criteria</span><span class="o">=</span><span class="n">converge_criteria</span><span class="p">,</span>
+        <span class="n">max_iters</span><span class="o">=</span><span class="n">max_iters</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">analyze_only</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Analyze one tag at a time&quot;</span>
+        <span class="k">if</span> <span class="n">gt</span><span class="o">.</span><span class="n">process_gcorr</span><span class="p">(</span>
+            <span class="n">output_tag</span><span class="o">=</span><span class="n">tags</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">iternum</span><span class="o">=</span><span class="n">iternums</span><span class="p">[</span><span class="n">tags</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="o">**</span><span class="n">gcorr_opts</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Stopping iterations&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span>
+
+    <span class="c1"># build command for this script</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;xfaster&quot;</span><span class="p">,</span> <span class="s2">&quot;gcorr&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">config</span><span class="p">)]</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span>
+        <span class="s2">&quot;allow_extreme&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;gcorr_fit_hist&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;keep_iters&quot;</span><span class="p">,</span>
+    <span class="p">]:</span>
+        <span class="k">if</span> <span class="nb">locals</span><span class="p">()[</span><span class="n">k</span><span class="p">]:</span>
+            <span class="n">cmd</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;--</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">))]</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;converge_criteria&quot;</span><span class="p">,</span> <span class="s2">&quot;max_iters&quot;</span><span class="p">]:</span>
+        <span class="n">cmd</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;--</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)),</span> <span class="nb">str</span><span class="p">(</span><span class="nb">locals</span><span class="p">()[</span><span class="n">k</span><span class="p">])]</span>
+
+    <span class="k">if</span> <span class="n">max_iters</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">max_iters</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="c1"># run</span>
+    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="c1"># setup for next iteration</span>
+        <span class="n">iternum0</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">get_next_iter</span><span class="p">(</span>
+            <span class="n">output_root</span><span class="o">=</span><span class="n">rundir</span><span class="p">,</span> <span class="n">output_tag</span><span class="o">=</span><span class="n">tag</span><span class="p">,</span> <span class="n">iternum</span><span class="o">=</span><span class="n">iternums</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">iternum0</span> <span class="o">&gt;</span> <span class="n">max_iters</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Tag </span><span class="si">{}</span><span class="s2"> iteration </span><span class="si">{}</span><span class="s2"> &gt; max </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">iternum0</span><span class="p">,</span> <span class="n">max_iters</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">gcorr_job</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">iternum</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iternum0</span><span class="p">,</span> <span class="n">max_iters</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting </span><span class="si">{}</span><span class="s2"> iteration </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">iternum</span><span class="p">))</span>
+
+            <span class="c1"># compute ensemble bandpowers</span>
+            <span class="k">if</span> <span class="n">submit</span><span class="p">:</span>
+                <span class="n">run_opts</span><span class="p">[</span><span class="s2">&quot;dep_afterok&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gcorr_job</span>
+            <span class="n">bp_jobs</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">xfaster_gcorr_once</span><span class="p">(</span><span class="n">output_tag</span><span class="o">=</span><span class="n">tag</span><span class="p">,</span> <span class="n">iternum</span><span class="o">=</span><span class="n">iternum</span><span class="p">,</span> <span class="o">**</span><span class="n">run_opts</span><span class="p">)</span>
+
+            <span class="c1"># compute gcorr</span>
+            <span class="k">if</span> <span class="n">submit</span><span class="p">:</span>
+                <span class="c1"># submit analysis job</span>
+                <span class="n">gcorr_job</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">batch_sub</span><span class="p">(</span>
+                    <span class="n">cmd</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;-a&quot;</span><span class="p">,</span> <span class="s2">&quot;-t&quot;</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">iternum</span><span class="p">)],</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;gcorr_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tag</span><span class="p">),</span>
+                    <span class="n">workdir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rundir</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="s2">&quot;logs&quot;</span><span class="p">)),</span>
+                    <span class="n">dep_afterok</span><span class="o">=</span><span class="n">bp_jobs</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">submit_opts</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">gt</span><span class="o">.</span><span class="n">process_gcorr</span><span class="p">(</span><span class="n">output_tag</span><span class="o">=</span><span class="n">tag</span><span class="p">,</span> <span class="n">iternum</span><span class="o">=</span><span class="n">iternum</span><span class="p">,</span> <span class="o">**</span><span class="n">gcorr_opts</span><span class="p">):</span>
+                    <span class="k">break</span></div>
+
+
+
 <div class="viewcode-block" id="xfaster_main">
 <a class="viewcode-back" href="../../api.html#xfaster.xfaster_exec.xfaster_main">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">xfaster_main</span><span class="p">():</span>
@@ -2001,7 +2236,11 @@
 
     <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;diff&quot;</span><span class="p">:</span>
         <span class="c1"># diff archive files</span>
-        <span class="n">xfaster_diff</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span></div>
+        <span class="n">xfaster_diff</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;gcorr&quot;</span><span class="p">:</span>
+        <span class="c1"># run gcorr iteration</span>
+        <span class="n">xfaster_gcorr</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span></div>
 
 </pre></div>
 

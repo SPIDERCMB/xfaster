@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API Reference &mdash; xfaster 1.2.0.post1.dev20+g98385f3 documentation</title>
+  <title>API Reference &mdash; xfaster 1.2.0.post1.dev21+g0daf1c6e9 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=eb8d8f31"></script>
+      <script src="_static/documentation_options.js?v=923f4297"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -22,7 +22,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Tutorial" href="notebooks/XFaster_Tutorial.html" /> 
+    <link rel="prev" title="G-Correction Calculation" href="gcorr.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -49,6 +49,7 @@
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="algorithm.html">Algorithm</a></li>
 <li class="toctree-l1"><a class="reference internal" href="notebooks/XFaster_Tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gcorr.html">G-Correction Calculation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-xfaster.batch_tools">batch_tools</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#xfaster.batch_tools.JobArgumentParser"><code class="docutils literal notranslate"><span class="pre">JobArgumentParser</span></code></a><ul>
@@ -151,6 +152,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#xfaster.xfaster_exec.xfaster_diff"><code class="docutils literal notranslate"><span class="pre">xfaster_diff()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#xfaster.xfaster_exec.xfaster_dump"><code class="docutils literal notranslate"><span class="pre">xfaster_dump()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xfaster.xfaster_exec.xfaster_gcorr"><code class="docutils literal notranslate"><span class="pre">xfaster_gcorr()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#xfaster.xfaster_exec.xfaster_main"><code class="docutils literal notranslate"><span class="pre">xfaster_main()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#xfaster.xfaster_exec.xfaster_parse"><code class="docutils literal notranslate"><span class="pre">xfaster_parse()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#xfaster.xfaster_exec.xfaster_run"><code class="docutils literal notranslate"><span class="pre">xfaster_run()</span></code></a></li>
@@ -163,6 +165,16 @@
 <li class="toctree-l3"><a class="reference internal" href="#xfaster.spec_tools.load_camb_cl"><code class="docutils literal notranslate"><span class="pre">load_camb_cl()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#xfaster.spec_tools.scale_dust"><code class="docutils literal notranslate"><span class="pre">scale_dust()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#xfaster.spec_tools.wigner3j"><code class="docutils literal notranslate"><span class="pre">wigner3j()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-xfaster.gcorr_tools">gcorr_tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#xfaster.gcorr_tools.apply_gcal"><code class="docutils literal notranslate"><span class="pre">apply_gcal()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xfaster.gcorr_tools.compute_gcal"><code class="docutils literal notranslate"><span class="pre">compute_gcal()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xfaster.gcorr_tools.get_gcorr_config"><code class="docutils literal notranslate"><span class="pre">get_gcorr_config()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xfaster.gcorr_tools.get_next_iter"><code class="docutils literal notranslate"><span class="pre">get_next_iter()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xfaster.gcorr_tools.plot_gcorr"><code class="docutils literal notranslate"><span class="pre">plot_gcorr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xfaster.gcorr_tools.process_gcorr"><code class="docutils literal notranslate"><span class="pre">process_gcorr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xfaster.gcorr_tools.xfaster_gcorr_once"><code class="docutils literal notranslate"><span class="pre">xfaster_gcorr_once()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -200,7 +212,7 @@
 <p>Tools for submitting to HPC systems: PBS or SLURM</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="xfaster.batch_tools.JobArgumentParser">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xfaster.batch_tools.</span></span><span class="sig-name descname"><span class="pre">JobArgumentParser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mem</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outkey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#JobArgumentParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.batch_tools.JobArgumentParser" title="Link to this definition"></a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xfaster.batch_tools.</span></span><span class="sig-name descname"><span class="pre">JobArgumentParser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mem</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outkey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/batch_tools.html#JobArgumentParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.batch_tools.JobArgumentParser" title="Link to this definition"></a></dt>
 <dd><p>Standardized way to add job submission arguments to a script.</p>
 <p>Keyword arguments are used to fix values for parameters not needed by a
 script. The corresponding command line arguments will not be added. See
@@ -907,7 +919,7 @@ subdirectories), return a list modifying them with an index</p>
 <p>The main class where the algorithmic steps are defined</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="xfaster.xfaster_class.XFaster">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xfaster.xfaster_class.</span></span><span class="sig-name descname"><span class="pre">XFaster</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'notice'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alm_pixel_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alm_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster" title="Link to this definition"></a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xfaster.xfaster_class.</span></span><span class="sig-name descname"><span class="pre">XFaster</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'notice'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alm_pixel_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alm_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFaster"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.xfaster_class.XFaster" title="Link to this definition"></a></dt>
 <dd><p>Initialize an XFaster instance for computing binned power spectra
 using a set of data maps along with signal and noise simulations.</p>
 <dl class="field-list simple">
@@ -2355,7 +2367,7 @@ See <code class="docutils literal notranslate"><span class="pre">get_filename</s
 
 <dl class="py class">
 <dt class="sig sig-object py" id="xfaster.xfaster_class.XFasterConfig">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xfaster.xfaster_class.</span></span><span class="sig-name descname"><span class="pre">XFasterConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">defaults</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Uncategorized'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFasterConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.xfaster_class.XFasterConfig" title="Link to this definition"></a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xfaster.xfaster_class.</span></span><span class="sig-name descname"><span class="pre">XFasterConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">defaults</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Uncategorized'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFasterConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.xfaster_class.XFasterConfig" title="Link to this definition"></a></dt>
 <dd><p>ConfigParser subclass for storing command line options and config.</p>
 <p>Class that tracks command-line options for storage to disk.</p>
 <dl class="field-list simple">
@@ -2408,7 +2420,7 @@ Keys are stored alphabetically if <cite>sort</cite> is True.</p>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="xfaster.xfaster_class.XFasterWarning">
-<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xfaster.xfaster_class.</span></span><span class="sig-name descname"><span class="pre">XFasterWarning</span></span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFasterWarning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.xfaster_class.XFasterWarning" title="Link to this definition"></a></dt>
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xfaster.xfaster_class.</span></span><span class="sig-name descname"><span class="pre">XFasterWarning</span></span><a class="reference internal" href="_modules/xfaster/xfaster_class.html#XFasterWarning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.xfaster_class.XFasterWarning" title="Link to this definition"></a></dt>
 <dd><p>Warning generated by the XFaster algorithm.</p>
 </dd></dl>
 
@@ -2419,7 +2431,7 @@ Keys are stored alphabetically if <cite>sort</cite> is True.</p>
 submits the job to a grid system</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="xfaster.xfaster_exec.XFasterJobGroup">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xfaster.xfaster_exec.</span></span><span class="sig-name descname"><span class="pre">XFasterJobGroup</span></span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#XFasterJobGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.xfaster_exec.XFasterJobGroup" title="Link to this definition"></a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">xfaster.xfaster_exec.</span></span><span class="sig-name descname"><span class="pre">XFasterJobGroup</span></span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#XFasterJobGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.xfaster_exec.XFasterJobGroup" title="Link to this definition"></a></dt>
 <dd><p>Class for parsing xfaster options into a job script, and optionally
 grouping the jobs together.</p>
 <dl class="py method">
@@ -2541,6 +2553,36 @@ Ignored if <code class="docutils literal notranslate"><span class="pre">output_f
 <li><p><strong>keys</strong> (<em>list</em><em> of </em><em>str</em>) – List of keys to print for each matching archive file.</p></li>
 <li><p><strong>verbose</strong> (<em>bool</em>) – If True, print the entire contents of the dictionary.  Otherwise,
 truncate each entry to a single line.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xfaster.xfaster_exec.xfaster_gcorr">
+<span class="sig-prename descclassname"><span class="pre">xfaster.xfaster_exec.</span></span><span class="sig-name descname"><span class="pre">xfaster_gcorr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map_tags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iternums</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_iters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">converge_criteria</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_extreme</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gcorr_fit_hist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">analyze_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">submit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/xfaster_exec.html#xfaster_gcorr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.xfaster_exec.xfaster_gcorr" title="Link to this definition"></a></dt>
+<dd><p>Iteration driver for computing gcorr factors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<em>str</em>) – The config file for gcorr computation.</p></li>
+<li><p><strong>map_tags</strong> (<em>list</em><em> of </em><em>str</em>) – Subset of map tags to iterate over.</p></li>
+<li><p><strong>iternums</strong> (<em>list</em><em> of </em><em>int</em>) – Iteration number to start with for each tag in <cite>map_tags</cite>.  If one
+number is given, use the same index for all tags.  All files for
+iterations above this number will be removed.  If not supplied,
+iterations will increment to the next index.</p></li>
+<li><p><strong>keep_iters</strong> (<em>bool</em>) – If True, store outputs from each iteration in a separate directory.</p></li>
+<li><p><strong>max_iters</strong> (<em>int</em>) – Maximum number of iterations to run.  If 0, run once and exit.</p></li>
+<li><p><strong>converge_criteria</strong> (<em>float</em>) – Maximum fractional change in gcorr that indicates convergence and stops
+iteration.</p></li>
+<li><p><strong>allow_extreme</strong> (<em>bool</em>) – If True, do not clip gcorr corrections that are too large at each
+iteration.  Try this if iterations are not converging.</p></li>
+<li><p><strong>gcorr_fit_hist</strong> (<em>bool</em>) – If True, fit bandpower histogram to a lognorm distribution to compute gcorr.</p></li>
+<li><p><strong>analyze_only</strong> (<em>bool</em>) – If True, compute and store gcorr files for the current iteration.
+Typically used internally by the script, and should not be called by the
+user.</p></li>
+<li><p><strong>submit</strong> (<em>bool</em>) – If True, submit a sequence of jobs with dependencies.  Otherwise, runs
+serially on the hots.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2820,7 +2862,7 @@ with the command line flags for submit mode, with kwargs passed to
 </section>
 <section id="module-xfaster.spec_tools">
 <span id="spec-tools"></span><h2>spec_tools<a class="headerlink" href="#module-xfaster.spec_tools" title="Link to this heading"></a></h2>
-<p>More generic functions used by methods in xfaster_class</p>
+<p>More generic functions used by methods in <a class="reference internal" href="#module-xfaster.xfaster_class" title="xfaster.xfaster_class"><code class="xref py py-mod docutils literal notranslate"><span class="pre">xfaster_class</span></code></a></p>
 <dl class="py function">
 <dt class="sig sig-object py" id="xfaster.spec_tools.dust_model">
 <span class="sig-prename descclassname"><span class="pre">xfaster.spec_tools.</span></span><span class="sig-name descname"><span class="pre">dust_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pivot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">80</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">34.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-2.28</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lfac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/spec_tools.html#dust_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.spec_tools.dust_model" title="Link to this definition"></a></dt>
@@ -2973,13 +3015,171 @@ of the frequency-scaled map or spectrum with respect to <code class="docutils li
 </dd></dl>
 
 </section>
+<section id="module-xfaster.gcorr_tools">
+<span id="gcorr-tools"></span><h2>gcorr_tools<a class="headerlink" href="#module-xfaster.gcorr_tools" title="Link to this heading"></a></h2>
+<p>Tools for iteratively computing corrections to the <code class="docutils literal notranslate"><span class="pre">g_ell</span></code> factor</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="xfaster.gcorr_tools.apply_gcal">
+<span class="sig-prename descclassname"><span class="pre">xfaster.gcorr_tools.</span></span><span class="sig-name descname"><span class="pre">apply_gcal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gcorr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gtot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_extreme</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/gcorr_tools.html#apply_gcal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.gcorr_tools.apply_gcal" title="Link to this definition"></a></dt>
+<dd><p>Apply gcorr correction to the previous iteration’s gcorr file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gcorr</strong> (<em>dict</em>) – Correction-to-gcorr to apply.</p></li>
+<li><p><strong>gtot</strong> (<em>dict</em>) – Cumulative gcorr from previous iteration.</p></li>
+<li><p><strong>allow_extreme</strong> (<em>bool</em>) – Do not clip gcorr corrections that are too large at each iteration.  Try
+this if iterations are not converging.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xfaster.gcorr_tools.compute_gcal">
+<span class="sig-prename descclassname"><span class="pre">xfaster.gcorr_tools.</span></span><span class="sig-name descname"><span class="pre">compute_gcal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'xfaster_gcal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">null</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_sims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_hist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/gcorr_tools.html#compute_gcal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.gcorr_tools.compute_gcal" title="Link to this definition"></a></dt>
+<dd><p>Compute gcorr calibration</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_root</strong> (<em>str</em>) – Output root where the data product will be stored.</p></li>
+<li><p><strong>output_tag</strong> (<em>str</em>) – Map tag to analyze</p></li>
+<li><p><strong>null</strong> (<em>bool</em>) – If True, this is a null test dataset.</p></li>
+<li><p><strong>num_sims</strong> (<em>int</em>) – Number of sim bandpowers to expect in the ensemble.</p></li>
+<li><p><strong>fit_hist</strong> (<em>bool</em>) – If True, fit the bandpower histogram to a lognorm distribution to
+compute the calibration factor.  Otherwise, uses the simple variance of
+the distribution.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xfaster.gcorr_tools.get_gcorr_config">
+<span class="sig-prename descclassname"><span class="pre">xfaster.gcorr_tools.</span></span><span class="sig-name descname"><span class="pre">get_gcorr_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/gcorr_tools.html#get_gcorr_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.gcorr_tools.get_gcorr_config" title="Link to this definition"></a></dt>
+<dd><p>Return a dictionary of options for running the gcorr iteration scripts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em><em> or </em><em>dict</em>) – Filename to load.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>cfg</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xfaster.gcorr_tools.get_next_iter">
+<span class="sig-prename descclassname"><span class="pre">xfaster.gcorr_tools.</span></span><span class="sig-name descname"><span class="pre">get_next_iter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'xfaster_gcal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iternum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/gcorr_tools.html#get_next_iter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.gcorr_tools.get_next_iter" title="Link to this definition"></a></dt>
+<dd><p>Find the index for the next iteration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_root</strong> (<em>str</em>) – Output root where the data product will be stored.</p></li>
+<li><p><strong>output_tag</strong> (<em>str</em>) – Map tag to analyze</p></li>
+<li><p><strong>iternum</strong> (<em>int</em>) – Override iteration number.  If supplied, all gcorr files for this
+iteration and higher are removed from disk.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>iternum</strong> – Next iteration number</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xfaster.gcorr_tools.plot_gcorr">
+<span class="sig-prename descclassname"><span class="pre">xfaster.gcorr_tools.</span></span><span class="sig-name descname"><span class="pre">plot_gcorr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'xfaster_gcal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/gcorr_tools.html#plot_gcorr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.gcorr_tools.plot_gcorr" title="Link to this definition"></a></dt>
+<dd><p>Plot the gcorr data through the current iteration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_root</strong> (<em>str</em>) – Output root where the data product will be stored.</p></li>
+<li><p><strong>output_tag</strong> (<em>str</em>) – Map tag to analyze</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xfaster.gcorr_tools.process_gcorr">
+<span class="sig-prename descclassname"><span class="pre">xfaster.gcorr_tools.</span></span><span class="sig-name descname"><span class="pre">process_gcorr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'xfaster_gcal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">null</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iternum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_sims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gcorr_fit_hist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_extreme</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_iters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">converge_criteria</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/gcorr_tools.html#process_gcorr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.gcorr_tools.process_gcorr" title="Link to this definition"></a></dt>
+<dd><p>Run gcorr analysis on a complete ensemble of sim bandpowers. This function
+runs <code class="docutils literal notranslate"><span class="pre">compute_gcal</span></code> to calculate a correction-to-gcorr, stored in the
+running directory as <code class="docutils literal notranslate"><span class="pre">gcorr_corr_&lt;tag&gt;_iter&lt;iter&gt;.npz</span></code>.  It then runs
+<code class="docutils literal notranslate"><span class="pre">apply_gcal</span></code> to increment the running total gcorr, stored in
+<code class="docutils literal notranslate"><span class="pre">gcorr_total_&lt;tag&gt;_iter&lt;iter&gt;.npz</span></code>.  Plots of the correction and total
+files for the current iteration are stored in the <code class="docutils literal notranslate"><span class="pre">&lt;output_root&gt;/plots</span></code>
+directory.  The current iteration is determined by counting the number of
+<code class="docutils literal notranslate"><span class="pre">gcorr_total</span></code> files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_root</strong> (<em>str</em>) – Output root where the data product will be stored.</p></li>
+<li><p><strong>output_tag</strong> (<em>str</em>) – Map tag to analyze</p></li>
+<li><p><strong>null</strong> (<em>bool</em>) – If True, this is a null test dataset.</p></li>
+<li><p><strong>iternum</strong> (<em>int</em>) – Iteration number to process.</p></li>
+<li><p><strong>num_sims</strong> (<em>int</em>) – Number of sim bandpowers to expect in the ensemble.</p></li>
+<li><p><strong>gcorr_fit_hist</strong> (<em>bool</em>) – If True, fit the bandpower histogram to a lognorm distribution to
+compute the calibration factor.  Otherwise, uses the simple variance of
+the distribution.</p></li>
+<li><p><strong>allow_extreme</strong> (<em>bool</em>) – Do not clip gcorr corrections that are too large at each iteration.  Try
+this if iterations are not converging.</p></li>
+<li><p><strong>keep_iters</strong> (<em>bool</em>) – If True, store the transfer function and bandpowers outputs from each
+iteration in a separate sub-directory, rather than deleting these files.</p></li>
+<li><p><strong>converge_criteria</strong> (<em>float</em>) – Maximum fractional change in gcorr that indicates convergence and stops
+iteration.</p></li>
+<li><p><strong>max_iters</strong> (<em>int</em>) – Maximum number of iterations to run.  If 0, run once and return.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>retval</strong> – True if convergence or iteration index is reached, False otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="xfaster.gcorr_tools.xfaster_gcorr_once">
+<span class="sig-prename descclassname"><span class="pre">xfaster.gcorr_tools.</span></span><span class="sig-name descname"><span class="pre">xfaster_gcorr_once</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'xfaster_gcal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_subset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'full'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_subset2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">null</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iternum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sim_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_sims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">submit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">opts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/xfaster/gcorr_tools.html#xfaster_gcorr_once"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#xfaster.gcorr_tools.xfaster_gcorr_once" title="Link to this definition"></a></dt>
+<dd><p>Run XFaster for the gcorr calculation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output_root</strong> (<em>str</em>) – Output root where the data product will be stored.</p></li>
+<li><p><strong>output_tag</strong> (<em>str</em>) – Map tag to analyze</p></li>
+<li><p><strong>data_subset</strong> (<em>str</em>) – Data subset directory from which to load data maps.  The glob pattern
+for the <cite>data_subset</cite> XFaster option is built from this string for each
+map tag as <cite>&lt;data_subset&gt;/*_&lt;tag&gt;</cite>.</p></li>
+<li><p><strong>null</strong> (<em>bool</em>) – If True, this is a null test run.</p></li>
+<li><p><strong>iternum</strong> (<em>int</em>) – Iteration number for which to compute bandpowers.</p></li>
+<li><p><strong>sim_index</strong> (<em>int</em>) – First sim index to run</p></li>
+<li><p><strong>num_sims</strong> (<em>int</em>) – Number of sims to run</p></li>
+<li><p><strong>num_jobs</strong> (<em>int</em>) – Number of jobs to split each sim ensemble into</p></li>
+<li><p><strong>submit</strong> (<em>bool</em>) – If True, submit jobs to a cluster.
+Requires submit_opts section to be present in the config.</p></li>
+<li><p><strong>opts</strong> – Remaining options are passed directly to <cite>xfaster_run</cite> or
+<cite>xfaster_submit</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="notebooks/XFaster_Tutorial.html" class="btn btn-neutral float-left" title="Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gcorr.html" class="btn btn-neutral float-left" title="G-Correction Calculation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>

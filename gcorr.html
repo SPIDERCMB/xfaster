@@ -1,0 +1,196 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>G-Correction Calculation &mdash; xfaster 1.2.0.post1.dev21+g0daf1c6e9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=923f4297"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="api.html" />
+    <link rel="prev" title="Tutorial" href="notebooks/XFaster_Tutorial.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            xfaster
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">Algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="notebooks/XFaster_Tutorial.html">Tutorial</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">G-Correction Calculation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#procedure">Procedure</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">xfaster</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">G-Correction Calculation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/gcorr.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="g-correction-calculation">
+<h1>G-Correction Calculation<a class="headerlink" href="#g-correction-calculation" title="Link to this heading"></a></h1>
+<p>Code package for calculating correction factors to g_ell using pre-generated
+simulation maps for each single mask. This procedure assumes you are running
+this code on a cluster– it is extremely slow to do otherwise.</p>
+<p>There is one main command-line utility that calls two functions from the
+<a class="reference internal" href="api.html#module-xfaster.gcorr_tools" title="xfaster.gcorr_tools"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gcorr_tools</span></code></a> library:</p>
+<ol class="arabic simple">
+<li><p><a class="reference internal" href="api.html#xfaster.gcorr_tools.xfaster_gcorr_once" title="xfaster.gcorr_tools.xfaster_gcorr_once"><code class="xref py py-func docutils literal notranslate"><span class="pre">xfaster_gcorr_once()</span></code></a> – This function calls
+XFaster to run or submit jobs for gcorr runs.</p></li>
+<li><p><a class="reference internal" href="api.html#xfaster.gcorr_tools.process_gcorr" title="xfaster.gcorr_tools.process_gcorr"><code class="xref py py-func docutils literal notranslate"><span class="pre">process_gcorr()</span></code></a> – A function that computes the
+gcorr correction from the ensemble of bandpowers, updates the running total,
+and backs up the necessary files from each iteration.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">xfaster</span> <span class="pre">gcorr</span></code> – An xfaster command-line utility, that calls function 1
+and 2 to get a new gcorr.npz file each time. This is the main code you’ll
+run.</p></li>
+</ol>
+<p>There is also a config file with options specific to computing gcorr.</p>
+<section id="procedure">
+<h2>Procedure<a class="headerlink" href="#procedure" title="Link to this heading"></a></h2>
+<ol class="arabic">
+<li><p>Edit the gcorr config file to suit your purposes. Examples are given for
+signal and null runs in the examples directory. Required fields are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">null</span></code> – must be true for null tests and false for signal runs</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">map_tags</span></code> – comma-separated list of map tags</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data_subset</span></code> – the globabble data_subset argument to xfaster_run, but
+without map tags. So, “full”, “chunk*”, etc.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output_root</span></code> – the parent directory where your gcorr XFaster runs will
+be written</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nsim</span></code> – the number of simulations to use to compute gcorr</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[xfaster_opts]</span></code> – this is where you’ll put any options that will be
+directly input to <a class="reference internal" href="api.html#xfaster.xfaster_exec.xfaster_run" title="xfaster.xfaster_exec.xfaster_run"><code class="xref py py-func docutils literal notranslate"><span class="pre">xfaster_run()</span></code></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[submit_opts]</span></code> – this is where you’ll put any options that will be
+directly input to <a class="reference internal" href="api.html#xfaster.xfaster_exec.xfaster_submit" title="xfaster.xfaster_exec.xfaster_submit"><code class="xref py py-func docutils literal notranslate"><span class="pre">xfaster_submit()</span></code></a>, in
+addition to those in <code class="docutils literal notranslate"><span class="pre">[xfaster_opts]</span></code></p></li>
+</ul>
+</li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">xfaster</span> <span class="pre">gcorr</span></code> once to get the full set of XFaster output files in the
+output directory.  Since we haven’t computed gcorr yet, this will set
+<code class="docutils literal notranslate"><span class="pre">apply_gcorr=False</span></code>. Make sure to use as many OMP threads as possible since
+this is the step where the sims_xcorr file, which benefits the most from
+extra threads, is computed.  Your command should look like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">xfaster</span> <span class="n">gcorr</span> <span class="n">path</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">my</span><span class="o">-</span><span class="n">gcorr</span><span class="o">-</span><span class="n">config</span><span class="o">.</span><span class="n">ini</span>
+</pre></div>
+</div>
+</li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">xfaster</span> <span class="pre">gcorr</span></code> until convergence is reached. In practice, you will run
+the command above and wait for it to finish. If you include the
+<code class="docutils literal notranslate"><span class="pre">--max-iters</span></code> option with a non-zero value, the code will try to determine
+whether convergence or max_iters has been reached and stop on its own.
+Otherwise, you can look at the correction-to-the-correction that it both
+prints and plots (it should converge to 1s for TT, EE, BB), and rerun the
+same command if it hasn’t converged.  In much more detail, here’s what the
+code does:</p>
+<ol class="arabic simple">
+<li><p>Call <a class="reference internal" href="api.html#xfaster.gcorr_tools.xfaster_gcorr_once" title="xfaster.gcorr_tools.xfaster_gcorr_once"><code class="xref py py-func docutils literal notranslate"><span class="pre">xfaster_gcorr_once()</span></code></a> for the 0th sim
+seed while also reloading gcorr (if this is not the first iteration).
+This does a couple things– saves the new gcorr in the <code class="docutils literal notranslate"><span class="pre">masks_xcorr</span></code>
+file, so later seeds will use the right thing. And recompute the transfer
+function, which doesn’t depend on the <code class="docutils literal notranslate"><span class="pre">sim_index</span></code>, so is only necessary
+to do once.</p></li>
+<li><p>After the transfer functions are all on disk, submit individual jobs for
+all the other seeds, just doing the bandpowers step for those.</p></li>
+<li><p>Once they’re all done, run <a class="reference internal" href="api.html#xfaster.gcorr_tools.compute_gcal" title="xfaster.gcorr_tools.compute_gcal"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_gcal()</span></code></a>,
+and save a correction-to-gcorr as <code class="docutils literal notranslate"><span class="pre">gcorr_corr_&lt;tag&gt;_iter&lt;iter&gt;.npz</span></code> in the
+rundir.</p></li>
+<li><p>If not the first iteration, load up the correction-to-gcorr computed for
+this iteration. Multiply it by the total gcorr, and save that to the
+output directory as <code class="docutils literal notranslate"><span class="pre">gcorr_total_&lt;tag&gt;_iter&lt;iter&gt;.npz</span></code>.</p></li>
+<li><p>Plot gcorr total and the correction to gcorr total. Save in rundir/plots.</p></li>
+<li><p>Clear out rundir bandpowers/transfer functions/logs.</p></li>
+<li><p>Exit.</p></li>
+</ol>
+</li>
+<li><p>After convergence is reached, copy the gcorr_total file for the last
+iteration from the rundir to the mask directory, labeling it
+<code class="docutils literal notranslate"><span class="pre">mask_map_&lt;tag&gt;_gcorr.npz</span></code> for signal or <code class="docutils literal notranslate"><span class="pre">mask_map_&lt;tag&gt;_gcorr_null.npz</span></code>
+for null.</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="notebooks/XFaster_Tutorial.html" class="btn btn-neutral float-left" title="Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, A. Gambrel, A. Rahlin, C. Contaldi.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
